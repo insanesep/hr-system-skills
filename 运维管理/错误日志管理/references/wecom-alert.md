@@ -1,41 +1,41 @@
-# 企微告警模板（灰度后启用）
+# 企微告警模板
 
 ## 触发条件
 
-- 单个报表项 `occur_count >= alertThreshold`（默认 50，Nacos 配置 `busyming.log-error-report.alertThreshold`）
-- 同 `(reportDate, appName, fingerprint)` 一天只发一次（本地去重表 `log_error_daily_alert_record`）
-- 全局开关 `busyming.log-error-report.alertEnabled=false` 默认关闭，灰度后开启
+- 单个报表项出现次数 ≥ 告警阈值（默认 50，阈值以配置中心生效值为准）
+- 同一报表项（日期 + 应用名 + 指纹）一天只发一次，发送记录本地留存用于去重
+- 告警受全局开关控制，默认关闭，是否开启以配置中心生效值为准
 
 ## 接收方
 
-企微应用消息，群或人由"研发告警"配置项决定，复用「创建企微应用消息发送公共skill」的发送能力。
+企微应用消息，群或人由"研发告警"配置项决定，复用公共功能「企微应用消息发送」的发送能力。
 
 ## 消息模板（Markdown）
 
 ```
-**【日志异常告警】{appName}**
+**【日志异常告警】{应用名}**
 
-> 日期：{reportDate}
-> 异常：{errorClass}
-> 出现次数：{occurCount}
-> 首次：{firstOccurAt}
-> 最后：{lastOccurAt}
+> 日期：{报表日期}
+> 异常：{异常类}
+> 出现次数：{出现次数}
+> 首次：{首次发生时间}
+> 最后：{最后发生时间}
 
 **消息样例**
-{messageSampleTruncated 200}
+{消息样例，截断至 200 字符}
 
-**TraceId 样例**：{traceIdSamples join ", "}
+**TraceId 样例**：{traceId 样例，逗号分隔}
 
 查看详情  ·  跳转 SLS
 ```
 
 ## 字段约束
 
-- `messageSampleTruncated`：超过 200 字符截断 + `…`
-- `webDetailUrl`：`{portalBaseUrl}/ops/log-error-report?id={id}`，前端打开后自动展开详情抽屉
-- `slsConsoleUrl`：取首个 traceId 的 deeplink
+- 消息样例：超过 200 字符截断并以「…」结尾
+- 「查看详情」：打开 Web 端「运维管理 → 错误日志管理」并自动展开该报表项详情抽屉
+- 「跳转 SLS」：按首个 traceId 定位到日志控制台
 
 ## 失败兜底
 
 - 企微推送失败不阻断主任务
-- 失败记录写 `log_error_daily_alert_record.send_status = FAIL`，下次任务执行时由独立补偿任务重试 3 次
+- 推送失败时发送记录标记为失败，下次任务执行时由独立补偿任务重试 3 次

@@ -1,6 +1,6 @@
 ---
 name: usage-analytics
-description: 功能使用情况分析。Use when 开发或迭代 Web 后台的前端事件流水、使用情况统计报表（页面→功能下钻）、功能自动打标（频次/人次/角色偏好 三维度，固定阈值）、功能目录自动注册与运营管理（埋点新 functionCode 同事务 INSERT IGNORE 落库 + 管理页分页查询/编辑/启停），涉及 sys_event_log、sys_function_catalog、sys_function_tag_result 表，以及 /api/v1/events/batch、/api/v1/admin/usage/*、/api/v1/admin/usage/catalog/* 接口。端型：仅 Web 端。
+description: 功能使用情况分析。Use when 开发或迭代 Web 后台的前端事件流水查询、使用情况统计报表（页面→功能下钻）、功能自动打标（频次/人次/角色偏好三维度，固定阈值），以及功能目录自动注册与运营管理（首次上报即登记，管理页查询/编辑/启停）。端型：仅 Web 端。
 ---
 
 # 功能使用情况分析
@@ -19,51 +19,51 @@ usage-analytics 按 RBAC 三层模型延伸一层「行为事实层」：记录�
 
 ## 数据模型
 
-本模块新增 3 张表，与用户 / 角色 / 权限体系协作。表结构、字段、索引、保留期策略等实现细节以代码仓为准，不内嵌。
+本模块包含 4 个实体，与用户 / 角色 / 权限体系协作。物理结构、字段、索引等实现细节以代码仓为准，不内嵌。
 
-| 表名 | 角色 |
+| 实体 | 职责 |
 |------|------|
-| `sys_event_log` | 前端事务流水（普通表，PolarDB MySQL 兼容版回退） |
-| `sys_function_catalog` | 路由 × 功能 注册表，与 `sys_permission` 一一对应 |
-| `sys_function_tag_result` | 三维度打标结果快照（按 `(function_code, period_start, period_end)` 唯一）；阈值采用固定默认值 50/500/3/20/0.70/WEEK |
-| `sys_usage_menu_snapshot` | 报表菜单聚合快照（菜单 × 窗口档 7/30/90 × 端 × TOP/ROUTE，每日 01:30 Job 滚动覆盖）；报表「近 N 天含今天」查询读快照 + 今日实时增量（`user_ids` 集合并集保证 uniqUsers 精确），其余查询回落实时流式扫描 |
+| 事件流水 | 记录每一次前端事件（端、用户、角色、页面路由、功能、事件类型、事件时间），是全部统计与打标的事实来源 |
+| 功能目录 | 页面路由 × 功能的注册表，与菜单权限一一对应；埋点首次上报即自动注册，运营补全元数据并启停 |
+| 打标结果快照 | 三维度打标结果，按「功能 × 统计周期」唯一；阈值固定：频次 50 / 500、人次 3 / 20、角色占比 0.70，统计周期为周 |
+| 菜单聚合快照 | 报表按菜单预聚合的快照（菜单 × 窗口档 7 / 30 / 90 天 × 端 × TOP 排行 / 路由聚合两类口径），每日 01:30 定时任务滚动覆盖；报表「近 N 天（含今天）」查询读取快照并叠加今日实时增量，用户数按用户集合并集去重以保证精确，其余查询回落实时扫描 |
 
-> **登记一致性硬约束**：新增菜单时 `sys_permission` / `sys_function_catalog` / 前端路由表三处必须同步登记，不允许任一处缺失；本模块自身 3 个页面登记为 `RND.MANAGE.USAGE_{EVENTS|REPORT|CATALOG}`，路由 `/portal/usage-{events|report|catalog}`（扁平 kebab-case，DEF-02 真源），与父权限 `MENU:RND:MANAGE` 同源。
+> **登记一致性硬约束**：新增菜单时菜单权限、功能目录、前端路由表三处必须同步登记，不允许任一处缺失。本模块自身 3 个页面的功能编码前缀为 `RND.MANAGE.USAGE_EVENTS` / `RND.MANAGE.USAGE_REPORT` / `RND.MANAGE.USAGE_CATALOG`，路由为 `/portal/usage-events` / `/portal/usage-report` / `/portal/usage-catalog`（扁平短横线命名），与父权限 `MENU:RND:MANAGE` 同源。
 >
-> **保留期策略**：`sys_event_log` 由 DBA 按需 `DELETE` + `OPTIMIZE TABLE`，或走冷备 / 数仓归档；不通过分区滚动维护（上线初期数据量有限，后续如需可手动预建 RANGE 分区 / 按月分表 / 冷备归档）。`sys_user` / `sys_role` / `sys_permission` 完整 DDL 参见 busyming-portal。
+> **保留期策略**：事件流水保留期与归档由 DBA 按需执行，不做自动分区滚动。用户 / 角色 / 权限的结构定义以 busyming-portal 代码仓为准。
 
 ## 前端埋点协议
 
-完整上报时机、批量策略（20/5s + 同 code 3s 防抖 + VIEW 3s 去重）、未归类处理、`function_code` 命名规范（`{MODULE}.{PAGE}.{ACTION}` 三段式 / App 加 `APP.` 前缀）、埋点机制（VIEW 自动 / Trackable / trackClick）详见 [references/business-rules.md §1](./references/business-rules.md)；SDK 接入开关、本地模式、紧急熄火、Nacos 限流熔断、新增/删除埋点流程、查漏扫描命令与铺点优先级详见 [references/business-rules.md §12](./references/business-rules.md)。在「自动注册」机制下，`sys_function_catalog` 即为前端铺点事实真源，不再维护逐条镜像清单。
+上报时机、批量与防抖策略（每 20 条或 5 秒批量上报、同一功能编码 3 秒内防抖、页面浏览 3 秒内去重）、未归类处理、功能编码命名规范（功能编码采用 模块.页面.动作 三段式，App 端加 APP 前缀）、埋点方式（页面浏览自动上报、点击仅采集已声明功能编码的元素）详见 [references/business-rules.md §1](./references/business-rules.md)；SDK 接入开关、本地模式、紧急熄火、后端限流熔断、新增/删除埋点流程与铺点优先级详见 [references/business-rules.md §12](./references/business-rules.md)。在「自动注册」机制下，功能目录即为前端铺点的事实来源，不另维护逐条镜像清单。
 
 跨文档补充（仅本 SKILL 登记）：
 
-- 事件批量上报端点与全部接口的签名 / DTO / 错误码以代码仓契约为准，不内嵌；后端责任矩阵、限流、权限校验、参数与返回模型同。
-- `systemBookCode` / `userId` / `userName` / `userRoleName` / `userPhone` / `roleCode` 均由后端从 Token 自动注入，前端不传不信任；`clientType` 由前端 SDK 传值（兼容从 `X-Client-Type` 请求头读取）。
-- `eventTime` 真源：`yyyy-MM-dd HH:mm:ss.SSS`（本地时区、含毫秒，与 `sys_event_log.event_time DATETIME(3)` 对齐）；不接受 `Z` / `+08:00` / 毫秒时间戳等其他变体。
+- 全部接口的契约（参数、返回、错误码）以及后端责任矩阵、限流、权限校验的实现以代码仓为准，不内嵌。
+- 账套与用户、角色等身份信息一律由后端从登录凭证自动注入，前端不传、传了也不采信；端类型由前端 SDK 上报。
+- 事件时间按本地时区、精确到毫秒上报，仅接受约定的单一时间格式（格式以代码仓契约为准）。
 
 ## 页面结构
 
-Portal「系统设置」下新增「功能使用情况分析」分组，包含 3 个子页面。原型位于 [asset/](./asset/)，已对齐 前端页面规范（真源：page-gen.prompt.md v3.4.0）。各页面区块定义、字段与列、按钮权限码详见 [references/page-structure.md](./references/page-structure.md)。
+Portal「系统设置」下设「功能使用情况分析」分组，包含 3 个子页面。原型位于 [asset/](./asset/)，遵循前端页面规范。各页面区块定义、字段与列、按钮权限码详见 [references/page-structure.md](./references/page-structure.md)。
 
 | 页面 | 路由 | 权限码 | 职责 |
 |------|------|--------|------|
 | 事务流水明细（usage-events.html） | `/portal/usage-events` | `MENU:RND:MANAGE:USAGE_EVENTS` | 按筛选条件查看原始事件流水、抽屉详情、CSV 导出 |
 | 使用情况报表（usage-report.html） | `/portal/usage-report` | `MENU:RND:MANAGE:USAGE_REPORT` | KPI / 趋势 / TOP10 / 角色偏好 / 路由聚合下钻 |
-| 功能目录管理（UsageCatalog.vue） | `/portal/usage-catalog` | `MENU:RND:MANAGE:USAGE_CATALOG` | 自动注册表的查询 / 编辑元数据 / 启停（不开放新增/物理删除） |
+| 功能目录管理 | `/portal/usage-catalog` | `MENU:RND:MANAGE:USAGE_CATALOG` | 自动注册表的查询 / 编辑元数据 / 启停（不开放新增/物理删除） |
 
 > **使用情况报表（产品向硬约束）**：
-> - **顶部全局筛选**：时间范围（默认近 30 天） / 端 / 角色 / **功能名称（二级，数据源 `sys_function_catalog`）** / 聚合粒度（日/周/月）。选中具体功能后，KPI、三 Chart、路由聚合表均按该功能过滤，为全局维度筛选而非列表局部筛选。
-> - **KPI 卡类型**：4 等分卡统一使用「左文本 + 右 sparkline」布局；连续变化量（总事件、活跃功能）走 area+line 折线，离散周期对比（活跃用户、不活跃功能）走 bar 柱；上升是好事用主色 / 成功色，「不活跃功能数」用警告色。禁止使用纯文本 KPI 卡。
-> - **页面明细统一按「功能名称」展示**：所有可视层一律以 `function_name`（中文）为主显示文本，`function_code` 仅用于代码定位与 CSV 导出列。
-> - **路由统一到二级路由**：所有页面级聚合一律以 `/{level1}/{level2}` 形式展示，不展开 `:id` / 三级以下子路径；下钻明细才进入功能粒度。
-> - **三 Chart 一排**：合并为单一 `.tpl-panel--analysis`，按 `1fr 1fr 1fr` 三列等宽呈现「按日趋势折线」「TOP 10 高频功能（标签：`{功能名} · {二级路由}`）」「角色偏好分布饼图」。
-> - **路由聚合表必须含 0 触发路由**：数据源为 `sys_function_catalog` 全量启用项 `LEFT JOIN` 周期事件，事件数 / 用户数为 0 也呈现并打 `INACTIVE` 灰色标签；默认按事件数降序、0 触发置末尾，支持「仅未触发」筛选。
+> - **顶部全局筛选**：时间范围（默认近 30 天） / 端 / 角色 / **功能名称（二级，取自功能目录）** / 聚合粒度（日/周/月）。选中具体功能后，KPI、三 Chart、路由聚合表均按该功能过滤，为全局维度筛选而非列表局部筛选。
+> - **KPI 卡类型**：4 等分卡统一使用「左文本 + 右迷你趋势图」布局；连续变化量（总事件、活跃功能）用面积折线，离散周期对比（活跃用户、不活跃功能）用柱状；上升是好事用主色 / 成功色，「不活跃功能数」用警告色。禁止使用纯文本 KPI 卡。
+> - **页面明细统一按「功能名称」展示**：所有可视层一律以功能名称（中文）为主显示文本，功能编码仅用于定位与 CSV 导出列。
+> - **路由统一到二级路由**：所有页面级聚合一律以「一级 / 二级」两段路由展示，不展开动态参数段与三级以下子路径；下钻明细才进入功能粒度。
+> - **三 Chart 一排**：合并为单一分析面板，三列等宽呈现「按日趋势折线」「TOP 10 高频功能（标签为「功能名 · 二级路由」）」「角色偏好分布饼图」。
+> - **路由聚合表必须含 0 触发路由**：以功能目录全量启用项为基准关联周期内事件，事件数 / 用户数为 0 也呈现并打 `INACTIVE` 灰色标签；默认按事件数降序、0 触发置末尾，支持「仅未触发」筛选。
 
 ## 功能目录自动注册
 
-`sys_function_catalog` 在本模块中不仅作为功能下拉字典，还承担「首次出现即入库」的自动注册职责：埋点上报新 `functionCode` 时，`EventIngestServiceImpl.batchInsert()` 在写入 `sys_event_log` 前同事务通过 `INSERT IGNORE` 落库，依赖唯一键去重；最佳努力原则不阻塞主链路。`functionName` 走「上报值 → 前端 `deriveFunctionName()` → `functionCode` 占位」三级兜底，运营在功能目录管理页人工补全。详细触发点、写入方式、错误处理、默认值与设计决策详见 [references/business-rules.md §11](./references/business-rules.md)。
+功能目录在本模块中不仅作为功能下拉字典，还承担「首次出现即入库」的自动注册职责：埋点上报出现目录中尚未登记的功能编码时，在写入事件流水的同一事务内完成登记，重复登记按唯一性自动去重；遵循最佳努力原则，不阻塞主链路。功能名称走「上报值 → 前端自动推导 → 以功能编码占位」三级兜底，运营在功能目录管理页人工补全。详细触发点、写入方式、错误处理、默认值与设计取舍详见 [references/business-rules.md §11](./references/business-rules.md)。
 
 ## 打标算法
 
-三维度（频次 freq_tag / 人次 user_tag / 角色偏好 role_tag）独立判定，阈值采用固定默认值 50/500/3/20/0.70/WEEK，每日 01:00 SchedulerX 重算当前周期，结果用于使用情况报表的徽章展示与 Tag 筛选。详细算法、聚合周期、边界、徽章颜色映射、徽章点击跳「按 Tag 筛选」视图、未归类桶展示与补录闭环详见 [references/business-rules.md §2、§3、§4、§8、§10](./references/business-rules.md)。支持按任一维度筛选功能清单，辅助产品与权限复核。
+三维度（频次 / 人次 / 角色偏好）独立判定，阈值固定（频次 50 / 500、人次 3 / 20、角色占比 0.70，统计周期为周），每日 01:00 定时任务重算当前周期，结果用于使用情况报表的徽章展示与 Tag 筛选。详细算法、聚合周期、边界、徽章颜色映射、徽章点击跳「按 Tag 筛选」视图、未归类桶展示与补录闭环详见 [references/business-rules.md §2、§3、§4、§8、§10](./references/business-rules.md)。支持按任一维度筛选功能清单，辅助产品与权限复核。

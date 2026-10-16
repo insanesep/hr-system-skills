@@ -1,104 +1,103 @@
 # 黑灯工厂工单 — Web 端 UI 描述
 
-> 骨架:page-blueprint v3.4.0 `skeletons/web/list-page.vue.tpl` 起手,参照「日志异常报表」同构;全部 Ac 组件 + `--ac-*` token,零原生标签零裸色值。
+> 列表页结构参照「错误日志管理」同构;页面统一使用组件库组件与设计 token,不使用原生标签与裸色值(组件与 token 规范以代码仓及设计规范为准)。
 
-## 1. 路由与菜单
+## 1. 菜单与入口
 
 | 项 | 值 |
 |---|---|
-| 菜单位置 | 运维管理 → 黑灯工厂工单(二级,日志异常报表之后) |
-| Path | `/ops/blacklight-ticket` |
-| Component | `views/ops/blacklight-ticket/index.vue` |
-| functionCode | `OPS_BLACKLIGHT_TICKET` |
+| 菜单位置 | 运维管理 → 黑灯工厂工单(二级,错误日志管理之后) |
+| 菜单权限码 | `MENU:RND:OPS:BLACKLIGHT_TICKET` |
 | 端 | 仅 Web(菜单类型 WEB) |
 
 ## 2. 页面区块
 
-```
-Layout(面包屑:运维管理 / 黑灯工厂工单)
-└─ tpl-page
-   ├─ AcCard ① KPI 卡
-   │    └─ tpl-kpi-row:
-   │         AcStatistic 待认领(OPEN+REOPENED)      value-style=--ac-biz-pending
-   │         AcStatistic 处理中(CLAIMED)
-   │         AcStatistic 待复核(REVIEW)             value-style=--ac-biz-pending
-   │         AcStatistic 今日已解决(RESOLVED)       value-style=--ac-biz-completed
-   │         AcStatistic P1 未闭环                   value-style=--ac-biz-failed(>0 时)
+```text
+页面框架(面包屑:运维管理 / 黑灯工厂工单)
+└─ 页面主体
+   ├─ ① KPI 卡
+   │    └─ 指标行:
+   │         待认领(OPEN+REOPENED)      待处理语义色
+   │         处理中(CLAIMED)
+   │         待复核(REVIEW)             待处理语义色
+   │         今日已解决(RESOLVED)       完成语义色
+   │         P1 未闭环                   失败语义色(>0 时)
    │
-   ├─ AcCard ② 筛选 + 表格(同卡)
-   │    ├─ AcFilterBar:级别(P1/P2) + 状态 + 来源(blacklight/bigsqlfix) + 服务(svc)
-   │    │             + 负责人(AcSelect 研发花名册) + 关键字(title 模糊) + [只看我的 默认开] + [查询/重置]
-   │    ├─ tpl-toolbar:__left 空容器(过程性:刷新时间);__right [导出]
-   │    ├─ AcTable(row-key=id,列宽可拖)
-   │    │    #empty: AcEmpty「本筛选无工单,黑灯工厂运转良好」
-   │    ├─ AcPagination
+   ├─ ② 筛选 + 表格(同卡)
+   │    ├─ 筛选栏:级别(P1/P2) + 状态 + 来源(错误日志/大SQL/服务端bug扫描/需求缺陷) + 服务
+   │    │         + 负责人(研发花名册下拉) + 关键字(标题模糊) + [只看我的 默认开] + [查询/重置]
+   │    ├─ 工具栏:左侧展示刷新时间;右侧 [导出]
+   │    ├─ 工单表格(列宽可拖)
+   │    │    空态:「本筛选无工单,黑灯工厂运转良好」
+   │    └─ 分页
    │
-   ├─ AcDrawer ③ 详情抽屉(点行打开)
+   ├─ ③ 详情抽屉(点行打开)
    │    └─ 上:级别/状态/来源/服务/命中次数×轮次/首末次时间/负责人/SLA 剩余
-   │         中:summary、suggestion(高亮块)、commit(AcLink 跳 GitLab)
-   │         证:evidence —— traceId(AcLink 跳 trace 查询页/SLS deeplink)、
-   │             sqlSample(等宽字体块)、stack(AcCollapse 折叠)
-   │         下:处理记录时间线(认领/备注/复核/改派) + parent 关联单链接
+   │         中:摘要、建议(高亮块)、commit(链接跳 GitLab);
+   │             来源为需求缺陷(reqdefect)时展示来源需求编号(链接跳需求管理·需求详情)
+   │         证:证据 —— traceId(链接跳 trace 查询页 / 日志控制台)、
+   │             SQL 样例(等宽字体块)、堆栈(折叠展示)
+   │         下:处理记录时间线(认领/备注/复核/改派;复发重开时含上轮关闭信息)
    │
-   └─ AcModal ④ 处理弹窗(共用骨架,按动作切换)
+   └─ ④ 处理弹窗(共用骨架,按动作切换)
         ├─ 认领:确认文案即可
         ├─ 解决:备注必填 ≤500
-        ├─ 忽略:原因必填(AcRadio 噪声/口径如此/三方问题 + 备注 ≤500)
+        ├─ 忽略:原因必填(单选 噪声/口径如此/三方问题 + 备注 ≤500)
         ├─ 复核通过:备注选填
         ├─ 复核打回:备注必填(回到 REOPENED)
-        └─ 改派:AcSelect 在职研发(搜姓名),确认后即时提醒对方
+        └─ 改派:在职研发下拉(搜姓名),确认后即时提醒对方
 ```
 
 ## 3. 列表列定义
 
-| 列 | 字段 | 宽 | 说明 |
-|---|---|---|---|
-| 级别 | `level` | 70 | P1=红系 tag(--ac-biz-failed),P2=黄系(--ac-biz-pending);P1 行默认定前 |
-| 工单号 | `ticketNo` | 130 | 等宽字体 |
-| 标题 | `title` | 自适应 | Paragraph ellipsis + Tooltip;FIXED_REVIEW 前缀「已修复·待复核」icon |
-| 来源 | `source` | 100 | AcTag 灰底:错误日志 / 大SQL |
-| 服务 | `svc` | 110 | |
-| 次数×轮次 | `occurCount / occurRounds` | 110 | 双行小字 |
-| 负责人 | `ownerName` | 100 | 空显「待认领」黄字 |
-| 状态 | `status` | 100 | AcTag:OPEN=黄/CLAIMED=蓝/REVIEW=黄/REOPENED=红/RESOLVED=绿/IGNORED=灰 |
-| SLA | `slaDeadline` | 110 | 剩余>0 倒计时灰字;超时红字「已超 Xh」 |
-| 创建时间 | `createdAt` | 160 | AcDateTime |
-| 操作 | — | 180 | v-permission:认领/解决/忽略/复核/改派(按状态显隐) |
+| 列 | 说明 |
+|---|---|
+| 级别 | P1 用失败语义色标签,P2 用待处理语义色标签;P1 行默认置前 |
+| 工单号 | 等宽字体 |
+| 标题 | 自适应宽度,超长省略、悬停展示全文;FIXED_REVIEW 前缀「已修复·待复核」图标 |
+| 来源 | 灰色标签:错误日志 / 大SQL / 服务端bug扫描 / 需求缺陷 |
+| 服务 | 微服务名 |
+| 次数×轮次 | 出现次数 / 出现轮次,双行小字 |
+| 负责人 | 为空显示「待认领」(待处理语义色) |
+| 状态 | 状态标签,配色见 §6 |
+| SLA | 未超时显示剩余倒计时(弱化色);超时以失败语义色显示「已超 Xh」 |
+| 创建时间 | 日期时间 |
+| 操作 | 按权限与状态显隐:认领/解决/忽略/复核/改派 |
 
-默认排序:level 升序(P1 前)→ createdAt 倒序。默认筛选:「只看我的」开 + 状态≠RESOLVED/IGNORED。
+默认排序:级别升序(P1 在前)→ 创建时间倒序。默认筛选:「只看我的」开 + 状态≠RESOLVED/IGNORED。
 
 ## 4. 交互闭环
 
 | 动作 | 反馈 | 备注 |
 |---|---|---|
-| 认领 | Message.success + 行状态变 CLAIMED、认领人=当前用户 | OPEN/REOPENED 可认领;他人已认领不可抢 |
-| 解决 | 状态→RESOLVED,resolved_by/at 落时间 | 备注必填 |
-| 忽略 | 状态→IGNORED | 原因+备注必填;IGNORED 后同 biz_key agent 侧仅计数 |
+| 认领 | 成功提示 + 行状态变 CLAIMED、认领人=当前用户 | OPEN/REOPENED 可认领;他人已认领不可抢 |
+| 解决 | 状态→RESOLVED,记录处理人与关闭时间 | 备注必填 |
+| 忽略 | 状态→IGNORED | 原因+备注必填;IGNORED 后同业务键问题 agent 侧仅计数 |
 | 复核通过 | 状态→RESOLVED | 仅 FIXED_REVIEW 单可见 |
 | 复核打回 | 状态→REOPENED | 备注必填 |
-| 改派 | owner_* 更新 + 对方收企微应用消息 | 研发负责人角色 |
-| 导出 | 调统一导出中心,Notification 提示去消息中心下载 | 复用导出接入 |
-| 超时 | 列表 SLA 列标红;每日 09:30 企微提醒负责人并抄送 direct_leader | 见 business-rule §6/§7 |
+| 改派 | 负责人更新 + 对方收企微应用消息 | 研发负责人角色 |
+| 导出 | 接入统一导出中心,提示去消息中心下载 | 复用导出接入 |
+| 超时 | 列表 SLA 列标红;每日 09:30 企微提醒负责人并抄送其直属上级 | 见 business-rule §6/§7 |
 
 ## 5. 按钮权限
 
 | Code | 控件 |
 |---|---|
-| `OPS_BLACKLIGHT_TICKET_CLAIM` | 认领 / 解决 / 忽略 |
-| `OPS_BLACKLIGHT_TICKET_REVIEW` | 复核通过 / 打回 |
-| `OPS_BLACKLIGHT_TICKET_REASSIGN` | 改派 |
-| `OPS_BLACKLIGHT_TICKET_EXPORT` | 导出 |
+| `BUTTON:RND:OPS:BLACKLIGHT_TICKET:CLAIM` | 认领 / 解决 / 忽略 |
+| `BUTTON:RND:OPS:BLACKLIGHT_TICKET:REVIEW` | 复核通过 / 打回 |
+| `BUTTON:RND:OPS:BLACKLIGHT_TICKET:REASSIGN` | 改派 |
+| `BUTTON:RND:OPS:BLACKLIGHT_TICKET:EXPORT` | 导出 |
 
-默认授予:超级管理员、研发负责人;普通研发授 CLAIM+REVIEW(只能操作自己名下工单,接口层校验)。
+默认授予:超级管理员、研发负责人;普通研发授认领与复核权限(只能操作自己名下工单,服务端校验)。
 
 ## 6. 状态色映射
 
-| 状态 | token |
+| 状态 | 语义色 |
 |---|---|
-| OPEN / REVIEW | `--ac-biz-pending` |
-| CLAIMED | `--ac-brand-blue` |
-| REOPENED | `--ac-biz-failed` |
-| RESOLVED | `--ac-biz-completed` |
-| IGNORED | `--ac-text-3` |
+| OPEN / REVIEW | 待处理语义色(黄) |
+| CLAIMED | 品牌蓝 |
+| REOPENED | 失败语义色(红) |
+| RESOLVED | 完成语义色(绿) |
+| IGNORED | 弱化文字色(灰) |
 
-禁品牌红 `--ac-brand-red` 做状态色(REOPENED 用 biz-failed 语义色)。
+状态色禁用品牌红(REOPENED 用失败语义色)。

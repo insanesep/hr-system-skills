@@ -13,7 +13,7 @@
 ## 1. Qoder 成员用量（devops，GET）
 
 - 数据字段：`data.members[] / colTotals[] / grandTotal`
-- 金额换算：`int(Credits / 2000 * 300)` 元
+- 金额换算：Credits ÷ 2000 × 300，取整，单位元
 
 ## 2. Qoder 模型用量占比（devops，GET）
 

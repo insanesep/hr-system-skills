@@ -8,8 +8,8 @@
 ## 1. 实体关系
 
 ```text
-报告触发配置（dev_report_trigger）1 ──── N 报告生成任务（dev_report_task）
-研发报告（dev_report） 1 ──── N 报告版本（dev_report_version）
+报告触发配置 1 ──── N 报告生成任务
+研发报告 1 ──── N 报告版本
 报告生成任务（成功时） N ──── 1 报告版本（产出版本）
 ```
 

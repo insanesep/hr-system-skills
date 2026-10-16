@@ -1,6 +1,6 @@
 ---
 name: feature-schedule-business-rules
-description: 系统功能排期模块 - 业务规则的技术映射（状态机、延期判定、编号规则）
+description: 系统功能排期模块 - 业务规则细则（状态机、延期判定、编号、标题截取、拖拽、完成校验、合并卡、项目归属、代码仓配置）
 ---
 
 # 系统功能排期 - 业务规则
@@ -9,276 +9,252 @@ description: 系统功能排期模块 - 业务规则的技术映射（状态机�
 
 ```
   ┌─────────────────────┐                                ┌─────────────────────┐
-  │ PENDING（待开发）    │ ──────── take-card ─────────► │ IN_PROGRESS（开发中）│
-  │                     │ ◄─────── release-card ──────  │                     │
+  │ PENDING（待开发）    │ ──────── 领取开发 ───────────► │ IN_PROGRESS（开发中）│
+  │                     │ ◄─────── 取消领取 ───────────  │                     │
   └──────────┬──────────┘                                └──────────┬──────────┘
-             │ mark-done                                              │ mark-done
-             │ （后端 autoFillDev：当 dev_user_id 为空时                │
-             │   写入当前操作人为开发人）                              │
+             │ 标记完成                                               │ 标记完成
+             │ （开发人为空时自动写入                                 │
+             │   当前操作人）                                         │
              └────────────────┐                          ┌─────────────┘
                               ▼                          ▼
                        ┌─────────────────────┐
                        │ DONE（开发完成）     │
                        └─────────┬───────────┘
-                                 │ revert
+                                 │ 回退
               ┌──────────────────┴──────────────────┐
-              │ targetStatus=PENDING                │ targetStatus=IN_PROGRESS
-              │ （清空 dev_* + done_*）              │ （仅清 done_*，保留 dev_*）
+              │ 回退为待开发                         │ 回退为开发中
+              │ （清空开发人 + 完成回执）            │ （仅清完成回执，保留开发人）
               ▼                                     ▼
    PENDING（待开发）                       IN_PROGRESS（开发中）
 ```
 
-**DB 层四态**：`PENDING` / `IN_PROGRESS` / `DONE` / `NON_FEATURE`（`NON_FEATURE` 为旁路态，由 PM 在抽屉手动切入，不参与 mark-done / scheduledDate 调整）。  
-**延期态 DELAYED**：前端渲染计算，**不落库**；v2.0 起 **`PENDING` 与 `IN_PROGRESS` 均计入延期**（与统计口径统一），v2.1 起按 **`end_date`（单日卡 = `scheduled_date`）判定，且仅当月（月/列表视图）与本周（周视图）计算，历史期不再标红**：
+**持久化四态**：`PENDING` / `IN_PROGRESS` / `DONE` / `NON_FEATURE`（`NON_FEATURE` 为旁路态，由 PM 在抽屉手动切入，不参与标记完成与排期日调整）。
 
-**dev_* 三字段写入路径**（`dev_user_id` / `dev_user_name` / `dev_taken_at`）：
+**延期态 DELAYED**：视图层计算，**不落库**；`PENDING` 与 `IN_PROGRESS` 均计入延期（与统计口径一致）；按截止日（单日卡即排期日）早于今天判定；仅当月（月 / 列表视图）与本周（周视图）计算，历史期不再标红。
 
-| 触发动作 | dev_* 变化 |
+**开发人信息写入路径**（开发人、开发人姓名、领取时间）：
+
+| 触发动作 | 开发人信息变化 |
 |------|---------|
-| `take-card` 显式领取（`PENDING → IN_PROGRESS`） | 同事务写入当前操作人 |
-| `mark-done`（从 `PENDING` 直跳 `DONE`） | 后端 autoFillDev：dev_user_id 为空时写入当前操作人 |
-| `mark-done`（从 `IN_PROGRESS → DONE`） | 保留已有 dev_* 不动 |
-| `release-card`（`IN_PROGRESS → PENDING`） | 同事务清空 dev_* |
-| `revert(targetStatus=PENDING)`（`DONE → PENDING`） | 同事务清空 dev_* |
-| `revert(targetStatus=IN_PROGRESS)`（`DONE → IN_PROGRESS`） | 保留 dev_* 不动 |
-| `move-to-non-feature` | 同事务清空 dev_* |
+| 领取开发（`PENDING → IN_PROGRESS`） | 写入当前操作人 |
+| 标记完成（从 `PENDING` 直接到 `DONE`） | 开发人为空时写入当前操作人 |
+| 标记完成（`IN_PROGRESS → DONE`） | 保留不变 |
+| 取消领取（`IN_PROGRESS → PENDING`） | 清空 |
+| 回退为待开发（`DONE → PENDING`） | 清空 |
+| 回退为开发中（`DONE → IN_PROGRESS`） | 保留不变 |
+| 移入非需求改动 | 清空 |
 
-**NON_FEATURE 旁路态**（v1.5 新增，手动标记）：
+开发人信息的变化与状态变更同时生效。
 
-- 入口：PM 在抽屉点击「🔧 移入非需求改动」手动调起，**废弃原根据 commit message 前缀（chore/style/refactor/test/docs/build/perf）的自动归类**
-- 可返回：NON_FEATURE 只能通过「↩ 恢复为待开发」返回 PENDING，不能直接跳到 DONE
-- 不参与月视图 / Backup / 延期统计；**后端 `cards/month` 查询中以 `.ne(status, NON_FEATURE)` 过滤**，前端 `cards.value` 不会包含
-- 独立接口 `cards/non-feature/list` 查询全量 NON_FEATURE（按 `created_at DESC`），由工具栏「🔧 非需求改动 N」计数与弹层展示
-- 状态守卫（后端 `FeatureScheduleServiceImpl`）：
-  - `update-card` 跳检排期日修改（`scheduledDate`）——NON_FEATURE 本身不参与排期
-  - `mark-done` 拒绝 NON_FEATURE 调起
-  - 进入 NON_FEATURE 时同事务清空 `scheduled_date / dev_user_id / dev_user_name / dev_taken_at / done_repo / done_commit_hash / done_commit_url / done_commits / done_at`（必须使用 `LambdaUpdateWrapper.set(field, null)`，避免 BaseEntity 反向覆盖）
-- 流水：复用 `EDITED` op_type，detail 描述「从『X』移入非需求改动 / 从非需求改动恢复为待开发」，**不新增 op_type 枚举**
+**NON_FEATURE 旁路态**（手动标记）：
+
+- 入口：PM 在抽屉点击「🔧 移入非需求改动」手动触发；仅支持手动标记，不按 commit 类型前缀自动归类
+- 返回：只能通过「↩ 恢复为待开发」回到 `PENDING`，不能直接跳到 `DONE`
+- 不参与月视图 / 待排期池 / 延期统计：月视图查询排除该态卡片
+- 非需求改动列表单独查询全量 `NON_FEATURE` 卡片（按创建时间倒序），供「更多」菜单「非需求改动」的计数徽标与弹层展示
+- 状态守卫：
+  - 编辑非需求改动卡时跳过排期日校验（该态本身不参与排期）
+  - 标记完成拒绝非需求改动卡
+  - 移入时同时清空排期日、开发人信息与完成回执（完成仓库、commit hash、commit 链接、完成 commit 列表、完成时间）
+- 流水：复用「编辑」（EDITED）类型，描述为「从『X』移入非需求改动 / 从非需求改动恢复为待开发」，不单设流水类型
 
 ## 2. 卡片编号规则
 
-**格式（v1.7+）**：`FS-{YYYYMMDD}-{NNN}`
+**格式**：`FS-{YYYYMMDD}-{NNN}`
 
-- `FS`：全局统一前缀（与模块解耦，旧方案 `{MODULE_CODE}-` 已下线）
-- `YYYYMMDD`：采用 `authoredAt` 的日期段（服务器时区 +08:00，参数 `Asia/Shanghai`）
-- `NNN`：同一 `YYYYMMDD` 全局自增，三位零填充，首个为 `001`
+- `FS`：全局统一前缀，与模块解耦
+- `YYYYMMDD`：取 commit 作者提交时间的日期段（东八区，北京时间）
+- `NNN`：同一 `YYYYMMDD` 内全局自增，三位零填充，首个为 `001`
 
-**并发安全实现（后端）**：
-- 采用 `SELECT ... FOR UPDATE` 行锁 + `MAX(card_no) LIKE 'FS-{ymd}-%'` 取最大序号；
-- 同一事务内 INSERT 新卡，外层 `@Transactional`；
-- 当日序号溢出 999 触发告警（业务侧不会出现，且预留 3 位足够）。
+**并发安全**：并发生成时同日序号唯一且单调递增，编号分配与卡片入库同时完成（实现以代码仓为准）；当日序号超过 999 时触发告警（业务量不会达到，三位足够）。
 
-> 模块标签 `sourceModule` 通过 Conventional Commit 头部解析 得到，仅用于看板分组与统计，不参与 cardNo 生成。
+> 来源模块标签由 commit 头部（Conventional Commit 格式）解析得到，仅用于看板分组与统计，不参与编号生成。
 
 ## 3. 标题默认截取
 
-**规则**（从 `commitMessage` 首行生成）：
-1. 取 `message.split('\n')[0]`
-2. 若包含 `:`，**取首个 `:` 之后的内容**（即去掉 `feat(scope):` / `fix:` / 业务自定义前缀）；若无 `:` 则保留整段
-3. `trim()`
-4. 长度 > 30 → 截取前 30 字符，**不加省略号**（v1.6 由 15 升至 30，覆盖大多数中文短句）
+**规则**（从 commit message 首行生成）：
+
+1. 取 commit message 的首行
+2. 若包含半角冒号，**取首个冒号之后的内容**（即去掉 `feat(scope):` / `fix:` / 业务自定义前缀）；无冒号则保留整段
+3. 去除首尾空白
+4. 长度超过 30 字符时截取前 30 字符，**不加省略号**
 5. 允许 PM 在抽屉中手改，编辑后不再回读 commit
 
-**前端对齐**：抽屉标题 `<input maxlength="30">`，超出时阻断输入并展示警示文案 `标题最长 30 字符`；`titleFromMsg` 工具函数同步采用「冒号后截取 + 30 字符」规则。
+**前端对齐**：抽屉标题输入上限 30 字符，超出时阻断输入并展示警示文案「标题最长 30 字符」；前端生成默认标题时采用同一「冒号后截取 + 30 字符」规则。
 
 ## 4. 拖拽规则
 
-| 起点          | 终点         | 操作 | 流水 op_type   |
-|-------------|------------|----|--------------|
-| Backup      | 日历格        | 排期 | SCHEDULED    |
-| 日历格（有排期）    | Backup     | 取消 | UNSCHEDULED  |
-| 日历格         | 另一日历格      | 改期 | RESCHEDULED  |
-| 跨月灰显格（off-month） | —       | 禁止 | —            |
+| 起点 | 终点 | 操作 | 流水类型 |
+|------|------|------|----------|
+| 待排期池 | 日历格 | 排期 | 排期（SCHEDULED） |
+| 日历格（有排期） | 待排期池 | 取消排期 | 取消排期（UNSCHEDULED） |
+| 日历格 | 另一日历格 | 改期 | 改期（RESCHEDULED） |
+| — | 跨月灰显格 | 禁止 | — |
 
 **前端校验**：
-- 拖到相同日期不触发请求（短路）
-- 拖到 off-month 格不注册 drop handler（`attachDropZones` 跳过 `data-off="true"`）
-- 拖拽期间目标格 `outline:2px dashed var(--primary)`
 
-## 5. 完成 commit 校验（mark-done）
+- 拖到相同日期不触发变更
+- 跨月灰显格不接收放置
+- 拖拽期间目标格显示主色虚线描边
 
-> 完成 commit 自 v1.3 起为**选填**（可不关联直接标记完成）；以下强校验仅在填写时生效。
+## 5. 完成 commit 校验（标记完成）
+
+> 完成 commit 为**选填**（可不关联直接标记完成）；以下强校验仅在填写时生效。
 
 **强校验**：
-1. `doneRepo` 必须在 `GET /schedule/repos` 返回列表内
-2. `doneCommitHash` 必须能在该仓命中（调用 `GET /schedule/repos/commits?repo=&q=hash`）
-3. 通过后由后端拼接 `doneCommitUrl`：`https://codeup.aliyun.com/{group}/{repo}/commit/{hash}`，group 取 Nacos 配置
 
-**拒绝手写**：前端不暴露 hash 输入框，仅能"搜索 → 点选"；服务端若发现未选中就提交，直接返回 40902。
+1. 完成仓库必须在代码仓名单内
+2. commit hash 必须能在该仓检索命中
+3. 校验通过后由服务端按代码托管平台（云效 Codeup）的 commit 地址规则生成链接，组织标识取自配置
 
-## 6. 删除/回退/领取/释放
+**拒绝手写**：前端不提供 hash 手输入口，仅能「搜索 → 点选」；服务端发现未经选中直接提交时拒绝。
 
-- **删除**：软删（`deleted_flag=1`）+ 写 `DELETED` 流水；列表与月视图自动过滤 `deleted_flag=0`
-- **领取（take-card）**：仅 `PENDING` 可调起；`status → IN_PROGRESS`，同事务写入 `dev_user_id / dev_user_name / dev_taken_at = NOW()`，写 `TAKEN` 流水（detail：`领取开发：{realName}`）
-- **释放（release-card）**：仅 `IN_PROGRESS` 可调起；`status → PENDING`，同事务清空 `dev_*` 三字段，写 `RELEASED` 流水（detail：`释放开发：{原 dev_user_name}`）
-- **回退（revert，分叉）**：仅 `DONE` 可调起；按 `targetStatus` 入参分叉：
-  - `targetStatus=PENDING`（默认）：`status → PENDING`，同事务清空 `done_repo / done_commit_hash / done_commit_url / done_commits / done_at`，**并清空 `dev_*` 三字段**，写 `REVERTED` 流水（detail：`已回退为「待开发」`）
-  - `targetStatus=IN_PROGRESS`：`status → IN_PROGRESS`，仅清空 `done_*` 五字段，**保留 `dev_*` 三字段**（卡片仍归属原开发人），写 `REVERTED` 流水（detail：`已回退为「开发中」，保留开发人 {dev_user_name}`）
-  - 入参守卫：`targetStatus=IN_PROGRESS` 但 `dev_user_id IS NULL` 时回退到 `PENDING` 路径
-- 二次确认：前端弹窗 `confirm()`（回退/释放）；后端不做二次确认，只做 `status` 校验（不在允许集返回 40901）
+## 6. 删除 / 回退 / 领取 / 释放
+
+- **删除**：软删除（列表与月视图不再展示）+ 写「删除」（DELETED）流水
+- **领取**：仅 `PENDING` 可领取；状态变为 `IN_PROGRESS`，开发人记为当前操作人、领取时间记为当前时间，写「领取开发」（TAKEN）流水（描述：「领取开发：{姓名}」）
+- **释放**：仅 `IN_PROGRESS` 可释放；状态变为 `PENDING`，清空开发人信息，写「释放开发」（RELEASED）流水（描述：「释放开发：{原开发人}」）
+- **回退**：仅 `DONE` 可回退，按目标状态分叉，均写「回退」（REVERTED）流水：
+  - 回退为待开发（默认）：状态变为 `PENDING`，清空完成回执（完成仓库、commit hash、commit 链接、完成 commit 列表、完成时间），**并清空开发人信息**；流水描述「已回退为「待开发」」
+  - 回退为开发中：状态变为 `IN_PROGRESS`，仅清空完成回执，**保留开发人信息**（卡片仍归属原开发人）；流水描述「已回退为「开发中」，保留开发人 {姓名}」
+  - 守卫：选择回退为开发中但卡片无开发人时，按回退为待开发处理
+- **二次确认**：回退与释放由前端弹窗二次确认；服务端不做二次确认，只校验当前状态是否允许该动作，不允许时拒绝
 
 ## 7. 发版日
 
-- 点击日历空白（非卡片/非 `more-btn`/非 `off-month`）触发 toggle
-- 存在 → 删除；不存在 → 插入（基于 `(release_date, deleted_flag=0)` 唯一键判断）
-- 发版日仅做视觉标记，**不参与**卡片状态/延期判定
+- 点击日历空白（非卡片、非「+N」按钮、非跨月灰显格）切换标记
+- 已标记则取消，未标记则新增；同一日期至多一条有效标记
+- 发版日仅做视觉标记，**不参与**卡片状态与延期判定
 
 ## 8. 权限最小授予
 
-| 角色         | MENU:SYSTEM:FEATURE_SCHEDULE |
-|------------|------------------------------|
-| SUPER_ADMIN| ✓                            |
-| PM         | ✓                            |
-| DEV_LEADER | ✓                            |
-| DEV_MEMBER | ✗（按需）                      |
-| 运营 / 门店    | ✗                            |
+| 角色 | MENU:SYSTEM:FEATURE_SCHEDULE |
+|------|------------------------------|
+| SUPER_ADMIN | ✓ |
+| PM | ✓ |
+| DEV_LEADER | ✓ |
+| DEV_MEMBER | ✗（按需） |
+| 运营 / 门店 | ✗ |
 
-## 9. 卡片合并（v1.8+，同模块多卡聚合）
+## 9. 卡片合并（同模块多卡聚合）
 
 ### 9.1 合并前置校验（服务端强校验，前端预校验）
 
-- `childCardNos.size() >= 2`：单张卡不构成合并，返回 `FS_MERGE_AT_LEAST_TWO`（40001）
-- 所有选中卡片 `source_module` 必须一致（合并卡 `M_old` 视作其所在模块），否则返回 `FS_MERGE_SAME_MODULE_REQUIRED`（40001）
-- 选中卡片 `status` 仅允许 `PENDING` / `IN_PROGRESS`；`DONE` / `NON_FEATURE` 拒绝，返回 `FS_MERGE_STATUS_NOT_ALLOW`（40901）
-- 任一选中卡片 `parent_merge_card_no` 非空（已经是他人的子卡）时拒绝，返回 `FS_MERGE_ALREADY_CHILD`（40901）—— 需先解散其所属合并卡或整张选中该合并卡参与嵌套
-- 合并卡自身（`is_merged=1`）可作为本次入参之一参与嵌套合并（扁平化，见 §9.4）
+- 至少选中 2 张卡片，单张不构成合并
+- 所有选中卡片的来源模块必须一致（已有合并卡按其所在模块计），否则拒绝
+- 选中卡片状态仅允许 `PENDING` / `IN_PROGRESS`；`DONE` / `NON_FEATURE` 拒绝
+- 任一选中卡片已是其他合并卡的子卡时拒绝——需先解散其所属合并卡，或整张选中该合并卡参与嵌套
+- 已有合并卡自身可作为入选卡之一参与嵌套合并（扁平化，见 §9.4）
 
 ### 9.2 合并卡生成
 
-| 字段 | 取值 |
+| 属性 | 取值 |
 |------|------|
-| `card_no` | 沿用 `FS-{YYYYMMDD}-{NNN}`，日期取服务端今日，序号走同一自增器 |
-| `title` | 用户输入（≤ 30 字，`maxlength=30`，与普通卡一致） |
-| `content` | 系统合成 `"合并 N 张：\n- {childCardNo1} {childTitle1}\n- ..."` |
-| `owner_user_id / owner_name` | 当前登录用户（非任一子卡 owner） |
-| `status` | 初始 `PENDING` |
-| `scheduled_date` | 取子卡中最早的非空 `scheduled_date`（v1.4 起）；全部未排期 → NULL（进 Backup） |
-| `source_repo` | 固定 `_merge` |
-| `source_module` | 取子卡共同 `source_module`（已强校验一致） |
-| `source_commit_hash` | `MERGE:{cardNo}`，避开 `uk_source_commit` 冲突 |
-| `is_merged` | `1` |
-| `parent_merge_card_no` | `NULL` |
-| `hardware_management` | `NULL`（不继承） |
+| 卡片编号 | 沿用 `FS-{YYYYMMDD}-{NNN}`，日期取合并当日（服务端日期），与普通卡共用同一序号序列 |
+| 标题 | 用户输入（≤30 字，与普通卡一致） |
+| 内容 | 系统合成子卡清单：首行「合并 N 张：」，其后逐行列出「子卡编号 子卡标题」 |
+| 提交人 | 当前登录用户（非任一子卡提交人） |
+| 状态 | 初始 `PENDING` |
+| 排期日 | 子卡中最早的非空排期日；全部未排期则为空（进入待排期池） |
+| 源仓 | 固定为合并卡专用标识，不对应真实代码仓 |
+| 来源模块 | 子卡共同的来源模块（已强校验一致） |
+| 源 commit | 不对应真实 commit，使用按合并卡编号生成的专用标识，不与 commit 出卡的唯一性冲突 |
+| 合并标识 | 是 |
+| 父合并卡 | 无 |
+| 硬件管理标记 | 不继承子卡，置空 |
 
-流水：合并卡写入 `CREATED`，`op_detail = "合并自 N 张：{cardNo1}, {cardNo2}, ..."`；每张子卡写入 `EDITED`，`op_detail = "并入合并卡 {mergeCardNo}"`。
+流水：合并卡写「创建」（CREATED），描述「合并自 N 张：{编号1}, {编号2}, ...」；每张子卡写「编辑」（EDITED），描述「并入合并卡 {合并卡编号}」。
 
 ### 9.3 子卡主从语义
 
-- 合并成功后同一事务内：
-  1. 为每张子卡在 `feat_schedule_card_merge_item` 插入一行，`pre_merge_*` 记录其**进入合并前**的 `status / scheduled_date / dev_*` 原值
-  2. 子卡 `parent_merge_card_no` 改写为合并卡 `cardNo`
-  3. 子卡 `status / scheduled_date / dev_*` **覆盖为合并卡当前值**（初始即 `PENDING / NULL / NULL`）
-- 合并卡 `/take /release /mark-done /revert /update(scheduledDate|title|content|ownerUserId)` 任一成功后，服务端在同一事务内扩散写入所有子卡的同名字段（值与合并卡一致），扩散时**不为子卡单独写流水**（审计统一记在合并卡上）
-- 子卡自身的 `/take /release /mark-done /revert /update(scheduledDate) /move-to-non-feature` 在 `parent_merge_card_no` 非空时一律返回 `FS_CHILD_LOCKED`（40901），前端抽屉对子卡置为只读
-- 列表查询（月视图 / Backup / NON_FEATURE 列表）默认过滤 `parent_merge_card_no IS NULL`，子卡不进入这些视图；子卡仅在合并卡抽屉「明细 Tab」可见
+- 合并成功时同时完成：
+  1. 为每张子卡记录一条合并明细，保存其**进入合并前**的状态 / 排期日 / 开发人信息快照
+  2. 子卡的父合并卡指向本合并卡
+  3. 子卡的状态 / 排期日 / 开发人信息**覆盖为合并卡当前值**（初始即待开发 / 无排期 / 无开发人）
+- 合并卡的领取 / 释放 / 标记完成 / 回退 / 编辑（排期日、标题、内容、提交人）任一成功后，同步写入所有子卡的同名属性（值与合并卡一致）；扩散时**不为子卡单独写流水**，审计统一记在合并卡上
+- 子卡已归属合并卡时，其自身的领取 / 释放 / 标记完成 / 回退 / 改排期 / 移入非需求改动一律拒绝（子卡锁定），前端抽屉对子卡置为只读
+- 月视图、待排期池、非需求改动列表均不展示子卡；子卡仅在合并卡抽屉「明细」页签可见
 
-### 9.4 嵌套合并扁平化（需求 5）
+### 9.4 嵌套合并扁平化
 
-当本次 `childCardNos` 包含 `is_merged=1` 的旧合并卡 `M_old`：
+当本次入选卡包含已有合并卡 M_old 时：
 
-1. 读取 `M_old` 下所有 `merge_item` 行（其 `child_card_no` 集合即原始子卡集合）
-2. 把这些子卡与本次其他新选中卡一起，挂到新合并卡 `M_new`
-3. 旧子卡沿用**它们最初的 `pre_merge_*` 快照**（即进入 `M_old` 时记录的原始独立态），**不以 `M_old` 当前状态为准**——这样解散 `M_new` 时仍能回到最初独立态
-4. 技术实现：`UPDATE feat_schedule_card_merge_item SET merge_card_no=? WHERE merge_card_no=?` 批量迁移旧行（`uk_child` 不变），新选中卡再 INSERT 新行
-5. `M_old` 软删（`deleted_flag=1`），写 `DELETED` 流水，`op_detail = "被合并至 {M_new.cardNo}"`
-6. 最终：一层合并卡 + 扁平子卡集合，永不存在多级嵌套（查询/解散逻辑免于递归）
+1. 取 M_old 下的全部原始子卡
+2. 把这些子卡与本次其他新选中卡一起挂到新合并卡 M_new
+3. 原始子卡沿用**它们最初的合并前快照**（即进入 M_old 时记录的原始独立态），**不以 M_old 当前状态为准**——解散 M_new 时仍能回到最初独立态
+4. 原始子卡的合并明细整体迁移到 M_new，新选中卡新增明细
+5. M_old 软删除，写「删除」流水，描述「被合并至 {M_new 编号}」
+6. 最终只有一层合并卡 + 扁平子卡集合，不存在多级嵌套（查询与解散均无需递归）
 
-### 9.5 解散合并（Dissolve）
+### 9.5 解散合并
 
-- 入口：合并卡抽屉「↩ 解散合并」按钮，二次确认后调 `POST /schedule/cards/dissolve`
-- 状态守卫：仅 `is_merged=1` 可调起；其他卡片返回 `FS_STATUS_NOT_ALLOW`
-- 事务内操作：
-  1. 遍历 `feat_schedule_card_merge_item WHERE merge_card_no={cardNo}`
-  2. 对每张子卡，读取 `pre_merge_*` 快照，**恢复** `status / scheduled_date / dev_user_id / dev_user_name / dev_taken_at`
-  3. 子卡 `parent_merge_card_no` 置 NULL；`done_*` 字段保持为空（合并卡 DONE 不影响子卡历史——合并卡为 DONE 时不允许解散，见下）
-  4. 若恢复后的 `scheduled_date < today`，**强制置 NULL**（子卡回 Backup），避免违反「scheduledDate 不得早于今日」约束；流水 `op_detail` 标注「快照日期已过期，已回 Backup」
-  5. DELETE 所有 `merge_item` 行（仅该合并卡下）
-  6. 合并卡 `deleted_flag=1`，写 `DELETED` 流水，`op_detail = "解散合并，子卡恢复独立（N 张）"`；每张子卡写 `EDITED`，`op_detail = "从合并 {mergeCardNo} 解散恢复"`
-- **合并卡 DONE 禁止解散**：DONE 语义下所有子卡已随合并卡标记完成，解散会破坏「完成回执」，返回 `FS_STATUS_NOT_ALLOW`；如需解散请先 revert 合并卡
+- 入口：合并卡抽屉「↩ 解散合并」按钮，二次确认后执行
+- 状态守卫：仅合并卡可解散，其他卡片拒绝
+- 解散时同时完成：
+  1. 遍历该合并卡下全部子卡明细
+  2. 按快照**恢复**每张子卡的状态 / 排期日 / 开发人信息
+  3. 子卡解除父合并卡归属；完成回执保持为空（合并卡为开发完成时不允许解散，见下）
+  4. 恢复后排期日早于今天的，**强制清空**（子卡回待排期池），避免违反「排期日不得早于今日」约束；流水描述注明「快照日期已过期，已回 Backup」
+  5. 删除该合并卡下的全部合并明细
+  6. 合并卡软删除，写「删除」流水，描述「解散合并，子卡恢复独立（N 张）」；每张子卡写「编辑」流水，描述「从合并 {合并卡编号} 解散恢复」
+- **合并卡开发完成禁止解散**：开发完成语义下所有子卡已随合并卡标记完成，解散会破坏完成回执，直接拒绝；如需解散请先回退合并卡
 
 ### 9.6 删除
 
-- `POST /cards/delete` 对合并卡调用时 = 解散 + 合并卡软删：子卡按快照恢复独立后，合并卡 `deleted_flag=1`（与 §9.5 共用实现路径）
-- 对子卡调用 `/delete` 在 `parent_merge_card_no` 非空时返回 `FS_CHILD_LOCKED`
+- 删除合并卡 = 解散 + 合并卡软删除：子卡按快照恢复独立后合并卡删除（与 §9.5 同一路径）
+- 删除已归属合并卡的子卡一律拒绝（子卡锁定）
 
-### 9.7 Backup 过滤与搜索
+### 9.7 只看自己与搜索
 
-- Backup「只看自己」按合并卡 `owner_name === CURRENT_USER.name` 判断，不看子卡 owner
-- 当月搜索（前端）：命中合并卡时 `title + content`（合成的子卡清单文本也参与匹配）都参与 AND 模糊匹配；子卡不在前端列表，不单独参与搜索
+- 「只看自己」对合并卡按合并卡自身的提交人判断，不看子卡提交人
+- 当月搜索命中合并卡时，标题与内容（含系统合成的子卡清单文本）都参与 AND 模糊匹配；子卡不在视图中，不单独参与搜索
 
 ### 9.8 视觉差异化
 
-- 合并卡左侧 3px 条 `#1565C0`（蓝），背景 `#E3F2FD`，标题前缀 `🔗` 图标，右上角小角标显示子卡张数 `N`
-- 状态色（PENDING / IN_PROGRESS / DONE / DELAYED）在合并卡上仍生效，合并卡视觉组合为「蓝底 + 状态边框色」
-- 子卡不出现在 Backup / 月历
+- 合并卡浅蓝底 + 左侧深蓝强调条，标题前缀 🔗 图标，右上角小角标显示子卡张数
+- 状态色（待开发 / 开发中 / 开发完成 / 延期）在合并卡上仍生效，视觉组合为「浅蓝底 + 状态强调色」
+- 子卡不出现在待排期池与月历
 
 ## 10. 常见边界
 
-| 场景                                     | 处理                                   |
-|----------------------------------------|--------------------------------------|
-| commit author 在 sys_user 中未命中          | `owner_user_id=-1`, `owner_name` 使用原文 |
-| 源 commit 已生成卡片再次触发                   | 返回既有 `cardNo`，`firstTime=false`    |
-| 卡片 `scheduledDate` 被拖到"今日"后又拖回 Backup | 生成两条流水：SCHEDULED → UNSCHEDULED     |
-| 已 DONE 的卡再次编辑标题                       | 写 `EDITED` 流水；若换了 doneCommitHash 合并为一条 |
-| 当月视图切换后延期统计                             | 统计仅对当月卡计算（v2.0 起 PENDING + IN_PROGRESS 均计入；v2.1 起按 end_date 判定；历史期不再标红）  |
-| 抽屉 status 从 IN_PROGRESS 切回 PENDING       | 触发 `release-card`，同事务清空 dev_*；不弹二次确认 |
-| 抽屉 status 从 DONE 切回 IN_PROGRESS         | 仅当 `dev_user_id` 非空时允许；否则降级到 PENDING 路径 |
-| 抽屉 status 从 PENDING 切到 DONE 但 dev_* 为空 | 后端 autoFillDev 用当前操作人填 dev_*，避免数据缺失 |
+| 场景 | 处理 |
+|------|------|
+| commit 作者在系统用户中未匹配 | 提交人账号记为未匹配，提交人姓名使用 commit 原文作者名 |
+| 已生成卡片的源 commit 再次触发 | 返回既有卡片编号，并标识为非首次生成 |
+| 卡片拖到今日后又拖回待排期池 | 生成两条流水：排期 → 取消排期 |
+| 已开发完成的卡再次编辑标题 | 写「编辑」流水；若同时更换完成 commit，合并为一条 |
+| 当月视图切换后的延期统计 | 仅对当月卡计算；待开发与开发中均计入；按截止日判定；历史期不再标红 |
+| 抽屉状态从开发中切回待开发 | 触发释放，清空开发人信息；不弹二次确认 |
+| 抽屉状态从开发完成切回开发中 | 仅当卡片有开发人时允许；否则按回退为待开发处理 |
+| 抽屉状态从待开发直接切到开发完成且无开发人 | 自动以当前操作人填入开发人，避免数据缺失 |
 
 ## 11. 项目归属与配置
 
 ### 11.1 归属解析
 
-- 卡片不设项目字段；归属在查询时动态解析：`card.source_repo` 命中某**启用中**项目的代码仓列表 → 归属该项目
-- 一个代码仓同一时间至多归属一个启用中项目（配置层强校验，见 §11.2）；解析路径上因此不存在一卡多项目
+- 卡片不设项目属性；归属在查询时动态解析：卡片源仓命中某**启用中**项目的代码仓列表 → 归属该项目
+- 一个代码仓同一时间至多归属一个启用中项目（配置层强校验，见 §11.2），因此不存在一卡多项目
 - 未命中任何启用中项目映射的卡片归「未归属项目」——它不是实体项目，仅是筛选与统计时的兜底桶
 - 归属不做快照：项目映射调整后历史卡片归属即时随之变化（刻意取舍，项目是归集视角而非流程凭证；与审批链快照语义相反）
 
 ### 11.2 配置校验
 
 - 项目名称：必填；启用中项目间唯一（停用项目不占名）
-- harness 工程：必填，单一工程标识（项目的需求/文档真源），供项目进度报告等下游聚合按同一映射取数
-- 代码服务仓：必填且至少 1 个；选项全集 = 仓名单（与 Nacos `codeup.repos` 同源），只存引用不复制仓信息
-- 占用冲突：保存时逐仓校验「未被其他启用中项目占用」，冲突即拒绝并指名占用方；编辑与停用/启用走同一校验
+- harness 工程：必填，单一工程标识（项目的需求 / 文档真源），供项目进度报告等下游聚合按同一映射取数
+- 代码服务仓：必填且至少 1 个；选项全集 = 代码仓名单（与代码仓配置同源），只存引用不复制仓信息
+- 占用冲突：保存时逐仓校验「未被其他启用中项目占用」，冲突即拒绝并指明占用方；编辑与停用 / 启用走同一校验
 - 停用：不删数据；项目退出筛选选项集与归属解析，其代码仓的卡片回落「未归属项目」
-- 仓名单瘦身：仓从 Nacos 名单移除后，引用它的映射自动失效（按左连接落空处理），配置弹层中该行标灰提示，不阻断项目保存
+- 仓名单瘦身：仓从代码仓名单移除后，引用它的映射自动失效，配置弹层中该行标灰提示，不阻断项目保存
 
 ### 11.3 筛选语义
 
-- 「项目」筛选组与状态/负责人/skills 仓库/模块同区，Draft/Apply 语义一致；默认全选 = 不过滤
+- 「项目」筛选组与状态 / 负责人 / skills 仓库 / 模块同区，草稿 / 应用语义一致；默认全选 = 不过滤
 - 选项集 = 各启用中项目 + 「未归属项目」；停用项目即时退出选项集
-- 生效面：月历格卡片 + Backup 卡片池 + 统计数字；与 skills 仓库筛选**叠加取交集**（项目解析出的仓集合 ∩ 仓库组勾选的仓集合）
-- 后端入参按仓集合展开下发（项目筛选在服务端翻译为 sourceRepos 子集），与仓库筛选共用同一过滤通道，不新增独立过滤维度
+- 生效面：月历格卡片 + 待排期池 + 统计数字；与 skills 仓库筛选**叠加取交集**（项目解析出的仓集合 ∩ 仓库组勾选的仓集合）
+- 服务端将项目筛选解析为源仓集合过滤，与仓库筛选共用同一过滤通道，不单设过滤维度
 
-## 12. Skill 偏差说明
+## 12. 代码仓配置（只读）
 
-### 11.3 状态机对齐 SKILL：四态升级（v1.6）
-
-- `SKILL.md` 状态机定义为 4 态：`PENDING / IN_PROGRESS / DONE / NON_FEATURE`，原后端实现仅落 3 态（缺 `IN_PROGRESS`），导致：
-  1. 卡片无法显式标识「在做但未完成」；
-  2. 无法承载「开发人」字段（前端原型抽屉中 `开发人` 一栏一直无数据来源）；
-  3. 回退动作无中间态可承接（已 DONE 卡片被退回后，原责任人信息丢失）。
-- 本期落地补齐：
-  1. **DDL**：`feat_schedule_card` 新增 `dev_user_id BIGINT / dev_user_name VARCHAR(64) / dev_taken_at DATETIME`；`status` 注释升 4 态；`feat_schedule_card_log.op_type` 注释新增 `TAKEN / RELEASED`。
-  2. **后端枚举**：`FeatScheduleStatusEnum` 新增 `IN_PROGRESS('IN_PROGRESS','开发中')` 与 `labelOf(code)` 静态方法；`FeatScheduleOpTypeEnum` 新增 `TAKEN('TAKEN','领取开发')` / `RELEASED('RELEASED','释放开发')`，`REVERTED.label` 由「回退为待开发」改为「回退」。
-  3. **接口**：新增 `POST /cards/take` 与 `POST /cards/release`；`POST /cards/revert` 入参由 `NoReq` 升级为 `RevertReq`（含 `cardNo + 可选 targetStatus`）。
-  4. **mark-done 兼容**：从 `PENDING` 直跳 `DONE` 时后端 autoFillDev 自动写当前操作人到 `dev_*`，避免历史脚本/快速点选的卡片缺开发人记录。
-  5. **NON_FEATURE 清空范围扩展**：进入 NON_FEATURE 时一并清空 `dev_*`。
-  6. **前端**：新增「开发中」chip / 紫色 `#7E57C2` 视觉色 / 抽屉「开发人」字段 / status-switcher 三选一 / `onSave` 状态分发矩阵（`PENDING ↔ IN_PROGRESS ↔ DONE` 全路径覆盖）。
-- 本期未触及：`SKILL.md` 文件本身（按目录边界，仅在 reference 沉淀技术映射，由 PM 统一回写需求文档）。
-
-### 11.1 NON_FEATURE 旁路态（需求同步与实现一致）
-
-- `SKILL.md` v1.5 变更点：新增 「🔧 移入非需求改动」 手动标记，废弃 commit message 前缀自动归类。
-- 后端从未实现过原动作中的「自动归类」逻辑，本次为纯增量开发（并未废弃任何已有逻辑）。
-- 实施详情 → non-feature-bypass-implementation.md。
-
-### 11.2 「⚙ 代码仓配置」弹层（只读，源仓一份，走 Nacos YAML）
-
-- `SKILL.md` v1.6 / commit `0a7800d` 在 `asset/feature-schedule.html` 中新增「⚙ 代码仓」配置弹层（SOURCE_REPOS / DONE_REPOS 本地数组增删）。
-- 本期落地与 Demo 的偏差：
-  1. **范围收敛为仅源 commit 仓一份**。「卡片池 source 仓」与「完成 commit done 仓」同源（都是 Nacos `codeup.repos:` 的同一名单），不划分 SOURCE / DONE 两份。
-  2. **提供只读弹层**。在 toolbar 增加「⚙ 代码仓」按钮，点击后调用 `POST /schedule/repos` 拉取实时生效的 Nacos 配置，以表格呈现 `repo / name / defaultBranch`。底部提示「需增减 / 修改？请联系运维修改 Nacos `codeup.repos`」。
-  3. **不提供前端编辑 / 增删 / 后端 CRUD 接口 / DDL**。避免引入 `feat_schedule_repo` 表与 Nacos 配置两路双过。
-- 后端零变动：Nacos `codeup.repos:` YAML 由 `CodeupFeatScheduleCommitFetcher` 加载，Mock 环境走 `MockFeatScheduleCommitFetcher` 硬编码 4 仓。
-- 后续若 PM 明确提出「仓库可动态增删」需求，再评估补充 `feat_schedule_repo` 表与 CRUD 接口。
+- 卡片池采集源仓与完成 commit 可选仓位于同一份代码仓名单，不分两份维护
+- 「更多」菜单「⚙ 代码仓配置」打开只读弹层，展示当前实时生效的名单（仓库标识 / 名称 / 默认分支），底部提示「需增减 / 修改？请联系运维修改代码仓配置」
+- 不提供前端编辑、增删；代码仓名单由运维在配置中心统一维护

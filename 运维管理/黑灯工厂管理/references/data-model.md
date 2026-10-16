@@ -1,66 +1,72 @@
 # 黑灯工厂工单 — 数据模型
 
-核心表 `blacklight_ticket`(devops 库)。字段分四组:业务幂等键 / 内容快照 / 流程状态 / 审计。
+> 产品视角的数据模型:定义实体与字段业务语义;表结构、字段类型与索引以代码仓为准,不内嵌。
 
-## 1. 表结构
+核心实体为「黑灯工厂工单」(devops 服务自有)。字段分四组:业务幂等键 / 内容快照 / 流程状态 / 审计。
 
-| 字段 | 类型 | 说明 |
+## 1. 字段定义
+
+### 1.1 业务幂等键
+
+| 字段 | 业务含义 | 取值规则 |
 |---|---|---|
-| `id` | bigint unsigned PRI auto_increment | 主键 |
-| `ticket_no` | varchar(32) NOT NULL | 工单号 `BL-yyyyMMdd-xxxxx`(日序列,展示用) |
-| `source` | varchar(16) NOT NULL | 来源:`blacklight` / `bigsqlfix` |
-| `biz_key` | varchar(192) NOT NULL | 业务键:blacklight=指纹;bigsqlfix=`svc\|mapper全限定名` |
-| `parent_id` | bigint NOT NULL DEFAULT 0 | 关闭后复发新单指向上一张单;0=无 |
-| `level` | varchar(4) NOT NULL | `P1` / `P2`(只建 P1/P2) |
-| `category` | varchar(16) NOT NULL | `FIXED_REVIEW` / `PENDING_JUDGE` / `BIZ_CONFIRM` |
-| `svc` | varchar(32) NOT NULL | 微服务名 |
-| `title` | varchar(128) NOT NULL | 一句话问题 |
-| `summary` | varchar(512) NOT NULL DEFAULT '' | 一句话根因/现状 |
-| `suggestion` | varchar(512) NOT NULL DEFAULT '' | 建议(人话结论) |
-| `commit_hash` | varchar(16) NOT NULL DEFAULT '' | FIXED_REVIEW 的 commit 短哈希 |
-| `occur_count` | bigint NOT NULL DEFAULT 0 | 累计出现次数(upsert 累加) |
-| `occur_rounds` | int NOT NULL DEFAULT 1 | 命中轮次数(upsert +1) |
-| `evidence` | json | 证据链:{traceIds[], stack, sqlSample, trend}(滚动保留最近 3 轮) |
-| `first_seen_at` | datetime NOT NULL | 首次命中时间 |
-| `last_seen_at` | datetime NOT NULL | 最近命中时间 |
-| `report_path` | varchar(256) NOT NULL DEFAULT '' | 当轮落盘报告路径 |
-| `status` | varchar(16) NOT NULL DEFAULT 'OPEN' | `OPEN` / `CLAIMED` / `REVIEW` / `REOPENED` / `RESOLVED` / `IGNORED` |
-| `owner_user_id` | bigint NOT NULL DEFAULT 0 | 负责人 sys_user.id;0=待认领 |
-| `owner_name` | varchar(64) NOT NULL DEFAULT '' | 冗余姓名 |
-| `owner_wecom_user_id` | varchar(128) NOT NULL DEFAULT '' | 提醒通道地址 |
-| `claimed_by` | varchar(64) NOT NULL DEFAULT '' | 认领人姓名 |
-| `claimed_at` | datetime NULL | 认领时间 |
-| `resolved_by` | varchar(64) NOT NULL DEFAULT '' | 处理人 |
-| `resolved_at` | datetime NULL | 关闭时间 |
-| `resolve_remark` | varchar(500) NOT NULL DEFAULT '' | 处理/忽略/打回备注(取最近一次) |
-| `review_by` | varchar(64) NOT NULL DEFAULT '' | 复核人 |
-| `review_at` | datetime NULL | 复核时间 |
-| `sla_deadline` | datetime NULL | 闭环 SLA 截止(建单时按 level 计算) |
-| `created_by` | int NOT NULL DEFAULT -1 | -1=agent 建单 |
-| `created_at` | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP | |
-| `updated_by` | int NOT NULL DEFAULT -1 | |
-| `updated_at` | datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP | |
-| `deleted_flag` | tinyint NOT NULL DEFAULT 0 | 逻辑删除 |
+| 来源 | 建单方 | `blacklight`(错误日志黑灯工厂)/ `bigsqlfix`(大SQL结果集修复)/ `bugscan`(服务端bug扫描)/ `reqdefect`(需求管理缺陷分流) |
+| 业务键 | 同源问题标识 | 错误日志黑灯工厂与服务端bug扫描 = 异常指纹;大SQL结果集修复 = 服务名 + mapper 全限定名;需求管理缺陷分流 = 需求编号 |
 
-## 2. 索引
+来源 + 业务键全局唯一,是 upsert 幂等锚点(见 business-rule §4)。
 
-| 索引 | 字段 | 说明 |
+### 1.2 内容快照
+
+| 字段 | 业务含义 | 取值规则 |
 |---|---|---|
-| `uk_source_biz` | `source + biz_key` | **唯一键**,upsert 幂等锚点(biz_key 192 字符内,utf8mb4 安全) |
-| `idx_status_level` | `status + level` | 列表默认筛选 |
-| `idx_owner` | `owner_user_id + status` | 「我的工单」视图 |
-| `idx_created` | `created_at` | 时间范围查询/清理 Job |
-| `idx_ticket_no` | `ticket_no` | 展示检索 |
+| 级别 | 问题级别 | `P1` / `P2`(只建 P1/P2) |
+| 分类 | 工单三分类 | `FIXED_REVIEW` / `PENDING_JUDGE` / `BIZ_CONFIRM` |
+| 服务 | 问题所在微服务 | 微服务名 |
+| 标题 | 一句话问题 | 必填 |
+| 摘要 | 一句话根因/现状 | 可空 |
+| 建议 | 人话结论 | 可空;PENDING_JUDGE 必填 |
+| commit 哈希 | 自动修复提交 | FIXED_REVIEW 的 commit 短哈希 |
+| 出现次数 | 累计出现次数 | upsert 累加 |
+| 出现轮次 | 命中轮次数 | 建单为 1,upsert +1 |
+| 证据 | 证据链 | traceId 样例、堆栈、SQL 样例、趋势(滚动保留最近 3 轮) |
+| 首次出现时间 | 首次命中时间 | 建单时记录 |
+| 最近出现时间 | 最近命中时间 | 每轮命中更新 |
+| 报告路径 | 当轮落盘报告位置 | agent 上报 |
 
-## 3. 重跑（upsert）字段白名单
+### 1.3 流程状态
 
-同指纹重复上报执行「存在即更新」时：
+| 字段 | 业务含义 | 取值规则 |
+|---|---|---|
+| 状态 | 工单状态 | `OPEN` / `CLAIMED` / `REVIEW` / `REOPENED` / `RESOLVED` / `IGNORED`,默认 OPEN |
+| 负责人 | 指派的研发 | 为空 = 待认领 |
+| 负责人姓名 | 冗余展示 | 随负责人快照 |
+| 负责人企微账号 | 提醒通道地址 | 随负责人快照 |
+| 认领人 / 认领时间 | 认领信息 | 认领时记录 |
+| 处理人 / 关闭时间 | 关闭信息 | 解决或忽略时记录 |
+| 处理备注 | 处理/忽略/打回备注 | ≤500 字,取最近一次 |
+| 复核人 / 复核时间 | 复核信息 | 复核通过或打回时记录 |
+| SLA 截止 | 闭环 SLA 截止时间 | 建单时按级别计算(见 business-rule §7) |
+| 复发次数 | 关闭后同源复发重开的次数 | 每次复发重开 +1(见 business-rule §4) |
+
+### 1.4 审计
+
+| 字段 | 业务含义 | 取值规则 |
+|---|---|---|
+| 工单 ID | 主键 | 系统生成 |
+| 工单号 | 展示用编号 | `BL-yyyyMMdd-xxxxx`(按日序列) |
+| 创建人 / 创建时间 | 建单信息 | agent 建单与需求管理缺陷分流建单,创建人均记为系统 |
+| 更新人 / 更新时间 | 最近修改信息 | 自动维护 |
+| 删除标记 | 逻辑删除 | 默认未删除 |
+
+## 2. 重跑（upsert）字段白名单
+
+同业务键重复上报且工单未关闭、执行「存在即更新」时(已关闭单复发重开见 business-rule §4):
 
 - **可更新**（快照类）：出现次数（累加）、出现轮次（+1）、最近出现时间、证据、摘要、建议、趋势、报告路径、更新时间
 - **禁更新**（流程类）：状态、负责人/认领人/处理人/复核全组、SLA 截止、首次出现时间、工单编号
 
-## 4. 口径备注
+## 3. 口径备注
 
-- `occur_rounds` 是复发率的统计基础;`parent_id` 链 ≥2 视为顽疾单
-- owner 三字段以建单/改派时 sys_user+sys_user_wecom 快照为准,人员离职由每日对账 Job 清空重置(见 business-rule §5)
-- 不挂 `system_book_code`(运维内部能力,全账套共享,与日志异常报表一致)
+- 出现轮次是复发率的统计基础;复发次数 ≥1 视为顽疾单
+- 负责人、姓名与企微账号以建单/改派时的人员主数据快照为准,人员离职由每日对账任务清空重置(见 business-rule §5)
+- 不挂账套字段(运维内部能力,全账套共享,与错误日志管理一致)

@@ -30,7 +30,6 @@ metadata:
 | 依赖 | 路径 | 用途 |
 |------|------|------|
 | 前端页面规范 | ../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md | Web 页面与原型硬约束 |
-| 数据库 DDL | ../../../依赖文档/数据库/DDL_mall_common.sql | 费用单与品牌分摊明细表归属 busyming 业务库（dev: mall_dev / prod: mall_common），新增表 DDL 登记于此 |
 
 ## 页面功能概览
 
@@ -47,5 +46,4 @@ metadata:
 - 报表仅统计「已审核」单据，按费用开始~结束年月覆盖的每个月逐月均摊计入（尾差末月倒算兜底），详见 [references/business-rule.md §5](references/business-rule.md#5-报表统计口径)
 - 分摊比例尾差由末行倒算兜底，前端展示与后端落库口径必须相同，详见 [references/business-rule.md §3](references/business-rule.md#3-品牌分摊规则)
 - 制单人不可审核本人单据（职责分离），详见 [references/business-rule.md §4](references/business-rule.md#4-权限与操作矩阵)
-- 原型生成与验收走 requirement-add 流程，页面硬约束以 page-blueprint 为准
 
