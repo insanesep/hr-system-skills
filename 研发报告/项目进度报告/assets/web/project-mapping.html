@@ -1,0 +1,377 @@
+<!doctype html>
+<!--
+  项目进度报告 · 项目映射配置页（Web 端原型）
+  ================================================================
+  规格真源：../../references/web-ui.md §项目映射配置
+  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
+            拓扑 = .tpl-page > [筛选 .tpl-panel] > [表格 .tpl-panel]
+            表格 panel 节奏 = .tpl-toolbar → 内容 → .tpl-pagination
+  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
+            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>项目映射配置 · 项目进度报告</title>
+<style>
+/* ==========================================================================
+   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
+   ========================================================================== */
+:root{
+  /* palette */
+  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
+  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  /* semantic */
+  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
+  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
+  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
+  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
+  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
+  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+  /* alias --ac-color-* */
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
+  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
+  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
+  /* spacing */
+  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+  /* radius */
+  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
+  /* shadow */
+  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
+  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
+  /* typography */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
+  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
+  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
+  /* motion / z-index */
+  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
+}
+
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
+.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
+  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
+  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
+.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+.web-nav__spacer{flex:1}
+
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
+  display:flex;flex-direction:column;gap:var(--ac-space-4)}
+
+/* ===== 筛选区 ===== */
+.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
+.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
+.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.tpl-filter__control{flex:1;min-width:0;position:relative}
+.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
+
+/* ===== 控件 ===== */
+.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
+  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
+  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-select__trigger:hover{background:var(--ac-fill-3)}
+.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+.ac-input__inner{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-input__inner::placeholder{color:var(--ac-color-text-3)}
+.ac-input__inner:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
+  color:var(--ac-primary-6)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+
+/* ===== 工具栏 ===== */
+.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
+.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
+.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== 配置表格 ===== */
+.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
+.tpl-table{width:100%;min-width:1160px;border-collapse:separate;border-spacing:0;
+  font-size:var(--ac-fs-md)}
+.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
+  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
+.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
+.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
+  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
+.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
+.tpl-table tbody tr.is-disabled td{color:var(--ac-color-text-3)}
+.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
+.cell-muted{color:var(--ac-color-text-3)}
+.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3)}
+
+/* ===== 标签 / 徽标 / 开关 ===== */
+.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
+.ac-tag.is-repo{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-branch{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
+.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
+.ac-switch{position:relative;width:36px;height:20px;border:none;cursor:pointer;
+  border-radius:var(--ac-radius-full);background:var(--ac-fill-3);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;
+  border-radius:var(--ac-radius-full);background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
+  transition:left var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-switch.is-on{background:var(--ac-primary-6)}
+.ac-switch.is-on::after{left:18px}
+
+/* ===== 联动提示条 ===== */
+.mapping-notice{display:flex;align-items:flex-start;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);
+  background:var(--ac-palette-gold-1);border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-sm);color:var(--ac-palette-gold-7)}
+
+/* ===== 分页 ===== */
+.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+
+/* ===== 弹窗（新增 / 编辑映射） ===== */
+.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);
+  z-index:var(--ac-z-modal);align-items:center;justify-content:center}
+.ac-modal-mask.is-open{display:flex}
+.ac-modal{width:560px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
+  box-shadow:var(--ac-shadow-3)}
+.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold)}
+.ac-modal__close{border:none;background:transparent;font-size:var(--ac-fs-lg);
+  color:var(--ac-color-text-3);cursor:pointer}
+.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
+.ac-form-item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
+.ac-form-item__label{flex-shrink:0;width:88px;text-align:right;line-height:32px;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.ac-form-item__label .is-required{color:var(--ac-color-danger)}
+.ac-form-item__control{flex:1;min-width:0}
+.ac-form-item__tip{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.repo-picker{border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-3);display:flex;flex-direction:column;gap:var(--ac-space-2)}
+.repo-picker__tags{display:flex;flex-wrap:wrap;gap:var(--ac-space-2)}
+.repo-picker__add{align-self:flex-start}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+  <nav class="web-nav">
+    <span class="web-nav__logo">研发中台</span>
+    <span class="web-nav__crumb">研发 / 研发报告 / <b>项目映射配置</b></span>
+    <span class="web-nav__spacer"></span>
+  </nav>
+
+  <div class="tpl-page">
+
+    <!-- 筛选 panel -->
+    <section class="tpl-panel">
+      <div class="tpl-filter">
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">状态</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select__trigger">
+              <span class="ac-select__value">全部</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">关键词</span>
+          <div class="tpl-filter__control">
+            <input class="ac-input__inner" placeholder="项目 key / 名称模糊" />
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <div class="tpl-filter__actions">
+            <button class="ac-btn ac-btn--primary">查询</button>
+            <button class="ac-btn">重置</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 配置表格 panel -->
+    <section class="tpl-panel">
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left">
+          <span class="tpl-toolbar__title">项目映射配置</span>
+          <span class="tpl-toolbar__meta">项目 ↔ harness 工程 / 代码仓 / 分支策略；启用项目自动纳入项目进度报告触发配置</span>
+        </div>
+        <div class="tpl-toolbar__right">
+          <button class="ac-btn ac-btn--primary" onclick="document.getElementById('mappingModal').classList.add('is-open')">+ 新增映射</button>
+        </div>
+      </div>
+
+      <div class="mapping-notice">
+        联动规则：映射「启用」即在报告中心「报告触发配置」自动生成该项目进度报告配置行（默认定时每周）；映射「停用」同步停用该配置行，历史报告保留可查。
+      </div>
+
+      <div class="tpl-table-wrap">
+        <table class="tpl-table">
+          <thead>
+            <tr>
+              <th>项目 key</th>
+              <th>项目名称</th>
+              <th>harness 工程</th>
+              <th>代码仓</th>
+              <th>分支策略</th>
+              <th>启停</th>
+              <th>触发配置联动</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td class="cell-mono">proj-a</td>
+              <td>示例项目A</td>
+              <td><span class="ac-tag is-repo">skills-repo-a</span></td>
+              <td class="cell-mono" title="repo-a1 / repo-a2 / repo-a3 / repo-a4">4 个仓库</td>
+              <td><span class="ac-tag is-branch">master</span></td>
+              <td><button class="ac-switch is-on" aria-label="启停"></button></td>
+              <td class="cell-muted">每周日 20:00 · 启用</td>
+              <td><span class="tpl-row-actions"><button class="ac-btn ac-btn--text">编辑</button></span></td>
+            </tr>
+            <tr>
+              <td class="cell-mono">proj-b</td>
+              <td>示例项目B</td>
+              <td><span class="ac-tag is-repo">skills-repo-b</span></td>
+              <td class="cell-mono" title="ocss / ocss-admin / ocss-mall-app">3 个仓库</td>
+              <td><span class="ac-tag is-branch">最近 release</span></td>
+              <td><button class="ac-switch is-on" aria-label="启停"></button></td>
+              <td class="cell-muted">每周日 21:00 · 启用</td>
+              <td><span class="tpl-row-actions"><button class="ac-btn ac-btn--text">编辑</button></span></td>
+            </tr>
+            <tr class="is-disabled">
+              <td class="cell-mono">erp</td>
+              <td>示例项目C</td>
+              <td><span class="ac-tag is-repo">skills-repo-c</span></td>
+              <td class="cell-mono" title="proj-c / proj-c-web">2 个仓库</td>
+              <td><span class="ac-tag is-branch">master</span></td>
+              <td><button class="ac-switch" aria-label="启停"></button></td>
+              <td class="cell-muted">已停用 · 不再生成</td>
+              <td><span class="tpl-row-actions"><button class="ac-btn ac-btn--text">编辑</button></span></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tpl-pagination">
+        <span>共 3 条</span>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<!-- 新增 / 编辑映射弹窗 -->
+<div class="ac-modal-mask is-open" id="mappingModal">
+  <div class="ac-modal">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">新增项目映射</span>
+      <button class="ac-modal__close" onclick="document.getElementById('mappingModal').classList.remove('is-open')">✕</button>
+    </div>
+    <div class="ac-modal__body">
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><i class="is-required">*</i> 项目 key</span>
+        <div class="ac-form-item__control">
+          <input class="ac-input__inner" placeholder="如 proj-a，保存后不可修改" />
+          <div class="ac-form-item__tip">报告标题与索引锚点；与报告中心「报告触发配置」配置行联动</div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><i class="is-required">*</i> 项目名称</span>
+        <div class="ac-form-item__control">
+          <input class="ac-input__inner" placeholder="如 示例项目A" />
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><i class="is-required">*</i> harness 工程</span>
+        <div class="ac-form-item__control">
+          <div class="ac-select__trigger">
+            <span class="ac-select__value">选择需求 / skill 仓库</span>
+            <span class="ac-select__arrow">▾</span>
+          </div>
+          <div class="ac-form-item__tip">功能事实真源，参与需求吞吐统计与一致性核对</div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><i class="is-required">*</i> 代码仓清单</span>
+        <div class="ac-form-item__control">
+          <div class="repo-picker">
+            <div class="repo-picker__tags">
+              <span class="ac-tag is-repo">repo-a1</span>
+              <span class="ac-tag is-repo">repo-a2</span>
+              <span class="ac-tag is-repo">repo-a3</span>
+            </div>
+            <button class="ac-btn ac-btn--text repo-picker__add">+ 添加仓库</button>
+          </div>
+          <div class="ac-form-item__tip">git 提交与完成回执的事实源；至少 1 个</div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><i class="is-required">*</i> 分支策略</span>
+        <div class="ac-form-item__control">
+          <div class="ac-select__trigger">
+            <span class="ac-select__value">master</span>
+            <span class="ac-select__arrow">▾</span>
+          </div>
+          <div class="ac-form-item__tip">可选「master」或「最近 release 且防回退落后主干」</div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label">启停</span>
+        <div class="ac-form-item__control">
+          <button class="ac-switch is-on" aria-label="启停"></button>
+          <div class="ac-form-item__tip">停用即不再生成该项目进度报告，历史报告保留可查</div>
+        </div>
+      </div>
+    </div>
+    <div class="ac-modal__foot">
+      <button class="ac-btn" onclick="document.getElementById('mappingModal').classList.remove('is-open')">取消</button>
+      <button class="ac-btn ac-btn--primary">保存</button>
+    </div>
+  </div>
+</div>
+
+</body>
+</html>

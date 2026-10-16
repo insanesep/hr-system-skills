@@ -122,7 +122,7 @@ top_role_ratio >= role_dominance_ratio → ROLE_BIASED，记录 top_role_code
 
 | 触发时机 | 范围 | 方式 |
 |---------|------|------|
-| 每日 01:00 定时任务 | 前一日数据 + **滚动覆盖当前周期** | `INSERT ... ON DUPLICATE KEY UPDATE` 到 `sys_function_tag_result` |
+| 每日 01:00 定时任务 | 前一日数据 + **滚动覆盖当前周期** | 以「存在即更新」方式写入打标结果表 |
 | 首次部署 / 数据补录 | 手动触发脚本 | 不在接口范围内，由运维跑补数 SQL |
 
 **关键约定**：阈值采用固定默认值 50/500/3/20/0.70/WEEK，不对外开放运行时调整；历史快照保留原有标签语义。
@@ -164,7 +164,7 @@ top_role_ratio >= role_dominance_ratio → ROLE_BIASED，记录 top_role_code
 
 - **交互方式**：在路由聚合表当前行下方展开嵌套二级表（AcTable `expandable` + `#expanded` slot），不跳转页面
 - **触发**：点击操作列「下钻」按钮或表格内置 +/− 按钮，切换展开/收起
-- **数据加载**：展开时调用 `POST /report/drill`，传入 `{ routePath, startDate, endDate }`，后端在 `buildDrillParams` 中剥离 `/snackingdom` 前缀后查询 `sys_event_log`
+- **数据加载**：展开时调用 `POST /report/drill`，传入 `{ routePath, startDate, endDate }`，后端在 `buildDrillParams` 中剥离 `/busyming` 前缀后查询 `sys_event_log`
 - 返回该路由下所有 `function_code` 明细（含 NULL 桶一行「未归类」）
 - **嵌套表列**：功能编码 | 功能名称 | 事件数 | 用户数
 - `freqTag / userTag / roleTag` 从 `sys_function_tag_result` **当前周期**快照读取，缺失返回 null
@@ -270,13 +270,6 @@ top_role_ratio >= role_dominance_ratio → ROLE_BIASED，记录 top_role_code
 
 **Web 端**：
 
-```env
-VITE_ENABLE_USAGE_SDK=true            # 编译期开关，false 时整个 SDK 不注入产物
-VITE_USAGE_ENDPOINT=https://<host>/api/v1/events/batch   # 未配或为空 → 本地模式
-VITE_USAGE_SDK_APP=snackingdom-web    # 可选，埋点来源标识
-VITE_USAGE_SDK_RELEASE=0.1.0          # 可选，当前前端版本
-```
-
 SDK 在 `src/main.ts` 中通过 `initUsageTracker()` + `attachGlobalTrackDelegation()` 自动初始化。DevTools Network 可看到 `POST /api/v1/events/batch` 批量请求（每批 ≤ 20 条 / 5s 防抖）。
 
 **App 端**：`App.tsx` 中调用 `initUsageTracker({ endpoint, clientType: 'APP', app, release, getToken })`；`endpoint: ''` 走本地模式；AppState 切后台时 SDK 自动 flush 队列。
@@ -311,27 +304,13 @@ SDK 在 `src/main.ts` 中通过 `initUsageTracker()` + `attachGlobalTrackDelegat
 
 ### 12.5 新增/删除埋点流程
 
-**新增——Web**：在元素上追加 `data-fn="MODULE.PAGE.ACTION"`（大写三段式），不改 `@click` / 业务逻辑；首次上报后后端自动注册到 `sys_function_catalog`，运营在功能目录管理页补全 `functionName` 即可。
+**新增——Web**：在元素上追加埋点属性（大写三段式功能码），不改业务逻辑；首次上报后后端自动注册到功能目录，运营在功能目录管理页补全功能名称即可。
 
-**新增——App（Trackable 首选）**：`<Trackable code="APP.MODULE.PAGE.ACTION" name="中文描述" params={{...}}><Button onPress={...} /></Trackable>`。
+**新增——App（Trackable 组件首选）**：用 Trackable 组件包裹触发元素，声明功能码与中文描述。
 
-**新增——App（trackClick 函数式）**：`onPress` 回调首行 `try { trackClick('APP.MODULE.PAGE.ACTION', '中文描述', {...}); } catch {}`（**必须 try/catch 兜底**）。
+**新增——App（函数式兜底）**：在点击回调首行上报，必须容错兜底、不阻断业务逻辑。
 
 **删除**：仅需移除页面代码中的 `data-fn` / `<Trackable>` / `trackClick` 调用；`sys_function_catalog` **保留记录**（仅改状态为停用），避免历史数据失联。
-
-### 12.6 查漏扫描命令
-
-```bash
-# Web 已铺清单
-cd busyming-snackingdom-web/src && grep -rEon 'data-fn="[A-Z_.]+"' --include='*.vue' . | sort
-# Web 未铺 @click 按钮（粗筛）
-cd busyming-snackingdom-web/src/views && grep -rEn '@click' . | grep -v 'data-fn'
-# App 已铺清单
-grep -rEon 'code="[A-Z_.]+"' --include='*.tsx' busyming-snackingdom-app/src/pages/ | sort
-grep -rEn "trackClick\('" --include='*.tsx' busyming-snackingdom-app/src/pages/
-# App 未铺 onPress（粗筛）
-grep -rEn 'onPress' busyming-snackingdom-app/src/pages/ | grep -v 'Trackable' | grep -v 'trackClick'
-```
 
 ### 12.7 铺点优先级与命名检查
 

@@ -6,9 +6,9 @@ type: reference
 
 # App 端 UI 描述 - 需求管理
 
-> 填写本文件时仅关注产品侧元信息。视觉润色、Token 纪律、触控尺寸、Tab 规范、三态、组件白名单等硬约束详见 [page-gen.prompt.md](../../../../../.agents/skills/page-blueprint/prompts/page-gen.prompt.md)【2. 硬约束】A-L，此处不重复。
-> 交互完整性规范详见 [interaction-spec.md](../../../../../.agents/skills/requirement-add/references/interaction-spec.md)，填写时须覆盖三维度（导航/反馈/表单）。
-> 状态机、审批链、权限矩阵、排期关联、通知推送、外链邀约的规则真源见 [business-rule.md](business-rule.md)；字段与枚举真源见 [data-model.md](data-model.md)。本文只描述页面结构与交互，不复述规则判定。
+> 填写本文件时仅关注产品侧元信息。视觉润色、Token 纪律、触控尺寸、Tab 规范、三态、组件白名单等硬约束详见 page-gen.prompt.md【2. 硬约束】A-L，此处不重复。
+> 交互完整性规范详见 interaction-spec.md，填写时须覆盖三维度（导航/反馈/表单）。
+> 状态机、审批链、权限矩阵、排期关联、通知推送、外链邀约的规则真源见 [business-rule.md](business-rule.md)；字段与枚举真源见 data-model.md。本文只描述页面结构与交互，不复述规则判定。
 > 公开 H5 三页（外部人免登录提交）不属本文作用域，规范见 [public-ui.md](public-ui.md)。
 
 ---
@@ -26,7 +26,7 @@ business-rule §4.2：**App 端仅开放需求提交、L1/L2/L3 审批通过与�
 ### 附件与 SLA 的 App 端边界
 
 > **实现落地差异（2026-08-19，已随代码实现确认）**：
-> 1. **App 端图片改为前端 OSS STS 直传**：选图后调 `/snackingdom-foundation/web/oss/token/get` 取临时凭证直传 OSS，`ossKey` **仅存组件 state**，随 submit 请求的 `attachments` 数组一并提交；因此原文的「临时暂存区」概念**不再需要**（未提交就离开时 OSS 上的孤儿对象交 Bucket 生命周期规则回收）。
+> 1. **App 端图片改为前端 OSS STS 直传**：选图后调 `/busyming-foundation/web/oss/token/get` 取临时凭证直传 OSS，`ossKey` **仅存组件 state**，随 submit 请求的 `attachments` 数组一并提交；因此原文的「临时暂存区」概念**不再需要**（未提交就离开时 OSS 上的孤儿对象交 Bucket 生命周期规则回收）。
 > 2. ⚠️ **`ossKey` 实测形态**：约定前缀为 `requirement/{yyyyMM}/`，但 App 端复用既有 `buildOssKey(dir, fileName)` 会多产生一层日期目录，实际 key 形如 `requirement/202608/2026-08-19/{ts}.{ext}`；前缀 `requirement/{yyyyMM}` 仍能命中 OSS 生命周期规则，故保留该实现。
 > 3. 🚨 **内容安全审核本期不做**（用户裁决）：App 端**一律不渲染审核角标**（`pending` 缩略图置灰 + 中心「审核中」文字 + 点击 Toast 均不存在），接口也不返回 `contentCheckStatus`。
 > 4. **预览/下载由前端 `keyToUrl(ossKey)` 自签**，**无后端 302 下载接口**；鉴权卡在 `attachment/list`（看不到该需求就拿不到 `ossKey`）。
@@ -56,7 +56,7 @@ business-rule §4.2：**App 端仅开放需求提交、L1/L2/L3 审批通过与�
 - `BU_APPROVED` / `IMPL_CONFIRMED` 为瞬时态，App 端不展示为独立状态、不作为独立时间线节点
 - 优先级标签：`P0 紧急`=红 / `P1 高`=橙 / `P2 中`=蓝 / `P3 低`=灰
 - 业务线彩色药丸：运营 / 财务 / 供应链 / 数字化，四色固定，与 Web 端映射一致
-- 产品线彩色药丸：零食王国 `SNACK` / 有点推荐 `YDTJ`，两色固定，与 Web 端映射一致；`YDTJ` 需求**不渲染业务线药丸**（`biz_line=*` 不向用户呈现）
+- 产品线彩色药丸：鸣鸣很忙 `SNACK` / 有点推荐 `YDTJ`，两色固定，与 Web 端映射一致；`YDTJ` 需求**不渲染业务线药丸**（`biz_line=*` 不向用户呈现）
 - 提交来源标签：内部 `INTERNAL` 不展示标签（默认态）；外部 `EXTERNAL` 展示橙色「外部提交」标签，与 Web 端一致
 - 排期开发状态标签：`PENDING` 待开发=灰 / `IN_PROGRESS` 开发中=蓝 / `DONE` 开发完成=绿
 
@@ -72,7 +72,7 @@ business-rule §4.2：**App 端仅开放需求提交、L1/L2/L3 审批通过与�
 
 ### 枚举取值（以 data-model.md 为准）
 
-- **产品线**：零食王国 `SNACK` / 有点推荐 `YDTJ`（固定 2 值）
+- **产品线**：鸣鸣很忙 `SNACK` / 有点推荐 `YDTJ`（固定 2 值）
 - **业务线**：运营 `OPS` / 财务 `FIN` / 供应链 `SCM` / 数字化 `DIGITAL`；`*` 为 `YDTJ` 内部占位值，**不进入 Picker 选项与展示**
 - **需求类型**：新功能 / 功能优化 / 缺陷修复 / 数据报表 / 系统集成（5 值，与 Web 端一致，不使用「其他」）
 - **提交来源**：内部 `INTERNAL` / 外部 `EXTERNAL`（App 端只展示不可筛选）
@@ -272,7 +272,7 @@ business-rule §4.2：**App 端仅开放需求提交、L1/L2/L3 审批通过与�
 
 #### 表单初态
 
-- 新建：提交对象默认空（必选，无默认值），优先级默认 `P2 中`，**产品线默认零食王国**，业务线按当前登录人所属组织预填（可改），其余字段空
+- 新建：提交对象默认空（必选，无默认值），优先级默认 `P2 中`，**产品线默认鸣鸣很忙**，业务线按当前登录人所属组织预填（可改），其余字段空
 - 从详情页「重新提交」进入：全字段预填原需求内容；**提交对象回填原值、允许更换**（更换后按新对象重新匹配审批链，business-rule §2.4）；**产品线与所属业务线均只读**（business-rule §1.3 提交后不可修改），顶部展示驳回意见提示条
 
 #### 导航关系
@@ -306,7 +306,7 @@ business-rule §4.2：**App 端仅开放需求提交、L1/L2/L3 审批通过与�
 | 标题 | 是 | Input，1–128 字符 | blur | 「请输入需求标题（不超过 128 字）」 | 否 |
 | 描述 | 是 | Textarea 多行，10–2000 字符，实时字数提示 | blur | 「请填写需求描述，不少于 10 字」 | 否 |
 | 提交对象（产品经理） | 是 | 人员搜索半屏选择（数据源 `/pm-options`——2026-10-09 起候选集按「产品线 × 业务线」过滤，仅列本归属配有专属链的 PM，api-spec §1.5）；重新提交场景回填原值且可更换 | change | 「请选择提交对象（产品经理）」 | 是（选中后调 `/chain-preview` 预检审批链） |
-| 产品线 | 是 | Picker（零食王国/有点推荐），默认零食王国；重新提交场景只读 | change | 「请选择产品线」 | 否 |
+| 产品线 | 是 | Picker（鸣鸣很忙/有点推荐），默认鸣鸣很忙；重新提交场景只读 | change | 「请选择产品线」 | 否 |
 | 所属业务线 | 条件必填 | Picker（运营/财务/供应链/数字化）；**产品线=有点推荐 时整行隐藏且不参与校验**，后端固定写 `*`；重新提交场景只读 | change | 「请选择所属业务线」 | 否 |
 | 需求类型 | 是 | Picker（新功能/功能优化/缺陷修复/数据报表/系统集成） | change | 「请选择需求类型」 | 否 |
 | 优先级 | 是 | Selector（P0 紧急/P1 高/P2 中/P3 低），默认 `P2` | change | 「请选择优先级」 | 否 |

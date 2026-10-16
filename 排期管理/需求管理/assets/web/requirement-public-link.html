@@ -3,9 +3,19 @@
   需求管理 · 外链管理页（Web 端原型）
   ================================================================
   规格真源：../../references/web-ui.md §外链管理页
+  实现对齐：busyming-snackingdom-web/src/views/requirement/RequirementPublicLink.vue（2026-10 重画）
   DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
             拓扑 = .tpl-page > [说明 .tpl-alert] > [筛选 .tpl-panel] > [表格 .tpl-panel]
-            表格 panel 节奏 = .tpl-toolbar → 表格 → .tpl-pagination
+  本版要点（相对旧版差异）：
+    - 工具栏左侧 = 标题 + 有点推荐产品线标签 + 共 N 条（不再自算转化率）
+    - 访问情况列口径：访问 N 次 + 首次访问时间副行；从未访问展示灰色「未访问」
+    - 产生需求列：逐行渲染需求编号链接 + 当前状态标签；操作列不再有「查看需求」
+    - 生成人列：姓名 + 生成时间副行
+    - 生成弹窗：产品线为品红标签（只读）、有效期改 RadioGroup（7/15/30/60/90 天 + inline 到期日期）、
+      提交次数上限改数字步进；结果态补 邀约对象/有效期至/提交上限 三行
+    - 撤销由 Popconfirm 改为独立 AcModal（原因必填 10–256 字 + 不可恢复提示）
+    - 二维码弹窗：邀约对象 + 有效期至 + 二维码 + 下载图片
+    - 台账不展示完整 token 明文；高亮定位行为 warning 底色 3 秒
   Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
             页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
 -->
@@ -24,6 +34,7 @@
   --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
   --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
   --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  --ac-palette-magenta-1:#FFE8F1; --ac-palette-magenta-6:#F5319D;
   /* semantic */
   --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
   --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
@@ -34,7 +45,7 @@
   --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
   --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
   /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-color-text-3);
   --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
   --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
   --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
@@ -54,9 +65,9 @@
   --ac-fs-3xl:20px; --ac-fs-5xl:28px;
   --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
   --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index / breakpoint */
+  /* motion / z-index */
   --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-popconfirm:900; --ac-z-modal:1000; --ac-z-toast:1100;
+  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
 }
 
 /* ==========================================================================
@@ -78,12 +89,14 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
   display:flex;flex-direction:column;gap:var(--ac-space-4)}
 
-/* ===== 常驻说明条（AcAlert） ===== */
+/* ===== 常驻说明条（AcAlert info，可关闭） ===== */
 .tpl-alert{display:flex;align-items:flex-start;gap:var(--ac-space-2);
   padding:var(--ac-space-3) var(--ac-space-4);border-radius:var(--ac-radius-sm);
   background:var(--ac-palette-blue-1);color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
 .tpl-alert__icon{flex-shrink:0;color:var(--ac-palette-blue-7);font-weight:var(--ac-fw-semibold)}
 .tpl-alert strong{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+.tpl-alert__close{margin-left:auto;flex-shrink:0;border:none;background:transparent;
+  color:var(--ac-color-text-3);cursor:pointer;font-size:var(--ac-fs-md)}
 
 /* ===== 筛选区 ===== */
 .tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
@@ -103,7 +116,6 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .ac-select__trigger:hover{background:var(--ac-fill-3)}
 .ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ac-select__trigger.is-placeholder .ac-select__value{color:var(--ac-color-text-3)}
-.ac-select__trigger.is-disabled{cursor:not-allowed;background:var(--ac-fill-1);color:var(--ac-text-4)}
 .ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
   transition:transform var(--ac-duration-fast) var(--ac-easing-standard)}
 .ac-select.is-open .ac-select__trigger{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
@@ -128,7 +140,11 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
 .ac-input::placeholder{color:var(--ac-color-text-3)}
 .ac-input:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-.ac-input:disabled{cursor:not-allowed;background:var(--ac-fill-1);color:var(--ac-text-4)}
+.ac-textarea{width:100%;padding:var(--ac-space-2) var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  resize:vertical;line-height:var(--ac-lh-normal)}
+.ac-textarea:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
 
 .ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
   padding:0 var(--ac-space-3);background:var(--ac-fill-2);
@@ -137,6 +153,29 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
   font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
 .ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+
+/* 数字步进（提交次数上限） */
+.ac-inputnumber{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
+.ac-inputnumber input{width:96px;height:32px;text-align:center;background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-inputnumber button{width:28px;height:32px;border:1px solid transparent;
+  border-radius:var(--ac-radius-sm);background:var(--ac-fill-2);cursor:pointer;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.ac-inputnumber button:hover{background:var(--ac-fill-3)}
+
+/* Radio 组（有效期） */
+.ac-radio-group{display:flex;align-items:center;gap:var(--ac-space-4);flex-wrap:wrap}
+.ac-radio{display:inline-flex;align-items:center;gap:var(--ac-space-2);cursor:pointer;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-radio input{position:absolute;opacity:0;width:0;height:0}
+.ac-radio__dot{width:16px;height:16px;flex-shrink:0;border:1px solid var(--ac-border-3);
+  border-radius:var(--ac-radius-full);background:var(--ac-bg-1);
+  display:inline-flex;align-items:center;justify-content:center}
+.ac-radio__dot::after{content:'';width:6px;height:6px;border-radius:var(--ac-radius-full);
+  background:var(--ac-text-white);transform:scale(0)}
+.ac-radio input:checked + .ac-radio__dot{background:var(--ac-primary-6);border-color:var(--ac-primary-6)}
+.ac-radio input:checked + .ac-radio__dot::after{transform:scale(1)}
 
 /* ===== 按钮 ===== */
 .ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
@@ -150,16 +189,15 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .ac-btn--secondary{background:var(--ac-fill-2);border-color:transparent;color:var(--ac-color-text-1)}
 .ac-btn--secondary:hover{background:var(--ac-fill-3)}
 .ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
-  color:var(--ac-primary-6)}
+  color:var(--ac-primary-6);font-size:var(--ac-fs-sm)}
 .ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
 .ac-btn--text.is-danger{color:var(--ac-color-danger)}
-.ac-btn--block{width:100%;justify-content:center}
 
 /* ===== 工具栏 ===== */
 .tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
-.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
+.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-2)}
 .tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-toolbar__title{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
 .tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
 
 /* ===== 表格 ===== */
@@ -175,16 +213,20 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
   border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
 .tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
-.tpl-table tbody tr.is-highlight td{background:var(--ac-palette-blue-1)}
+/* 由需求详情「来源外链」进入时的高亮行（warning 底色，3 秒后自动取消） */
+.tpl-table tbody tr.is-highlight td{background:var(--ac-color-warning-1)}
 .cell-link{color:var(--ac-primary-6);text-decoration:none;font-family:var(--ac-ff-mono);
   font-size:var(--ac-fs-sm);cursor:pointer}
 .cell-link:hover{text-decoration:underline}
-.cell-main{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-main{display:block;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .cell-sub{display:block;margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
 .cell-muted{color:var(--ac-color-text-3)}
 .cell-num{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
+.cell-num.is-done{color:var(--ac-color-success);font-weight:var(--ac-fw-semibold)}
 .cell-expire{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
-.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3);position:relative}
+.cell-req{display:flex;align-items:center;gap:var(--ac-space-1)}
+.cell-req + .cell-req{margin-top:var(--ac-space-1)}
+.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3)}
 
 /* ===== 标签 ===== */
 .ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
@@ -195,7 +237,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .ac-tag.is-warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
 .ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
 .ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
-.ac-tag.is-ydtj{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
+.ac-tag.is-ydtj{background:var(--ac-palette-magenta-1);color:var(--ac-palette-magenta-6)}
 
 /* ===== 分页 ===== */
 .tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
@@ -211,16 +253,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);font-family:inherit;
   font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
 
-/* ===== Popconfirm / Toast ===== */
-.ac-popconfirm{display:none;position:absolute;top:calc(100% + var(--ac-space-2));right:0;
-  width:300px;padding:var(--ac-space-4);background:var(--ac-bg-1);
-  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
-  z-index:var(--ac-z-popconfirm);text-align:left}
-.ac-popconfirm.is-open{display:block}
-.ac-popconfirm__text{font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
-  margin-bottom:var(--ac-space-3)}
-.ac-popconfirm__field{margin-bottom:var(--ac-space-3)}
-.ac-popconfirm__actions{display:flex;justify-content:flex-end;gap:var(--ac-space-2)}
+/* ===== Toast ===== */
 .ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
   display:none;align-items:center;gap:var(--ac-space-2);
   padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
@@ -229,49 +262,45 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .ac-toast.is-open{display:flex}
 .ac-toast__icon{color:var(--ac-color-success)}
 
-/* ===== Modal（生成外链：表单态 / 结果态同弹窗切换） ===== */
+/* ===== Modal ===== */
 .ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.4);
   z-index:var(--ac-z-modal);align-items:flex-start;justify-content:center;
   padding-top:var(--ac-space-8);overflow:auto}
 .ac-modal-mask.is-open{display:flex}
 .ac-modal{width:560px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
   box-shadow:var(--ac-shadow-3);display:flex;flex-direction:column}
+.ac-modal--sm{width:420px}
 .ac-modal__head{display:flex;align-items:center;justify-content:space-between;
   padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
-.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.ac-modal__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
 .ac-modal__close{border:none;background:transparent;cursor:pointer;
-  font-size:var(--ac-fs-xl);color:var(--ac-color-text-3);line-height:var(--ac-lh-tight)}
+  font-size:var(--ac-fs-lg);color:var(--ac-color-text-3);line-height:var(--ac-lh-tight)}
 .ac-modal__close:hover{color:var(--ac-color-text-1)}
 .ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
 .ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
   padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
+.ac-modal__alert{padding:var(--ac-space-2) var(--ac-space-3);border-radius:var(--ac-radius-sm);
+  background:var(--ac-color-danger-1);color:var(--ac-color-danger-6);font-size:var(--ac-fs-sm)}
 
-/* 弹窗内表单 */
-.ac-form__item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
-.ac-form__label{flex-shrink:0;width:112px;padding-top:var(--ac-space-1);text-align:right;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+/* 弹窗内表单（竖向 label） */
+.ac-form__item{display:flex;flex-direction:column;gap:var(--ac-space-2)}
+.ac-form__label{color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
 .ac-form__label.is-required::before{content:'*';margin-right:var(--ac-space-1);color:var(--ac-color-danger)}
-.ac-form__control{flex:1;min-width:0;position:relative}
-.ac-form__extra{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.ac-form__error{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-danger)}
-.ac-form__static{height:32px;display:flex;align-items:center;
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-form__extra{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.ac-form__error{font-size:var(--ac-fs-xs);color:var(--ac-color-danger)}
 
 /* 弹窗结果态 */
-.tpl-result{display:flex;flex-direction:column;gap:var(--ac-space-4);align-items:center}
-.tpl-result__icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;
-  border-radius:var(--ac-radius-full);background:var(--ac-color-success-1);
-  color:var(--ac-color-success-7);font-size:var(--ac-fs-3xl)}
-.tpl-result__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-result{display:flex;flex-direction:column;gap:var(--ac-space-3)}
+.tpl-result__row{display:flex;align-items:center;gap:var(--ac-space-2);font-size:var(--ac-fs-md)}
+.tpl-result__label{color:var(--ac-color-text-3);flex-shrink:0;width:72px}
 .tpl-result__link{width:100%;display:flex;align-items:center;gap:var(--ac-space-2);
-  padding:var(--ac-space-3);background:var(--ac-fill-1);border-radius:var(--ac-radius-sm)}
+  padding:var(--ac-space-3);background:var(--ac-fill-2);border-radius:var(--ac-radius-sm)}
 .tpl-result__link code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
   font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
-.tpl-result__qr{width:160px;height:160px;display:flex;align-items:center;justify-content:center;
+.tpl-result__qr{width:200px;height:200px;display:flex;align-items:center;justify-content:center;
   border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
   background:var(--ac-fill-1);color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);text-align:center}
-.tpl-result__hint{width:100%;padding:var(--ac-space-3);border-radius:var(--ac-radius-sm);
-  background:var(--ac-color-warning-1);color:var(--ac-color-warning-7);font-size:var(--ac-fs-xs)}
+.tpl-result__hint{margin:0;font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
 
 .is-hidden{display:none !important}
 
@@ -284,23 +313,22 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 <body>
 <div class="tpl-layout">
 
-  <!-- 面包屑：页面身份由 Layout 承担，页面内不再加大标题 -->
   <nav class="tpl-breadcrumb">
     <a href="#">首页</a><span class="tpl-breadcrumb__sep">/</span>
     <a href="#">研发</a><span class="tpl-breadcrumb__sep">/</span>
-    <a href="#">需求管理</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="./requirement-list.html">需求管理</a><span class="tpl-breadcrumb__sep">/</span>
     <span class="tpl-breadcrumb__current">外链管理</span>
   </nav>
 
   <section class="tpl-page">
 
-    <!-- ⓪ 常驻说明条：单向收口口径前置告知 -->
-    <div class="tpl-alert">
+    <!-- ⓪ 常驻说明条（可关闭）：外链用途与单向收口口径前置告知 -->
+    <div class="tpl-alert" id="introAlert">
       <span class="tpl-alert__icon">i</span>
       <span>
-        外链仅用于采集<strong>有点推荐</strong>需求，请<strong>逐个定向发放</strong>，不要公开张贴或群发。
-        外部人提交后<strong>不会收到任何进度通知</strong>，审批结果需由你线下告知对方。
+        <strong>外链仅用于采集有点推荐需求</strong>；链接为定向发放，默认仅可提交 1 次；提交结果不向外部回传，请自行告知对方。
       </span>
+      <button type="button" class="tpl-alert__close" onclick="document.getElementById('introAlert').remove()">✕</button>
     </div>
 
     <!-- ① 筛选 panel -->
@@ -310,12 +338,12 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
           <span class="tpl-filter__label">链接状态</span>
           <div class="tpl-filter__control">
             <div class="ac-select" data-select="multi">
-              <div class="ac-select__trigger" data-placeholder="全部">
-                <span class="ac-select__value">待使用</span>
+              <div class="ac-select__trigger is-placeholder" data-placeholder="全部状态（可多选）">
+                <span class="ac-select__value">全部状态（可多选）</span>
                 <span class="ac-select__arrow">▾</span>
               </div>
               <div class="ac-select__dropdown">
-                <div class="ac-select__option is-checked"><span class="ac-select__check">✓</span>待使用</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>待使用</div>
                 <div class="ac-select__option"><span class="ac-select__check">✓</span>已提交</div>
                 <div class="ac-select__option"><span class="ac-select__check">✓</span>已过期</div>
                 <div class="ac-select__option"><span class="ac-select__check">✓</span>已撤销</div>
@@ -327,14 +355,15 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
         <div class="tpl-filter__item">
           <span class="tpl-filter__label">邀约对象</span>
           <div class="tpl-filter__control">
-            <input class="ac-input" placeholder="按邀约对象备注模糊搜索" />
+            <input class="ac-input" placeholder="公司 / 联系人关键字" />
           </div>
         </div>
 
+        <!-- 生成人筛选仅管理员展示；非管理员固定只看本人生成的链接 -->
         <div class="tpl-filter__item">
           <span class="tpl-filter__label">生成人</span>
           <div class="tpl-filter__control">
-            <input class="ac-input" placeholder="按生成人姓名搜索（仅管理员可跨人查询）" />
+            <input class="ac-input" placeholder="生成人姓名（仅管理员可跨人查询）" />
           </div>
         </div>
 
@@ -342,29 +371,30 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
           <span class="tpl-filter__label">生成时间</span>
           <div class="tpl-filter__control">
             <div class="ac-range">
-              <input value="2026-07-08" />
-              <span class="ac-range__sep">~</span>
-              <input value="2026-08-06" />
+              <input value="2026-09-16" aria-label="开始日期" />
+              <span class="ac-range__sep">至</span>
+              <input value="2026-10-16" aria-label="结束日期" />
             </div>
           </div>
         </div>
 
-        <div class="tpl-filter__item tpl-filter__actions">
-          <button class="ac-btn ac-btn--primary" data-toast="查询完成，共 18 条外链记录">查询</button>
-          <button class="ac-btn ac-btn--secondary" data-toast="筛选条件已重置为默认（近 30 天）">重置</button>
+        <div class="tpl-filter__actions">
+          <button type="button" class="ac-btn ac-btn--primary" data-toast="已按当前条件查询，共 18 条">查询</button>
+          <button type="button" class="ac-btn" data-toast="已恢复默认筛选（近 30 天）">重置</button>
         </div>
       </form>
     </div>
 
-    <!-- ② 表格 panel -->
+    <!-- ② 表格 panel：台账（标题 + 产品线标签 + 共 N 条；右侧生成外链） -->
     <div class="tpl-panel">
       <div class="tpl-toolbar">
         <div class="tpl-toolbar__left">
           <span class="tpl-toolbar__title">外链台账</span>
-          <span class="tpl-toolbar__meta">共 18 条 · 已提交 7 条 · 转化率 38.9%</span>
+          <span class="ac-tag ac-tag--pill is-ydtj">有点推荐</span>
+          <span class="tpl-toolbar__meta">共 18 条</span>
         </div>
         <div class="tpl-toolbar__right">
-          <button class="ac-btn ac-btn--primary" id="btnCreate">生成外链</button>
+          <button type="button" class="ac-btn ac-btn--primary" id="btnCreate">生成外链</button>
         </div>
       </div>
 
@@ -383,142 +413,143 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
             </tr>
           </thead>
           <tbody>
-            <!-- 待使用 · 即将过期：可复制 / 可二维码 / 可撤销 -->
-            <tr>
-              <td>
-                <span class="cell-main">杭州蜜集商贸 · 王琳</span>
-                <span class="cell-sub">默认需求类型：新功能</span>
-              </td>
+            <!-- 待使用 · 即将过期（剩余 ≤3 天橙色角标）：可复制 / 可二维码 / 可撤销；本行演示高亮定位 -->
+            <tr class="is-highlight" id="highlightRow">
+              <td><span class="cell-main" title="杭州蜜集商贸 · 王琳">杭州蜜集商贸 · 王琳</span></td>
               <td><span class="ac-tag is-processing">待使用</span></td>
               <td><span class="cell-num">0 / 1</span></td>
-              <td><span class="cell-num">3 次</span><span class="cell-sub">最近 08-05 14:22</span></td>
+              <td>
+                <span>访问 3 次</span>
+                <span class="cell-sub">首次 2026-10-13 14:22</span>
+              </td>
               <td><span class="cell-muted">—</span></td>
               <td>
                 <span class="cell-expire">
-                  <span class="cell-num">2026-08-08</span>
+                  <span class="cell-num">2026-10-19 23:59</span>
                   <span class="ac-tag is-warning">即将过期</span>
                 </span>
               </td>
-              <td>李昂</td>
+              <td>
+                <span>李昂</span>
+                <span class="cell-sub">2026-09-19 11:02</span>
+              </td>
               <td>
                 <div class="tpl-row-actions">
-                  <button class="ac-btn ac-btn--text" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制链接</button>
-                  <button class="ac-btn ac-btn--text" data-qr="杭州蜜集商贸 · 王琳">二维码</button>
-                  <button class="ac-btn ac-btn--text is-danger" data-popconfirm>撤销</button>
-                  <div class="ac-popconfirm">
-                    <div class="ac-popconfirm__text">撤销后该链接立即失效，外部人再次打开将看到「链接已失效」。</div>
-                    <div class="ac-popconfirm__field">
-                      <input class="ac-input" placeholder="请填写撤销原因（10–256 字）" />
-                    </div>
-                    <div class="ac-popconfirm__actions">
-                      <button class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                      <button class="ac-btn ac-btn--primary" data-pop-ok
-                        data-msg="链接已撤销，外部人将无法再提交">确认撤销</button>
-                    </div>
-                  </div>
+                  <button type="button" class="ac-btn ac-btn--text" data-copy>复制链接</button>
+                  <button type="button" class="ac-btn ac-btn--text"
+                    data-qr="杭州蜜集商贸 · 王琳" data-expire="2026-10-19 23:59">二维码</button>
+                  <button type="button" class="ac-btn ac-btn--text is-danger"
+                    data-revoke="杭州蜜集商贸 · 王琳">撤销</button>
                 </div>
               </td>
             </tr>
 
-            <!-- 已提交：仅查看已产生的需求，不再提供复制/二维码/撤销 -->
+            <!-- 已提交：复制/二维码/撤销均隐藏；产生需求逐行编号 + 状态 -->
             <tr>
-              <td>
-                <span class="cell-main">上海甜坊食品 · 陈默</span>
-                <span class="cell-sub">默认需求类型：功能优化</span>
-              </td>
+              <td><span class="cell-main" title="上海甜坊食品 · 陈默">上海甜坊食品 · 陈默</span></td>
               <td><span class="ac-tag is-success">已提交</span></td>
-              <td><span class="cell-num">1 / 1</span></td>
-              <td><span class="cell-num">5 次</span><span class="cell-sub">最近 08-04 09:37</span></td>
-              <td><a class="cell-link" data-toast="跳转需求详情：REQ-20260804-006">REQ-20260804-006</a></td>
-              <td><span class="cell-num">2026-08-20</span></td>
-              <td>李昂</td>
+              <td><span class="cell-num is-done">1 / 1</span></td>
               <td>
-                <div class="tpl-row-actions">
-                  <button class="ac-btn ac-btn--text" data-toast="跳转需求详情：REQ-20260804-006">查看需求</button>
-                </div>
+                <span>访问 5 次</span>
+                <span class="cell-sub">首次 2026-10-12 09:37</span>
               </td>
+              <td>
+                <span class="cell-req">
+                  <a class="cell-link" href="./requirement-detail.html">REQ-20261012-006</a>
+                  <span class="ac-tag is-processing">业务线审批中</span>
+                </span>
+              </td>
+              <td><span class="cell-num">2026-11-10 23:59</span></td>
+              <td>
+                <span>李昂</span>
+                <span class="cell-sub">2026-10-11 16:40</span>
+              </td>
+              <td><span class="cell-muted">—</span></td>
             </tr>
 
-            <!-- 已提交（多次上限）：进度展示 2/3，仍为已提交终态 -->
+            <!-- 已提交（上限 3 次已全部用完）：产生需求逐行展示 -->
             <tr>
-              <td>
-                <span class="cell-main">兼职推荐官 · 周雨</span>
-                <span class="cell-sub">默认需求类型：缺陷修复</span>
-              </td>
+              <td><span class="cell-main" title="兼职推荐官 · 周雨">兼职推荐官 · 周雨</span></td>
               <td><span class="ac-tag is-success">已提交</span></td>
-              <td><span class="cell-num">3 / 3</span></td>
-              <td><span class="cell-num">9 次</span><span class="cell-sub">最近 08-02 21:05</span></td>
+              <td><span class="cell-num is-done">3 / 3</span></td>
               <td>
-                <a class="cell-link" data-toast="跳转需求详情：REQ-20260801-003">REQ-20260801-003</a>
-                <span class="cell-sub">等 3 条需求</span>
+                <span>访问 9 次</span>
+                <span class="cell-sub">首次 2026-10-02 21:05</span>
               </td>
-              <td><span class="cell-num">2026-08-15</span></td>
-              <td>吴晴</td>
               <td>
-                <div class="tpl-row-actions">
-                  <button class="ac-btn ac-btn--text" data-toast="跳转需求列表并按本外链过滤，共 3 条">查看需求</button>
-                </div>
+                <span class="cell-req">
+                  <a class="cell-link" href="./requirement-detail.html">REQ-20261003-003</a>
+                  <span class="ac-tag is-success">已关联排期</span>
+                </span>
+                <span class="cell-req">
+                  <a class="cell-link" href="./requirement-detail.html">REQ-20261005-011</a>
+                  <span class="ac-tag is-processing">产品确认中</span>
+                </span>
+                <span class="cell-req">
+                  <a class="cell-link" href="./requirement-detail.html">REQ-20261008-002</a>
+                  <span class="ac-tag is-error">已驳回</span>
+                </span>
               </td>
+              <td><span class="cell-num">2026-11-01 23:59</span></td>
+              <td>
+                <span>吴晴</span>
+                <span class="cell-sub">2026-10-02 10:18</span>
+              </td>
+              <td><span class="cell-muted">—</span></td>
             </tr>
 
             <!-- 已过期：无任何可执行操作 -->
             <tr>
-              <td>
-                <span class="cell-main">广州零点供应链 · 赵铭</span>
-                <span class="cell-sub">默认需求类型：数据报表</span>
-              </td>
+              <td><span class="cell-main" title="广州零点供应链 · 赵铭">广州零点供应链 · 赵铭</span></td>
               <td><span class="ac-tag is-default">已过期</span></td>
               <td><span class="cell-num">0 / 1</span></td>
-              <td><span class="cell-num">1 次</span><span class="cell-sub">最近 07-12 10:18</span></td>
+              <td>
+                <span>访问 1 次</span>
+                <span class="cell-sub">首次 2026-09-12 10:18</span>
+              </td>
               <td><span class="cell-muted">—</span></td>
-              <td><span class="cell-num">2026-08-01</span></td>
-              <td>李昂</td>
+              <td><span class="cell-num">2026-10-01 23:59</span></td>
+              <td>
+                <span>李昂</span>
+                <span class="cell-sub">2026-09-01 09:12</span>
+              </td>
               <td><span class="cell-muted">—</span></td>
             </tr>
 
             <!-- 已撤销：台账保留作为溯源证据，不提供删除 -->
             <tr>
-              <td>
-                <span class="cell-main">成都果集选品 · 孙悦</span>
-                <span class="cell-sub">默认需求类型：系统集成</span>
-              </td>
+              <td><span class="cell-main" title="成都果集选品 · 孙悦">成都果集选品 · 孙悦</span></td>
               <td><span class="ac-tag is-error">已撤销</span></td>
               <td><span class="cell-num">0 / 1</span></td>
-              <td><span class="cell-num">0 次</span><span class="cell-sub">未访问</span></td>
+              <td><span class="cell-muted">未访问</span></td>
               <td><span class="cell-muted">—</span></td>
-              <td><span class="cell-num">2026-09-02</span></td>
-              <td>吴晴</td>
+              <td><span class="cell-num">2026-12-02 23:59</span></td>
+              <td>
+                <span>吴晴</span>
+                <span class="cell-sub">2026-10-03 15:44</span>
+              </td>
               <td><span class="cell-muted">—</span></td>
             </tr>
 
             <!-- 待使用 · 未访问 -->
             <tr>
-              <td>
-                <span class="cell-main">南京巷口便利 · 何舟</span>
-                <span class="cell-sub">默认需求类型：新功能</span>
-              </td>
+              <td><span class="cell-main" title="南京巷口便利 · 何舟">南京巷口便利 · 何舟</span></td>
               <td><span class="ac-tag is-processing">待使用</span></td>
               <td><span class="cell-num">0 / 1</span></td>
-              <td><span class="cell-num">0 次</span><span class="cell-sub">未访问</span></td>
+              <td><span class="cell-muted">未访问</span></td>
               <td><span class="cell-muted">—</span></td>
-              <td><span class="cell-num">2026-09-05</span></td>
-              <td>李昂</td>
+              <td><span class="cell-num">2026-11-05 23:59</span></td>
+              <td>
+                <span>李昂</span>
+                <span class="cell-sub">2026-10-06 18:20</span>
+              </td>
               <td>
                 <div class="tpl-row-actions">
-                  <button class="ac-btn ac-btn--text" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制链接</button>
-                  <button class="ac-btn ac-btn--text" data-qr="南京巷口便利 · 何舟">二维码</button>
-                  <button class="ac-btn ac-btn--text is-danger" data-popconfirm>撤销</button>
-                  <div class="ac-popconfirm">
-                    <div class="ac-popconfirm__text">撤销后该链接立即失效，外部人再次打开将看到「链接已失效」。</div>
-                    <div class="ac-popconfirm__field">
-                      <input class="ac-input" placeholder="请填写撤销原因（10–256 字）" />
-                    </div>
-                    <div class="ac-popconfirm__actions">
-                      <button class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                      <button class="ac-btn ac-btn--primary" data-pop-ok
-                        data-msg="链接已撤销，外部人将无法再提交">确认撤销</button>
-                    </div>
-                  </div>
+                  <button type="button" class="ac-btn ac-btn--text" data-copy>复制链接</button>
+                  <button type="button" class="ac-btn ac-btn--text"
+                    data-qr="南京巷口便利 · 何舟" data-expire="2026-11-05 23:59">二维码</button>
+                  <button type="button" class="ac-btn ac-btn--text is-danger"
+                    data-revoke="南京巷口便利 · 何舟">撤销</button>
                 </div>
               </td>
             </tr>
@@ -529,12 +560,12 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
       <div class="tpl-pagination">
         <span>共 18 条</span>
         <select class="tpl-pagination__size">
-          <option>20 条/页</option><option>50 条/页</option><option>100 条/页</option>
+          <option>10 条/页</option><option selected>20 条/页</option><option>50 条/页</option><option>100 条/页</option>
         </select>
         <div class="tpl-pagination__pager">
-          <button disabled>‹</button>
-          <button class="is-active">1</button>
-          <button disabled>›</button>
+          <button type="button" disabled>‹</button>
+          <button type="button" class="is-active">1</button>
+          <button type="button" disabled>›</button>
         </div>
       </div>
     </div>
@@ -542,36 +573,36 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   </section>
 </div>
 
-<!-- ===== 生成外链弹窗：表单态 → 结果态（同弹窗内切换，不自动关闭） ===== -->
+<!-- ===== 生成外链弹窗：表单态 → 结果态（同弹窗内就地切换，不自动关闭） ===== -->
 <div class="ac-modal-mask" id="createMask">
   <div class="ac-modal">
     <div class="ac-modal__head">
       <span class="ac-modal__title" id="createTitle">生成需求外链</span>
-      <button class="ac-modal__close" data-modal-close>×</button>
+      <button type="button" class="ac-modal__close" data-modal-close>✕</button>
     </div>
 
     <!-- 表单态 -->
     <div class="ac-modal__body" id="createForm">
+      <div class="ac-modal__alert is-hidden" id="createError"></div>
+
       <div class="ac-form__item">
         <span class="ac-form__label">产品线</span>
-        <div class="ac-form__control">
-          <div class="ac-form__static">有点推荐</div>
-          <div class="ac-form__extra">外链仅对有点推荐开放，不可切换；业务线由系统固定，无需选择</div>
+        <div>
+          <span class="ac-tag ac-tag--pill is-ydtj">有点推荐</span>
         </div>
+        <div class="ac-form__extra">一期仅有点推荐开放外链，不可修改</div>
       </div>
 
       <div class="ac-form__item">
         <span class="ac-form__label is-required">邀约对象备注</span>
-        <div class="ac-form__control">
-          <input class="ac-input" id="fieldInvitee" placeholder="建议填「公司 + 联系人」，如：杭州蜜集商贸 · 王琳" />
-          <div class="ac-form__extra">2–128 字，仅内部可见，用于台账识别与溯源</div>
-          <div class="ac-form__error is-hidden" id="errInvitee">请填写邀约对象备注（2–128 字）</div>
-        </div>
+        <input class="ac-input" id="fieldInvitee" maxlength="128" placeholder="如：某某供应商 · 张经理" />
+        <div class="ac-form__extra">建议填「公司 + 联系人」，仅内部可见，用于台账识别</div>
+        <div class="ac-form__error is-hidden" id="errInvitee">请填写邀约对象备注（2–128 字）</div>
       </div>
 
       <div class="ac-form__item">
         <span class="ac-form__label is-required">需求类型默认值</span>
-        <div class="ac-form__control">
+        <div style="position:relative">
           <div class="ac-select" data-select="single">
             <div class="ac-select__trigger">
               <span class="ac-select__value">新功能</span>
@@ -585,86 +616,115 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               <div class="ac-select__option">系统集成</div>
             </div>
           </div>
-          <div class="ac-form__extra">外部人打开页面时预选该类型，允许其自行修改</div>
         </div>
+        <div class="ac-form__extra">外部人可在 H5 重新选择</div>
       </div>
 
       <div class="ac-form__item">
         <span class="ac-form__label is-required">有效期</span>
-        <div class="ac-form__control">
-          <div class="ac-select" data-select="single">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">30 天</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
-            <div class="ac-select__dropdown">
-              <div class="ac-select__option">7 天</div>
-              <div class="ac-select__option">15 天</div>
-              <div class="ac-select__option is-checked">30 天</div>
-              <div class="ac-select__option">60 天</div>
-              <div class="ac-select__option">90 天</div>
-            </div>
-          </div>
-          <div class="ac-form__extra">到期后无论是否提交过，链接一律失效</div>
+        <div class="ac-radio-group" id="validDaysGroup">
+          <label class="ac-radio"><input type="radio" name="validDays" value="7" /><span class="ac-radio__dot"></span>7 天</label>
+          <label class="ac-radio"><input type="radio" name="validDays" value="15" /><span class="ac-radio__dot"></span>15 天</label>
+          <label class="ac-radio"><input type="radio" name="validDays" value="30" checked /><span class="ac-radio__dot"></span>30 天</label>
+          <label class="ac-radio"><input type="radio" name="validDays" value="60" /><span class="ac-radio__dot"></span>60 天</label>
+          <label class="ac-radio"><input type="radio" name="validDays" value="90" /><span class="ac-radio__dot"></span>90 天</label>
         </div>
+        <div class="ac-form__extra" id="expireHint">到期日期约为 2026-11-15</div>
       </div>
 
       <div class="ac-form__item">
         <span class="ac-form__label is-required">提交次数上限</span>
-        <div class="ac-form__control">
-          <input class="ac-input" id="fieldLimit" value="1" />
-          <div class="ac-form__extra">1–10 次，默认 1 次；链接可重复打开，但提交达上限后不再展示表单</div>
-          <div class="ac-form__error is-hidden" id="errLimit">提交次数上限须为 1–10 的整数</div>
+        <div class="ac-inputnumber">
+          <button type="button" data-step="-1">−</button>
+          <input id="fieldLimit" value="1" inputmode="numeric" />
+          <button type="button" data-step="1">＋</button>
         </div>
+        <div class="ac-form__extra">默认仅可提交 1 次；超过上限后链接仍可打开但不再受理提交</div>
+        <div class="ac-form__error is-hidden" id="errLimit">提交次数上限需为 1–10 的整数</div>
       </div>
     </div>
 
-    <!-- 结果态：链接只完整展示一次，关闭后可从台账重新复制，token 不重新生成 -->
+    <!-- 结果态：链接全文 + 二维码 + 复制（关闭后可从台账行重新取得，token 不重新生成） -->
     <div class="ac-modal__body is-hidden" id="createResult">
       <div class="tpl-result">
-        <div class="tpl-result__icon">✓</div>
-        <div class="tpl-result__title">外链已生成</div>
+        <div class="tpl-result__row">
+          <span class="tpl-result__label">邀约对象</span>
+          <span id="resultInvitee">—</span>
+        </div>
+        <div class="tpl-result__row">
+          <span class="tpl-result__label">有效期至</span>
+          <span id="resultExpire">—</span>
+        </div>
+        <div class="tpl-result__row">
+          <span class="tpl-result__label">提交上限</span>
+          <span id="resultLimit">1 次</span>
+        </div>
         <div class="tpl-result__link">
           <code id="resultUrl">https://ydtj.example.com/public/requirement?token=7f1c9ae2b45d48c6</code>
-          <button class="ac-btn ac-btn--secondary" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制</button>
+          <button type="button" class="ac-btn ac-btn--primary" data-copy>复制链接</button>
         </div>
         <div class="tpl-result__qr">二维码<br />（内容即完整链接，可直接微信扫码打开）</div>
-        <div class="tpl-result__hint">
-          请先复制链接或保存二维码再关闭本窗口。关闭后仍可在台账行「复制链接」重新取得，token 不会重新生成。
-        </div>
+        <p class="tpl-result__hint">请复制链接或保存二维码发送给邀约对象；关闭后可从台账行「复制链接」重新取得。</p>
       </div>
     </div>
 
     <div class="ac-modal__foot" id="createFoot">
-      <button class="ac-btn ac-btn--secondary" data-modal-close>取消</button>
-      <button class="ac-btn ac-btn--primary" id="btnCreateSubmit">生成并获取链接</button>
+      <button type="button" class="ac-btn" data-modal-close>取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" id="btnCreateSubmit">确认生成</button>
     </div>
     <div class="ac-modal__foot is-hidden" id="resultFoot">
-      <button class="ac-btn ac-btn--primary" data-modal-close>我已复制，关闭</button>
+      <button type="button" class="ac-btn ac-btn--primary" data-modal-close>我已复制，关闭</button>
     </div>
   </div>
 </div>
 
-<!-- ===== 二维码弹窗：token 明文只在此处与复制动作中出现 ===== -->
+<!-- ===== 二维码弹窗（token 明文仅在此弹窗与复制动作中出现） ===== -->
 <div class="ac-modal-mask" id="qrMask">
-  <div class="ac-modal">
+  <div class="ac-modal ac-modal--sm">
     <div class="ac-modal__head">
       <span class="ac-modal__title">外链二维码</span>
-      <button class="ac-modal__close" data-modal-close>×</button>
+      <button type="button" class="ac-modal__close" data-modal-close>✕</button>
     </div>
     <div class="ac-modal__body">
       <div class="tpl-result">
-        <div class="ac-form__static" id="qrInvitee">邀约对象：—</div>
-        <div class="tpl-result__qr">二维码<br />（内容即完整链接，可直接微信扫码打开）</div>
-        <div class="tpl-result__link">
-          <code>https://ydtj.example.com/public/requirement?token=7f1c9ae2b45d48c6</code>
-          <button class="ac-btn ac-btn--secondary" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制</button>
+        <div class="tpl-result__row">
+          <span class="tpl-result__label">邀约对象</span>
+          <span id="qrInvitee">—</span>
         </div>
-        <div class="tpl-result__hint">台账列表不展示完整 token，请勿截屏外传本弹窗内容。</div>
+        <div class="tpl-result__row">
+          <span class="tpl-result__label">有效期至</span>
+          <span id="qrExpire">—</span>
+        </div>
+        <div class="tpl-result__qr">二维码</div>
+        <button type="button" class="ac-btn" data-toast="二维码图片已下载">下载图片</button>
       </div>
     </div>
     <div class="ac-modal__foot">
-      <button class="ac-btn ac-btn--secondary" data-modal-close>关闭</button>
+      <button type="button" class="ac-btn ac-btn--primary" data-modal-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 撤销外链弹窗（AcModal：原因必填 10–256 字 + 不可恢复提示） ===== -->
+<div class="ac-modal-mask" id="revokeMask">
+  <div class="ac-modal" style="width:480px">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">撤销外链</span>
+      <button type="button" class="ac-modal__close" data-modal-close>✕</button>
+    </div>
+    <div class="ac-modal__body">
+      <div class="ac-modal__alert is-hidden" id="revokeError">请填写撤销原因（10–256 字）</div>
+      <p class="tpl-result__hint" style="color:var(--ac-color-text-2)">
+        撤销后对方打开链接将看到已失效提示，且无法恢复；已提交产生的需求不受影响。
+      </p>
+      <div class="ac-form__item">
+        <textarea class="ac-textarea" id="revokeReason" rows="4" maxlength="256"
+          placeholder="请填写撤销原因（10–256 字），仅内部可见"></textarea>
+      </div>
+    </div>
+    <div class="ac-modal__foot">
+      <button type="button" class="ac-btn" data-modal-close>取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" id="btnRevokeSubmit">确认撤销</button>
     </div>
   </div>
 </div>
@@ -685,7 +745,6 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
     var multi = sel.getAttribute('data-select') === 'multi';
     trigger.addEventListener('click', function (e) {
       e.stopPropagation();
-      if (trigger.classList.contains('is-disabled')) return;
       var open = sel.classList.contains('is-open');
       closeAllSelects();
       if (!open) sel.classList.add('is-open');
@@ -711,55 +770,45 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
     });
   });
 
-  /* ── 通用 Toast 触发 ── */
+  /* ── 通用 Toast 触发 / 复制 ── */
   document.querySelectorAll('[data-toast]').forEach(function (el) {
     el.addEventListener('click', function () { acToast(el.getAttribute('data-toast')); });
   });
   document.querySelectorAll('[data-copy]').forEach(function (el) {
     el.addEventListener('click', function (e) {
       e.stopPropagation();
-      acToast(el.getAttribute('data-copy'));
+      acToast('链接已复制');
     });
   });
 
-  /* ── 撤销二次确认（Popconfirm，必填撤销原因） ── */
-  function closeAllPops() {
-    document.querySelectorAll('.ac-popconfirm.is-open').forEach(function (p) { p.classList.remove('is-open'); });
-  }
-  document.querySelectorAll('[data-popconfirm]').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var pop = btn.parentNode.querySelector('.ac-popconfirm');
-      var open = pop.classList.contains('is-open');
-      closeAllPops();
-      if (!open) pop.classList.add('is-open');
-    });
-  });
-  document.querySelectorAll('[data-pop-cancel]').forEach(function (b) {
-    b.addEventListener('click', function (e) { e.stopPropagation(); closeAllPops(); });
-  });
-  document.querySelectorAll('[data-pop-ok]').forEach(function (b) {
-    b.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var input = b.closest('.ac-popconfirm').querySelector('.ac-input');
-      if (input.value.trim().length < 10) {
-        acToast('撤销原因不少于 10 字');
-        input.focus();
-        return;
-      }
-      closeAllPops();
-      input.value = '';
-      acToast(b.getAttribute('data-msg'));
+  /* ── 有效期 RadioGroup → inline 到期日期换算 ── */
+  var expireHint = document.getElementById('expireHint');
+  document.querySelectorAll('#validDaysGroup input').forEach(function (r) {
+    r.addEventListener('change', function () {
+      var d = new Date();
+      d.setDate(d.getDate() + Number(this.value));
+      expireHint.textContent = '到期日期约为 ' + d.toISOString().slice(0, 10);
     });
   });
 
-  /* ── 生成外链弹窗：表单态 → 结果态，就地切换不自动关闭 ── */
+  /* ── 数字步进 ── */
+  document.querySelectorAll('.ac-inputnumber button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var input = document.getElementById('fieldLimit');
+      var v = parseInt(input.value, 10) || 1;
+      v = Math.min(10, Math.max(1, v + Number(b.getAttribute('data-step'))));
+      input.value = v;
+    });
+  });
+
+  /* ── 生成外链弹窗：表单态 → 结果态 ── */
   var createMask = document.getElementById('createMask');
   var createForm = document.getElementById('createForm');
   var createResult = document.getElementById('createResult');
   var createFoot = document.getElementById('createFoot');
   var resultFoot = document.getElementById('resultFoot');
   var createTitle = document.getElementById('createTitle');
+  var createError = document.getElementById('createError');
 
   function resetCreateModal() {
     createForm.classList.remove('is-hidden');
@@ -767,6 +816,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
     createFoot.classList.remove('is-hidden');
     resultFoot.classList.add('is-hidden');
     createTitle.textContent = '生成需求外链';
+    createError.classList.add('is-hidden');
     document.getElementById('errInvitee').classList.add('is-hidden');
     document.getElementById('errLimit').classList.add('is-hidden');
   }
@@ -786,12 +836,19 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
     if (!(limit >= 1 && limit <= 10)) ok = false;
     if (!ok) return;
 
+    /* 结果态回填 */
+    document.getElementById('resultInvitee').textContent = invitee;
+    var days = Number(document.querySelector('#validDaysGroup input:checked').value);
+    var d = new Date(); d.setDate(d.getDate() + days);
+    document.getElementById('resultExpire').textContent = d.toISOString().slice(0, 10) + ' 23:59';
+    document.getElementById('resultLimit').textContent = limit + ' 次';
+
     createForm.classList.add('is-hidden');
     createResult.classList.remove('is-hidden');
     createFoot.classList.add('is-hidden');
     resultFoot.classList.remove('is-hidden');
     createTitle.textContent = '外链已生成';
-    acToast('外链已生成，请复制链接或保存二维码后发给邀约对象');
+    acToast('外链已生成，请复制发送给邀约对象');
   });
 
   /* ── 二维码弹窗 ── */
@@ -799,9 +856,32 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   document.querySelectorAll('[data-qr]').forEach(function (btn) {
     btn.addEventListener('click', function (e) {
       e.stopPropagation();
-      document.getElementById('qrInvitee').textContent = '邀约对象：' + btn.getAttribute('data-qr');
+      document.getElementById('qrInvitee').textContent = btn.getAttribute('data-qr');
+      document.getElementById('qrExpire').textContent = btn.getAttribute('data-expire');
       qrMask.classList.add('is-open');
     });
+  });
+
+  /* ── 撤销弹窗（AcModal，原因必填 10–256 字） ── */
+  var revokeMask = document.getElementById('revokeMask');
+  var revokeReason = document.getElementById('revokeReason');
+  var revokeError = document.getElementById('revokeError');
+  document.querySelectorAll('[data-revoke]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      revokeReason.value = '';
+      revokeError.classList.add('is-hidden');
+      revokeMask.classList.add('is-open');
+    });
+  });
+  document.getElementById('btnRevokeSubmit').addEventListener('click', function () {
+    var reason = revokeReason.value.trim();
+    if (reason.length < 10 || reason.length > 256) {
+      revokeError.classList.remove('is-hidden');
+      return;
+    }
+    revokeMask.classList.remove('is-open');
+    acToast('外链已撤销');
   });
 
   /* ── 弹窗关闭 ── */
@@ -809,10 +889,17 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
     b.addEventListener('click', function () {
       createMask.classList.remove('is-open');
       qrMask.classList.remove('is-open');
+      revokeMask.classList.remove('is-open');
     });
   });
 
-  document.addEventListener('click', function () { closeAllSelects(); closeAllPops(); });
+  document.addEventListener('click', function () { closeAllSelects(); });
+
+  /* ── 高亮定位演示：3 秒后自动取消（由需求详情「来源外链」进入时 URL 带 token） ── */
+  setTimeout(function () {
+    var row = document.getElementById('highlightRow');
+    if (row) row.classList.remove('is-highlight');
+  }, 3000);
 })();
 
 /* ── Toast ── */

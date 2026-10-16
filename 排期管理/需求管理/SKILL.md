@@ -5,14 +5,13 @@ description: 需求管理流程。Use when 各业务线提交功能需求需多�
 
 # 需求管理
 
-> App 功能图标：[需求管理.html](../../../../设计/app/icons/resources/需求管理.html)（App 工作台「需求管理」入口图标真源，120×120 统一版式动效 HTML，自包含）
-
+> App 功能图标：需求管理.html（App 工作台「需求管理」入口图标真源，120×120 统一版式动效 HTML，自包含）
 
 面向全公司各业务线的需求受理中枢：业务线员工提交功能需求时**先选定提交对象（产品经理）**，系统按其审批链逐级或签审批（级次由配置决定，1~3 级）后，由该产品经理关联到功能排期卡片，形成「需求提出 → 审批归集 → 研发排期」的完整可追溯链路。
 
 替代此前需求散落在企微群与 Excel 的现状，解决「需求谁提的、卡在哪级、有没有排上开发」三个核心问题。
 
-需求按**产品线**分治：`SNACK`（零食王国，再分 4 条业务线）与 `YDTJ`（有点推荐，不分业务线）。其中有点推荐额外支持内部人生成**一次性定向外链**，让外部人员免登录手填姓名与部门后提交需求（外部人无提交对象，固定走默认审批链）。
+需求按**产品线**分治：`SNACK`（鸣鸣很忙，再分 4 条业务线）与 `YDTJ`（有点推荐，不分业务线）。其中有点推荐额外支持内部人生成**一次性定向外链**，让外部人员免登录手填姓名与部门后提交需求（外部人无提交对象，固定走默认审批链）。
 
 ## 端
 
@@ -37,23 +36,21 @@ description: 需求管理流程。Use when 各业务线提交功能需求需多�
 
 | 引用资源 | 路径 | 用途 |
 |---------|------|------|
-| 系统功能排期 | [`../../../研发/研发管理/feature-schedule/SKILL.md`](../../../研发/研发管理/feature-schedule/SKILL.md) | 排期卡片真源：`card_no` 编号规则、卡片状态、月视图查询接口 |
-| 公共逻辑-企微消息 | [`企微应用消息发送/SKILL.md`](../../../依赖文档/公共功能/企微应用消息发送/SKILL.md) | 个人消息 + 业务群消息双通道推送能力复用 |
-| 公共逻辑-导出接入 | [`导出接入/SKILL.md`](../../../依赖文档/公共功能/导出接入/SKILL.md) | 需求列表与审批统计导出统一接入异步导出中心 |
-| 需求打磨规范 | [`需求打磨规范/SKILL.md`](../../../依赖文档/研发规范/通用/需求打磨规范/SKILL.md) | 需求描述质量要求，指导提交表单的填写引导文案 |
-| 流程中心 | [`../../../依赖文档/公共功能/流程中心/SKILL.md`](../../../依赖文档/公共功能/流程中心/SKILL.md) | 审批流转引擎全量接入（M4 外部表单：模板 FT20260915202326483，8 条 PM 专属链 + 5 条默认链镜像；全量切换决策与研发对接契约见 business-rule §12） |
-| 商品申请审批流程 | [`商品申请/references/approval-workflow.md`](../../../档案/商品/商品申请/references/approval-workflow.md) | 多级审批参考范式：审批链快照、`current_approval_level` 递进、驳回重提 |
-| 任务中心 | [`任务中心/SKILL.md`](../../../营运/任务协同/任务中心/SKILL.md) | 待办聚合与或签模式参考，App 端「待我审批」交互对齐 |
-| 采购邀约 | [`采购邀约/SKILL.md`](../../../档案/供应商/采购邀约/SKILL.md) | 免登录外链范式真源：token 反查、有效期与撤销、失效文案差异化、二维码生成 |
+| 系统功能排期 | [`../../../研发/研发管理/feature-schedule/SKILL.md`](../功能排期/SKILL.md) | 排期卡片真源：`card_no` 编号规则、卡片状态、月视图查询接口 |
+| 公共逻辑-企微消息 | `企微应用消息发送/SKILL.md` | 个人消息 + 业务群消息双通道推送能力复用 |
+| 公共逻辑-导出接入 | `导出接入/SKILL.md` | 需求列表与审批统计导出统一接入异步导出中心 |
+| 需求打磨规范 | `需求打磨规范/SKILL.md` | 需求描述质量要求，指导提交表单的填写引导文案 |
+| 流程中心 | `../../../依赖文档/公共功能/流程中心/SKILL.md` | 审批流转引擎全量接入（M4 外部表单：模板 FT20260915202326483，8 条 PM 专属链 + 5 条默认链镜像；全量切换决策与研发对接契约见 business-rule §12） |
+| 商品申请审批流程 | `商品申请/references/approval-workflow.md` | 多级审批参考范式：审批链快照、`current_approval_level` 递进、驳回重提 |
+| 任务中心 | `任务中心/SKILL.md` | 待办聚合与或签模式参考，App 端「待我审批」交互对齐 |
+| 采购邀约 | `采购邀约/SKILL.md` | 免登录外链范式真源：token 反查、有效期与撤销、失效文案差异化、二维码生成 |
 | 业务规则字典 | [`references/business-rule.md`](references/business-rule.md) | 本模块规则真源：流程、状态机、产品线与审批链、权限、排期关联、通知、外链邀约、附件管理（§9）、审批时效与 SLA（§10）、AI 方案确认（§11） |
-| 数据模型 | [`references/data-model.md`](references/data-model.md) | 需求主表与审批快照/流水/配置/事件/外链邀约/附件/SLA 配置/AI 方案确认执行记录九表定义 |
 | Web 端 UI | [`references/web-ui.md`](references/web-ui.md) | Web 7 页区块职责、导航关系、操作反馈与表单校验 |
 | App 端 UI | [`references/mobile-ui.md`](references/mobile-ui.md) | App 3 页区块职责、导航关系、操作反馈、图片附件与表单校验 |
 | 公开 H5 UI | [`references/public-ui.md`](references/public-ui.md) | 公开 H5 3 页区块职责、表单校验、受限图片上传、失效文案与安全约束 |
 | 业务操作培训手册 | [`references/business-training.md`](references/business-training.md) | 面向业务人员的 Web/App 双端操作指南、角色权限、状态流转、通知规则与 FAQ |
-| 接口契约 | [`references/api-spec.md`](references/api-spec.md) | 内部需求 / 审批链配置 / 外链台账 / 附件上传下载 / SLA 时效 / AI 方案确认 / 公开 H5 免登录接口的路径、字段、权限码与错误文案 |
-| 实现步骤 | [`references/implementation-steps.md`](references/implementation-steps.md) | devops 七模块 / Vue 后台 / 公开 H5 / App 的落地文件清单与上线顺序 |
-| Job 配置 | [`references/job-schedule.md`](references/job-schedule.md) | 外链过期兜底 Job、审批 SLA 催办 Job 的触发策略、幂等设计与双跑红线 |
+
+> 数据模型、接口契约、实现步骤与 Job 配置等实现细节以代码仓为准，不内嵌。
 
 ## 页面功能概览
 
@@ -120,18 +117,3 @@ description: 需求管理流程。Use when 各业务线提交功能需求需多�
 - AI 辅助开关为 **per-PM 配置**（`requirement_approval_config.ai_assist_enabled`，审批链配置页按 PM 勾选、立即生效），禁止把具体人员写进代码；执行记录落 `requirement_ai_plan`（按 `approval_round` 隔离、`plan_version` 递增），支持 PM 手动「重新生成」形成「补材 → 再分析 → 确认」闭环
 - **审批全量接入流程中心（2026-10-09 定稿，M4 外部表单，参考库存调整 §16）**：新单审批流转全部经流程中心——**全量三原则：① 本模块审批链配置为镜像唯一真源（自研引擎不再接新单，仅作在途收尾与回切兜底）② 页内审批入口不变（双端详情通过/驳回、待我审批保留）③ 双通道可审批（流程中心待办 或 本模块页面，两侧互通）**。生产配置：模板 `FT20260915202326483`（EXTERNAL + 发起权限虚置封闭发起入口），13 条链镜像现网（8 条 PM 专属链 priority 1-8 优先于 5 条默认链 10-14），节点全部 USER 钉人或签、驳回退回发起人重提、催办关闭（SLA 仍由本模块 §10 承接）；**不注册业务动作**（审批完成后经 MQ 回写状态）；**外部单以邀约人身份代提**（formData 不携 pmUserId，落 YDTJ 默认链，单向收口兼容）；**自审场景不再回退自研**，本人节点自行通过；研发对接契约（submit-external 全量 / 邀约人代提 / 双向同步 / MQ 状态回写 / pm-options 过滤）详 [`references/business-rule.md §12`](references/business-rule.md#12-流程中心接入m4-全量2026-10-09-切换定稿)；🚨 **配置镜像同步纪律**：本模块审批链任何变更必须同步流程中心镜像并重新发布 + preview-chain 回归（business-rule §12.6，两次滞后事故教训）
 
-## 变更记录
-
-| 版本 | 日期 | 说明 |
-|------|------|------|
-| v1.10 | 2026-10-13 | **D6/D7 研发落地**（流程中心 v2.3.1 联动交付）：① `RequirementFlowCenterGateway.buildFieldLabels`（清单与 business-rule §12.4① 登记表逐字对齐，含外部单三键），submit-external/resubmit 均携带随快照入库——平台侧 `field_labels_json` 列/接参/详情返回由刘操同日凌晨先行落地；② 双通道权限收口——页内 `approve()/reject()` 命中流程单豁免 §4.2 `assertCurrentApprover` 快照校验、直接代调平台以平台 403 为唯一闸门，自研在途单原校验保留，驳回意见 ≥10 字接口层保留，代调失败**透传平台错误文案**（跳节点/转审错位不再误导重试）；`resolveActions` 显隐维持本地快照（受让人走平台待办通道）；③ 配套平台修复（foundation）：跳过末节点 `advance()` 识别 SKIPPED（生产卡死实例 FI20261012161946825 根因）、企微待办关键字段取 label；④ Web/App 审批/实例详情 label 中文渲染 + 嵌套值格式化 JSON 折叠；单测 devops 5 条（收口 3+fieldLabels 2）+ foundation 5 条全绿；落地说明见 business-rule §12.4 末「✅ 研发落地说明（2026-10-13）」 |
-| v1.9 | 2026-10-12 | 流程中心 M4 两缺口补齐（用户定稿，实例 FI20261012145200335 实测驱动）：**D6 页内审批权限收口平台**——命中流程单（`flow_instance_id>0`）页内「通过/驳回」豁免 §4.2 本模块快照校验、直接代调平台以平台 403 为准（消除转审/加签/跳节点后两侧快照不一致误拦），自研在途单维持原校验；**D7 formData 字段中文名 fieldLabels**——`submit-external`/`resubmit` 必携中文名映射（15+3 项清单见 business-rule §12.4①）随 formData 同快照入库，平台审批/详情页渲染中文名替代英文 key，映射由本模块 Gateway 组装点维护、平台不建侧配置；§12.6 镜像纪律扩 formData 契约同步检查，全量切换研发侧清单补 ⑥⑦ 两项；平台侧配套：流程中心 v2.2.7（field_labels_json 落库 + 详情接口返回 + business-rule §3.6/§6.3） |
-| v1.0 | 2026-08-11 | 基线版本：三级审批主流程、产品线分治（SNACK / YDTJ）、四维审批链配置、排期卡片单向关联、企微双通道通知、有点推荐一次性定向外链与公开 H5 三页 |
-| v1.1 | 2026-08-18 | 新增附件上传能力（三端差异化：Web 全类型 / App 仅图片 / H5 受限图片）；新增审批超时催办与 SLA 时效管理机制（催办/升级/目标日期预警、滞留看板、SLA 配置与仪表盘、每小时 SLA Job） |
-| v1.2 | 2026-08-19 | 按落地实现回写：附件改前端 OSS STS 直传 + 元信息上报（公开 H5 保留后端转存）、内容安全审核本期不做、SLA 菜单拆两个权限码、静默时段与去重键矛盾修正（只写 `SLA_DEFERRED`）、去重键补 `approvalRound` 段 |
-| v1.3 | 2026-09-09 | 审批链改为「提交对象（产品经理）」驱动：内部提交先选产品经理，按其专属链（级次为 L1/L2/L3 任意非空子集）流转；未配专属链走四维默认链兜底且 L3 替换为提交对象；外部提交固定走默认链（L3 实际通过人写入 `pm_user_id`）；移除「L2 通过必须指派产品经理」规则，`max_approval_level` 不再固定 3 |
-| v1.4 | 2026-09-10 | 新增 **AI 方案确认**（business-rule §11）：产品确认节点为开启开关的 PM 自动执行七步框架分析，产出方案草稿 + 三段式确认摘要 + 信息缺口清单，PM 人工「确认并通过」后系统代为执行 L3 通过（意见带「【AI方案确认】」前缀）；新增「请求补充材料」第三动作与「重新生成」；三条红线：AI 内容不确认不触达提交人 / 系统不自动审批 / AI 不阻塞人工通道；新增 `requirement_ai_plan` 表（data-model §9）、`/ai-plan/*` 4 接口（api-spec §7）、`requirement_approval_config.ai_assist_enabled` per-PM 开关、Web/App 详情页 AI 方案确认面板 |
-| v1.5 | 2026-09-15 | 审批并行接入流程中心（M4 外部表单，参考库存调整 §16 先行实践）：新增 business-rule §12（并行三原则 / 生产配置实录：模板 FT20260915202326483 已发布 v2、9 链 23 节点镜像、发起入口封闭、节点催办关闭由本模块 SLA 承接 / 首期灰度仅命中专属链的内部单 / 研发对接契约 / 平台语义差异 8 项含默认链 L3 替换与外部单接入缺口）；data-model §1 登记 `flow_instance_id`/`flow_instance_no`/`op_channel` 待增列；研发对接另起卡，未启动前现网行为不变 |
-| v1.6 | 2026-09-16 | 关联排期弹窗（Web 端）候选集重定义 + 双筛选：方式二候选由「未关联卡片」放宽为「全部有效卡片（含已关联，排除 NON_FEATURE 与已删除卡）」，支撑同类需求同挂一张卡；新增**开发人**（匹配卡片 `dev_user_name`，PENDING 卡 NULL 不参与）与**需求提交人**（`requirement` 同库反查，仅内部单参与）双筛选；已关联卡带「已关联 N 条需求」角标 + 同挂二次确认；涉及 business-rule §5.1（新增）、api-spec §1.6（新增 card-candidates 详细契约）、web-ui 弹窗规格、Web 原型补画真实弹窗（原 toast 占位）、business-training §3.5；App 端只读展示不受影响，无 DDL 变更，不新增权限码 |
-| v1.7 | 2026-09-16 | 流程中心 M4 研发对接落地（business-rule §12.4 契约实现）：devops 新增 Gateway（decideSubmitChannel 四态路由）/Trigger/EventHandler（含 WITHDRAWN 回写）/Consumer 四件套 + submit/approve/reject/withdraw 挂接 + 个人通知让位平台模板（群知会本模块补发）；foundation 契约补齐 withdraw 代调端点 + WITHDRAWN 事件（评审新增阻塞项闭环）；`requirement` 增 `flow_instance_id`/`flow_instance_no`、`requirement_approval_log` 增 `op_channel`（三列 DDL dev 已执行，生产走工单）；灰度开关 `requirement.flow-center.enabled` 默认关，首期仅命中 PM 专属链的内部单，现网行为不变；单测 28/28 绿；部署与灰度步骤见 `busyming-snackingdom-devops/docs/20260916/lihao/requirement-flow-center-m4/README.md` |
-| v1.8 | 2026-10-09 | **审批全量切流程中心定稿（business-rule §12 全量版）**：D1 不做灰度、新单（内部+外部）全量经流程中心；D2 提交对象候选集按「产品线 × 业务线」收窄为本归属有专属链的 PM（内部单必中专属链，「默认链 L3 替换提交对象」语义废止；配套 DIGITAL 补邓佳华/凌敏专属链、YDTJ 补邓佳华专属链）；D3 外部单以邀约人身份代提（§12.5#2 缺口消解）；D4 在途单走完自研不切；D5 自审场景不再回退自研（本人节点自行通过）；流程中心模板同步两次配置滞后（补李儒洲 SCM 链、链14/16 L1 加杨昭君、链19 瘦身）并重发布；新增 §12.6 配置镜像同步纪律（本模块配置变更必须同步镜像，滞后事故实录）；`/pm-options` 恢复业务线过滤且口径收窄（api-spec §1.5）、Web 提交表单业务线→PM 动态过滤（web-ui）；研发侧路由全量化/邀约人代提/自审预解析去除/总开关默认值改 true 起卡实施 |

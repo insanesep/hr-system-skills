@@ -31,13 +31,6 @@ description: 系统功能排期模块 - 业务规则的技术映射（状态机�
 **DB 层四态**：`PENDING` / `IN_PROGRESS` / `DONE` / `NON_FEATURE`（`NON_FEATURE` 为旁路态，由 PM 在抽屉手动切入，不参与 mark-done / scheduledDate 调整）。  
 **延期态 DELAYED**：前端渲染计算，**不落库**；v2.0 起 **`PENDING` 与 `IN_PROGRESS` 均计入延期**（与统计口径统一），v2.1 起按 **`end_date`（单日卡 = `scheduled_date`）判定，且仅当月（月/列表视图）与本周（周视图）计算，历史期不再标红**：
 
-```js
-isDelayed(card) = (card.status === 'PENDING' || card.status === 'IN_PROGRESS')
-              && card.endDate != null            // v2.1 起 endDate || scheduledDate 回退
-              && card.endDate < todayStr
-              && 当前视图为期当期（月视图=当月 / 周视图=本周）
-```
-
 **dev_* 三字段写入路径**（`dev_user_id` / `dev_user_name` / `dev_taken_at`）：
 
 | 触发动作 | dev_* 变化 |
@@ -75,7 +68,7 @@ isDelayed(card) = (card.status === 'PENDING' || card.status === 'IN_PROGRESS')
 - 同一事务内 INSERT 新卡，外层 `@Transactional`；
 - 当日序号溢出 999 触发告警（业务侧不会出现，且预留 3 位足够）。
 
-> 模块标签 `sourceModule` 通过 [Conventional Commit 头部解析](job-schedule.md#41-sourcemodule-识别规则commit-message-解析) 得到，仅用于看板分组与统计，不参与 cardNo 生成。
+> 模块标签 `sourceModule` 通过 Conventional Commit 头部解析 得到，仅用于看板分组与统计，不参与 cardNo 生成。
 
 ## 3. 标题默认截取
 
@@ -85,18 +78,6 @@ isDelayed(card) = (card.status === 'PENDING' || card.status === 'IN_PROGRESS')
 3. `trim()`
 4. 长度 > 30 → 截取前 30 字符，**不加省略号**（v1.6 由 15 升至 30，覆盖大多数中文短句）
 5. 允许 PM 在抽屉中手改，编辑后不再回读 commit
-
-```java
-private static final int TITLE_MAX_LEN = 30;
-
-public static String titleFromMsg(String msg) {
-    if (msg == null) return "";
-    String first = msg.split("\\r?\\n", 2)[0];
-    int colon = first.indexOf(':');
-    String t = (colon >= 0 ? first.substring(colon + 1) : first).trim();
-    return t.length() > TITLE_MAX_LEN ? t.substring(0, TITLE_MAX_LEN) : t;
-}
-```
 
 **前端对齐**：抽屉标题 `<input maxlength="30">`，超出时阻断输入并展示警示文案 `标题最长 30 字符`；`titleFromMsg` 工具函数同步采用「冒号后截取 + 30 字符」规则。
 
@@ -244,7 +225,32 @@ public static String titleFromMsg(String msg) {
 | 抽屉 status 从 DONE 切回 IN_PROGRESS         | 仅当 `dev_user_id` 非空时允许；否则降级到 PENDING 路径 |
 | 抽屉 status 从 PENDING 切到 DONE 但 dev_* 为空 | 后端 autoFillDev 用当前操作人填 dev_*，避免数据缺失 |
 
-## 11. Skill 偏差说明
+## 11. 项目归属与配置
+
+### 11.1 归属解析
+
+- 卡片不设项目字段；归属在查询时动态解析：`card.source_repo` 命中某**启用中**项目的代码仓列表 → 归属该项目
+- 一个代码仓同一时间至多归属一个启用中项目（配置层强校验，见 §11.2）；解析路径上因此不存在一卡多项目
+- 未命中任何启用中项目映射的卡片归「未归属项目」——它不是实体项目，仅是筛选与统计时的兜底桶
+- 归属不做快照：项目映射调整后历史卡片归属即时随之变化（刻意取舍，项目是归集视角而非流程凭证；与审批链快照语义相反）
+
+### 11.2 配置校验
+
+- 项目名称：必填；启用中项目间唯一（停用项目不占名）
+- harness 工程：必填，单一工程标识（项目的需求/文档真源），供项目进度报告等下游聚合按同一映射取数
+- 代码服务仓：必填且至少 1 个；选项全集 = 仓名单（与 Nacos `codeup.repos` 同源），只存引用不复制仓信息
+- 占用冲突：保存时逐仓校验「未被其他启用中项目占用」，冲突即拒绝并指名占用方；编辑与停用/启用走同一校验
+- 停用：不删数据；项目退出筛选选项集与归属解析，其代码仓的卡片回落「未归属项目」
+- 仓名单瘦身：仓从 Nacos 名单移除后，引用它的映射自动失效（按左连接落空处理），配置弹层中该行标灰提示，不阻断项目保存
+
+### 11.3 筛选语义
+
+- 「项目」筛选组与状态/负责人/skills 仓库/模块同区，Draft/Apply 语义一致；默认全选 = 不过滤
+- 选项集 = 各启用中项目 + 「未归属项目」；停用项目即时退出选项集
+- 生效面：月历格卡片 + Backup 卡片池 + 统计数字；与 skills 仓库筛选**叠加取交集**（项目解析出的仓集合 ∩ 仓库组勾选的仓集合）
+- 后端入参按仓集合展开下发（项目筛选在服务端翻译为 sourceRepos 子集），与仓库筛选共用同一过滤通道，不新增独立过滤维度
+
+## 12. Skill 偏差说明
 
 ### 11.3 状态机对齐 SKILL：四态升级（v1.6）
 
@@ -265,7 +271,7 @@ public static String titleFromMsg(String msg) {
 
 - `SKILL.md` v1.5 变更点：新增 「🔧 移入非需求改动」 手动标记，废弃 commit message 前缀自动归类。
 - 后端从未实现过原动作中的「自动归类」逻辑，本次为纯增量开发（并未废弃任何已有逻辑）。
-- 实施详情 → [non-feature-bypass-implementation.md](non-feature-bypass-implementation.md)。
+- 实施详情 → non-feature-bypass-implementation.md。
 
 ### 11.2 「⚙ 代码仓配置」弹层（只读，源仓一份，走 Nacos YAML）
 

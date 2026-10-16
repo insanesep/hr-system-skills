@@ -1,0 +1,706 @@
+<!doctype html>
+<!--
+  需求管理 · SLA 配置页（Web 端原型）
+  ================================================================
+  规格真源：../../references/web-ui.md §SLA 配置页
+  实现对齐：busyming-snackingdom-web/src/views/requirement/RequirementSlaConfig.vue
+            + components/SlaConfigEditModal.vue（2026-10 补画，本页此前无原型）
+  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
+            拓扑 = .tpl-page > [常驻说明] > [缺配告警] > [筛选 panel] > [矩阵 panel]
+  页面要点：
+    - 常驻说明（可关闭）：SLA 管「多久没审就催」，审批链管「谁来审」；修改后立即对在途需求生效，
+      不做快照；inline「前往审批链配置」
+    - 缺配告警（warning，仅提示不阻断）：某产品线存在未覆盖级次时提示按系统默认 48h/72h 催办
+    - 表格 9 列：产品线药丸（无 * 通配）/ 优先级（* 全优先级兜底不套药丸）/ 审批级次 /
+      催办阈值 / 升级阈值（≥48h 附 ≈N 天）/ 去重窗口 / 状态 Switch（停用二次确认）/
+      最后修改（姓名 + 时间副行）/ 操作
+    - 表格上方 inline 命中顺序说明；下方系统默认阈值参考区（P0 24/48 · P1 48/72 · P2 48/72 · P3 72/120）
+    - 写操作仅管理员；非管理员只读视图（按钮不渲染、操作列展示「只读」）
+    - 编辑弹窗调紧阈值 → 影响预检二次确认「将有 N 条在途需求立即进入催办范围，下一个整点即发送」
+  Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
+            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>SLA 配置 · 需求管理</title>
+<style>
+/* ==========================================================================
+   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
+   ========================================================================== */
+:root{
+  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
+  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  --ac-palette-magenta-1:#FFE8F1; --ac-palette-magenta-6:#F5319D;
+  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
+  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
+  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
+  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
+  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
+  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-color-text-3);
+  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
+  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
+  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
+  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
+  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
+  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
+  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
+  --ac-lh-normal:1.5; --ac-lh-relaxed:1.7; --ac-lh-tight:1.2;
+  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+  --ac-z-dropdown:100; --ac-z-popconfirm:900; --ac-z-modal:1000; --ac-z-toast:1100;
+}
+
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-breadcrumb{display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) 0;font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
+.tpl-breadcrumb a{color:var(--ac-color-text-3);text-decoration:none}
+.tpl-breadcrumb a:hover{color:var(--ac-primary-6)}
+.tpl-breadcrumb__sep{color:var(--ac-text-4)}
+.tpl-breadcrumb__current{color:var(--ac-color-text-1)}
+
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
+  display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel__title-row{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+.tpl-panel__title{margin:0;font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);
+  color:var(--ac-color-text-1)}
+
+/* ===== Alert ===== */
+.ac-alert{display:flex;align-items:flex-start;gap:var(--ac-space-3);
+  padding:var(--ac-space-3) var(--ac-space-4);border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-sm);line-height:var(--ac-lh-normal)}
+.ac-alert--info{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-alert--warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.ac-alert a{color:var(--ac-palette-blue-7);text-decoration:underline;cursor:pointer;margin-left:var(--ac-space-2)}
+.ac-alert__close{margin-left:auto;flex-shrink:0;border:none;background:transparent;
+  color:var(--ac-color-text-3);cursor:pointer}
+
+/* ===== 筛选区 ===== */
+.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));
+  gap:var(--ac-space-3);align-items:center}
+.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-2);min-width:0}
+.tpl-filter__label{flex:0 0 68px;text-align:right;font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.tpl-filter__control{flex:1;min-width:0;position:relative}
+.tpl-filter__actions{display:flex;gap:var(--ac-space-2)}
+
+/* ===== 控件 ===== */
+.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
+  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
+  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-select__trigger:hover{background:var(--ac-fill-3)}
+.ac-select__trigger.is-placeholder .ac-select__value{color:var(--ac-color-text-3)}
+.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+
+/* 数字步进 */
+.ac-inputnumber{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
+.ac-inputnumber input{width:96px;height:32px;text-align:center;background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-inputnumber button{width:28px;height:32px;border:1px solid transparent;
+  border-radius:var(--ac-radius-sm);background:var(--ac-fill-2);cursor:pointer;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.ac-inputnumber button:hover{background:var(--ac-fill-3)}
+
+.ac-textarea{width:100%;padding:var(--ac-space-2) var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  resize:vertical;line-height:var(--ac-lh-normal)}
+.ac-textarea:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+
+/* Switch */
+.ac-switch{position:relative;width:40px;height:22px;border-radius:var(--ac-radius-full);
+  background:var(--ac-fill-3);border:none;cursor:pointer;padding:0;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-switch::after{content:'';position:absolute;top:3px;left:3px;width:16px;height:16px;
+  border-radius:var(--ac-radius-full);background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
+  transition:left var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-switch.is-on{background:var(--ac-primary-6)}
+.ac-switch.is-on::after{left:21px}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
+  color:var(--ac-primary-6);font-size:var(--ac-fs-sm)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+.ac-btn--text.is-danger{color:var(--ac-color-danger)}
+
+/* ===== 标签 ===== */
+.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
+.ac-tag--pill{border-radius:var(--ac-radius-full);padding:0 var(--ac-space-3)}
+.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
+.ac-tag.is-processing{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
+.ac-tag.is-snack{background:var(--ac-primary-1);color:var(--ac-primary-7)}
+.ac-tag.is-ydtj{background:var(--ac-palette-magenta-1);color:var(--ac-palette-magenta-6)}
+
+/* ===== 表格 ===== */
+.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
+.tpl-table{width:100%;min-width:1180px;border-collapse:separate;border-spacing:0;
+  font-size:var(--ac-fs-md)}
+.tpl-table thead th{background:var(--ac-fill-1);
+  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
+.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
+.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
+  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
+.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
+.cell-wildcard{font-family:var(--ac-ff-mono);color:var(--ac-color-text-2)}
+.cell-window{border-bottom:1px dashed var(--ac-border-3);cursor:help}
+.cell-updated{display:flex;flex-direction:column;min-width:0}
+.cell-updated__at{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.cell-muted{color:var(--ac-color-text-3)}
+.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-2);position:relative}
+
+/* 命中顺序说明 */
+.cfg-match-tip{padding:var(--ac-space-2) var(--ac-space-3);border-radius:var(--ac-radius-md);
+  background:var(--ac-fill-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);
+  line-height:var(--ac-lh-relaxed)}
+
+/* 系统默认阈值参考区 */
+.cfg-default{padding:var(--ac-space-3);border:1px dashed var(--ac-border-2);
+  border-radius:var(--ac-radius-md);background:var(--ac-fill-1)}
+.cfg-default__title{margin-bottom:var(--ac-space-2);font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.cfg-default__grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));
+  gap:var(--ac-space-2)}
+.cfg-default__item{display:flex;align-items:center;gap:var(--ac-space-2)}
+.cfg-default__value{font-size:var(--ac-fs-xs);color:var(--ac-color-text-2)}
+.cfg-default__foot{margin-top:var(--ac-space-2);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== 分页 ===== */
+.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.tpl-pagination__pager{display:flex;gap:var(--ac-space-1)}
+.tpl-pagination__pager button{min-width:32px;height:32px;padding:0 var(--ac-space-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);background:transparent;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
+.tpl-pagination__pager button.is-active{background:var(--ac-primary-1);color:var(--ac-primary-6)}
+.tpl-pagination__pager button:disabled{color:var(--ac-text-4);cursor:not-allowed}
+
+/* ===== Modal ===== */
+.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.4);
+  z-index:var(--ac-z-modal);align-items:flex-start;justify-content:center;
+  padding-top:var(--ac-space-8);overflow:auto}
+.ac-modal-mask.is-open{display:flex}
+.ac-modal{width:600px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
+  box-shadow:var(--ac-shadow-3);display:flex;flex-direction:column}
+.ac-modal--sm{width:440px}
+.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold)}
+.ac-modal__close{border:none;background:transparent;cursor:pointer;
+  font-size:var(--ac-fs-lg);color:var(--ac-color-text-3);line-height:1}
+.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
+.ac-form__item{display:flex;flex-direction:column;gap:var(--ac-space-2)}
+.ac-form__label{color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.ac-form__label.is-required::before{content:'*';margin-right:var(--ac-space-1);color:var(--ac-color-danger)}
+.ac-form__extra{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.ac-form__grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:var(--ac-space-4)}
+.sla-modal__foot-note{padding-top:var(--ac-space-2);border-top:1px dashed var(--ac-border-2);
+  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);line-height:var(--ac-lh-relaxed)}
+.sla-modal__foot-note strong{color:var(--ac-color-text-2);font-weight:var(--ac-fw-medium)}
+
+/* ===== Popconfirm / Toast ===== */
+.ac-popconfirm{display:none;position:absolute;bottom:calc(100% + var(--ac-space-2));right:0;
+  width:300px;padding:var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  z-index:var(--ac-z-popconfirm);text-align:left}
+.ac-popconfirm.is-open{display:block}
+.ac-popconfirm__text{display:block;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  margin-bottom:var(--ac-space-3)}
+.ac-popconfirm__actions{display:flex;justify-content:flex-end;gap:var(--ac-space-2)}
+.ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
+  display:none;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);z-index:var(--ac-z-toast)}
+.ac-toast.is-open{display:flex}
+.ac-toast__icon{color:var(--ac-color-success)}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+
+  <nav class="tpl-breadcrumb">
+    <a href="#">首页</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="#">研发</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="./requirement-list.html">需求管理</a><span class="tpl-breadcrumb__sep">/</span>
+    <span class="tpl-breadcrumb__current">SLA 配置</span>
+  </nav>
+
+  <section class="tpl-page">
+
+    <!-- ⓪ 常驻说明（可关闭）：SLA 与审批链职责边界 + 立即生效 -->
+    <div class="ac-alert ac-alert--info" id="introAlert">
+      <span>
+        SLA 配置管「多久没审就催」，审批链配置管「谁来审」，二者相互独立；🚨 修改后<strong>立即对在途需求生效</strong>，不做快照
+        <a href="./requirement-config.html">前往审批链配置</a>
+      </span>
+      <button type="button" class="ac-alert__close" onclick="document.getElementById('introAlert').remove()">✕</button>
+    </div>
+
+    <!-- ① 缺配告警（warning，仅提示不阻断；与审批链缺级直接拒绝提交严格区分） -->
+    <div class="ac-alert ac-alert--warning">
+      有点推荐 L3 级无 SLA 配置，将按系统默认 48h/72h 催办
+    </div>
+
+    <!-- ② 筛选 panel -->
+    <div class="tpl-panel">
+      <div class="tpl-filter">
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">产品线</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-toast-sel>
+              <div class="ac-select__trigger is-placeholder">
+                <span class="ac-select__value">全部产品线</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">审批级次</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-toast-sel>
+              <div class="ac-select__trigger is-placeholder">
+                <span class="ac-select__value">全部级次</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">状态</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-toast-sel>
+              <div class="ac-select__trigger is-placeholder">
+                <span class="ac-select__value">全部状态</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="tpl-filter__actions">
+          <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按当前条件查询')">查询</button>
+          <button type="button" class="ac-btn" onclick="acToast('已重置筛选条件')">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ SLA 阈值矩阵 panel -->
+    <div class="tpl-panel">
+      <div class="tpl-panel__title-row">
+        <h2 class="tpl-panel__title">SLA 阈值矩阵</h2>
+        <button type="button" class="ac-btn ac-btn--primary" onclick="openModal('slaModal')">+ 新增配置</button>
+      </div>
+
+      <div class="cfg-match-tip">命中顺序：产品线必须等值命中（不降级）→ 优先级精确 → 优先级 * 通配 → 均未命中则走系统默认 48h/72h/24h，命中即止</div>
+
+      <div class="tpl-table-wrap">
+        <table class="tpl-table">
+          <thead>
+            <tr>
+              <th>产品线</th>
+              <th>优先级</th>
+              <th>审批级次</th>
+              <th>催办阈值</th>
+              <th>升级阈值</th>
+              <th>去重窗口</th>
+              <th>状态</th>
+              <th>最后修改</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
+              <td><span class="ac-tag is-error">P0 紧急</span></td>
+              <td>L1 业务线审批</td>
+              <td>24 小时</td>
+              <td>48 小时（≈2 天）</td>
+              <td><span class="cell-window" title="同一需求同一级次在一个窗口内仅催一次">24 小时</span></td>
+              <td>
+                <span class="tpl-row-actions">
+                  <button type="button" class="ac-switch is-on" data-switch></button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">停用后该条件回退至系统默认阈值，确认停用？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
+                        data-msg="配置已停用">确认停用</button>
+                    </span>
+                  </span>
+                </span>
+              </td>
+              <td>
+                <span class="cell-updated">吴奥林<span class="cell-updated__at">2026-10-11 15:20</span></span>
+              </td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button type="button" class="ac-btn ac-btn--text" onclick="openModal('slaModal')">编辑</button>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-delete>删除</button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">删除后该条件将按系统默认 48h/72h 催办，确认删除？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok data-msg="配置已删除">确认删除</button>
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
+              <td><span class="ac-tag is-warning">P1 高</span></td>
+              <td>L1 业务线审批</td>
+              <td>48 小时（≈2 天）</td>
+              <td>72 小时（≈3 天）</td>
+              <td><span class="cell-window" title="同一需求同一级次在一个窗口内仅催一次">24 小时</span></td>
+              <td>
+                <span class="tpl-row-actions">
+                  <button type="button" class="ac-switch is-on" data-switch></button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">停用后该条件回退至系统默认阈值，确认停用？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok data-msg="配置已停用">确认停用</button>
+                    </span>
+                  </span>
+                </span>
+              </td>
+              <td>
+                <span class="cell-updated">刘操<span class="cell-updated__at">2026-09-28 10:02</span></span>
+              </td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button type="button" class="ac-btn ac-btn--text" onclick="openModal('slaModal')">编辑</button>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-delete>删除</button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">删除后该条件将按系统默认 48h/72h 催办，确认删除？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok data-msg="配置已删除">确认删除</button>
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
+              <!-- 优先级 * 为该产品线 / 级次的兜底配置，不套语义色药丸 -->
+              <td><span class="cell-wildcard">* 全优先级</span></td>
+              <td>L2 实施确认</td>
+              <td>48 小时（≈2 天）</td>
+              <td>72 小时（≈3 天）</td>
+              <td><span class="cell-window" title="同一需求同一级次在一个窗口内仅催一次">24 小时</span></td>
+              <td>
+                <span class="tpl-row-actions">
+                  <button type="button" class="ac-switch is-on" data-switch></button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">停用后该条件回退至系统默认阈值，确认停用？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok data-msg="配置已停用">确认停用</button>
+                    </span>
+                  </span>
+                </span>
+              </td>
+              <td>
+                <span class="cell-updated">系统初始化<span class="cell-updated__at">2026-09-01 00:00</span></span>
+              </td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button type="button" class="ac-btn ac-btn--text" onclick="openModal('slaModal')">编辑</button>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-delete>删除</button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">删除后该条件将按系统默认 48h/72h 催办，确认删除？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok data-msg="配置已删除">确认删除</button>
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><span class="ac-tag ac-tag--pill is-ydtj">有点推荐</span></td>
+              <td><span class="ac-tag is-processing">P2 中</span></td>
+              <td>L3 产品确认</td>
+              <td>48 小时（≈2 天）</td>
+              <td>96 小时（≈4 天）</td>
+              <td><span class="cell-window" title="同一需求同一级次在一个窗口内仅催一次">12 小时</span></td>
+              <td>
+                <button type="button" class="ac-switch" data-switch-enable></button>
+              </td>
+              <td>
+                <span class="cell-updated">吴奥林<span class="cell-updated__at">2026-10-09 09:31</span></span>
+              </td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button type="button" class="ac-btn ac-btn--text" onclick="openModal('slaModal')">编辑</button>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-delete>删除</button>
+                  <span class="ac-popconfirm">
+                    <span class="ac-popconfirm__text">删除后该条件将按系统默认 48h/72h 催办，确认删除？</span>
+                    <span class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok data-msg="配置已删除">确认删除</button>
+                    </span>
+                  </span>
+                </div>
+              </td>
+            </tr>
+            <!-- 非管理员只读视图：操作列展示灰色「只读」，状态 Switch 禁用 -->
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tpl-pagination">
+        <span>共 24 条</span>
+        <div class="tpl-pagination__pager">
+          <button type="button" disabled>‹</button>
+          <button type="button" class="is-active">1</button>
+          <button type="button">2</button>
+          <button type="button">3</button>
+          <button type="button">›</button>
+        </div>
+      </div>
+
+      <!-- 系统默认阈值参考（只读说明区） -->
+      <div class="cfg-default">
+        <div class="cfg-default__title">系统默认阈值参考（无匹配配置时生效）</div>
+        <div class="cfg-default__grid">
+          <div class="cfg-default__item">
+            <span class="ac-tag is-error">P0 紧急</span>
+            <span class="cfg-default__value">催办 24h / 升级 48h</span>
+          </div>
+          <div class="cfg-default__item">
+            <span class="ac-tag is-warning">P1 高</span>
+            <span class="cfg-default__value">催办 48h / 升级 72h</span>
+          </div>
+          <div class="cfg-default__item">
+            <span class="ac-tag is-processing">P2 中</span>
+            <span class="cfg-default__value">催办 48h / 升级 72h</span>
+          </div>
+          <div class="cfg-default__item">
+            <span class="ac-tag is-default">P3 低</span>
+            <span class="cfg-default__value">催办 72h / 升级 120h</span>
+          </div>
+        </div>
+        <div class="cfg-default__foot">去重窗口默认 24 小时；以上默认值不可在本页修改</div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<!-- ===== 新增/编辑 SLA 配置弹窗（600px，2 列网格；编辑态 产品线/优先级/级次 唯一键只读） ===== -->
+<div class="ac-modal-mask" id="slaModal">
+  <div class="ac-modal" role="dialog" aria-modal="true" aria-label="新增 SLA 配置">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">新增 SLA 配置</span>
+      <button type="button" class="ac-modal__close" onclick="closeModal('slaModal')">✕</button>
+    </div>
+    <div class="ac-modal__body">
+      <div class="ac-form__grid">
+        <div class="ac-form__item">
+          <span class="ac-form__label is-required">产品线</span>
+          <div class="ac-select">
+            <div class="ac-select__trigger is-placeholder">
+              <span class="ac-select__value">请选择产品线</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+          </div>
+          <div class="ac-form__extra">必须等值命中，不提供通配；编辑态不可修改</div>
+        </div>
+        <div class="ac-form__item">
+          <span class="ac-form__label is-required">优先级</span>
+          <div class="ac-select">
+            <div class="ac-select__trigger is-placeholder">
+              <span class="ac-select__value">请选择优先级</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+          </div>
+          <div class="ac-form__extra">选择 * 即为该产品线 / 级次的全优先级兜底</div>
+        </div>
+        <div class="ac-form__item">
+          <span class="ac-form__label is-required">审批级次</span>
+          <div class="ac-select">
+            <div class="ac-select__trigger is-placeholder">
+              <span class="ac-select__value">请选择审批级次</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+          </div>
+          <div class="ac-form__extra">不同级次可配置不同阈值</div>
+        </div>
+        <div class="ac-form__item">
+          <span class="ac-form__label is-required">催办阈值（小时）</span>
+          <div class="ac-inputnumber">
+            <button type="button" data-step="-1" data-target="remind">−</button>
+            <input id="remind" value="48" inputmode="numeric" />
+            <button type="button" data-step="1" data-target="remind">＋</button>
+          </div>
+          <div class="ac-form__extra">停留超过该时长即触发企微催办；1–720</div>
+        </div>
+        <div class="ac-form__item">
+          <span class="ac-form__label is-required">升级阈值（小时）</span>
+          <div class="ac-inputnumber">
+            <button type="button" data-step="-1" data-target="escalate">−</button>
+            <input id="escalate" value="72" inputmode="numeric" />
+            <button type="button" data-step="1" data-target="escalate">＋</button>
+          </div>
+          <div class="ac-form__extra">停留超过该时长同时通知上级；必须大于催办阈值</div>
+        </div>
+        <div class="ac-form__item">
+          <span class="ac-form__label">去重窗口（小时）</span>
+          <div class="ac-inputnumber">
+            <button type="button" data-step="-1" data-target="window">−</button>
+            <input id="window" value="24" inputmode="numeric" />
+            <button type="button" data-step="1" data-target="window">＋</button>
+          </div>
+          <div class="ac-form__extra">同一需求同一级次在一个窗口内仅催一次；1–168</div>
+        </div>
+      </div>
+      <div class="ac-form__item">
+        <span class="ac-form__label">配置说明</span>
+        <textarea class="ac-textarea" rows="3" maxlength="256"
+          placeholder="补充该条阈值的适用背景，便于他人理解（选填，≤256 字）"></textarea>
+      </div>
+      <!-- 底部常驻说明：与审批链配置的快照语义严格区分 -->
+      <div class="sla-modal__foot-note">
+        保存后<strong>立即对在途需求生效</strong>（SLA 不做快照），与审批链配置「仅对新提交生效」不同
+      </div>
+    </div>
+    <div class="ac-modal__foot">
+      <button type="button" class="ac-btn" onclick="closeModal('slaModal')">取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" id="btnSlaSave">确认保存</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 调紧阈值确认（编辑时新值 < 旧值触发；N 由 /sla/config/impact 预检得出） ===== -->
+<div class="ac-modal-mask" id="impactModal">
+  <div class="ac-modal ac-modal--sm" role="dialog" aria-modal="true" aria-label="调紧阈值确认">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">调紧阈值确认</span>
+      <button type="button" class="ac-modal__close" onclick="closeModal('impactModal')">✕</button>
+    </div>
+    <div class="ac-modal__body">
+      调紧后将有 <strong>6</strong> 条在途需求立即进入催办范围，下一个整点即发送，确认保存？
+    </div>
+    <div class="ac-modal__foot">
+      <button type="button" class="ac-btn" onclick="closeModal('impactModal')">返回修改</button>
+      <button type="button" class="ac-btn ac-btn--primary"
+        onclick="closeModal('impactModal');acToast('SLA 配置已更新，已对在途需求生效')">确认保存</button>
+    </div>
+  </div>
+</div>
+
+<div class="ac-toast" id="acToast"><span class="ac-toast__icon">✓</span><span id="acToastText"></span></div>
+
+<script>
+(function () {
+  /* ── Popconfirm（状态停用 / 删除） ── */
+  function closeAllPops() {
+    document.querySelectorAll('.ac-popconfirm.is-open').forEach(function (p) { p.classList.remove('is-open'); });
+  }
+  document.querySelectorAll('[data-pop-cancel]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); closeAllPops(); });
+  });
+  document.querySelectorAll('[data-pop-ok]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation(); closeAllPops(); acToast(b.getAttribute('data-msg'));
+    });
+  });
+  document.addEventListener('click', function () { closeAllPops(); });
+
+  /* 启用态 Switch 点击 → 弹停用二次确认；停用态 → 直接启用 */
+  document.querySelectorAll('[data-switch]').forEach(function (sw) {
+    sw.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var pop = sw.parentNode.querySelector('.ac-popconfirm');
+      var open = pop.classList.contains('is-open');
+      closeAllPops();
+      if (!open) pop.classList.add('is-open');
+    });
+  });
+  document.querySelectorAll('[data-switch-enable]').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      sw.classList.add('is-on');
+      acToast('配置已启用');
+    });
+  });
+  document.querySelectorAll('[data-delete]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var pop = btn.parentNode.querySelector('.ac-popconfirm');
+      var open = pop.classList.contains('is-open');
+      closeAllPops();
+      if (!open) pop.classList.add('is-open');
+    });
+  });
+
+  /* ── 数字步进 ── */
+  document.querySelectorAll('.ac-inputnumber button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var input = document.getElementById(b.getAttribute('data-target'));
+      var v = parseInt(input.value, 10) || 0;
+      input.value = Math.max(1, v + Number(b.getAttribute('data-step')));
+    });
+  });
+
+  /* ── 保存：演示调紧阈值影响预检（编辑时新值 < 旧值） ── */
+  document.getElementById('btnSlaSave').addEventListener('click', function () {
+    closeModal('slaModal');
+    openModal('impactModal');
+  });
+})();
+
+/* ── Modal ── */
+function openModal(id) { document.getElementById(id).classList.add('is-open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('is-open'); }
+
+/* ── Toast ── */
+var acToastTimer;
+function acToast(text) {
+  var box = document.getElementById('acToast');
+  document.getElementById('acToastText').textContent = text;
+  box.classList.add('is-open');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2200);
+}
+</script>
+</body>
+</html>

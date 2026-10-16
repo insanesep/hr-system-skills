@@ -72,7 +72,7 @@ RESOLVED/IGNORED 之后同源复发(新轮仍命中) ──新建单并关联 pa
 | OPEN/CLAIMED 超 SLA(§7) | 提醒负责人,抄送其 direct_leader | 每日 09:30 合并 1 条 |
 | 采集失败(agent 侧) | 保留群发 webhook 简报 @ chenguojian | 每轮最多 1 条 |
 
-**切换执行(2026-10-08 完成)**:模块上线发版后,两个 agent 手册 Step 5 与 qoder_cron prompt 已同日切换——产出改走 MCP 工具 `snackingdom__blacklight_ticket_report` 建单(§8 实现注的工具入口),企微应用消息按人提醒;群 webhook 仅保留采集失败/建单失败简报(每轮最多 1 条,@ chenguojian)。
+**切换执行(2026-10-08 完成)**:模块上线发版后,两个 agent 手册 Step 5 与 qoder_cron prompt 已同日切换——产出改走 MCP 工具 `busyming__blacklight_ticket_report` 建单(§8 实现注的工具入口),企微应用消息按人提醒;群 webhook 仅保留采集失败/建单失败简报(每轮最多 1 条,@ chenguojian)。
 
 ## 7. SLA 与统计
 
@@ -90,33 +90,9 @@ RESOLVED/IGNORED 之后同源复发(新轮仍命中) ──新建单并关联 pa
 
 两个 agent 落盘完成后(Step 5 替换点),调 devops 服务:
 
-`POST {PROD_BASE}/snackingdom-devops/api/v1/ops/blacklight-ticket/report`(登录态复用 app_reviewer,与 /log/trace 同 token)
+`POST {PROD_BASE}/busyming-devops/api/v1/ops/blacklight-ticket/report`(登录态复用 app_reviewer,与 /log/trace 同 token)
 
 请求体(批量,单轮一次调用):
-
-```json
-{
-  "source": "blacklight | bigsqlfix",
-  "roundAt": "2026-09-20 16:32:00",
-  "windowStart": "...", "windowEnd": "...",
-  "items": [
-    {
-      "bizKey": "382fffd02ad3 或 warehouse|io.busyming...Mapper.selectX",
-      "level": "P1|P2",
-      "category": "FIXED_REVIEW|PENDING_JUDGE|BIZ_CONFIRM",
-      "svc": "warehouse",
-      "title": "一句话问题(≤60字)",
-      "summary": "一句话根因/现状",
-      "suggestion": "建议:一句人话结论(PENDING_JUDGE 必填)",
-      "commitHash": "ffab12a(FIXED_REVIEW 必填)",
-      "occurCount": 205,
-      "evidence": {"traceIds": ["≤3"], "stack": "堆栈样例≤4000字符", "sqlSample": "≤2000字符", "trend": "205→205 持平"},
-      "ownerEmail": "agent 判定结果,可为空(待认领)",
-      "reportPath": "~/.qoder-watchdog/reports/blacklight-20260920-1500.md"
-    }
-  ]
-}
-```
 
 服务端职责:ownerEmail → sys_user 查 owner_user_id/real_name/wecom_user_id(查不到落空待认领)→ 按 §4 upsert → 按 §6 触发提醒。接口幂等由 `uk_source_biz` + upsert 保证,agent 失败重发安全。
 
@@ -124,9 +100,9 @@ RESOLVED/IGNORED 之后同源复发(新轮仍命中) ──新建单并关联 pa
 
 | 工具 | 用途 | 关键参数 |
 |---|---|---|
-| `snackingdom__blacklight_ticket_report` | 建单上报(与 §8 同 Service) | source + items 数组(元素含 bizKey/level/category/svc/title 等) |
-| `snackingdom__blacklight_ticket_reply` | 回复(追加 REMARK 时间线) | id + remark |
-| `snackingdom__blacklight_ticket_transition` | 状态流转 | id + action(claim/resolve/ignore/review-pass/review-reject/reassign)+ remark/reason/ownerUserId |
+| `busyming__blacklight_ticket_report` | 建单上报(与 §8 同 Service) | source + items 数组(元素含 bizKey/level/category/svc/title 等) |
+| `busyming__blacklight_ticket_reply` | 回复(追加 REMARK 时间线) | id + remark |
+| `busyming__blacklight_ticket_transition` | 状态流转 | id + action(claim/resolve/ignore/review-pass/review-reject/reassign)+ remark/reason/ownerUserId |
 
 feign 写端点突破 `McpQueryFeignController` 只读收口先例,系用户明确要求,已在类注释与部署 README 登记。
 

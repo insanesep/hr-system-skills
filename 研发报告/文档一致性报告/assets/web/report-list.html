@@ -1,0 +1,671 @@
+<!doctype html>
+<!--
+  文档一致性报告 · 报告列表页（Web 端原型）
+  ================================================================
+  规格真源：../../references/web-ui.md §报告列表
+  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl（Tab 形态）
+            拓扑 = .tpl-page > [筛选 .tpl-panel] > .tpl-kpi-grid > [表格 .tpl-panel]
+            表格 panel 节奏 = .tpl-tabs → .tpl-toolbar → 内容 → .tpl-pagination
+  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
+            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>文档一致性报告 · 报告列表</title>
+<style>
+/* ==========================================================================
+   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
+   ========================================================================== */
+:root{
+  /* palette */
+  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
+  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  /* semantic */
+  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
+  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
+  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
+  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
+  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
+  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+  /* alias --ac-color-* */
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
+  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
+  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
+  /* spacing */
+  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+  /* radius */
+  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
+  /* shadow */
+  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
+  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
+  /* typography */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
+  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
+  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
+  /* motion / z-index */
+  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
+}
+
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
+.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
+  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
+  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
+.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+.web-nav__spacer{flex:1}
+
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
+  display:flex;flex-direction:column;gap:var(--ac-space-4)}
+
+/* ===== 筛选区 ===== */
+.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
+.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
+.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.tpl-filter__control{flex:1;min-width:0;position:relative}
+.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
+
+/* ===== 控件 ===== */
+.ac-input__inner{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-input__inner::placeholder{color:var(--ac-color-text-3)}
+.ac-input__inner:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+select.ac-input__inner{cursor:pointer}
+.ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
+  padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm)}
+.ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
+  color:var(--ac-primary-6)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+.ac-btn--text.is-plain{color:var(--ac-color-text-2)}
+
+/* ===== 类型徽标 ===== */
+.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
+.ac-tag.is-proj-a{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
+.ac-tag.is-proj-b{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
+
+/* ===== KPI 统计卡 ===== */
+.tpl-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--ac-space-4)}
+.tpl-kpi{background:var(--ac-bg-1);border:1px solid var(--ac-border-1);
+  border-radius:var(--ac-radius-sm);padding:var(--ac-space-4) var(--ac-space-5);
+  display:flex;flex-direction:column;gap:var(--ac-space-2)}
+.tpl-kpi__head{display:flex;align-items:center;gap:var(--ac-space-2)}
+.tpl-kpi__dot{width:6px;height:6px;border-radius:var(--ac-radius-full);background:var(--ac-color-text-3)}
+.tpl-kpi__dot.is-primary{background:var(--ac-palette-blue-6)}
+.tpl-kpi__dot.is-success{background:var(--ac-color-success)}
+.tpl-kpi__dot.is-warning{background:var(--ac-color-warning)}
+.tpl-kpi__label{font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.tpl-kpi__value-row{display:flex;align-items:baseline;gap:var(--ac-space-1)}
+.tpl-kpi__value{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-5xl);
+  font-weight:var(--ac-fw-semibold);line-height:var(--ac-lh-tight);color:var(--ac-color-text-1)}
+.tpl-kpi__suffix{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.tpl-kpi__foot{min-height:20px;display:flex;align-items:center;gap:var(--ac-space-1);
+  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== Tab / 工具栏 ===== */
+.tpl-tabs{display:flex;align-items:center;gap:var(--ac-space-6);
+  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-tabs__tab{padding:var(--ac-space-3) 0;margin-bottom:-1px;cursor:pointer;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-2);border-bottom:2px solid transparent}
+.tpl-tabs__tab:hover{color:var(--ac-color-text-1)}
+.tpl-tabs__tab.is-active{color:var(--ac-primary-6);font-weight:var(--ac-fw-medium);
+  border-bottom-color:var(--ac-primary-6)}
+.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
+.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
+.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== 周索引分组 ===== */
+.week-group{border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);overflow:hidden}
+.week-group + .week-group{margin-top:var(--ac-space-3)}
+.week-group__head{display:flex;align-items:center;gap:var(--ac-space-3);
+  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-fill-1);cursor:pointer}
+.week-group__arrow{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
+  transition:transform var(--ac-duration-fast) var(--ac-easing-standard)}
+.week-group.is-open .week-group__arrow{transform:rotate(90deg)}
+.week-group__title{font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.week-group__range{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.week-group__badge{margin-left:auto;font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
+  padding:0 var(--ac-space-2);height:22px;display:inline-flex;align-items:center;
+  border-radius:var(--ac-radius-full)}
+.week-group__badge.is-full{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
+.week-group__badge.is-partial{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.week-group__body{display:none}
+.week-group.is-open .week-group__body{display:block}
+
+/* 周组内报告行：标题 / 项目 / 发报日 / 来源 / 版本 / 大小 / 入库时间 / 操作 */
+.report-row{display:grid;
+  grid-template-columns:minmax(0,1fr) 92px 72px 96px 56px 80px 140px 150px;
+  gap:var(--ac-space-3);align-items:center;
+  padding:var(--ac-space-3) var(--ac-space-4);border-top:1px solid var(--ac-border-1);
+  font-size:var(--ac-fs-md)}
+.report-row:hover{background:var(--ac-fill-1)}
+.report-row.is-missing{color:var(--ac-color-text-3)}
+.report-row.is-missing:hover{background:transparent}
+.report-row__title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ac-color-text-1)}
+.report-row.is-missing .report-row__title{color:var(--ac-color-text-3)}
+.cell-muted{color:var(--ac-color-text-3)}
+.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
+.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3)}
+
+/* ===== 明细表格 ===== */
+.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
+.tpl-table{width:100%;min-width:960px;border-collapse:separate;border-spacing:0;
+  font-size:var(--ac-fs-md)}
+.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
+  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
+.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
+.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
+  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
+.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
+.cell-title{display:block;max-width:300px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== 分页 ===== */
+.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+
+/* ===== 弹窗（手动补传） ===== */
+.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);
+  z-index:var(--ac-z-modal);align-items:center;justify-content:center}
+.ac-modal-mask.is-open{display:flex}
+.ac-modal{width:520px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
+  box-shadow:var(--ac-shadow-3)}
+.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold)}
+.ac-modal__close{border:none;background:transparent;font-size:var(--ac-fs-lg);
+  color:var(--ac-color-text-3);cursor:pointer}
+.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
+.ac-form-item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
+.ac-form-item__label{flex-shrink:0;width:76px;text-align:right;line-height:32px;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.ac-form-item__label .req{color:var(--ac-color-danger)}
+.ac-form-item__control{flex:1;min-width:0}
+.ac-alert{padding:var(--ac-space-3) var(--ac-space-4);border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-sm)}
+.ac-alert.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
+.ac-upload{border:1px dashed var(--ac-border-3);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-4);text-align:center;color:var(--ac-color-text-3);
+  font-size:var(--ac-fs-md);cursor:pointer}
+.ac-upload:hover{border-color:var(--ac-primary-6);color:var(--ac-primary-6)}
+.ac-upload__file{margin-top:var(--ac-space-2);font-family:var(--ac-ff-mono);
+  font-size:var(--ac-fs-sm);color:var(--ac-color-text-1)}
+
+/* ===== toast ===== */
+.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
+  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
+  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
+  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-fast);z-index:var(--ac-z-toast)}
+.ac-toast.is-show{opacity:.92}
+
+@media (max-width:1280px){
+  .tpl-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+
+  <!-- 顶部导航：页面身份由 Layout 承担 -->
+  <nav class="web-nav">
+    <span class="web-nav__logo">鸣鸣很忙</span>
+    <span class="web-nav__crumb">研发 / 研发报告 / <b>文档一致性报告</b></span>
+    <span class="web-nav__spacer"></span>
+    <span class="web-nav__crumb">管理员</span>
+  </nav>
+
+  <section class="tpl-page">
+
+    <!-- ① 筛选 panel -->
+    <div class="tpl-panel">
+      <form class="tpl-filter ac-form" onsubmit="return false">
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">项目</span>
+          <div class="tpl-filter__control">
+            <select class="ac-input__inner" aria-label="项目">
+              <option>全部项目</option>
+              <option>示例项目A</option>
+              <option>示例项目B</option>
+            </select>
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">发报日期</span>
+          <div class="tpl-filter__control">
+            <div class="ac-range">
+              <input class="ac-input__inner" value="2026-08-01" aria-label="开始日期" />
+              <span class="ac-range__sep">至</span>
+              <input class="ac-input__inner" value="2026-08-31" aria-label="结束日期" />
+            </div>
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">关键词</span>
+          <div class="tpl-filter__control">
+            <input class="ac-input__inner" placeholder="按报告标题模糊搜索" />
+          </div>
+        </div>
+        <div class="tpl-filter__actions">
+          <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按当前条件查询')">查询</button>
+          <button type="button" class="ac-btn" onclick="acToast('已恢复默认筛选（近 90 天）')">重置</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ② KPI 统计卡区 -->
+    <div class="tpl-kpi-grid">
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot is-success"></span>
+          <span class="tpl-kpi__label">本周已入库</span>
+          <span class="tpl-kpi__hint" title="当前自然周文档一致性报告应入库 2 份（示例项目A / 示例项目B各 1 份）">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">2/2</span><span class="tpl-kpi__suffix">项</span></div>
+        <div class="tpl-kpi__foot">第 36 周已齐全</div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot is-primary"></span>
+          <span class="tpl-kpi__label">累计报告</span>
+          <span class="tpl-kpi__hint" title="已入库文档一致性报告总数（按报告项 + 发报日计，不含历史版本）">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">32</span><span class="tpl-kpi__suffix">份</span></div>
+        <div class="tpl-kpi__foot">自 2026-05 起归档</div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot"></span>
+          <span class="tpl-kpi__label">最近发报日</span>
+          <span class="tpl-kpi__hint" title="最近一次报告入库对应的发报日">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value" style="font-size:var(--ac-fs-3xl)">08-31</span><span class="tpl-kpi__suffix">2026</span></div>
+        <div class="tpl-kpi__foot">服务端生成落库</div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot is-warning"></span>
+          <span class="tpl-kpi__label">历史版本</span>
+          <span class="tpl-kpi__hint" title="重复入库产生的历史版本总数，可在详情页回溯">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">3</span><span class="tpl-kpi__suffix">版</span></div>
+        <div class="tpl-kpi__foot">修正重发留痕</div>
+      </div>
+    </div>
+
+    <!-- ③ 表格 panel：Tab 双视角 -->
+    <div class="tpl-panel">
+      <div class="tpl-tabs">
+        <div class="tpl-tabs__tab is-active" data-tab="week">按周索引</div>
+        <div class="tpl-tabs__tab" data-tab="flat">报告明细</div>
+      </div>
+
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left">
+          <span class="tpl-toolbar__title">文档一致性报告索引</span>
+          <span class="tpl-toolbar__meta">周归属按发报日所在自然周（周一为起点）计算；每自然周固定 2 个报告项</span>
+        </div>
+        <div class="tpl-toolbar__right">
+          <button type="button" class="ac-btn ac-btn--primary" data-upload-open>+ 手动补传</button>
+        </div>
+      </div>
+
+      <!-- Tab1：按周索引 -->
+      <div data-tabpanel="week">
+
+        <!-- 第 36 周（当前周，齐全） -->
+        <div class="week-group is-open">
+          <div class="week-group__head" data-week-toggle>
+            <span class="week-group__arrow">▶</span>
+            <span class="week-group__title">2026 年第 36 周</span>
+            <span class="week-group__range">08-31 ~ 09-06</span>
+            <span class="week-group__badge is-full">2/2</span>
+          </div>
+          <div class="week-group__body">
+            <div class="report-row">
+              <span class="report-row__title" title="一致性检查报告（示例项目A） - 2026-08-31">一致性检查报告（示例项目A） - 2026-08-31</span>
+              <span><span class="ac-tag is-proj-a">示例项目A</span></span>
+              <span class="cell-mono">08-31</span>
+              <span class="cell-muted">服务端生成</span>
+              <span class="cell-mono">v1</span>
+              <span class="cell-muted">52.6KB</span>
+              <span class="cell-muted">08-31 21:10</span>
+              <span class="tpl-row-actions">
+                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260831_proj-a.md')">获取原件</button>
+              </span>
+            </div>
+            <div class="report-row">
+              <span class="report-row__title" title="一致性检查报告（示例项目B） - 2026-08-31">一致性检查报告（示例项目B） - 2026-08-31</span>
+              <span><span class="ac-tag is-proj-b">示例项目B</span></span>
+              <span class="cell-mono">08-31</span>
+              <span class="cell-muted">手动补传</span>
+              <span class="cell-mono">v2</span>
+              <span class="cell-muted">48.1KB</span>
+              <span class="cell-muted">09-01 09:25</span>
+              <span class="tpl-row-actions">
+                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260831_proj-b.md')">获取原件</button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 第 35 周（待补：示例项目B未入库） -->
+        <div class="week-group is-open">
+          <div class="week-group__head" data-week-toggle>
+            <span class="week-group__arrow">▶</span>
+            <span class="week-group__title">2026 年第 35 周</span>
+            <span class="week-group__range">08-24 ~ 08-30</span>
+            <span class="week-group__badge is-partial">1/2 待补</span>
+          </div>
+          <div class="week-group__body">
+            <div class="report-row">
+              <span class="report-row__title" title="一致性检查报告（示例项目A） - 2026-08-24">一致性检查报告（示例项目A） - 2026-08-24</span>
+              <span><span class="ac-tag is-proj-a">示例项目A</span></span>
+              <span class="cell-mono">08-24</span>
+              <span class="cell-muted">服务端生成</span>
+              <span class="cell-mono">v1</span>
+              <span class="cell-muted">47.5KB</span>
+              <span class="cell-muted">08-24 21:12</span>
+              <span class="tpl-row-actions">
+                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260824_proj-a.md')">获取原件</button>
+              </span>
+            </div>
+            <div class="report-row is-missing">
+              <span class="report-row__title">未入库</span>
+              <span><span class="ac-tag is-proj-b">示例项目B</span></span>
+              <span class="cell-muted">—</span>
+              <span class="cell-muted">—</span>
+              <span class="cell-muted">—</span>
+              <span class="cell-muted">—</span>
+              <span class="cell-muted">—</span>
+              <span class="tpl-row-actions">
+                <button type="button" class="ac-btn ac-btn--text" onclick="acToast('已创建生成任务：一致性·示例项目B · 回看 7 天')">立即生成</button>
+                <button type="button" class="ac-btn ac-btn--text is-plain" data-upload-open data-preset="一致性·示例项目B · 第 35 周">补传</button>
+              </span>
+            </div>
+          </div>
+        </div>
+
+        <!-- 第 34 周（收起态） -->
+        <div class="week-group">
+          <div class="week-group__head" data-week-toggle>
+            <span class="week-group__arrow">▶</span>
+            <span class="week-group__title">2026 年第 34 周</span>
+            <span class="week-group__range">08-17 ~ 08-23</span>
+            <span class="week-group__badge is-full">2/2</span>
+          </div>
+          <div class="week-group__body">
+            <div class="report-row">
+              <span class="report-row__title" title="一致性检查报告（示例项目A） - 2026-08-17">一致性检查报告（示例项目A） - 2026-08-17</span>
+              <span><span class="ac-tag is-proj-a">示例项目A</span></span>
+              <span class="cell-mono">08-17</span>
+              <span class="cell-muted">服务端生成</span>
+              <span class="cell-mono">v1</span>
+              <span class="cell-muted">45.0KB</span>
+              <span class="cell-muted">08-17 21:08</span>
+              <span class="tpl-row-actions">
+                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260817_proj-a.md')">获取原件</button>
+              </span>
+            </div>
+            <div class="report-row">
+              <span class="report-row__title" title="一致性检查报告（示例项目B） - 2026-08-17">一致性检查报告（示例项目B） - 2026-08-17</span>
+              <span><span class="ac-tag is-proj-b">示例项目B</span></span>
+              <span class="cell-mono">08-17</span>
+              <span class="cell-muted">推送上报</span>
+              <span class="cell-mono">v1</span>
+              <span class="cell-muted">44.2KB</span>
+              <span class="cell-muted">08-17 22:40</span>
+              <span class="tpl-row-actions">
+                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260817_proj-b.md')">获取原件</button>
+              </span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab2：报告明细（平铺表格，含项目列） -->
+      <div data-tabpanel="flat" hidden>
+        <div class="tpl-table-wrap">
+          <table class="tpl-table ac-table">
+            <thead>
+              <tr>
+                <th>发报日期</th>
+                <th>所属周</th>
+                <th>项目</th>
+                <th>报告标题</th>
+                <th>来源</th>
+                <th>版本</th>
+                <th>文件大小</th>
+                <th>入库时间</th>
+                <th>操作</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td class="cell-mono">2026-08-31</td>
+                <td>第 36 周</td>
+                <td><span class="ac-tag is-proj-a">示例项目A</span></td>
+                <td><span class="cell-title" title="一致性检查报告（示例项目A） - 2026-08-31">一致性检查报告（示例项目A） - 2026-08-31</span></td>
+                <td class="cell-muted">服务端生成</td>
+                <td class="cell-mono">v1</td>
+                <td class="cell-muted">52.6KB</td>
+                <td class="cell-muted">08-31 21:10</td>
+                <td><div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                  <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260831_proj-a.md')">获取原件</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="cell-mono">2026-08-31</td>
+                <td>第 36 周</td>
+                <td><span class="ac-tag is-proj-b">示例项目B</span></td>
+                <td><span class="cell-title" title="一致性检查报告（示例项目B） - 2026-08-31">一致性检查报告（示例项目B） - 2026-08-31</span></td>
+                <td class="cell-muted">手动补传</td>
+                <td class="cell-mono">v2</td>
+                <td class="cell-muted">48.1KB</td>
+                <td class="cell-muted">09-01 09:25</td>
+                <td><div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                  <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260831_proj-b.md')">获取原件</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="cell-mono">2026-08-24</td>
+                <td>第 35 周</td>
+                <td><span class="ac-tag is-proj-a">示例项目A</span></td>
+                <td><span class="cell-title" title="一致性检查报告（示例项目A） - 2026-08-24">一致性检查报告（示例项目A） - 2026-08-24</span></td>
+                <td class="cell-muted">服务端生成</td>
+                <td class="cell-mono">v1</td>
+                <td class="cell-muted">47.5KB</td>
+                <td class="cell-muted">08-24 21:12</td>
+                <td><div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                  <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260824_proj-a.md')">获取原件</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="cell-mono">2026-08-17</td>
+                <td>第 34 周</td>
+                <td><span class="ac-tag is-proj-a">示例项目A</span></td>
+                <td><span class="cell-title" title="一致性检查报告（示例项目A） - 2026-08-17">一致性检查报告（示例项目A） - 2026-08-17</span></td>
+                <td class="cell-muted">服务端生成</td>
+                <td class="cell-mono">v1</td>
+                <td class="cell-muted">45.0KB</td>
+                <td class="cell-muted">08-17 21:08</td>
+                <td><div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                  <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260817_proj-a.md')">获取原件</button>
+                </div></td>
+              </tr>
+              <tr>
+                <td class="cell-mono">2026-08-17</td>
+                <td>第 34 周</td>
+                <td><span class="ac-tag is-proj-b">示例项目B</span></td>
+                <td><span class="cell-title" title="一致性检查报告（示例项目B） - 2026-08-17">一致性检查报告（示例项目B） - 2026-08-17</span></td>
+                <td class="cell-muted">推送上报</td>
+                <td class="cell-mono">v1</td>
+                <td class="cell-muted">44.2KB</td>
+                <td class="cell-muted">08-17 22:40</td>
+                <td><div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                  <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 consistency_20260817_proj-b.md')">获取原件</button>
+                </div></td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="tpl-pagination">
+          <span>共 32 条</span>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 手动补传弹窗 -->
+<div class="ac-modal-mask" id="uploadModal">
+  <div class="ac-modal">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">手动补传 · 文档一致性报告</span>
+      <button type="button" class="ac-btn ac-btn--text ac-modal__close" data-upload-close>✕</button>
+    </div>
+    <div class="ac-modal__body">
+      <div class="ac-alert is-success" id="uploadHint">已按文件名识别：一致性·示例项目A · 发报日 2026-08-31</div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><span class="req">*</span>项目</span>
+        <div class="ac-form-item__control">
+          <select class="ac-input__inner" aria-label="项目">
+            <option>示例项目A</option>
+            <option>示例项目B</option>
+          </select>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><span class="req">*</span>发报日</span>
+        <div class="ac-form-item__control">
+          <input class="ac-input__inner" value="2026-08-31" aria-label="发报日（不可晚于今天）" />
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label"><span class="req">*</span>报告文件</span>
+        <div class="ac-form-item__control">
+          <div class="ac-upload" onclick="acToast('原型演示：打开文件选择器（仅 .md，≤2MB）')">
+            点击选择或拖拽 .md 文件到此处
+            <div class="ac-upload__file">consistency_20260831_proj-a.md · 52.6KB</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="ac-modal__foot">
+      <button type="button" class="ac-btn" data-upload-close>取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" data-upload-submit>确认补传</button>
+    </div>
+  </div>
+</div>
+
+<div class="ac-toast" id="acToast"></div>
+
+<script>
+(function () {
+  /* ── Tab 切换 ── */
+  document.querySelectorAll('.tpl-tabs__tab').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('.tpl-tabs__tab').forEach(function (t) { t.classList.remove('is-active'); });
+      tab.classList.add('is-active');
+      var key = tab.dataset.tab;
+      document.querySelectorAll('[data-tabpanel]').forEach(function (p) {
+        p.hidden = p.dataset.tabpanel !== key;
+      });
+    });
+  });
+
+  /* ── 周分组手风琴 ── */
+  document.querySelectorAll('[data-week-toggle]').forEach(function (head) {
+    head.addEventListener('click', function () {
+      head.closest('.week-group').classList.toggle('is-open');
+    });
+  });
+
+  /* ── 手动补传弹窗 ── */
+  var modal = document.getElementById('uploadModal');
+  document.querySelectorAll('[data-upload-open]').forEach(function (btn) {
+    btn.addEventListener('click', function () {
+      var preset = btn.getAttribute('data-preset');
+      document.getElementById('uploadHint').textContent = preset
+        ? '已预填：' + preset + '（按周索引缺失行带入）'
+        : '已按文件名识别：一致性·示例项目A · 发报日 2026-08-31';
+      modal.classList.add('is-open');
+    });
+  });
+  document.querySelectorAll('[data-upload-close]').forEach(function (btn) {
+    btn.addEventListener('click', function () { modal.classList.remove('is-open'); });
+  });
+  document.querySelector('[data-upload-submit]').addEventListener('click', function () {
+    modal.classList.remove('is-open');
+    acToast('补传成功，已生成 v1');
+  });
+
+  /* ── toast ── */
+  var toastTimer;
+  window.acToast = function (msg) {
+    var el = document.getElementById('acToast');
+    el.textContent = msg;
+    el.classList.add('is-show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
+  };
+})();
+</script>
+</body>
+</html>

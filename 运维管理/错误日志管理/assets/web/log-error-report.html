@@ -339,7 +339,7 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
       <tbody>
         <tr class="is-selected">
           <td>2026-05-20</td>
-          <td><span class="ac-tag is-app">snackingdom</span></td>
+          <td><span class="ac-tag is-app">busyming</span></td>
           <td class="col-mono">NullPointerException</td>
           <td><div class="ellipsis">订单 * 在 * 处理失败：Cannot invoke "OrderItem.getSkuCode()" because the return value of ...</div></td>
           <td class="col-num"><span class="col-link">428</span></td>
@@ -359,7 +359,7 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
         </tr>
         <tr>
           <td>2026-05-20</td>
-          <td><span class="ac-tag is-app">snackingdom</span></td>
+          <td><span class="ac-tag is-app">busyming</span></td>
           <td class="col-mono">DuplicateKeyException</td>
           <td><div class="ellipsis">Duplicate key * for index 'uk_store_request_no' in 'store_request'</div></td>
           <td class="col-num"><span class="col-link">186</span></td>
@@ -379,7 +379,7 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
         </tr>
         <tr>
           <td>2026-05-20</td>
-          <td><span class="ac-tag is-app">snackingdom-job</span></td>
+          <td><span class="ac-tag is-app">busyming-job</span></td>
           <td class="col-mono">FeignException$ServiceUnavailable</td>
           <td><div class="ellipsis">[503] during [POST] to [http://lemeng-gateway/chain.request.save] : connect timed out, *:*</div></td>
           <td class="col-num"><span class="col-link">94</span></td>
@@ -398,9 +398,9 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
         </tr>
         <tr>
           <td>2026-05-20</td>
-          <td><span class="ac-tag is-app">snackingdom</span></td>
+          <td><span class="ac-tag is-app">busyming</span></td>
           <td class="col-mono">SLSException</td>
-          <td><div class="ellipsis">Project [snackingdom-prod] LogStore [app-log-prod] write throttled, retry after * ms</div></td>
+          <td><div class="ellipsis">Project [busyming-prod] LogStore [app-log-prod] write throttled, retry after * ms</div></td>
           <td class="col-num"><span class="col-link">52</span></td>
           <td>
             <span class="cell-time">2026-05-20 14:21:30</span>
@@ -418,7 +418,7 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
         </tr>
         <tr>
           <td>2026-05-20</td>
-          <td><span class="ac-tag is-app">snackingdom-mq</span></td>
+          <td><span class="ac-tag is-app">busyming-mq</span></td>
           <td class="col-mono">MessageNotReadyException</td>
           <td><div class="ellipsis">Topic [SHELF_SYNC_TOPIC] consumer [shelf-sync-consumer] receive message timeout, msgId=*</div></td>
           <td class="col-num"><span class="col-link">38</span></td>
@@ -437,7 +437,7 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
         </tr>
         <tr>
           <td>2026-05-20</td>
-          <td><span class="ac-tag is-app">snackingdom-web</span></td>
+          <td><span class="ac-tag is-app">busyming-web</span></td>
           <td class="col-mono">IllegalStateException</td>
           <td><div class="ellipsis">Failed to acquire lock 'inventory:adjust:store-*' within 3000ms</div></td>
           <td class="col-num"><span class="col-link">21</span></td>
@@ -490,7 +490,7 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
         <h3 class="detail-section__title">基础信息</h3>
         <div class="detail-meta">
           <span class="detail-meta__k">日期</span>          <span class="detail-meta__v">2026-05-20</span>
-          <span class="detail-meta__k">应用</span>          <span class="detail-meta__v">snackingdom</span>
+          <span class="detail-meta__k">应用</span>          <span class="detail-meta__v">busyming</span>
           <span class="detail-meta__k">LogStore</span>      <span class="detail-meta__v">app-log-prod</span>
           <span class="detail-meta__k">异常类</span>        <span class="detail-meta__v">java.lang.NullPointerException</span>
           <span class="detail-meta__k">指纹</span>          <span class="detail-meta__v">a3f9c8d14b29e7f6c1d8e2b4a7c6f3a9</span>
@@ -515,16 +515,16 @@ body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height:
       <!-- 消息样例 -->
       <section>
         <h3 class="detail-section__title">消息样例 <span class="badge">截断 ≤ 2000 字符</span></h3>
-        <pre class="code-block">订单 12345678 在 2026-05-20 10:00:00 处理失败：Cannot invoke "io.busyming.basic.snackingdom.domain.OrderItem.getSkuCode()" because the return value of "io.busyming.basic.snackingdom.service.OrderService.getOrderItem(java.lang.Long)" is null</pre>
+        <pre class="code-block">订单 12345678 在 2026-05-20 10:00:00 处理失败：Cannot invoke "io.busyming.basic.busyming.domain.OrderItem.getSkuCode()" because the return value of "io.busyming.basic.busyming.service.OrderService.getOrderItem(java.lang.Long)" is null</pre>
       </section>
 
       <!-- 堆栈样例 -->
       <section>
         <h3 class="detail-section__title">堆栈样例 <span class="badge">截断 ≤ 8000 字符</span></h3>
 <pre class="code-block is-stack">java.lang.NullPointerException: Cannot invoke "OrderItem.getSkuCode()" because ...
-    at io.busyming.basic.snackingdom.service.impl.OrderProcessor.process(OrderProcessor.java:128)
-    at io.busyming.basic.snackingdom.service.impl.OrderServiceImpl.confirm(OrderServiceImpl.java:213)
-    at io.busyming.basic.snackingdom.web.controller.OrderController.confirm(OrderController.java:87)
+    at io.busyming.basic.busyming.service.impl.OrderProcessor.process(OrderProcessor.java:128)
+    at io.busyming.basic.busyming.service.impl.OrderServiceImpl.confirm(OrderServiceImpl.java:213)
+    at io.busyming.basic.busyming.web.controller.OrderController.confirm(OrderController.java:87)
     at jdk.internal.reflect.GeneratedMethodAccessor1023.invoke(Unknown Source)
     at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(...)
     at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(...)</pre>

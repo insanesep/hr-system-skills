@@ -1,11 +1,21 @@
 <!doctype html>
 <!--
-  需求管理 · 需求提交表单页（Web 端原型）
+  需求管理 · 需求提交/编辑表单页（Web 端原型）
   ================================================================
   规格真源：../../references/web-ui.md §需求提交/编辑页（表单校验表）
+  实现对齐：busyming-snackingdom-web/src/views/requirement/RequirementEdit.vue
+            + components/AttachmentUploader.vue（2026-10 重画）
   DOM 范本：.agents/skills/page-blueprint/skeletons/web/form-grouped.vue.tpl
             拓扑 = .tpl-page--with-actionbar > [需求信息组 panel] > [归属与分级组 panel]
-                   > .tpl-actionbar（暂存草稿 / 提交审批）
+                   > [附件 panel] > .tpl-actionbar（取消 / 暂存草稿 / 提交审批）
+  本版要点（相对旧版差异）：
+    - 新增「产品线」字段（默认零食王国；选「有点推荐」时业务线整行隐藏）
+    - 提交对象候选集按已选「产品线 × 业务线」过滤；未选归属时置灰提示，切换归属后已选 PM 清空重选
+    - 审批链预览：2026-10-09 起内部单必中专属链（绿色「专属链」标签），不再有「默认链兜底」；
+      未命中时红字告警且「提交审批」置灰
+    - 新增「附件」卡片：拖拽上传区 + 逐文件进度/失败重试/删除（前端 OSS STS 直传，随表单一并提交）
+    - 提交审批前 Popconfirm 二次确认；附件上传中 / 审批链未命中时按钮置灰
+  当前示例形态：新增（编辑态差异以注释标注：REJECTED 顶部驳回 Alert + 产品线/业务线只读）
   Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
             页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
 -->
@@ -13,7 +23,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>提交新需求 · 需求管理</title>
+<title>新增需求 · 需求管理</title>
 <style>
 /* ==========================================================================
    token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
@@ -31,10 +41,10 @@
   --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
   --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
   --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-color-text-3);
   --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
   --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-warning-1:var(--ac-color-warning-1); --ac-color-warning-7:var(--ac-warning-7);
   --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
   --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
   --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
@@ -48,7 +58,7 @@
   --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
   --ac-lh-normal:1.5; --ac-lh-relaxed:1.7; --ac-lh-tight:1.2;
   --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-sticky:10; --ac-z-toast:800;
+  --ac-z-dropdown:100; --ac-z-sticky:10; --ac-z-popconfirm:900; --ac-z-toast:800;
 }
 
 /* ==========================================================================
@@ -64,25 +74,30 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
 .tpl-breadcrumb a:hover{color:var(--ac-primary-6)}
 .tpl-breadcrumb__sep{color:var(--ac-text-4)}
 .tpl-breadcrumb__current{color:var(--ac-color-text-1)}
-.tpl-pagetitle{display:flex;align-items:baseline;gap:var(--ac-space-3);
+.tpl-pagetitle{display:flex;flex-direction:column;gap:var(--ac-space-1);
   padding:var(--ac-space-3) 0 var(--ac-space-4)}
+.tpl-pagetitle__main{display:flex;align-items:center;gap:var(--ac-space-3)}
 .tpl-pagetitle h1{margin:0;font-size:var(--ac-fs-3xl);line-height:var(--ac-lh-tight);
-  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-1)}
+  font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-pagetitle__no{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);color:var(--ac-color-text-3)}
 .tpl-pagetitle__sub{font-size:var(--ac-fs-sm);color:var(--ac-color-text-3)}
 
 .tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
 .tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
   padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
   display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-section__title{margin:0;font-size:var(--ac-fs-xl);line-height:var(--ac-lh-normal);
-  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-1)}
+.tpl-panel__title-row{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+.tpl-section__title{margin:0;font-size:var(--ac-fs-lg);line-height:var(--ac-lh-normal);
+  font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-section__extra{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
 
-/* ===== 表单：单列长表单 · 竖向 label（label 在控件上方） ===== */
+/* ===== 表单：三列网格 · 竖向 label ===== */
 .tpl-section__grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));
   column-gap:var(--ac-space-8);row-gap:var(--ac-space-5)}
 .tpl-section__item{min-width:0;display:flex;flex-direction:column;gap:var(--ac-space-2)}
 .tpl-section__item--full{grid-column:1 / -1}
 .tpl-section__item--half{grid-column:span 2}
+.tpl-section__item.is-hidden{display:none}
 .ac-form-item__label{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-regular);
   color:var(--ac-color-text-2);display:flex;align-items:center;gap:var(--ac-space-1)}
 .ac-form-item__required{color:var(--ac-color-danger)}
@@ -114,6 +129,8 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
   font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
   transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
 .ac-select__trigger:hover{background:var(--ac-fill-3)}
+.ac-select.is-disabled .ac-select__trigger{cursor:not-allowed;color:var(--ac-text-4);background:var(--ac-fill-1)}
+.ac-select.is-disabled .ac-select__trigger:hover{background:var(--ac-fill-1)}
 .ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ac-select__trigger.is-placeholder .ac-select__value{color:var(--ac-color-text-3)}
 .ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
@@ -151,8 +168,6 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
 .ac-radio:hover .ac-radio__dot{border-color:var(--ac-primary-6)}
 .ac-radio input:checked + .ac-radio__dot{background:var(--ac-primary-6);border-color:var(--ac-primary-6)}
 .ac-radio input:checked + .ac-radio__dot::after{transform:scale(1)}
-.ac-radio input:focus-visible + .ac-radio__dot{border-color:var(--ac-primary-6);
-  box-shadow:var(--ac-shadow-2)}
 
 /* ===== 标签 ===== */
 .ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
@@ -163,20 +178,52 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
 .ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
 .ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
 
-/* ===== 审批链预览（只读） ===== */
+/* ===== 审批链预览（只读，随 提交对象/产品线/业务线/类型/优先级 实时刷新） ===== */
 .ac-chain-preview{display:flex;flex-wrap:wrap;align-items:center;gap:var(--ac-space-2);
   min-height:32px;padding:var(--ac-space-2) var(--ac-space-3);
   background:var(--ac-fill-1);border-radius:var(--ac-radius-sm);
   font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
 .ac-chain-preview__placeholder{color:var(--ac-color-text-3)}
+.ac-chain-preview__error{color:var(--ac-color-danger-6)}
 .ac-chain-preview__level{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
 .ac-chain-preview__sep{color:var(--ac-text-4)}
+
+/* ===== 附件组 ===== */
+.att-upload__drop{display:flex;flex-direction:column;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-6);border:1px dashed var(--ac-border-3);border-radius:var(--ac-radius-md);
+  background:var(--ac-fill-1);cursor:pointer;transition:border-color var(--ac-duration-fast)}
+.att-upload__drop:hover{border-color:var(--ac-primary-6)}
+.att-upload__icon{font-size:var(--ac-fs-5xl);color:var(--ac-color-text-3);line-height:1}
+.att-upload__main{font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.att-upload__tip{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.att-list{margin:0;padding:0;list-style:none;display:flex;flex-direction:column}
+.att-item{display:flex;align-items:center;gap:var(--ac-space-3);
+  padding:var(--ac-space-2) 0;border-bottom:1px solid var(--ac-border-1);font-size:var(--ac-fs-sm)}
+.att-item:last-child{border-bottom:none}
+.att-item__icon{flex-shrink:0;width:18px;text-align:center}
+.att-item__icon.is-image{color:var(--ac-palette-blue-6)}
+.att-item__icon.is-doc{color:var(--ac-color-success)}
+.att-item__icon.is-video{color:var(--ac-palette-purple-6)}
+.att-item__main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--ac-space-1)}
+.att-item__line{display:flex;align-items:center;gap:var(--ac-space-2)}
+.att-item__name{max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  color:var(--ac-color-text-1)}
+.att-item__size{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+.att-item__done{color:var(--ac-color-success);font-size:var(--ac-fs-xs)}
+.att-item__error{font-size:var(--ac-fs-xs);color:var(--ac-color-danger)}
+.att-item__progress{height:4px;border-radius:var(--ac-radius-full);background:var(--ac-fill-3);overflow:hidden}
+.att-item__progress-bar{height:100%;width:64%;background:var(--ac-primary-6);border-radius:var(--ac-radius-full)}
+.att-item__ops{flex-shrink:0;display:flex;gap:var(--ac-space-3)}
+.att-item__op{color:var(--ac-primary-6);cursor:pointer;font-size:var(--ac-fs-sm)}
+.att-item__op:hover{text-decoration:underline}
+.att-item__op.is-danger{color:var(--ac-color-danger)}
 
 /* ===== 顶部提示（Alert） ===== */
 .ac-alert{display:none;align-items:flex-start;gap:var(--ac-space-2);
   padding:var(--ac-space-3) var(--ac-space-4);border-radius:var(--ac-radius-sm);
   font-size:var(--ac-fs-md);background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
 .ac-alert.is-open{display:flex}
+.ac-alert--static{display:flex}
 
 /* ===== 按钮 ===== */
 .ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
@@ -190,6 +237,7 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
 .ac-btn--secondary{background:var(--ac-fill-2);border-color:transparent;color:var(--ac-color-text-1)}
 .ac-btn--secondary:hover{background:var(--ac-fill-3)}
 .ac-btn--lg{height:36px;padding:0 var(--ac-space-5)}
+.ac-btn:disabled{opacity:0.5;cursor:not-allowed}
 
 /* ===== 底部固定 ActionBar ===== */
 .tpl-actionbar{position:fixed;left:0;right:0;bottom:0;min-width:1200px;
@@ -198,6 +246,17 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
 .tpl-actionbar__inner{display:flex;align-items:center;justify-content:flex-end;
   gap:var(--ac-space-2);height:56px;padding:0 var(--ac-space-5)}
 .tpl-actionbar__tip{margin-right:auto;font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== Popconfirm ===== */
+.pop-anchor{position:relative}
+.ac-popconfirm{display:none;position:absolute;bottom:calc(100% + var(--ac-space-2));right:0;
+  width:340px;padding:var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  z-index:var(--ac-z-popconfirm);text-align:left}
+.ac-popconfirm.is-open{display:block}
+.ac-popconfirm__text{display:block;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  margin-bottom:var(--ac-space-3)}
+.ac-popconfirm__actions{display:flex;justify-content:flex-end;gap:var(--ac-space-2)}
 
 /* ===== Toast ===== */
 .ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
@@ -226,14 +285,25 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
     <span class="tpl-breadcrumb__current">新增需求</span>
   </nav>
 
+  <!-- 页面标题：编辑态附带编号与当前状态标签；副标题为提交对象驱动口径说明 -->
   <div class="tpl-pagetitle">
-    <h1>提交新需求</h1>
-    <span class="tpl-pagetitle__sub">先选提交对象（产品经理），系统按其审批链流转：命中专属链用专属链，否则走默认链兜底且由提交对象终审</span>
+    <div class="tpl-pagetitle__main">
+      <h1>新增需求</h1>
+      <!-- 编辑态示例：<span class="tpl-pagetitle__no">REQ-20261009-001</span><span class="ac-tag is-default">草稿</span> -->
+    </div>
+    <span class="tpl-pagetitle__sub">先选提交对象（产品经理），系统按其专属审批链流转，由提交对象终审；候选集按已选「产品线 × 业务线」过滤</span>
   </div>
 
   <section class="tpl-page">
 
-    <!-- 提交失败时在表单顶部展示（原样透出后端文案） -->
+    <!-- 编辑态（REJECTED）顶部驳回 Alert 示例：
+    <div class="ac-alert ac-alert--static is-open">
+      <span>!</span>
+      <span><strong>已被 王志远 驳回，请按驳回意见修改后重新提交</strong><br/>圈选口径未写明按哪个日期计算，请补充「储值到期」的业务口径与存量测算后重新提交。</span>
+    </div>
+    -->
+
+    <!-- 提交/暂存失败时在表单顶部展示（原样透出后端文案） -->
     <div class="ac-alert" id="formAlert">
       <span>!</span>
       <span id="formAlertText"></span>
@@ -267,30 +337,30 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
     <div class="tpl-panel">
       <h2 class="tpl-section__title">归属与分级</h2>
       <div class="tpl-section__grid">
-        <div class="tpl-section__item" data-field="pm">
+        <!-- 产品线：默认零食王国；REJECTED 编辑态只读 -->
+        <div class="tpl-section__item" data-field="productLine">
           <span class="ac-form-item__label">
-            <span class="ac-form-item__required">*</span>提交对象（产品经理）
+            <span class="ac-form-item__required">*</span>产品线
           </span>
-          <div class="ac-select" data-select data-onchange="onPmChange">
-            <div class="ac-select__trigger is-placeholder" data-placeholder="搜索并选择产品经理">
-              <span class="ac-select__value">搜索并选择产品经理</span>
+          <div class="ac-select" data-select data-onchange="onProductLineChange">
+            <div class="ac-select__trigger" data-placeholder="请选择产品线">
+              <span class="ac-select__value">零食王国</span>
               <span class="ac-select__arrow">▾</span>
             </div>
             <div class="ac-select__dropdown">
-              <div class="ac-select__option" data-chain="dedicated">沈括（产品经理 · 供应链域）</div>
-              <div class="ac-select__option" data-chain="default">郑楠（产品经理 · 报表域）</div>
-              <div class="ac-select__option" data-chain="default">许可（产品经理 · 基础档案域）</div>
+              <div class="ac-select__option is-checked">零食王国</div>
+              <div class="ac-select__option">有点推荐</div>
             </div>
           </div>
-          <span class="ac-form-item__help">提交给谁就由谁终审；提交后不可直接改（驳回重提时可换）</span>
-          <span class="ac-form-item__error">请选择提交对象（产品经理）</span>
+          <span class="ac-form-item__help">提交后产品线不可修改；选「有点推荐」时不区分业务线</span>
         </div>
 
+        <!-- 所属业务线：产品线=有点推荐 时整行隐藏且不参与校验；REJECTED 编辑态只读 -->
         <div class="tpl-section__item" data-field="bizLine">
           <span class="ac-form-item__label">
             <span class="ac-form-item__required">*</span>所属业务线
           </span>
-          <div class="ac-select" data-select>
+          <div class="ac-select" data-select data-onchange="onBizLineChange">
             <div class="ac-select__trigger is-placeholder" data-placeholder="请选择所属业务线">
               <span class="ac-select__value">请选择所属业务线</span>
               <span class="ac-select__arrow">▾</span>
@@ -304,6 +374,27 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
           </div>
           <span class="ac-form-item__help">提交后业务线不可修改，如需变更须重新创建需求</span>
           <span class="ac-form-item__error">请选择所属业务线</span>
+        </div>
+
+        <!-- 提交对象（产品经理）：随业务线后；未选产品线与业务线时置灰 -->
+        <div class="tpl-section__item" data-field="pm">
+          <span class="ac-form-item__label">
+            <span class="ac-form-item__required">*</span>提交对象（产品经理）
+          </span>
+          <div class="ac-select is-disabled" data-select data-onchange="onPmChange" id="pmSelect">
+            <div class="ac-select__trigger is-placeholder" data-placeholder="输入姓名搜索并选择产品经理">
+              <span class="ac-select__value">输入姓名搜索并选择产品经理</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+            <div class="ac-select__dropdown">
+              <!-- 候选集按已选「产品线 × 业务线」过滤，仅列本归属配有启用中专属链的 PM -->
+              <div class="ac-select__option" data-chain="ops">陈默（产品部）</div>
+              <div class="ac-select__option" data-chain="ops">沈括（产品部）</div>
+              <div class="ac-select__option" data-chain="scm">许可（产品部）</div>
+            </div>
+          </div>
+          <span class="ac-form-item__help" id="pmHelp">请先选择产品线与业务线</span>
+          <span class="ac-form-item__error">请选择提交对象（产品经理）</span>
         </div>
 
         <div class="tpl-section__item" data-field="type">
@@ -367,25 +458,100 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
           <span class="ac-form-item__error">请选择优先级</span>
         </div>
 
-        <!-- 审批链预览：选定提交对象后调 /chain-preview 实时渲染；未选时灰字占位 -->
+        <!--
+          审批链预览（只读）：选定提交对象后调 /chain-preview 实时渲染；
+          变更 提交对象/产品线/业务线/需求类型/优先级 后实时刷新；
+          未命中任何配置时红字告警且「提交审批」按钮置灰
+        -->
         <div class="tpl-section__item tpl-section__item--full" data-field="chainPreview">
           <span class="ac-form-item__label">审批链预览</span>
           <div class="ac-chain-preview" id="chainPreview">
-            <span class="ac-chain-preview__placeholder">选定提交对象后，此处展示将命中的审批链（级次与各级审批人）</span>
+            <span class="ac-chain-preview__placeholder">请选择提交对象（产品经理）后预览审批链</span>
           </div>
         </div>
       </div>
     </div>
+
+    <!--
+      ③ 附件组（表单末尾、底部操作栏之上）
+      前端 OSS STS 直传：选文件 → 取凭证 → 直传 OSS → 随表单 attachments 一并提交；
+      新增页一进页即可上传（不依赖需求已落库）；删除按钮仅草稿态可点；
+      REJECTED 编辑态已有附件只能新增不能删除（删除置灰 + Tooltip「需求已提交，附件不可删除」）
+    -->
+    <div class="tpl-panel">
+      <div class="tpl-panel__title-row">
+        <h2 class="tpl-section__title">附件</h2>
+        <span class="tpl-section__extra">附件将随暂存 / 提交一并保存</span>
+      </div>
+
+      <div class="att-upload__drop" onclick="acToast('打开系统文件选择器（支持多选与粘贴图片）')">
+        <span class="att-upload__icon">⬆</span>
+        <span class="att-upload__main">拖拽文件到此处，或点击选择文件</span>
+        <span class="att-upload__tip">图片 ≤10MB/张（最多20张）、文档 ≤50MB/个（最多10个）、视频 ≤200MB/个（最多3个）</span>
+      </div>
+
+      <ul class="att-list">
+        <li class="att-item">
+          <span class="att-item__icon is-image">🖼</span>
+          <div class="att-item__main">
+            <div class="att-item__line">
+              <span class="att-item__name" title="储值到期圈选-交互稿.png">储值到期圈选-交互稿.png</span>
+              <span class="att-item__size">1.2 MB</span>
+              <span class="att-item__done">✓</span>
+            </div>
+          </div>
+          <span class="att-item__ops">
+            <span class="att-item__op is-danger" onclick="acToast('删除后需重新上传，确认删除？')">删除</span>
+          </span>
+        </li>
+        <li class="att-item">
+          <span class="att-item__icon is-doc">📄</span>
+          <div class="att-item__main">
+            <div class="att-item__line">
+              <span class="att-item__name" title="会员储值到期提醒-需求说明书.pdf">会员储值到期提醒-需求说明书.pdf</span>
+              <span class="att-item__size">3.6 MB</span>
+            </div>
+            <div class="att-item__progress"><div class="att-item__progress-bar"></div></div>
+          </div>
+          <span class="att-item__ops">
+            <span class="att-item__op is-danger" onclick="acToast('移除该文件')">移除</span>
+          </span>
+        </li>
+        <li class="att-item">
+          <span class="att-item__icon is-doc">📄</span>
+          <div class="att-item__main">
+            <div class="att-item__line">
+              <span class="att-item__name" title="回访话术模板.zip">回访话术模板.zip</span>
+              <span class="att-item__size">2.1 MB</span>
+            </div>
+            <span class="att-item__error">不支持 .zip 格式</span>
+          </div>
+          <span class="att-item__ops">
+            <span class="att-item__op" onclick="acToast('重新上传该文件')">重试</span>
+            <span class="att-item__op is-danger" onclick="acToast('移除该文件')">移除</span>
+          </span>
+        </li>
+      </ul>
+    </div>
   </section>
 </div>
 
-<!-- 底部固定操作栏：暂存草稿（次要） / 提交审批（主要） -->
+<!-- 底部固定操作栏：取消 / 暂存草稿（次） / 提交审批（主，Popconfirm 二次确认） -->
 <div class="tpl-actionbar">
   <div class="tpl-actionbar__inner">
     <span class="tpl-actionbar__tip">暂存草稿仅校验标题；提交审批需全部必填项通过校验</span>
     <a class="ac-btn ac-btn--lg" href="./requirement-list.html">取消</a>
     <button type="button" class="ac-btn ac-btn--lg ac-btn--secondary" onclick="onSaveDraft()">暂存草稿</button>
-    <button type="button" class="ac-btn ac-btn--lg ac-btn--primary" onclick="onSubmit()">提交审批</button>
+    <span class="pop-anchor">
+      <button type="button" class="ac-btn ac-btn--lg ac-btn--primary" id="submitBtn" onclick="onSubmit()">提交审批</button>
+      <div class="ac-popconfirm" id="submitPop">
+        <span class="ac-popconfirm__text">提交后将按提交对象的审批链流转（预览所示级次），产品线与业务线不可修改，确认提交？</span>
+        <span class="ac-popconfirm__actions">
+          <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
+          <button type="button" class="ac-btn ac-btn--primary" onclick="doSubmit()">确认提交</button>
+        </span>
+      </div>
+    </span>
   </div>
 </div>
 
@@ -393,7 +559,7 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
 
 <script>
 (function () {
-  /* ── Select 单选 ── */
+  /* ── Select 单选（disabled 不响应） ── */
   function closeAllSelects(except) {
     document.querySelectorAll('.ac-select.is-open').forEach(function (el) {
       if (el !== except) el.classList.remove('is-open');
@@ -404,6 +570,7 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
     var valueEl = sel.querySelector('.ac-select__value');
     trigger.addEventListener('click', function (e) {
       e.stopPropagation();
+      if (sel.classList.contains('is-disabled')) return;
       var open = sel.classList.contains('is-open');
       closeAllSelects();
       if (!open) sel.classList.add('is-open');
@@ -417,11 +584,15 @@ body{margin:0;padding-bottom:72px;background:var(--ac-bg-2);color:var(--ac-color
         trigger.classList.remove('is-placeholder');
         sel.classList.remove('is-open');
         clearError(sel.closest('.tpl-section__item'));
-        if (sel.dataset.onchange === 'onPmChange') onPmChange(opt);
+        var fn = sel.dataset.onchange;
+        if (fn && window[fn]) window[fn](opt);
       });
     });
   });
-  document.addEventListener('click', function () { closeAllSelects(); });
+  document.addEventListener('click', function () {
+    closeAllSelects();
+    document.getElementById('submitPop').classList.remove('is-open');
+  });
 
   /* ── 描述字数统计 + blur 校验 ── */
   var desc = document.getElementById('desc');
@@ -447,23 +618,71 @@ function selected(name) {
   return t.classList.contains('is-placeholder') ? '' : t.querySelector('.ac-select__value').textContent.trim();
 }
 
-/* ── 审批链预览（对应 /chain-preview 预检）：专属链 vs 默认链兜底 两种形态 ── */
-var currentChain = null; /* {source, entryName} */
+/* ── 归属联动：产品线=有点推荐 → 业务线整行隐藏；归属变化 → PM 候选重拉且已选清空 ── */
+var currentPm = '';
+function onProductLineChange(opt) {
+  var isYdtj = opt.textContent.trim() === '有点推荐';
+  item('bizLine').classList.toggle('is-hidden', isYdtj);
+  if (isYdtj) resetSelect('bizLine');
+  resetPm();
+  refreshPmSelectable();
+}
+function onBizLineChange() {
+  resetPm();
+  refreshPmSelectable();
+}
+function resetSelect(name) {
+  var sel = item(name).querySelector('.ac-select');
+  var trigger = sel.querySelector('.ac-select__trigger');
+  sel.querySelectorAll('.ac-select__option').forEach(function (o) { o.classList.remove('is-checked'); });
+  sel.querySelector('.ac-select__value').textContent = trigger.getAttribute('data-placeholder');
+  trigger.classList.add('is-placeholder');
+}
+function resetPm() {
+  currentPm = '';
+  resetSelect('pm');
+  renderChainPreview();
+}
+function refreshPmSelectable() {
+  var productLine = selected('productLine') || '零食王国';
+  var selectable = productLine === '有点推荐' || selected('bizLine') !== '';
+  document.getElementById('pmSelect').classList.toggle('is-disabled', !selectable);
+  document.getElementById('pmHelp').textContent = selectable
+    ? '仅列本归属下配有启用中专属链的产品经理；切换归属后已选提交对象将清空重选'
+    : '请先选择产品线与业务线';
+}
+
+/* ── 审批链预览（对应 /chain-preview 预检）：内部单必中专属链；未命中 → 红字告警 + 提交置灰 ── */
+var chainMatched = false;
 function pmShortName(full) { return full.split('（')[0]; }
 function onPmChange(opt) {
-  var pm = pmShortName(opt.textContent.trim());
-  var dedicated = opt.dataset.chain === 'dedicated';
-  var levels = dedicated
-    ? [ 'L2 实施确认（李思远、孙浩）', 'L3 产品确认（' + pm + ' · 提交对象）' ]
-    : [ 'L1 业务线审批（周文杰）', 'L2 实施确认（李思远、孙浩）', 'L3 产品确认（' + pm + ' · 提交对象）' ];
-  var tag = dedicated
-    ? '<span class="ac-tag is-success">专属链</span>'
-    : '<span class="ac-tag is-default">默认链兜底</span>';
-  document.getElementById('chainPreview').innerHTML = tag + levels.map(function (lv, i) {
+  currentPm = pmShortName(opt.textContent.trim());
+  renderChainPreview();
+}
+function renderChainPreview() {
+  var box = document.getElementById('chainPreview');
+  if (!currentPm) {
+    chainMatched = false;
+    box.innerHTML = '<span class="ac-chain-preview__placeholder">请选择提交对象（产品经理）后预览审批链</span>';
+    syncSubmitDisabled();
+    return;
+  }
+  /* 演示：已选 PM 均命中其专属链（L1 业务线审批 → L3 产品确认（提交对象）） */
+  var bizLine = selected('bizLine') || '运营';
+  var levels = [
+    'L1 业务线审批（王志远）',
+    'L2 实施确认（李思远、孙浩）',
+    'L3 产品确认（' + currentPm + ' · 提交对象）'
+  ];
+  chainMatched = true;
+  box.innerHTML = '<span class="ac-tag is-success">专属链</span>' + levels.map(function (lv, i) {
     return (i > 0 ? '<span class="ac-chain-preview__sep">→</span>' : '') +
       '<span class="ac-chain-preview__level">' + lv + '</span>';
   }).join('');
-  currentChain = { source: dedicated ? 'dedicated' : 'default', entryName: dedicated ? '实施负责人' : '' };
+  syncSubmitDisabled();
+}
+function syncSubmitDisabled() {
+  document.getElementById('submitBtn').disabled = !chainMatched;
 }
 
 /* ── 暂存草稿：仅标题非空 ── */
@@ -479,13 +698,14 @@ function onSaveDraft() {
   acToast('草稿已保存，1.5 秒后返回需求列表');
 }
 
-/* ── 提交审批：全表单校验，首个错误字段 scroll-into-view ── */
+/* ── 提交审批：先全表单校验，通过后展开 Popconfirm 二次确认 ── */
 function onSubmit() {
+  var bizHidden = item('bizLine').classList.contains('is-hidden');
   var checks = [
-    { name: 'pm', bad: selected('pm') === '' },
     { name: 'title', bad: document.getElementById('title').value.trim().length === 0 },
     { name: 'desc', bad: document.getElementById('desc').value.trim().length < 10 },
-    { name: 'bizLine', bad: selected('bizLine') === '' },
+    { name: 'bizLine', bad: !bizHidden && selected('bizLine') === '' },
+    { name: 'pm', bad: !currentPm },
     { name: 'type', bad: selected('type') === '' },
     { name: 'targetDate', bad: document.getElementById('targetDate').value.trim().length === 0 }
   ];
@@ -500,10 +720,13 @@ function onSubmit() {
     return;
   }
   hideAlert();
-  var entryName = currentChain && currentChain.source === 'dedicated'
-    ? currentChain.entryName
-    : selected('bizLine') + '负责人';
-  acToast('需求已提交，将由' + entryName + '审批');
+  document.getElementById('submitPop').classList.add('is-open');
+}
+function doSubmit() {
+  document.getElementById('submitPop').classList.remove('is-open');
+  var productLine = selected('productLine') || '零食王国';
+  var entry = productLine === '有点推荐' ? '有点推荐负责人' : (selected('bizLine') || '运营') + '负责人';
+  acToast('需求已提交，将由' + entry + '审批');
 }
 
 function showAlert(text) {
@@ -522,6 +745,9 @@ function acToast(text, isError) {
   clearTimeout(acToastTimer);
   acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2400);
 }
+
+/* 初态：提交按钮待链命中后解锁 */
+syncSubmitDisabled();
 </script>
 </body>
 </html>

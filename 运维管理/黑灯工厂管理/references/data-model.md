@@ -52,12 +52,12 @@
 | `idx_created` | `created_at` | 时间范围查询/清理 Job |
 | `idx_ticket_no` | `ticket_no` | 展示检索 |
 
-## 3. upsert 字段白名单
+## 3. 重跑（upsert）字段白名单
 
-`INSERT ... ON DUPLICATE KEY UPDATE` 时:
+同指纹重复上报执行「存在即更新」时：
 
-- **可更新**(快照类):`occur_count`(= occur_count + VALUES)、`occur_rounds`(= occur_rounds + 1)、`last_seen_at`、`evidence`、`summary`、`suggestion`、`trend`、`report_path`、`updated_at`
-- **禁更新**(流程类):`status`、owner/claimer/resolver/review 全组、`sla_deadline`、`first_seen_at`、`ticket_no`
+- **可更新**（快照类）：出现次数（累加）、出现轮次（+1）、最近出现时间、证据、摘要、建议、趋势、报告路径、更新时间
+- **禁更新**（流程类）：状态、负责人/认领人/处理人/复核全组、SLA 截止、首次出现时间、工单编号
 
 ## 4. 口径备注
 

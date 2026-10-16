@@ -33,11 +33,11 @@ metadata: {"clawdbot":{"emoji":"🏭","requires":{"anyBins":[]},"os":["linux","d
 | 业务规则真源 | [`references/business-rule.md`](references/business-rule.md) | 状态机/建单幂等/负责人指派/通知规则/SLA/agent 接入规范 |
 | 数据模型 | [`references/data-model.md`](references/data-model.md) | blacklight_ticket 表结构与索引 |
 | UI 描述 | [`references/web-ui.md`](references/web-ui.md) | 页面区块/交互/权限点 |
-| 日志异常报表 | [`../日志异常报表/SKILL.md`](../日志异常报表/SKILL.md) | 指纹归一化口径复用;SLS deeplink 拼接复用 |
-| 企微应用消息 | [`../../../依赖文档/公共功能/企微应用消息发送/SKILL.md`](../../../依赖文档/公共功能/企微应用消息发送/SKILL.md) | 按人提醒通道(替代群机器人) |
-| 导出接入 | [`../../../依赖文档/公共功能/导出接入/SKILL.md`](../../../依赖文档/公共功能/导出接入/SKILL.md) | 工单列表导出复用统一导出中心 |
-| 错误日志黑灯工厂 | [`../../../依赖文档/公共功能/错误日志黑灯工厂/SKILL.md`](../../../依赖文档/公共功能/错误日志黑灯工厂/SKILL.md) | 来源 agent 之一(分诊/分级/负责人判定口径) |
-| 大SQL结果集修复 | [`../../../依赖文档/公共功能/大SQL结果集修复/SKILL.md`](../../../依赖文档/公共功能/大SQL结果集修复/SKILL.md) | 来源 agent 之二 |
+| 日志异常报表 | [`../日志异常报表/SKILL.md`](../错误日志管理/SKILL.md) | 指纹归一化口径复用;SLS deeplink 拼接复用 |
+| 企微应用消息 | `../../../依赖文档/公共功能/企微应用消息发送/SKILL.md` | 按人提醒通道(替代群机器人) |
+| 导出接入 | `../../../依赖文档/公共功能/导出接入/SKILL.md` | 工单列表导出复用统一导出中心 |
+| 错误日志黑灯工厂 | `../../../依赖文档/公共功能/错误日志黑灯工厂/SKILL.md` | 来源 agent 之一(分诊/分级/负责人判定口径) |
+| 大SQL结果集修复 | `../../../依赖文档/公共功能/大SQL结果集修复/SKILL.md` | 来源 agent 之二 |
 
 ## 页面功能概览
 
@@ -51,13 +51,6 @@ metadata: {"clawdbot":{"emoji":"🏭","requires":{"anyBins":[]},"os":["linux","d
 - 只 P1/P2 建单;P3/噪声维持 agent 侧仅计数,不进工单,防刷屏
 - 同一问题(同指纹/同 mapper)未关闭前**不重复建单**,只追加出现轮次与最新证据;已关闭后复发才开新单并关联父单
 - 已自动修复项建单即「待复核」状态并带 commit 哈希,复核通过才关闭,打回则重新打开
-- 群机器人 webhook 已于 2026-10-08 停用(仅保留采集/建单失败简报):两个 agent 手册 Step 5 与 cron prompt 同日切换为 MCP 工具 `snackingdom__blacklight_ticket_report` 建单,详见 business-rule.md §6/§8
+- 群机器人 webhook 已于 2026-10-08 停用(仅保留采集/建单失败简报):两个 agent 手册 Step 5 与 cron prompt 同日切换为 MCP 工具 `busyming__blacklight_ticket_report` 建单,详见 business-rule.md §6/§8
 - 工单的负责人、企微 ID 由 agent 侧判定后直接落单(sys_user + sys_user_wecom 口径),Web 端支持改派
 
-## 变更记录
-
-| 日期 | 变更 |
-|---|---|
-| 2026-09-20 | 初版立项:agent 自动建单(✅待复核/❓待判断/📌业务确认三态)、负责人指派、企微应用消息按人提醒、SLA 时效,替代群机器人推送 |
-| 2026-09-21 | v1.0 实现交付(devops+ foundation MCP×3 + Web + docs/20260921/blacklight-ticket)。实现期裁定 5 项:① §4.2 与 uk_source_biz 物理冲突,改「单行复发重开」(recur_count+1,parent_id 恒 0 预留,顽疾口径改 recur_count≥1);② 新增 blacklight_ticket_log 流水表(时间线与 MCP 回复落库);③ 权限码按仓库惯例 MENU/BUTTON:RND:OPS:BLACKLIGHT_TICKET:*(原 OPS_BLACKLIGHT_TICKET_* 作废);④ MCP feign 写端点突破只读收口先例(用户明确要求,已类注释登记);⑤ 前端落 views/operation/BlacklightTicket.vue(随日志异常报表惯例)。详见 references 各处「2026-09-21 实现注」 |
-| 2026-10-08 | 模块上线发版;两个 agent(错误日志黑灯工厂/大SQL结果集修复)手册 Step 5 与 qoder_cron prompt 同日切换为 `snackingdom__blacklight_ticket_report` MCP 建单(替代原群机器人主报告),群 webhook 仅保留采集失败/建单失败简报;agent 侧负责人判定产出收敛为 ownerEmail(企微 ID 由服务端解析) |

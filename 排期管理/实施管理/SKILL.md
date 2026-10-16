@@ -83,7 +83,7 @@ description: 实施排期。Use when 需要可视化管理「功能排期完成�
 | 所属模块 | 由 `func_key` 首段派生（`DIR:{模块} · {子模块} · {功能}`），不落列；`func_key` 非 `DIR:` 前缀（FS 卡号直引或空值）归「未归类」 |
 | 业务对接人 | `biz_contact_name` 快照列：生成时写入——功能排期卡手工值优先；无手工值取关联 REQ 单提交人（内部单 `submit_by` → `sys_user.real_name`，外部单 `external_submitter_name`）；均无则空（显示「—」）。只读，维护入口在功能排期侧（功能排期 v2.7 起「排期保存时」必填校验：无 REQ 关联且非 TECH 卡排期前必补录，REQ 关联卡预填提交人可改——进入排期的功能卡原则上必有对接人取值来源） |
 
-数据模型 DDL、编号规则与生成 Job（15 分钟增量 + 夜间兜底 + 手动拉取）详见 [references/data-model.md](references/data-model.md)；状态机 / 权限 / 校验规则详见 [references/business-rule.md](references/business-rule.md)。
+数据模型、编号规则与生成 Job（15 分钟增量 + 夜间兜底 + 手动拉取）等实现细节以代码仓为准，不内嵌；状态机 / 权限 / 校验规则详见 [references/business-rule.md](references/business-rule.md)。
 
 ## 状态机
 
@@ -158,72 +158,9 @@ description: 实施排期。Use when 需要可视化管理「功能排期完成�
 | 保存 | 抽屉「保存」提交标题（必填 ≤30 字）/ 内容 / 状态变更；取消按钮与遮罩点击直接关闭不保存 |
 | 操作记录 | 抽屉底部时间线倒序展示 `impl_schedule_card_log`：操作人 · 操作时间 · 行为描述 |
 
-## 接口规范
-
-```
-# ── 卡片列表（月视图） ──
-GET /api/v1/impl-schedule/cards?month=YYYY-MM&includeBackup=true
-    &module={模块名|UNCATEGORIZED}        # v1.1 可选：按 func_key 首段派生模块过滤；UNCATEGORIZED=未归类
-    &bizContactKeyword={关键字}           # v1.1 可选：业务对接人模糊匹配
-→ { month, cards: [...], backup: [...] }
-# 卡片字段：cardNo / title / content / funcKey / funcName / sourceFeatCardNos /
-#   status / scheduledDate / takerUserId / takerName / takenAt / doneAt / createdAt / updatedAt
-#   v1.1 增补：bizContactName / nonImplSource（AUTO_TECH | MANUAL | null）/
-#   module（funcKey 首段派生，响应组装，不落列）
-# 权限：MENU:DEV:IMPL_SCHEDULE
-
-# ── 卡片排期/标题/内容变更 ──
-PATCH /api/v1/impl-schedule/cards/{cardNo}
-{ "scheduledDate": "2026-09-15" | null, "title": "…", "content": "…" }
-
-# ── 领取实施 / 取消领取 ──
-POST /api/v1/impl-schedule/cards/{cardNo}/take     # 仅 PENDING；写 taker_* + taken_at，流水 TAKEN
-POST /api/v1/impl-schedule/cards/{cardNo}/release  # 仅 IN_PROGRESS；清空 taker_* + taken_at，流水 RELEASED
-
-# ── 点击完成 / 回退 ──
-POST /api/v1/impl-schedule/cards/{cardNo}/done
-# 无 body；写 done_at；来自 PENDING 且无领取人时回填当前用户 + taken_at=done_at；流水 MARKED_DONE
-POST /api/v1/impl-schedule/cards/{cardNo}/revert
-{ "target": "PENDING" | "IN_PROGRESS" }            # 仅 DONE；流水 REVERTED
-
-# ── 非实施需求旁路 ──
-POST /api/v1/impl-schedule/cards/{cardNo}/move-to-non-impl
-# 清空排期/领取/起止日期，non_impl_source=MANUAL；
-# v1.1 起同事务回写来源功能排期卡 req_nature=TECH（按 source_feat_card_nos 逐张回写，仅当前为 BIZ 的更新）；
-# 流水 MOVED_TO_NON_IMPL（detail 附「已回写功能排期卡需求性质」）
-POST /api/v1/impl-schedule/cards/{cardNo}/restore-from-non-impl
-# 恢复 PENDING，清 non_impl_source；不回写功能排期卡 req_nature（性质跟随功能粒度）
-
-# ── 删除（软删） ──
-DELETE /api/v1/impl-schedule/cards/{cardNo}        # 流水 DELETED
-
-# ── 手动选卡（v1.3） ──
-GET /api/v1/impl-schedule/manual-candidates?keyword={关键字}&page=1&size=20
-→ { total, list: [{ cardNo, title, funcKey, funcName, module, devUserName, doneAt,
-                    blocked, blockedByCardNo }] }
-# 候选 = feat_schedule_card 中 status=DONE + deleted_flag=0 + req_nature=BIZ
-#   + 未被任何实施卡 source_feat_card_nos 引用；done_at 倒序
-# blocked=true：func_key 当日已有实施卡（uk_func_day 命中），blockedByCardNo = 已生成卡号，前端置灰禁选
-POST /api/v1/impl-schedule/cards/manual-collect
-{ "featCardNos": ["FS-20261010-001", "FS-20261010-002"] }
-→ { created: [{ cardNo, funcKey, funcName, sourceFeatCardNos }],
-    failed:  [{ featCardNo, reason, existingCardNo }] }
-# 服务端按 func_key 分组聚合（同功能多张合一张），每组生成一张 PENDING 卡落 Backup；
-# 提交时二次校验：期间被生成任务拉走 / 当日已有实施卡 → failed 返回原因与已存在卡号；
-# 流水 CREATED（operator = 当前操作人，detail 附「手动拉取」+ 来源卡号清单）
-
-# ── 操作记录 ──
-GET /api/v1/impl-schedule/cards/{cardNo}/logs      # 倒序
-
-# ── 排期约束（前端 + 后端均需守住） ──
-# 1. scheduled_date 不可小于当前服务器日期（+08:00）
-# 2. status=DONE 时 scheduled_date 不可更改（锁定）
-# 3. status=NON_IMPL 时 scheduled_date 必须为 NULL，且不可调 /take /release /done /revert（均 409）
-```
-
 ## 埋点对齐
 
-在 `sys_function_catalog` 登记一条（对齐 [usage-analytics](../usage-analytics/SKILL.md) 规范）：
+在 `sys_function_catalog` 登记一条（对齐 [usage-analytics](../../成本管理/功能使用情况管理/SKILL.md) 规范）：
 
 | route_path | function_code | function_name | parent_perm_code |
 |------------|---------------|---------------|------------------|
@@ -258,11 +195,3 @@ GET /api/v1/impl-schedule/cards/{cardNo}/logs      # 倒序
 - 「移入非实施」回写功能排期卡性质是闭环关键：只改实施卡不回写源头时，同功能次日新完成卡会再次聚合成业务卡，造成「每日重复移入」；回写后次日自动分流
 - 「超 12 小时未领取」企微提醒对象维持**功能负责人**，不抄送业务对接人（2026-09-24 批复③）
 
-## Changelog
-
-| 版本 | 日期 | 说明 |
-|------|------|------|
-| v1.0 | 2026-09-11 | 初始版本：Backup 卡片池 + 月历排期 + 三态跟踪 + 非实施需求旁路 + 操作记录 |
-| v1.1 | 2026-10-08 | REQ-20260924-IMPL 三项增强（2026-09-24 六项批复全定稿，待研发）：①模块筛选 + 卡片模块标识（`func_key` 首段 DIR 派生，未归类兜底，作用于 Backup/日历/+N 弹层/状态计数）；②业务对接人——`impl_schedule_card` 扩 `biz_contact_name` 快照列（手工值优先 > REQ 单提交人 `submit_by`/`external_submitter_name`），卡片与抽屉展示 + 工具栏模糊筛选，提醒不抄送对接人；③技术类需求生成即自动划入非实施区（`non_impl_source=AUTO_TECH` 标注「技术类」），「移入非实施」同步回写功能排期卡 `req_nature=TECH` 形成闭环；配套登记「12 小时未领取提醒」现状口径与 `func_key` DIR 形态实证订正 |
-| v1.2 | 2026-10-08 | 功能排期 v2.7 联动登记（邓佳华五决策定稿，待研发）：业务对接人必填卡点自「建卡/保存」前移至功能排期「排期写入」时（无 REQ 单关联且非 TECH 卡排期前必补录，REQ 关联卡预填提交人可手改覆盖，TECH/NON_FEATURE 豁免，存量下次改期被拦自然收口）；实施侧取值链与生成时快照语义不变——进入排期的功能卡必有对接人取值来源，快照覆盖度提升；本侧无接口 / DDL 变更 |
-| v1.3 | 2026-10-10 | 生成通道改造（2026-10-10 邓佳华四决策定稿，待研发）：①生成 Job 由「每天夜间一次」改为「15 分钟增量（窗口 = 上次成功运行时间 − 5 分钟 ~ 当前，水位持久化）+ 夜间 23:40 全量兜底」双档——DONE 后 ≤15 分钟实施卡即落 Backup；②Backup 面板新增「手动选卡」：候选 = 功能排期 DONE 态未引用业务卡（`req_nature=BIZ`），按 `func_key` 聚合，同功能当日已有实施卡置灰拦截 + 提示卡号，提交二次校验（期间被任务拉走返回失败清单），流水 `CREATED` 标注「手动拉取」（operator = 当前操作人）；③「超 12 小时未领取」提醒计时起点随之前移（阈值与对象不变）；新增 `GET /manual-candidates` 与 `POST /cards/manual-collect` 两端点 |

@@ -7,7 +7,7 @@
 - Web 筛选区：日期范围选择器（单个 range 控件）+ 成员多选 + 查询 / 重置按钮
 - App 筛选区：日期预设选择器（今日 / 昨日 / 前 7 天 / 近 30 天 / 自定义）+ 成员多选 + 查询 / 重置按钮（筛选元素与 Web 对齐，日期控件为预设形态）
 - 默认范围：前 7 天（不含今天，T-7 ~ T-1）
-- 范围上限：遵循 [qoder-api.md](../../../../依赖文档/API/qoder-api.md) 的时间范围硬约束；前端对超范围查询拦截并提示「日期范围不能超过 7 天」
+- 范围上限：遵循 qoder-api.md 的时间范围硬约束；前端对超范围查询拦截并提示「日期范围不能超过 7 天」
 - 成员筛选为空 = 全部成员
 - 所有视图（KPI / 柱状图 / 两张透视表）随公共筛选联动刷新，单视图不设独立筛选
 
@@ -67,7 +67,7 @@
 | Qwen3.8 Max | `warning-4` | #FFB65D |
 | 其他 | `palette-gray-4` | #C9CDD4 |
 - 周环比对比不在本图呈现，由 KPI 卡片区统一承担（见 §2）
-- 实现映射（2026-09-14 落地）：`GET /snackingdom-devops/api/v1/qoder/daily-model-credits`（devops `QoderUsageController`），归并函数 `QoderUsageServiceImpl.classifyModelFamily`（trim+小写，`ultimate` 精确匹配，`kimi`/`glm`/`deepseek`/`qwen` 前缀，其余含空值→其他）；数据源为 `qoder_usage_daily.tier_credits` 快照 JSON（历史数据无需重刷）
+- 实现映射（2026-09-14 落地）：`GET /busyming-devops/api/v1/qoder/daily-model-credits`（devops `QoderUsageController`），归并函数 `QoderUsageServiceImpl.classifyModelFamily`（trim+小写，`ultimate` 精确匹配，`kimi`/`glm`/`deepseek`/`qwen` 前缀，其余含空值→其他）；数据源为 `qoder_usage_daily.tier_credits` 快照 JSON（历史数据无需重刷）
 
 ## 7. 三态与空态
 

@@ -5,7 +5,7 @@ description: 功能使用情况分析。Use when 开发或迭代 Web 后台的�
 
 # 功能使用情况分析
 
-面向「零食王国管理中心」的功能分析模块，量化衡量每个功能被使用的程度，支撑产品侧对功能价值的判断、运营侧对用户行为的洞察、以及管理侧对角色权限包的复核。
+面向「鸣鸣很忙管理中心」的功能分析模块，量化衡量每个功能被使用的程度，支撑产品侧对功能价值的判断、运营侧对用户行为的洞察、以及管理侧对角色权限包的复核。
 
 ## 端
 
@@ -19,7 +19,7 @@ usage-analytics 按 RBAC 三层模型延伸一层「行为事实层」：记录�
 
 ## 数据模型
 
-本模块在 `snackingdom_lshm` 新增 3 张表，与 `sys_user` / `sys_role` / `sys_permission` 协作。完整 DDL、字段、索引、保留期策略详见 [references/data-model.md](./references/data-model.md)。
+本模块新增 3 张表，与用户 / 角色 / 权限体系协作。表结构、字段、索引、保留期策略等实现细节以代码仓为准，不内嵌。
 
 | 表名 | 角色 |
 |------|------|
@@ -30,7 +30,7 @@ usage-analytics 按 RBAC 三层模型延伸一层「行为事实层」：记录�
 
 > **登记一致性硬约束**：新增菜单时 `sys_permission` / `sys_function_catalog` / 前端路由表三处必须同步登记，不允许任一处缺失；本模块自身 3 个页面登记为 `RND.MANAGE.USAGE_{EVENTS|REPORT|CATALOG}`，路由 `/portal/usage-{events|report|catalog}`（扁平 kebab-case，DEF-02 真源），与父权限 `MENU:RND:MANAGE` 同源。
 >
-> **保留期策略**：`sys_event_log` 由 DBA 按需 `DELETE` + `OPTIMIZE TABLE`，或走冷备 / 数仓归档；不通过分区滚动维护（上线初期数据量有限，后续如需可手动预建 RANGE 分区 / 按月分表 / 冷备归档）。`sys_user` / `sys_role` / `sys_permission` 完整 DDL 参见 [snackingdom-portal](../../../设置/系统/snackingdom-portal/SKILL.md)。
+> **保留期策略**：`sys_event_log` 由 DBA 按需 `DELETE` + `OPTIMIZE TABLE`，或走冷备 / 数仓归档；不通过分区滚动维护（上线初期数据量有限，后续如需可手动预建 RANGE 分区 / 按月分表 / 冷备归档）。`sys_user` / `sys_role` / `sys_permission` 完整 DDL 参见 busyming-portal。
 
 ## 前端埋点协议
 
@@ -38,13 +38,13 @@ usage-analytics 按 RBAC 三层模型延伸一层「行为事实层」：记录�
 
 跨文档补充（仅本 SKILL 登记）：
 
-- 批量上报端点 `POST /api/v1/events/batch`（Bearer Token），14 个接口完整签名 / DTO / 错误码详见 [references/api-spec.md](./references/api-spec.md)；后端责任矩阵、限流、权限校验、参数与返回模型由 [后端接口文档](../../../../依赖文档/API/) 与 api-spec.md 共同维护。
+- 事件批量上报端点与全部接口的签名 / DTO / 错误码以代码仓契约为准，不内嵌；后端责任矩阵、限流、权限校验、参数与返回模型同。
 - `systemBookCode` / `userId` / `userName` / `userRoleName` / `userPhone` / `roleCode` 均由后端从 Token 自动注入，前端不传不信任；`clientType` 由前端 SDK 传值（兼容从 `X-Client-Type` 请求头读取）。
 - `eventTime` 真源：`yyyy-MM-dd HH:mm:ss.SSS`（本地时区、含毫秒，与 `sys_event_log.event_time DATETIME(3)` 对齐）；不接受 `Z` / `+08:00` / 毫秒时间戳等其他变体。
 
 ## 页面结构
 
-Portal「系统设置」下新增「功能使用情况分析」分组，包含 3 个子页面。原型位于 [asset/](./asset/)，已对齐 [前端页面规范](../../../../依赖文档/研发规范/前端页面规范/SKILL.md)（真源：[page-gen.prompt.md](../../../../../.agents/skills/page-blueprint/prompts/page-gen.prompt.md) v3.4.0）。各页面区块定义、字段与列、按钮权限码详见 [references/page-structure.md](./references/page-structure.md)。
+Portal「系统设置」下新增「功能使用情况分析」分组，包含 3 个子页面。原型位于 [asset/](./asset/)，已对齐 前端页面规范（真源：page-gen.prompt.md v3.4.0）。各页面区块定义、字段与列、按钮权限码详见 [references/page-structure.md](./references/page-structure.md)。
 
 | 页面 | 路由 | 权限码 | 职责 |
 |------|------|--------|------|
@@ -66,4 +66,4 @@ Portal「系统设置」下新增「功能使用情况分析」分组，包含 3
 
 ## 打标算法
 
-三维度（频次 freq_tag / 人次 user_tag / 角色偏好 role_tag）独立判定，阈值采用固定默认值 50/500/3/20/0.70/WEEK，每日 01:00 SchedulerX 重算当前周期，结果用于使用情况报表的徽章展示与 Tag 筛选。详细算法、聚合周期、边界、徽章颜色映射、徽章点击跳「按 Tag 筛选」视图、未归类桶展示与补录闭环详见 [references/business-rules.md §2、§3、§4、§8、§10](./references/business-rules.md) 与 [references/data-model.md §5](./references/data-model.md)。支持按任一维度筛选功能清单，辅助产品与权限复核。
+三维度（频次 freq_tag / 人次 user_tag / 角色偏好 role_tag）独立判定，阈值采用固定默认值 50/500/3/20/0.70/WEEK，每日 01:00 SchedulerX 重算当前周期，结果用于使用情况报表的徽章展示与 Tag 筛选。详细算法、聚合周期、边界、徽章颜色映射、徽章点击跳「按 Tag 筛选」视图、未归类桶展示与补录闭环详见 [references/business-rules.md §2、§3、§4、§8、§10](./references/business-rules.md)。支持按任一维度筛选功能清单，辅助产品与权限复核。

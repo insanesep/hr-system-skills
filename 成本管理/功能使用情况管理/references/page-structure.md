@@ -2,7 +2,7 @@
 
 > 本文件**只描述 3 个子页面的 UI 功能**：路由 / 权限码、区块职责、字段与列、交互行为、按钮权限码。
 >
-> **前端规范（Token / 骨架 / 白名单 / 卡片化拓扑 / 面包屑独占 / 三态 / 图标 / KPI / AcStatistic / AcTabs / AcDatePicker(type=range) / pre-flight / post-flight 等所有硬约束）统一以 [`.agents/skills/page-blueprint/prompts/page-gen.prompt.md`](../../../../../.agents/skills/page-blueprint/prompts/page-gen.prompt.md) 为唯一真源**，本文件不再复述。生成原型 / Vue 实装时必须先按 page-gen.prompt.md 加载技能与执行 7 段分析。
+> **前端规范（Token / 骨架 / 白名单 / 卡片化拓扑 / 面包屑独占 / 三态 / 图标 / KPI / AcStatistic / AcTabs / AcDatePicker(type=range) / pre-flight / post-flight 等所有硬约束）统一以 `.agents/skills/page-blueprint/prompts/page-gen.prompt.md` 为唯一真源**，本文件不再复述。生成原型 / Vue 实装时必须先按 page-gen.prompt.md 加载技能与执行 7 段分析。
 >
 > 原型产物位于 [../asset/](../asset/)。
 

@@ -12,7 +12,7 @@ type: reference
 
 ## 1. 业务流程总览
 
-需求从提出到进入研发排期共 5 步，前 3 步在需求管理模块内闭环，第 4 步交接产品经理，第 5 步由 [feature-schedule](../../../../研发/研发管理/feature-schedule/SKILL.md) 承接。
+需求从提出到进入研发排期共 5 步，前 3 步在需求管理模块内闭环，第 4 步交接产品经理，第 5 步由 [feature-schedule](../../功能排期/SKILL.md) 承接。
 
 > **审批链驱动模式（2026-09-09 起）**：内部提交**先选定提交对象（产品经理）**，系统按该对象的专属审批链（级次由配置决定，1~3 级）流转；未配置专属链时回退「产品线 × 业务线 × 需求类型 × 优先级」四维**默认链**兜底，且末级（产品确认 L3）审批人替换为提交对象本人。外部提交无提交对象，固定走默认链。规则真源见 §3。
 
@@ -30,7 +30,7 @@ type: reference
 
 | 枚举值 | 名称 | 业务线取值 | 提交方式 |
 |--------|------|-----------|---------|
-| `SNACK` | 零食王国 | 必选 `OPS`/`FIN`/`SCM`/`DIGITAL` 之一 | 仅内部登录用户（Web / App）|
+| `SNACK` | 鸣鸣很忙 | 必选 `OPS`/`FIN`/`SCM`/`DIGITAL` 之一 | 仅内部登录用户（Web / App）|
 | `YDTJ` | 有点推荐 | 固定 `*`（不区分业务线）| 内部登录用户 + 外部人员凭外链免登录 |
 
 **业务线（`biz_line`）** 仅在 `SNACK` 产品线下生效，固定 4 条，不支持自定义扩展（新增需 DBA + 管理员同步维护审批链配置与企微群映射）。
@@ -168,10 +168,10 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 | 产品线 | 业务线 | L1 | L2（实施负责人）| L3（产品经理）|
 |--------|--------|----|------------------|------------------|
-| 零食王国 | 运营   | 运营负责人     | 实施负责人 | 无需配置（内部单全走专属链，默认链仅防御兜底） |
-| 零食王国 | 财务   | 财务负责人     | 实施负责人 | 无需配置（同上） |
-| 零食王国 | 供应链 | 供应链负责人   | 实施负责人 | 无需配置（同上） |
-| 零食王国 | 数字化 | 数字化负责人   | 实施负责人 | 无需配置（同上） |
+| 鸣鸣很忙 | 运营   | 运营负责人     | 实施负责人 | 无需配置（内部单全走专属链，默认链仅防御兜底） |
+| 鸣鸣很忙 | 财务   | 财务负责人     | 实施负责人 | 无需配置（同上） |
+| 鸣鸣很忙 | 供应链 | 供应链负责人   | 实施负责人 | 无需配置（同上） |
+| 鸣鸣很忙 | 数字化 | 数字化负责人   | 实施负责人 | 无需配置（同上） |
 | 有点推荐 | `*`    | 有点推荐负责人 | 实施负责人 | 默认承接**外部提交单**的产品经理 |
 
 - 有点推荐默认链只需配一套（`biz_line=*`）；2026-10-09 起内部提交走 PM 专属链，默认链仅承接外部提交（~~内部与外部提交共用同一套~~）
@@ -189,7 +189,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 - 各级审批均为**或签**：同一级次配置多名审批人时，任一人通过即视为该级通过，其余人待办自动关闭
 - 任一人驳回即整单驳回，不等待其他审批人
-- 或签模式参考 [任务中心](../../../../营运/任务协同/任务中心/SKILL.md) 的待办聚合与关闭逻辑，本模块不引入全员确认（多签）模式
+- 或签模式参考 任务中心 的待办聚合与关闭逻辑，本模块不引入全员确认（多签）模式
 
 ### 3.6 快照机制
 
@@ -265,7 +265,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ## 6. 通知与企微推送
 
-推送统一在事务提交后通过 `afterCommit` 异步触发，禁止在事务内同步调用，能力复用 [企微应用消息发送](../../../../依赖文档/公共功能/企微应用消息发送/SKILL.md)。
+推送统一在事务提交后通过 `afterCommit` 异步触发，禁止在事务内同步调用，能力复用 企微应用消息发送。
 
 ### 6.1 双通道推送
 
@@ -315,7 +315,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ### 7.1 外链相关接口
 
-**内部接口**（需登录，路径前缀 `/api/v1/inner/snackingdom/requirement/public-link`）：
+**内部接口**（需登录，路径前缀 `/api/v1/inner/busyming/requirement/public-link`）：
 
 | 操作 | 方法 | 说明 |
 |------|------|------|
@@ -341,7 +341,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ## 8. 外链邀约与外部提交
 
-仅 `product_line=YDTJ`（有点推荐）开放。能力范式对齐 [采购邀约](../../../../档案/供应商/采购邀约/SKILL.md) 的 token 反查模式。
+仅 `product_line=YDTJ`（有点推荐）开放。能力范式对齐 采购邀约 的 token 反查模式。
 
 ### 8.1 外链形态：一次性定向 token
 
@@ -409,7 +409,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ## 9. 附件管理规则
 
-附件为需求描述的补充证据（截图 / 原型 / 说明文档 / 录屏），文件实体落 OSS，库内只存元信息（字段真源见 [`data-model.md`](data-model.md) §7）。
+附件为需求描述的补充证据（截图 / 原型 / 说明文档 / 录屏），文件实体落 OSS，库内只存元信息（字段真源见 `data-model.md` §7）。
 
 > **实现落地差异（2026-08-19，已随代码实现确认）**：本章有 4 处规则发生变更，逐节已标注，汇总如下：
 > 1. 🚨 **§9.3「内容安全审核」整节本期不实现**（用户裁决）：库表不建 `content_check_status` / `content_check_at`，三端 UI 一律不渲染审核角标；连带 `rejected` 不展示 / `pending` 仅上传人可见 / §9.5「强制过审」均失效。
@@ -507,7 +507,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ## 10. 审批时效与 SLA 管理
 
-解决「需求提上去就没人理」的治理缺口：以可配置阈值驱动自动催办与升级，并把时效沉淀为可计量指标。阈值配置落 `requirement_sla_config`（[`data-model.md`](data-model.md) §8）。
+解决「需求提上去就没人理」的治理缺口：以可配置阈值驱动自动催办与升级，并把时效沉淀为可计量指标。阈值配置落 `requirement_sla_config`（`data-model.md` §8）。
 
 ### 10.1 催办触发
 
@@ -539,7 +539,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 - 三个级次（L1/L2/L3）默认**共用同一套阈值**，但表结构支持按 `approval_level` 单独调整（如 L2 实施归集需更长思考时间可单独放宽）
 - `P1` 与 `P2` 默认同口径（普通档）：避免初期档位过细导致审批人无法预期；如后续数据显示 P1 堆积严重再收緊
 - 约束：`escalate_hours` 必须 **> `remind_hours`**，且二者均为 1–720 的整数；保存时前后端双校
-- 产品线维度必须等值命中，优先级支持 `*` 通配降级（匹配顺序见 [`data-model.md`](data-model.md) §8）
+- 产品线维度必须等值命中，优先级支持 `*` 通配降级（匹配顺序见 `data-model.md` §8）
 
 ### 10.4 目标日期预警
 
@@ -573,7 +573,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 > 1. **端到端周期的「首次 `submit_at`」取自审批流水**：`MIN(operated_at) WHERE action='SUBMIT'`，而非 `requirement.submit_at` —— 后者在驳回重提时被覆盖，直接用会让端到端周期**系统性偏短**，恰好掩盖本表下一条要求保留的返工成本；流水取不到时 fallback `r.submit_at`。
 > 2. 🚨 **超时率按 `approval_log.duration_minutes >= 60 × 命中 remind_hours` 实算**，**不依赖 `SLA_REMINDED` 事件是否存在** —— 否则 Job 上线前的历史数据、静默延后的（§10.7 只写 `SLA_DEFERRED`）、推送失败的都会被误判为「未超时」。
 > 3. `overtimeRate` 由**后端格式化为百分数文本**（如 `12.5%`）直接下发，不是 0–1 小数，前端不再二次换算。
-> 4. 仪表盘请求体含 `submitSource`（对齐下方「可按 `submit_source` 下钻」，[`api-spec.md`](api-spec.md) §6.2 原字段清单漏写）。
+> 4. 仪表盘请求体含 `submitSource`（对齐下方「可按 `submit_source` 下钻」，`api-spec.md` §6.2 原字段清单漏写）。
 
 - 统计口径**默认含外部单**（对齐 §8.6），可按 `submit_source` 与 `product_line` 下钻
 - 驳回重提的需求：审批耗时**按轮次分开统计**，端到端周期**取首次 `submit_at` 起算**（不因重提而重置，否则会掩盖来回返工成本）
@@ -583,7 +583,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 > **实现落地差异（2026-08-19，已随代码实现确认）**：
 > 1. 🚨 **去重键增加 `approval_round` 段**：`{event_type}_{requirement_id}_{approval_round}_{approval_level}_{remind_window}`。原文推论「驳回重提同理（去重计数自然重算）」**不成立** —— 重提后 `approval_round` 虽 +1，但节点停留时长归零，`remind_window = floor(0 / 24) = 0` 也一并归零，而 `approval_level` 又回到 L1，新一轮前几个窗口的键会与上一轮已落库的键**逐字相同**，导致新一轮催办被永久去重跳过。补 `approval_round` 段后轮次间天然隔离。
-> 2. 🚨 **静默时段绝不写 `SLA_REMINDED` / `SLA_ESCALATED`**：静默时段（`22:00–08:00`，见 [`job-schedule.md`](job-schedule.md) §3.2）命中催办 / 升级条件时，只写**新增事件类型 `SLA_DEFERRED`**，且 `dedupe_key` **传 null、不参与去重**；静默结束后那一轮按正常流程重新判定并发送。原文「静默期先写事件流水、失败也占用去重窗口」与「积压至 08:00 合并发送」两条**互斥** —— 若静默期写了去重键，`08:00` 那轮必被去重跳过，催办将**永久发不出去**。
+> 2. 🚨 **静默时段绝不写 `SLA_REMINDED` / `SLA_ESCALATED`**：静默时段（`22:00–08:00`，见 `job-schedule.md` §3.2）命中催办 / 升级条件时，只写**新增事件类型 `SLA_DEFERRED`**，且 `dedupe_key` **传 null、不参与去重**；静默结束后那一轮按正常流程重新判定并发送。原文「静默期先写事件流水、失败也占用去重窗口」与「积压至 08:00 合并发送」两条**互斥** —— 若静默期写了去重键，`08:00` 那轮必被去重跳过，催办将**永久发不出去**。
 > 3. **手动催办不受静默时段限制**（见 §10.5），只受本节去重窗口约束。
 
 - 同一需求同一级次在一个催办窗口内（`remind_window_hours`，默认 **24h**）**仅发送一次**催办，避免逐小时骚扰审批人
@@ -598,7 +598,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 - **每小时整点**执行一次扫描（cron `0 0 * * * ?`），检查全部审批中需求（`BU_REVIEWING` / `IMPL_REVIEWING` / `PM_REVIEWING`）当前节点的停留时长，对比 SLA 配置触发催办 / 升级
 - 同一次扫描一并处理 §10.4 目标日期预警，不另起 Job
 - 单机执行、并发度 1；幂等依赖 §10.7 去重键，**重复执行不会重发**
-- 触发策略、执行流程、幂等与双跑红线的完整定义见 [`job-schedule.md`](job-schedule.md) §3
+- 触发策略、执行流程、幂等与双跑红线的完整定义见 `job-schedule.md` §3
 - 🚨 **Job 不做业务判定外的任何写入**：不改需求状态、不改审批级次、不自动通过也不自动驳回（时效治理只推人，不代人做决策）；小时级扫描意味着**催办最大延迟 1 小时**，属可接受误差
 
 ---
@@ -621,7 +621,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 - 开关为 **per-PM 配置**（§11.8），按 `pm_user_id` 维度生效，**禁止把具体人员写进代码 / 配置中心常量**
 - 每个 `(requirement_id, approval_round)` 自动触发**至多一次**；驳回重提进入新一轮后可再次自动触发；同轮内 PM 可手动「重新生成」（§11.6），版本递增
 - 外部提交单同样适用：以默认链 L3 审批人集合中开启开关者为准（§3.4）
-- 触发后写 `requirement_ai_plan` 记录（`status=GENERATING`，`trigger_type=AUTO`），数据模型见 [`data-model.md`](data-model.md) §9
+- 触发后写 `requirement_ai_plan` 记录（`status=GENERATING`，`trigger_type=AUTO`），数据模型见 `data-model.md` §9
 
 ### 11.3 固定分析框架（七步）
 
@@ -674,7 +674,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ### 11.8 配置：per-PM 开关
 
-- 开关落 `requirement_approval_config.ai_assist_enabled`（[`data-model.md`](data-model.md) §4）：管理员在「审批链配置」页**先选提交对象（PM）再勾选「AI 辅助方案确认」**，对该 PM 全部专属链行批量置位
+- 开关落 `requirement_approval_config.ai_assist_enabled`（`data-model.md` §4）：管理员在「审批链配置」页**先选提交对象（PM）再勾选「AI 辅助方案确认」**，对该 PM 全部专属链行批量置位
 - 生效口径：该 PM 存在任一 `status=1` 专属链行且 `ai_assist_enabled=1` 即视为开启；默认链行该列恒为 0（外部单以 L3 配置审批人自己的专属链开关为准，不继承默认链）
 - 开关变更**立即生效**（同 SLA 配置，不做快照）：仅影响变更后进入 `PM_REVIEWING` 的需求，在途生成中任务不受影响
 
@@ -688,7 +688,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 ## 12. 流程中心接入（M4 全量，2026-10-09 切换定稿）
 
-> **定位**：审批流转接入 [`流程中心`](../../../../依赖文档/公共功能/流程中心/SKILL.md)（M4 外部表单模式），参考库存调整 §16 先行实践（[`../../../../供应链/库存/库存调整/references/business-rule.md`](../../../../供应链/库存/库存调整/references/business-rule.md) §16）。**提交表单（提交对象选择/附件/外链 H5/AI 面板）全部留在本模块**，仅审批流转引擎接入平台。2026-09-15 平台侧完成页面配置、2026-09-16 研发对接落地（灰度未开）；**2026-10-09 用户定稿：不做灰度，全部新单审批直接走流程中心**，本章为全量版口径。
+> **定位**：审批流转接入 `流程中心`（M4 外部表单模式），参考库存调整 §16 先行实践（`../../../../供应链/库存/库存调整/references/business-rule.md` §16）。**提交表单（提交对象选择/附件/外链 H5/AI 面板）全部留在本模块**，仅审批流转引擎接入平台。2026-09-15 平台侧完成页面配置、2026-09-16 研发对接落地（灰度未开）；**2026-10-09 用户定稿：不做灰度，全部新单审批直接走流程中心**，本章为全量版口径。
 
 ### 12.1 全量切换决策（2026-10-09 用户定稿）
 
@@ -816,15 +816,15 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 
 > **✅ 配置侧落地说明（2026-09-15 页面配置后回写，v2 初版实录——2026-10-09 全量同步项见 §12.3 末行）**：模板、9 链、23 节点、USER 钉人（11 名审批人 userId 全部经 `sys_user` 核验在职）、发起权限虚置均经页面操作 + DMS 实查核对；preview-chain 8 用例实测命中正确（4 专属链 + FIN/SCM/DIGITAL 默认链 + YDTJ）；`published-list` 实测为空（发起入口封闭生效）；现网 `requirement_approval_config` 零改动。研发对接（§12.4）另起卡。
 
-> **✅ 研发对接落地说明（2026-09-16，busyming-snackingdom-devops + foundation；灰度版实现实录——全量版变更点：路由判定见 §12.4 ①、外部单代提 ②、pm-options 过滤 ⑥、自审处置 ⑦、开关语义 ⑧）**：
+> **✅ 研发对接落地说明（2026-09-16，busyming-devops + foundation；灰度版实现实录——全量版变更点：路由判定见 §12.4 ①、外部单代提 ②、pm-options 过滤 ⑥、自审处置 ⑦、开关语义 ⑧）**：
 > - **平台补齐（foundation，契约只增）**：`FlowCenterFeignClient` 新增 `POST /feign/flow-center/instance/withdraw` 代调端点（`withdrawIdempotent`：实例已 DRAFT 且同一发起人幂等返回成功）；撤回成功发布 MQ 事件 `WITHDRAWN`——§12.5#7 的「由 MQ/代调结果回写对齐」依赖此两项平台新增能力（评审时发现平台两侧均不存在，属本卡新增的阻塞项闭环）
-> - **本模块新增**：`RequirementFlowCenterGateway`（灰度路由 `decideSubmitChannel` 四态：SELF/FLOW_SUBMIT/FLOW_RESUBMIT/CLEAR_AND_SELF；formData 契约——**pmUserId 字符串化**（平台链条件 SpEL 按 `=='13493'` 字符串比较，Long 入参永不命中）；页内代调；nodeSeq↔级次**有序位置映射** `levelToNodeSeq/nodeSeqToLevel`——专属链子集链如 L1+L3 时 nodeSeq=2 ↔ L3）、`RequirementFlowCenterTrigger`（**一律 afterCommit** 建实例/续审——平台审批动作经 MQ 回写，事务内调用会读到未提交数据；成功补发群知会，失败回退自研补全量通知）、`RequirementFlowCenterEventHandler`（MQ 回写：APPROVED 按映射级次推进 + 写 FLOW_CENTER 流水 + 触发 AI 挂点、COMPLETED 仍审批中兜底 PM_SUBMITTED、REJECTED 置驳回、WITHDRAWN 回 DRAFT；幂等键=单据状态+级次，当前级次越过事件级次即跳过）、`FlowCenterInstanceEventConsumer`（消费组 `busyming-snackingdom-devops-flow-center-requirement`，按 templateId 过滤）
+> - **本模块新增**：`RequirementFlowCenterGateway`（灰度路由 `decideSubmitChannel` 四态：SELF/FLOW_SUBMIT/FLOW_RESUBMIT/CLEAR_AND_SELF；formData 契约——**pmUserId 字符串化**（平台链条件 SpEL 按 `=='13493'` 字符串比较，Long 入参永不命中）；页内代调；nodeSeq↔级次**有序位置映射** `levelToNodeSeq/nodeSeqToLevel`——专属链子集链如 L1+L3 时 nodeSeq=2 ↔ L3）、`RequirementFlowCenterTrigger`（**一律 afterCommit** 建实例/续审——平台审批动作经 MQ 回写，事务内调用会读到未提交数据；成功补发群知会，失败回退自研补全量通知）、`RequirementFlowCenterEventHandler`（MQ 回写：APPROVED 按映射级次推进 + 写 FLOW_CENTER 流水 + 触发 AI 挂点、COMPLETED 仍审批中兜底 PM_SUBMITTED、REJECTED 置驳回、WITHDRAWN 回 DRAFT；幂等键=单据状态+级次，当前级次越过事件级次即跳过）、`FlowCenterInstanceEventConsumer`（消费组 `busyming-devops-flow-center-requirement`，按 templateId 过滤）
 > - **挂接点**：`submit()` 通道路由（灰度单个人待办/结果通知由平台模板承担，群知会由本模块按 §10 矩阵补发）、`approve()/reject()` 灰度单先代调平台成功才落本地、`withdraw()` 灰度单先代调平台撤回（失败阻断本地，防双通道分叉）
 > - **个人通知让位机制**：`RequirementNotifyServiceImpl.isFlowCenterManaged` 发送时点重查 `flow_instance_id`（不用事务内捕获的 DO——灰度单页内操作的递进/驳回个人通知让位平台模板防双发；回退自研时该值为 0，个人通知自动照常发出，兜底语义天成）
 > - **自审预解析从严口径**：§12.5#4 原文为「全链审批人=提交人回退」，实现按「链上任一级次或签含提交人即不进灰度」——部分命中时本模块 AUTO_SKIP 已跳级而平台仍停低级次会造成双通道错位（文档未覆盖该场景，按更严口径规避）
 > - **灰度单重提换提交对象**：新链不再命中专属链时清实例关联（写哨兵 0/''）回自研通道，平台 REJECTED/DRAFT 旧实例留痕终结（规避 §12.5#1 默认链 L3 替换缺口外溢）
-> - **DDL 已执行（开发/测试环境）**：`requirement.flow_instance_id/flow_instance_no`、`requirement_approval_log.op_channel`（见 data-model §1）；生产走变更工单（脚本 `busyming-snackingdom-devops/docs/20260916/lihao/requirement-flow-center-m4/01_ddl.sql`）
-> - **灰度开关**：Nacos `requirement.flow-center.enabled`（默认 false）+ `requirement.flow-center.template-id`（默认 2）；单测 28/28 绿（Gateway 路由 13 + EventHandler 回写 15）；部署与灰度步骤见 `busyming-snackingdom-devops/docs/20260916/lihao/requirement-flow-center-m4/README.md`；上线 checklist：平台企微模板（FLOW_CENTER 系）需确认已启用
+> - **DDL 已执行（开发/测试环境）**：`requirement.flow_instance_id/flow_instance_no`、`requirement_approval_log.op_channel`（见 data-model §1）；生产走变更工单（脚本 `busyming-devops/docs/20260916/lihao/requirement-flow-center-m4/01_ddl.sql`）
+> - **灰度开关**：Nacos `requirement.flow-center.enabled`（默认 false）+ `requirement.flow-center.template-id`（默认 2）；单测 28/28 绿（Gateway 路由 13 + EventHandler 回写 15）；部署与灰度步骤见 `busyming-devops/docs/20260916/lihao/requirement-flow-center-m4/README.md`；上线 checklist：平台企微模板（FLOW_CENTER 系）需确认已启用
 
 > **🔜 全量切换待实现清单（2026-10-09 定稿，决策 §12.1）**：
 > - **配置侧（✅ 2026-10-09 当日完成）**：① 本模块审批链配置新增 3 条专属链——邓佳华·SNACK数字化（L1 凌敏→L3 邓佳华）、凌敏·SNACK数字化（L1 邓佳华→L3 凌敏）、邓佳华·YDTJ（L1 孔兵兵→L2 邓佳华→L3 邓佳华），DMS 实查 7 行 `status=1`（15:43 落库）；② 流程中心模板同步 5 项（§12.3 末行）完成并重新发布 **v4**，preview-chain 回归 10 用例全中（4 原专属链 + 李儒洲SCM/邓佳华DIGITAL/凌敏DIGITAL/邓佳华YDTJ 新链 + 外部单无 pmUserId 落默认·YDTJ + 兜底无 pm SNACK-FIN 落瘦身 2 级链），DMS 实查 13 链 32 节点与现网配置一一对应
@@ -832,7 +832,7 @@ REJECTED（任意级次驳回）→ 可重新提交回到 SUBMITTED（级次重�
 > - **验收（开闸后）**：内部单（命中任一专属链）双通道审批 + 驳回重提 + 撤回各 1 例；外部单 1 例（外链提交→邀约人待办→YDTJ 默认链三级→COMPLETED 回写 `PM_SUBMITTED` + L3 实际通过人写 `pm_user_id`）；观察首批流转无异常后回写本实录
 > - **在途单**：切换日在途 2 单（自研通道）走完原流程（D4），不回填实例
 
-> **✅ 研发落地说明（2026-10-13，v2.2.7/v2.2.8 规格交付，busyming-snackingdom-devops + foundation + Web/App）**：
+> **✅ 研发落地说明（2026-10-13，v2.2.7/v2.2.8 规格交付，busyming-devops + foundation + Web/App）**：
 > - **⑥ fieldLabels 携带（D7）**：`RequirementFlowCenterGateway.buildFieldLabels` 落地（清单与 §12.4① 登记表逐字对齐，含外部单三键），`doSubmitExternal`/`resubmit` 均携带；平台侧 `flow_instance.field_labels_json` 列（DDL 已执行实证）、接参落库、详情返回+hide 过滤先行由刘操同日凌晨先行落地（foundation `350a0900`/`be011b5a`/`fc195945`）
 > - **⑦ 双通道权限收口（D6）**：页内 `approve()/reject()` 命中流程单（`flow_instance_id>0`）豁免 §4.2 `assertCurrentApprover` 快照校验，直接代调平台、平台 403 为唯一闸门；自研在途单原校验分支保留；驳回意见 ≥10 字校验（与权限无关）保留在接口层；代调平台明确拒绝时**透传平台错误文案**（替代统一「请重试」，跳节点/转审错位场景不再误导）；`resolveActions` 按钮显隐维持本地快照（转审/加签受让人由平台待办通道承接）
 > - **配套平台修复（foundation）**：跳过末节点收场（`advance()` 识别 SKIPPED——生产卡死实例 FI20261012161946825 根因）、企微待办关键字段取 label（无映射剔除）；试吃登记同轮携带 fieldLabels + `supplierPrepayFlagName`

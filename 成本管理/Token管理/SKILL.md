@@ -8,8 +8,7 @@ metadata:
 
 # Qoder 用量查询（qoder-usage）
 
-> App 功能图标：[qoder-usage.html](../../../../设计/app/icons/resources/qoder-usage.html)（App 工作台「Qoder 用量查询」入口图标真源，120×120 统一版式动效 HTML，自包含）
-
+> App 功能图标：qoder-usage.html（App 工作台「Qoder 用量查询」入口图标真源，120×120 统一版式动效 HTML，自包含）
 
 ## 模块概述
 
@@ -33,8 +32,8 @@ metadata:
 
 | 依赖 | 路径 | 用途 |
 |------|------|------|
-| Qoder Teams OpenAPI | [../../../依赖文档/API/qoder-api.md](../../../依赖文档/API/qoder-api.md) | 第三方接口清单、分页游标与错误码真源 |
-| 前端页面规范 | [../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md](../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md) | 双端页面与原型硬约束 |
+| Qoder Teams OpenAPI | ../../../依赖文档/API/qoder-api.md | 第三方接口清单、分页游标与错误码真源 |
+| 前端页面规范 | ../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md | 双端页面与原型硬约束 |
 
 ## 页面功能概览
 
@@ -56,9 +55,3 @@ App 端页面元素与 Web 保持一致，仅做移动端布局适配（KPI 2 �
 - 原型生成与验收走 requirement-add 流程，页面硬约束以 page-blueprint 为准
 - 上游接口清单与分页/错误约定见 Prerequisites 中 qoder-api.md，模块内不复制
 
-## 变更记录
-
-| 日期 | 变更 | 说明 |
-|------|------|------|
-| 2026-09-07 | 日消耗图改按模型堆叠 + App 元素对齐 | 日 Credits 消耗趋势由「本期 vs 上周同期」分组柱形改为按模型分类（Ultimate / Kimi K3 / GLM 5.3 / DeepSeek V4 Pro / Qwen3.8 Max / 其他）堆叠柱形图；App 筛选补齐成员多选与查询/重置、KPI 补齐活跃成员（5 卡）、新增日期×成员透视表、移除成员用量排行，页面元素与 Web 一致 |
-| 2026-09-15 | 堆叠柱配色浅色化 | 6 桶配色由 -6 深色阶下调为 -4 浅色阶（柱体大面积填充更柔和），双端实现与原型同步；映射表见 business-rule.md §6 |

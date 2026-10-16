@@ -26,7 +26,7 @@
 
 **TraceId 样例**：{traceIdSamples join ", "}
 
-[查看详情]({webDetailUrl})  ·  [跳转 SLS]({slsConsoleUrl})
+查看详情  ·  跳转 SLS
 ```
 
 ## 字段约束
