@@ -1,0 +1,2317 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>系统功能排期 - 零食王国管理中心</title>
+<style>
+:root{
+  --primary:#E60013;--primary-hover:#B30010;--primary-light:#FFF0F1;
+  --secondary:#FFDE00;--secondary-light:#FFFBE6;
+  --bg:#F5F5F5;--surface:#FFFFFF;
+  --text:#1A1A1A;--text-secondary:#666666;--text-tertiary:#999999;
+  --border:#E0E0E0;--border-light:#F0F0F0;
+  --positive:#52C41A;--positive-light:#E8F5E9;
+  --warn:#E65100;--warn-light:#FFF3E0;
+  --info:#F53F3F;
+  --shadow-sm:0 1px 3px rgba(0,0,0,.06);
+  --shadow-md:0 2px 8px rgba(0,0,0,.08);
+  --shadow-lg:0 8px 24px rgba(0,0,0,.15);
+  --sidebar-width:220px;--header-height:52px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;font-size:14px;color:var(--text);background:var(--bg);line-height:1.5;min-width:1200px}
+
+/* ── Top Header ── */
+.top-header{position:fixed;top:0;left:0;right:0;height:var(--header-height);background:var(--primary);display:flex;align-items:center;padding:0 20px;z-index:200}
+.logo{display:flex;align-items:center;gap:10px;color:#fff;font-size:17px;font-weight:700;width:var(--sidebar-width);flex-shrink:0;letter-spacing:.5px}
+.logo .subtitle{font-size:12px;opacity:.7;font-weight:400;border-left:1px solid rgba(255,255,255,.3);padding-left:10px;margin-left:4px}
+.header-center{flex:1;padding-left:20px}
+.breadcrumb{display:flex;align-items:center;gap:6px;font-size:13px;color:rgba(255,255,255,.8)}
+.breadcrumb .sep{opacity:.5}
+.breadcrumb .current{color:#fff;font-weight:500}
+.header-right{display:flex;align-items:center;gap:16px;color:#fff}
+.user-info{display:flex;align-items:center;gap:8px;font-size:13px;padding:4px 8px;border-radius:6px;cursor:pointer}
+.user-info:hover{background:rgba(255,255,255,.1)}
+.user-info .avatar{width:28px;height:28px;background:rgba(255,255,255,.2);border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px}
+
+/* ── Sidebar ── */
+.sidebar{position:fixed;top:var(--header-height);left:0;bottom:0;width:var(--sidebar-width);background:var(--surface);border-right:1px solid var(--border-light);overflow-y:auto;z-index:100}
+.menu-section{padding:12px 0;border-bottom:1px solid var(--border-light)}
+.section-label{padding:6px 20px;font-size:11px;color:var(--text-tertiary);font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+.menu-item{display:flex;align-items:center;gap:10px;padding:10px 20px;margin:2px 8px;border-radius:6px;cursor:pointer;transition:.15s;font-size:13px;color:var(--text-secondary);font-weight:500;position:relative}
+.menu-item:hover{background:var(--bg);color:var(--text)}
+.menu-item.active{background:var(--primary-light);color:var(--primary);font-weight:600}
+.menu-item.active::before{content:"";position:absolute;left:0;top:50%;transform:translateY(-50%);width:3px;height:20px;background:var(--primary);border-radius:0 2px 2px 0}
+.menu-item .icon{font-size:16px;width:22px;text-align:center}
+
+/* ── Main ── */
+.main-content{margin-left:var(--sidebar-width);margin-top:var(--header-height);padding:20px;min-height:calc(100vh - var(--header-height))}
+.page-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.page-title{font-size:18px;font-weight:700}
+.page-subtitle{font-size:12px;color:var(--text-tertiary);margin-top:2px}
+
+/* ── Toolbar ── */
+.toolbar{display:flex;align-items:center;gap:10px;background:var(--surface);padding:12px 16px;border-radius:8px;box-shadow:var(--shadow-sm);margin-bottom:16px}
+.nav-btn{height:32px;min-width:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:13px;color:var(--text-secondary);cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:4px;transition:.15s}
+.nav-btn:hover{border-color:var(--primary);color:var(--primary)}
+.nav-btn.nf-btn{border-color:#FFE082;color:#F57F17;background:#FFFBE6;gap:4px}
+.nav-btn.nf-btn:hover{border-color:#FFA000;color:#F57F17;background:#FFF8E1}
+.nav-btn.nf-btn strong{font-family:SF Mono,Consolas,monospace;font-weight:700;color:#F57F17}
+.month-picker{position:relative}
+.month-label{height:32px;padding:0 14px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:14px;font-weight:600;color:var(--text);cursor:pointer;display:inline-flex;align-items:center;gap:6px;min-width:140px;justify-content:center}
+.month-label:hover{border-color:var(--primary)}
+.month-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:#fff;border-radius:8px;box-shadow:var(--shadow-lg);padding:10px;display:none;z-index:50;width:260px}
+.month-picker.open .month-dropdown{display:block}
+.repo-filter{position:relative}
+.repo-filter-btn{color:#00897B;border-color:#80CBC4;background:#E0F2F1}
+.repo-filter-btn:hover{background:#B2DFDB;border-color:#26A69A}
+.repo-filter-btn strong{color:#004D40;font-weight:600}
+.repo-filter.open .repo-filter-btn{border-color:#26A69A;background:#B2DFDB}
+.repo-filter-dropdown{position:absolute;top:calc(100% + 4px);left:0;background:#fff;border-radius:8px;box-shadow:var(--shadow-lg);padding:6px;display:none;z-index:50;min-width:220px;max-height:320px;overflow:auto}
+.repo-filter.open .repo-filter-dropdown{display:block}
+.repo-opt{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:4px;font-size:13px;color:var(--text);cursor:pointer}
+.repo-opt:hover{background:var(--primary-light)}
+.repo-opt input{cursor:pointer;margin:0}
+.repo-opt.all{font-weight:600}
+.repo-filter-divider{height:1px;background:var(--border-light);margin:4px 6px}
+.repo-filter-hint{padding:6px 10px 2px;font-size:11px;color:var(--text-tertiary)}
+.year-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.year-row .year-val{font-weight:600;font-size:14px}
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.month-cell{padding:8px 0;text-align:center;border-radius:4px;cursor:pointer;font-size:13px;color:var(--text-secondary)}
+.month-cell:hover{background:var(--primary-light);color:var(--primary)}
+.month-cell.current{background:var(--primary);color:#fff;font-weight:600}
+.stat-chips{margin-left:auto;display:flex;gap:8px;font-size:12px}
+.chip{padding:4px 10px;border-radius:12px;background:var(--bg);color:var(--text-secondary);display:inline-flex;align-items:center;gap:4px}
+.chip .dot{width:8px;height:8px;border-radius:50%}
+.chip.pending .dot{background:#BDBDBD}
+.chip.in-progress .dot{background:#7E57C2}
+.chip.done .dot{background:var(--positive)}
+.chip.delayed .dot{background:var(--warn)}
+.chip.backup .dot{background:var(--info)}
+.chip.non-feature .dot{background:#FFA000}
+.chip strong{color:var(--text);font-weight:600;font-family:SF Mono,Consolas,monospace}
+
+/* ── Layout: Backup + Calendar ── */
+.workspace{display:grid;grid-template-columns:280px 1fr;gap:16px}
+
+/* Backup */
+.backup-panel{background:var(--surface);border-radius:8px;box-shadow:var(--shadow-sm);display:flex;flex-direction:column;max-height:calc(100vh - 220px);min-height:600px}
+.panel-header{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-light)}
+.panel-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.panel-title .count{font-size:11px;color:var(--text-tertiary);font-weight:400;background:var(--bg);padding:2px 8px;border-radius:10px;font-family:SF Mono,Consolas,monospace}
+.backup-filter{display:flex;align-items:center;gap:8px;padding:8px 16px;border-bottom:1px solid var(--border-light);background:#FAFAFA}
+.mine-toggle{display:inline-flex;align-items:center;gap:8px;cursor:pointer;font-size:12px;color:var(--text-secondary);user-select:none}
+.mine-toggle input{display:none}
+.mine-toggle .toggle-track{position:relative;width:32px;height:18px;background:#E0E0E0;border-radius:10px;transition:background .15s}
+.mine-toggle .toggle-thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;background:#fff;border-radius:50%;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:left .15s}
+.mine-toggle input:checked ~ .toggle-track{background:var(--primary)}
+.mine-toggle input:checked ~ .toggle-track .toggle-thumb{left:16px}
+.mine-toggle:hover .toggle-track{background:#CCCCCC}
+.mine-toggle input:checked + .toggle-track:hover,
+.mine-toggle:hover input:checked ~ .toggle-track{background:var(--primary-hover)}
+.mine-toggle .toggle-label-active{color:var(--primary);font-weight:600}
+.backup-hint{font-size:11px;color:var(--text-tertiary);padding:8px 16px;background:#FAFAFA;border-bottom:1px solid var(--border-light)}
+.backup-search{position:relative;padding:8px 12px;border-bottom:1px solid var(--border-light);background:#fff}
+.backup-search input{width:100%;height:30px;padding:0 28px 0 30px;border:1px solid var(--border);border-radius:4px;font-size:12px;outline:none;background:#fff;color:var(--text);transition:.15s}
+.backup-search input:focus{border-color:var(--primary);background:#fff}
+.backup-search .bs-icon{position:absolute;left:22px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--text-tertiary);pointer-events:none}
+.backup-search .bs-clear{position:absolute;right:20px;top:50%;transform:translateY(-50%);width:18px;height:18px;border:none;background:var(--border);color:#fff;border-radius:50%;font-size:11px;line-height:18px;cursor:pointer;display:none}
+.backup-search .bs-clear:hover{background:var(--text-tertiary)}
+.backup-search .bs-clear.show{display:inline-block}
+.backup-search .bs-hint{font-size:10.5px;color:var(--text-tertiary);margin-top:4px;line-height:1.4}
+.backup-search .bs-hint .kw{color:var(--primary);font-weight:500}
+.backup-list{flex:1;overflow-y:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.backup-list.drag-over{background:var(--primary-light)}
+.backup-empty{color:var(--text-tertiary);font-size:12px;text-align:center;padding:40px 0}
+
+/* Calendar */
+.calendar-panel{background:var(--surface);border-radius:8px;box-shadow:var(--shadow-sm);overflow:hidden}
+.week-header{display:grid;grid-template-columns:repeat(7,1fr);background:var(--bg);border-bottom:1px solid var(--border-light)}
+.week-header .dow{padding:10px 0;text-align:center;font-size:12px;font-weight:600;color:var(--text-secondary)}
+.week-header .dow.weekend{color:var(--primary)}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:minmax(120px,auto)}
+.day-cell{border-right:1px solid var(--border-light);border-bottom:1px solid var(--border-light);padding:6px;display:flex;flex-direction:column;gap:4px;background:#fff;position:relative;min-height:120px;transition:background .15s}
+.day-cell:nth-child(7n){border-right:none}
+.day-cell.off-month{background:#FAFAFA}
+.day-cell.off-month .day-num{color:var(--text-tertiary)}
+.day-cell.today{background:var(--primary-light)}
+.day-cell.today .day-num{color:var(--primary);font-weight:700}
+.day-cell.release-day{background:#FFECE8}
+.day-cell.release-day .day-num{color:var(--info);font-weight:700}
+.day-cell.release-day::after{content:"发版";position:absolute;top:4px;right:6px;font-size:10px;color:var(--info);background:#FDCDC5;padding:1px 5px;border-radius:3px;font-weight:600}
+.day-cell.drag-over{background:#FFFBE6;outline:2px dashed var(--primary);outline-offset:-2px;z-index:2}
+.day-head{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--text-secondary);padding:2px 2px 4px}
+.day-num{font-family:SF Mono,Consolas,monospace;font-weight:600;font-size:13px;color:var(--text)}
+.day-lunar{font-size:10px;color:var(--text-tertiary)}
+.day-cards{display:flex;flex-direction:column;gap:4px;overflow:hidden}
+.more-btn{background:none;border:none;font-size:11px;color:var(--primary);cursor:pointer;text-align:left;padding:2px;font-weight:500}
+.more-btn:hover{text-decoration:underline}
+
+/* Card (shared) */
+.card{background:#fff;border:1px solid var(--border);border-radius:4px;padding:6px 8px;font-size:12px;cursor:grab;position:relative;transition:transform .1s,box-shadow .1s;overflow:hidden}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.card:active{cursor:grabbing}
+.card.dragging{opacity:.4}
+.card .c-title{font-weight:600;color:var(--text);line-height:1.35;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:4px}
+.card .c-meta{display:flex;align-items:center;justify-content:space-between;margin-top:3px;font-size:10.5px;color:var(--text-tertiary);padding-left:4px;gap:6px}
+.card .c-no{font-family:SF Mono,Consolas,monospace;color:var(--text-secondary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0}
+.card .c-owner{color:var(--text-tertiary);white-space:nowrap;flex-shrink:0}
+.card .c-time-row{display:flex;align-items:center;gap:6px;margin-top:3px;font-size:10.5px;padding-left:4px;color:var(--text-tertiary)}
+.card .c-commit-time{font-family:SF Mono,Consolas,monospace}
+.card .c-rel-time{color:var(--info);background:#FFECE8;padding:0 5px;border-radius:3px;font-size:10px;line-height:1.5}
+.card .c-rel-time.stale{color:#F57F17;background:#FFFBE6}
+.card .c-module-row{display:flex;align-items:center;justify-content:space-between;gap:6px;margin-top:4px;padding-left:4px}
+.card .c-module{font-size:10px;color:var(--info);background:#FFECE8;padding:1px 6px;border-radius:3px;font-weight:500;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5}
+.card .c-dev{font-size:10px;color:#5E35B1;background:#F3E5F5;padding:1px 6px;border-radius:3px;font-weight:500;line-height:1.5;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:3px}
+.card.status-pending{background:#fff;border-color:var(--border)}
+.card.status-in-progress{background:#F3E5F5;border-color:#D1C4E9}
+.card.status-in-progress::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#7E57C2}
+.card.status-done{background:var(--positive-light);border-color:#C8E6C9}
+.card.status-done::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--positive)}
+.card.status-delayed{background:var(--warn-light);border-color:#FFE0B2}
+.card.status-delayed::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--warn)}
+.card.status-non-feature{background:#FFFBE6;border-color:#FFE082}
+.card.status-non-feature::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:#FFA000}
+.card.locked{cursor:not-allowed}
+.card.locked:hover{transform:none;box-shadow:var(--shadow-sm)}
+.card.search-dim{opacity:.25;filter:grayscale(.4)}
+.card.search-dim:hover{opacity:.55;filter:none}
+.card.search-hit{box-shadow:0 0 0 2px var(--secondary), var(--shadow-sm)}
+.card.search-hit:hover{box-shadow:0 0 0 2px var(--secondary), var(--shadow-md)}
+
+/* Drawer */
+.drawer-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:300;display:none}
+.drawer-mask.show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:440px;background:#fff;box-shadow:-4px 0 20px rgba(0,0,0,.15);z-index:301;transform:translateX(100%);transition:transform .22s ease-out;display:flex;flex-direction:column}
+.drawer.show{transform:translateX(0)}
+.drawer-header{padding:16px 20px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+.drawer-title{font-size:16px;font-weight:700;display:flex;align-items:center;gap:10px}
+.drawer-title .tag{font-size:10.5px;padding:2px 8px;border-radius:10px;font-weight:500}
+.drawer-title .tag.pending{background:#F5F5F5;color:var(--text-secondary)}
+.drawer-title .tag.in-progress{background:#F3E5F5;color:#5E35B1}
+.drawer-title .tag.done{background:var(--positive-light);color:#2E7D32}
+.drawer-title .tag.delayed{background:var(--warn-light);color:var(--warn)}
+.drawer-title .tag.non-feature{background:#FFFBE6;color:#F57F17}
+.drawer-close{width:28px;height:28px;border:none;background:transparent;font-size:20px;color:var(--text-tertiary);cursor:pointer;border-radius:4px}
+.drawer-close:hover{background:var(--bg);color:var(--text)}
+.drawer-body{flex:1;overflow-y:auto;padding:16px 20px}
+.field{margin-bottom:14px}
+.field-label{font-size:12px;color:var(--text-secondary);margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.field-label .required{color:var(--primary)}
+.field-value{font-size:13px;color:var(--text);word-break:break-all}
+.field-value.mono{font-family:SF Mono,Consolas,monospace;color:var(--text-secondary)}
+.field input[type=text],.field textarea{width:100%;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;font-size:13px;outline:none;font-family:inherit;background:#fff;color:var(--text)}
+.field textarea{height:auto;min-height:80px;padding:8px 10px;line-height:1.5;resize:vertical}
+.field input:focus,.field textarea:focus{border-color:var(--primary)}
+.field .hint{font-size:11px;color:var(--text-tertiary);margin-top:3px}
+.char-count{font-size:11px;color:var(--text-tertiary);text-align:right;margin-top:2px}
+.char-count.warn{color:var(--primary)}
+.status-switcher{display:flex;gap:8px}
+.status-opt{flex:1;padding:8px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:12px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;transition:.15s}
+.status-opt:hover{border-color:var(--primary)}
+.status-opt.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:600}
+.status-opt .dot{width:10px;height:10px;border-radius:50%;border:1px solid var(--border)}
+.status-opt[data-val=PENDING] .dot{background:#fff}
+.status-opt[data-val=IN_PROGRESS] .dot{background:#7E57C2;border-color:#7E57C2}
+.status-opt[data-val=DONE] .dot{background:var(--positive);border-color:var(--positive)}
+.done-section{padding:12px;background:var(--positive-light);border-radius:6px;border:1px solid #C8E6C9;margin-top:8px}
+.done-section.hidden{display:none}
+/* 需求性质单选组（样式对齐 status-switcher） */
+.req-nature-group{display:flex;gap:8px}
+.req-nature-opt{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;padding:8px;border:1px solid var(--border);border-radius:4px;background:#fff;font-size:12px;cursor:pointer;transition:.15s}
+.req-nature-opt:hover{border-color:var(--primary)}
+.req-nature-opt.active{border-color:var(--primary);background:var(--primary-light);color:var(--primary);font-weight:600}
+.req-nature-opt input{margin:0;accent-color:var(--primary);cursor:pointer}
+.req-nature-group.disabled .req-nature-opt{opacity:.55;pointer-events:none}
+.field input[type=text]:disabled{background:var(--bg);color:var(--text-tertiary);cursor:not-allowed}
+.drawer-footer{padding:12px 20px;border-top:1px solid var(--border-light);display:flex;justify-content:space-between;gap:10px;background:#FAFAFA}
+.btn{height:32px;padding:0 14px;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:hover{background:var(--primary-hover)}
+.btn-primary:disabled{background:#E0E0E0;color:#999;cursor:not-allowed}
+.btn-default{background:#fff;color:var(--text-secondary);border:1px solid var(--border)}
+.btn-default:hover{border-color:var(--primary);color:var(--primary)}
+.btn-danger{background:#fff;color:var(--primary);border:1px solid var(--primary)}
+.btn-danger:hover{background:var(--primary);color:#fff}
+
+/* Day detail modal */
+.day-modal-mask{position:fixed;inset:0;background:rgba(0,0,0,.35);z-index:280;display:none;align-items:center;justify-content:center}
+.day-modal-mask.show{display:flex}
+.day-modal-mask.during-drag{opacity:0;pointer-events:none;z-index:-1}
+.day-modal-mask.during-drag .day-modal,
+.day-modal-mask.during-drag .day-modal-body,
+.day-modal-mask.during-drag .day-modal-header{pointer-events:none}
+.day-modal{background:#fff;border-radius:10px;width:420px;max-height:70vh;box-shadow:var(--shadow-lg);display:flex;flex-direction:column}
+.day-modal-header{padding:14px 18px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;justify-content:space-between}
+.day-modal-body{flex:1;overflow-y:auto;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+
+/* Commit picker */
+.picker-row{display:flex;gap:8px;margin-bottom:8px}
+.picker-row select,.picker-row input{flex:1;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:4px;font-size:12px;outline:none;background:#fff;color:var(--text)}
+.picker-row select:focus,.picker-row input:focus{border-color:var(--primary)}
+.commit-list{max-height:200px;overflow-y:auto;border:1px solid var(--border-light);border-radius:6px;background:#fff}
+.commit-option{padding:8px 10px;border-bottom:1px solid var(--border-light);cursor:pointer;font-size:12px;transition:.1s}
+.commit-option:last-child{border-bottom:none}
+.commit-option:hover{background:var(--primary-light)}
+.commit-option.selected{background:var(--primary-light);border-left:3px solid var(--primary);padding-left:7px}
+.commit-option .co-line1{display:flex;align-items:center;gap:6px}
+.commit-option .co-hash{font-family:SF Mono,Consolas,monospace;color:var(--primary);font-weight:600}
+.commit-option .co-author{color:var(--text-secondary)}
+.commit-option .co-time{margin-left:auto;color:var(--text-tertiary);font-size:11px;font-family:SF Mono,Consolas,monospace}
+.commit-option .co-msg{margin-top:3px;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.commit-empty{padding:24px 0;text-align:center;color:var(--text-tertiary);font-size:12px}
+.selected-commit{margin-top:10px;padding:10px;background:#fff;border:1px solid #C8E6C9;border-left:3px solid var(--positive);border-radius:4px;font-size:12px}
+.sc-row{display:flex;gap:8px;margin-bottom:3px;line-height:1.5}
+.sc-row:last-child{margin-bottom:0}
+.sc-label{flex:0 0 56px;color:var(--text-tertiary)}
+.sc-val{flex:1;color:var(--text);word-break:break-all}
+.sc-val.mono{font-family:SF Mono,Consolas,monospace}
+
+/* Operation log timeline */
+.log-section{margin-top:18px;padding-top:14px;border-top:1px solid var(--border-light)}
+.log-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:10px;display:flex;align-items:center;gap:6px}
+.log-title .count{font-size:11px;color:var(--text-tertiary);font-weight:400;background:var(--bg);padding:1px 8px;border-radius:10px;font-family:SF Mono,Consolas,monospace}
+.log-list{list-style:none;padding:0;margin:0;position:relative;max-height:260px;overflow-y:auto;padding-left:16px}
+.log-list::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--border-light)}
+.log-item{position:relative;padding:4px 0 10px;font-size:12px}
+.log-item::before{content:"";position:absolute;left:-14px;top:7px;width:9px;height:9px;border-radius:50%;background:#fff;border:2px solid var(--border);box-sizing:border-box}
+.log-item.op-CREATED::before{border-color:var(--info)}
+.log-item.op-MARKED_DONE::before{border-color:var(--positive);background:var(--positive)}
+.log-item.op-SCHEDULED::before,.log-item.op-RESCHEDULED::before{border-color:var(--primary)}
+.log-item.op-UNSCHEDULED::before{border-color:var(--text-tertiary)}
+.log-item.op-EDITED::before{border-color:var(--secondary)}
+.log-item.op-REVERTED::before{border-color:var(--warn)}
+.log-item .log-head{display:flex;align-items:center;gap:8px;color:var(--text-secondary)}
+.log-item .log-op{font-weight:600;color:var(--text)}
+.log-item .log-time{margin-left:auto;color:var(--text-tertiary);font-family:SF Mono,Consolas,monospace;font-size:11px}
+.log-item .log-detail{margin-top:2px;color:var(--text-secondary);line-height:1.5}
+
+/* ── 卡片合并（merge） ── */
+.nav-btn.merge-btn{border-color:#FDCDC5;color:#F53F3F;background:#FFECE8;gap:4px}
+.nav-btn.merge-btn:hover{border-color:#F53F3F;color:#F53F3F;background:#FDCDC5}
+.nav-btn.merge-btn.active{background:#F53F3F;color:#fff;border-color:#F53F3F}
+/* 合并卡片视觉 */
+.card.is-merged{background:#FFECE8;border-color:#90CAF9;border-left:3px solid #F53F3F;position:relative}
+.card.is-merged .c-title::before{content:"🔗 ";margin-right:2px}
+.card.is-merged.in-progress{border-left-color:#7E57C2}
+.card.is-merged.done{border-left-color:var(--positive);background:#FFECE8}
+.card .merge-badge{position:absolute;top:4px;right:4px;font-size:9.5px;padding:1px 6px;border-radius:8px;background:#F53F3F;color:#fff;font-weight:600;letter-spacing:.2px}
+/* 多选态复选框 */
+.card .select-ck{display:none;position:absolute;top:4px;left:4px;width:16px;height:16px;border:1.5px solid var(--border);border-radius:3px;background:#fff;cursor:pointer;align-items:center;justify-content:center;font-size:11px;color:#fff;line-height:1;z-index:2}
+body.merge-mode .card .select-ck{display:inline-flex}
+body.merge-mode .card{padding-left:24px}
+body.merge-mode .card.ck-on .select-ck{background:#F53F3F;border-color:#F53F3F}
+body.merge-mode .card.ck-on .select-ck::after{content:"✓"}
+body.merge-mode .card.ck-disabled{opacity:.35;cursor:not-allowed}
+body.merge-mode .card.ck-disabled .select-ck{background:#EEE;border-color:#DDD;cursor:not-allowed}
+/* 底部合并悬浮条 */
+.merge-bar{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);background:#F53F3F;color:#fff;border-radius:999px;box-shadow:var(--shadow-lg);padding:10px 16px;display:none;align-items:center;gap:14px;z-index:250;font-size:13px}
+.merge-bar.show{display:inline-flex}
+.merge-bar .mb-info strong{font-size:15px;margin:0 4px}
+.merge-bar .mb-mod{background:rgba(255,255,255,.18);padding:2px 8px;border-radius:10px;font-size:11.5px}
+.merge-bar .mb-btn{height:28px;padding:0 12px;border-radius:14px;border:none;font-size:12.5px;cursor:pointer;font-weight:500}
+.merge-bar .mb-cancel{background:transparent;color:rgba(255,255,255,.85);border:1px solid rgba(255,255,255,.4)}
+.merge-bar .mb-cancel:hover{background:rgba(255,255,255,.1)}
+.merge-bar .mb-ok{background:#fff;color:#F53F3F}
+.merge-bar .mb-ok:disabled{opacity:.5;cursor:not-allowed}
+/* 合并卡抽屉 Tab */
+.drawer-tabs{display:flex;gap:0;padding:0 20px;border-bottom:1px solid var(--border-light);background:#FAFAFA}
+.drawer-tab{padding:10px 14px;font-size:13px;color:var(--text-secondary);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;font-weight:500}
+.drawer-tab.active{color:#F53F3F;border-bottom-color:#F53F3F}
+.drawer-tab .cnt{font-size:11px;color:var(--text-tertiary);margin-left:4px}
+.drawer-tab.active .cnt{color:#F53F3F}
+/* 明细列表 */
+.merge-items-list{padding:8px 0;display:flex;flex-direction:column;gap:8px}
+.merge-item-row{padding:10px 12px;border:1px solid var(--border-light);border-radius:6px;background:#fff;cursor:pointer;transition:.15s}
+.merge-item-row:hover{border-color:#F53F3F;background:#FAFCFF}
+.merge-item-row .mi-head{display:flex;align-items:center;gap:8px;margin-bottom:4px}
+.merge-item-row .mi-title{font-weight:600;font-size:13px;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.merge-item-row .mi-no{font-family:SF Mono,Consolas,monospace;font-size:10.5px;color:var(--text-tertiary)}
+.merge-item-row .mi-meta{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--text-tertiary);flex-wrap:wrap}
+.merge-item-row .mi-pill{padding:1px 7px;border-radius:8px;font-size:10px;background:#F5F5F5;color:var(--text-secondary)}
+.merge-item-row .mi-pill.mod{background:#FFECE8;color:#F53F3F}
+.merge-item-row .mi-pill.st-PENDING{background:#F5F5F5;color:var(--text-secondary)}
+.merge-item-row .mi-pill.st-IN_PROGRESS{background:#F3E5F5;color:#5E35B1}
+.merge-item-row .mi-pill.st-DONE{background:#E8F5E9;color:#2E7D32}
+.merge-item-row .mi-pill.st-NON_FEATURE{background:#FFF8E1;color:#F57F17}
+/* 合并卡抽屉提示（子卡只读） */
+.child-readonly-hint{margin:8px 0 12px;padding:8px 10px;border-radius:4px;background:#FFF8E1;border:1px solid #FFE082;color:#F57F17;font-size:12px;line-height:1.6}
+.merge-dissolve-btn{color:#F53F3F;border-color:#FDCDC5;background:#FFECE8}
+.merge-dissolve-btn:hover:not(:disabled){background:#FDCDC5}
+.merge-dissolve-btn:disabled{opacity:.45;cursor:not-allowed}
+</style>
+</head>
+<body>
+
+<header class="top-header">
+  <div class="logo"><span>零食王国</span><span class="subtitle">管理中心</span></div>
+  <div class="header-center">
+    <div class="breadcrumb">
+      <span>系统</span><span class="sep">/</span>
+      <span class="current">系统功能排期</span>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="user-info"><div class="avatar">李</div><span class="name">李四 · 产品经理</span></div>
+  </div>
+</header>
+
+<aside class="sidebar">
+  <div class="menu-section">
+    <div class="section-label">概览</div>
+    <div class="menu-item"><span class="icon">🏠</span>工作台</div>
+  </div>
+  <div class="menu-section">
+    <div class="section-label">系统</div>
+    <div class="menu-item"><span class="icon">🧩</span>Portal 框架</div>
+    <div class="menu-item"><span class="icon">📊</span>功能使用情况分析</div>
+    <div class="menu-item active"><span class="icon">📅</span>系统功能排期</div>
+  </div>
+</aside>
+
+<main class="main-content">
+  <div class="page-header">
+    <div>
+      <div class="page-title">系统功能排期</div>
+      <div class="page-subtitle">研发仓每次 commit 生成一张卡片，拖拽到日历排期，三态跟踪 · 开发完成需关联 commit 回执</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <button class="nav-btn" id="btnPrev" title="上月">&lt; 上月</button>
+    <div class="month-picker" id="monthPicker">
+      <div class="month-label" id="monthLabel">2026年05月</div>
+      <div class="month-dropdown">
+        <div class="year-row">
+          <button class="nav-btn" data-dir="-1">&lt;</button>
+          <span class="year-val" id="pickerYear">2026</span>
+          <button class="nav-btn" data-dir="1">&gt;</button>
+        </div>
+        <div class="month-grid" id="monthGrid"></div>
+      </div>
+    </div>
+    <button class="nav-btn" id="btnNext" title="下月">下月 &gt;</button>
+    <button class="nav-btn" id="btnToday">今天</button>
+    <button class="nav-btn" id="btnRepoConfig" title="配置代码仓">⚙ 代码仓</button>
+    <div class="repo-filter" id="repoFilter">
+      <button class="nav-btn repo-filter-btn" id="btnRepoFilter" title="按 skills 仓库筛选：同时作用于月历与 Backup 卡片池">🔍 skills 仓库 <strong id="repoFilterLabel">全部</strong> ▾</button>
+      <div class="repo-filter-dropdown" id="repoFilterDropdown"></div>
+    </div>
+    <button class="nav-btn nf-btn" id="btnNonFeature" title="查看非需求改动卡片">🔧 非需求改动 <strong id="stNonFeature">0</strong></button>
+    <button class="nav-btn merge-btn" id="btnMergeToggle" title="多选同一模块卡片合并为一张合并卡">🔗 合并</button>
+    <div class="stat-chips">
+      <span class="chip pending"><span class="dot"></span>待开发 <strong id="stPending">0</strong></span>
+      <span class="chip in-progress"><span class="dot"></span>开发中 <strong id="stInProgress">0</strong></span>
+      <span class="chip done"><span class="dot"></span>开发完成 <strong id="stDone">0</strong></span>
+      <span class="chip delayed"><span class="dot"></span>延期 <strong id="stDelayed">0</strong></span>
+      <span class="chip backup"><span class="dot"></span>未排期 <strong id="stBackup">0</strong></span>
+    </div>
+    <label class="mine-toggle" title="按 git 提交人 = 当前登录用户过滤（作用于月历+Backup+弹层）">
+      <input type="checkbox" id="onlyMineToggle">
+      <span class="toggle-track"><span class="toggle-thumb"></span></span>
+      <span class="toggle-label" id="onlyMineLabel">只看自己</span>
+    </label>
+    <span style="font-size:11px;color:var(--text-tertiary)" id="onlyMineHint">默认显示全部</span>
+  </div>
+
+  <!-- Workspace -->
+  <div class="workspace">
+    <!-- Backup -->
+    <div class="backup-panel">
+      <div class="panel-header">
+        <div class="panel-title">Backup 卡片池 <span class="count" id="backupCount">0</span></div>
+      </div>
+      <div class="backup-search">
+        <span class="bs-icon">🔍</span>
+        <input type="text" id="cardSearchInput" placeholder="搜索当月卡片：标题 / 内容…" autocomplete="off">
+        <button type="button" class="bs-clear" id="cardSearchClear" title="清空">×</button>
+        <div class="bs-hint" id="cardSearchHint">空格 / 逗号 分隔多关键字（AND 模糊匹配），仅搜当月</div>
+      </div>
+      <div class="backup-hint">新 commit 自动落入此处，拖到日历即可排期</div>
+      <div class="backup-list" id="backupList"></div>
+    </div>
+
+    <!-- Calendar -->
+    <div class="calendar-panel">
+      <div class="week-header">
+        <div class="dow">周一</div>
+        <div class="dow">周二</div>
+        <div class="dow">周三</div>
+        <div class="dow">周四</div>
+        <div class="dow">周五</div>
+        <div class="dow weekend">周六</div>
+        <div class="dow weekend">周日</div>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Drawer -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <span id="drawerNo">—</span>
+      <span class="tag" id="drawerTag">待开发</span>
+    </div>
+    <button class="drawer-close" id="drawerClose">×</button>
+  </div>
+  <!-- Merge tabs (仅合并卡可见) -->
+  <div class="drawer-tabs" id="drawerTabs" style="display:none">
+    <div class="drawer-tab active" data-tab="detail">详情</div>
+    <div class="drawer-tab" data-tab="items">明细<span class="cnt" id="tabItemsCnt">(0)</span></div>
+    <div class="drawer-tab" data-tab="log">流水</div>
+  </div>
+  <div class="drawer-body">
+    <div class="child-readonly-hint" id="childReadonlyHint" style="display:none">当前卡片隶属合并卡 <strong id="childParentNo" style="font-family:SF Mono,Consolas,monospace">—</strong>，状态/排期/开发人由合并卡控制，此处只读。</div>
+    <div class="field">
+      <div class="field-label">卡片编号</div>
+      <div class="field-value mono" id="dfCardNo">—</div>
+    </div>
+    <div class="field">
+      <div class="field-label">源 commit</div>
+      <div class="field-value mono" id="dfSource">—</div>
+      <div class="hint">自动记录，不可编辑</div>
+    </div>
+    <div class="field" id="fieldHwMgmt" style="display:none">
+      <div class="field-label">硬件管理信息</div>
+      <div class="field-value" id="dfHardwareManagement">—</div>
+      <div class="hint">来自源 commit hardware-management 字段</div>
+    </div>
+    <div class="field">
+      <div class="field-label">创建时间</div>
+      <div class="field-value mono" id="dfCreatedAt">—</div>
+      <div class="hint">= 源 commit 采集入库时间，不可修改</div>
+    </div>
+    <div class="field">
+      <div class="field-label">排期日期</div>
+      <div class="field-value" id="dfDate">—</div>
+      <div class="hint">通过拖拽改变排期日</div>
+    </div>
+    <div class="field">
+      <div class="field-label">标题 <span class="required">*</span></div>
+      <input type="text" id="dfTitle" maxlength="15" placeholder="不超过 15 字">
+      <div class="char-count" id="dfTitleCount">0 / 15</div>
+    </div>
+    <div class="field">
+      <div class="field-label">内容</div>
+      <textarea id="dfContent" placeholder="commit message 原文"></textarea>
+    </div>
+    <div class="field">
+      <div class="field-label">负责人</div>
+      <input type="text" id="dfOwner">
+      <div class="hint">默认 = git 提交人，可手改</div>
+    </div>
+    <div class="field" id="fieldReqNature">
+      <div class="field-label">需求性质</div>
+      <div class="req-nature-group" id="dfReqNatureGroup">
+        <label class="req-nature-opt"><input type="radio" name="dfReqNature" value="BIZ" checked>业务功能</label>
+        <label class="req-nature-opt"><input type="radio" name="dfReqNature" value="TECH">技术支持</label>
+      </div>
+      <div class="hint">技术支持：技术类、非功能性需求（文档补录、参数说明、性能优化、工具脚本等）；实施排期聚合时自动划入非实施区</div>
+    </div>
+    <div class="field" id="fieldBizContact">
+      <div class="field-label">业务对接人</div>
+      <input type="text" id="dfBizContact" maxlength="64" placeholder="无 REQ 单关联的卡排期前必填；REQ 关联卡预填提交人可改">
+      <div class="hint" id="dfBizContactHint" style="display:none"></div>
+    </div>
+    <div class="field" id="fieldDevOwner" style="display:none">
+      <div class="field-label">开发人</div>
+      <div class="field-value" id="dfDevOwner">—</div>
+      <div class="hint">切换到「开发中」时自动填入当前操作人；回到「待开发」清空</div>
+    </div>
+    <div class="field" id="fieldStatus">
+      <div class="field-label">状态</div>
+      <div class="status-switcher">
+        <div class="status-opt" data-val="PENDING"><span class="dot"></span><span>待开发</span></div>
+        <div class="status-opt" data-val="IN_PROGRESS"><span class="dot"></span><span>开发中</span></div>
+        <div class="status-opt" data-val="DONE"><span class="dot"></span><span>开发完成</span></div>
+      </div>
+    </div>
+    <div class="field" id="fieldNonFeatureHint" style="display:none">
+      <div class="field-label">状态</div>
+      <div class="field-value" style="color:#F57F17;background:#FFFBE6;border:1px solid #FFE082;padding:8px 10px;border-radius:4px;font-size:12px;line-height:1.6">
+        🔧 非需求改动<br>
+        <span style="color:var(--text-tertiary)">无需排期，不进入 Backup 和日历；如需恢复请点击下方「恢复为待开发」</span>
+      </div>
+    </div>
+    <div class="done-section" id="doneSection">
+      <div class="field">
+        <div class="field-label">选择完成 commit <span class="required">*</span></div>
+        <div class="picker-row">
+          <select id="pickRepo"></select>
+          <input type="text" id="pickSearch" placeholder="搜索 hash / message / author">
+        </div>
+        <div class="commit-list" id="commitList"></div>
+        <div class="hint">从目标仓库选中一条真实 commit，hash 与链接自动回填，不接受手写</div>
+      </div>
+      <div class="selected-commit" id="selectedCommit" style="display:none">
+        <div class="sc-row"><span class="sc-label">已选 hash</span><span class="sc-val mono" id="scHash">—</span></div>
+        <div class="sc-row"><span class="sc-label">作者</span><span class="sc-val" id="scAuthor">—</span></div>
+        <div class="sc-row"><span class="sc-label">提交时间</span><span class="sc-val mono" id="scAt">—</span></div>
+        <div class="sc-row"><span class="sc-label">message</span><span class="sc-val" id="scMsg">—</span></div>
+        <div class="sc-row"><span class="sc-label">链接</span><span class="sc-val mono" id="scUrl">—</span></div>
+      </div>
+      <input type="hidden" id="dfDoneRepo">
+      <input type="hidden" id="dfDoneHash">
+      <input type="hidden" id="dfDoneUrl">
+    </div>
+    <div class="log-section">
+      <div class="log-title">操作记录 <span class="count" id="logCount">0</span></div>
+      <ul class="log-list" id="logList"></ul>
+    </div>
+    <!-- Merge items block (仅合并卡显示) -->
+    <div class="merge-items-block" id="mergeItemsBlock" style="display:none;margin-top:16px">
+      <div class="log-title">合并明细 <span class="count" id="mergeItemsCnt">0</span></div>
+      <div class="merge-items-list" id="mergeItemsList"></div>
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-danger" id="drawerDelete">删除卡片</button>
+      <button class="btn btn-default" id="btnMoveToNf" style="color:#F57F17;border-color:#FFE082;background:#FFFBE6">🔧 移入非需求改动</button>
+      <button class="btn btn-default merge-dissolve-btn" id="btnDissolve" style="display:none" title="解散后子卡按快照恢复独立；DONE 合并卡禁用">🔗 解散合并</button>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-default" id="drawerCancel">取消</button>
+      <button class="btn btn-primary" id="drawerSave">保存</button>
+    </div>
+  </div>
+</aside>
+
+<!-- Day detail modal -->
+<div class="day-modal-mask" id="dayModalMask">
+  <div class="day-modal">
+    <div class="day-modal-header">
+      <div style="font-weight:600" id="dayModalTitle">—</div>
+      <button class="drawer-close" id="dayModalClose">×</button>
+    </div>
+    <div class="day-modal-body" id="dayModalBody"></div>
+  </div>
+</div>
+
+<!-- Non-feature card list modal -->
+<div class="day-modal-mask" id="nonFeatureMask">
+  <div class="day-modal" style="width:520px;max-height:80vh">
+    <div class="day-modal-header">
+      <div style="font-weight:600;color:#F57F17">🔧 非需求改动 · <span id="nfListCount">0</span> 条</div>
+      <button class="drawer-close" id="nonFeatureClose">×</button>
+    </div>
+    <div style="padding:8px 16px;font-size:11px;color:var(--text-tertiary);background:#FFFBE6;border-bottom:1px solid var(--border-light)">手动标记的非需求改动卡片，不占用排期也不进入 Backup</div>
+    <div class="day-modal-body" id="nonFeatureBody" style="padding:10px 14px;display:flex;flex-direction:column;gap:6px"></div>
+  </div>
+</div>
+
+<!-- Repo config modal -->
+<div class="day-modal-mask" id="repoConfigMask">
+  <div class="day-modal" style="width:560px;max-height:80vh">
+    <div class="day-modal-header">
+      <div style="font-weight:600">⚙ 代码仓配置</div>
+      <button class="drawer-close" id="repoConfigClose">×</button>
+    </div>
+    <div style="padding:12px 18px;overflow-y:auto;max-height:calc(80vh - 60px)">
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">📦 源 commit 仓库<span style="font-weight:400;color:var(--text-tertiary);font-size:11px;margin-left:6px">新增卡片时的来源仓库</span></div>
+      <div id="sourceRepoList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px;margin-bottom:20px">
+        <input type="text" id="newSourceRepo" placeholder="仓库标识，如 snackingdom-mall-web" style="flex:2;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <input type="text" id="newSourceRepoName" placeholder="仓库名称，如 零食王国主干 Web" style="flex:2;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button class="btn btn-primary" id="addSourceRepo" style="height:30px;font-size:12px;padding:0 12px">添加</button>
+      </div>
+
+      <div style="font-size:13px;font-weight:600;color:var(--text);margin-bottom:8px">✅ 完成 commit 仓库<span style="font-weight:400;color:var(--text-tertiary);font-size:11px;margin-left:6px">标记完成时可选仓库</span></div>
+      <div id="doneRepoList" style="display:flex;flex-direction:column;gap:6px;margin-bottom:14px"></div>
+      <div style="display:flex;gap:8px">
+        <input type="text" id="newDoneRepo" placeholder="仓库标识，如 snackingdom-mall-web" style="flex:2;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <input type="text" id="newDoneRepoName" placeholder="仓库名称，如 零食王国主干 Web" style="flex:2;height:30px;padding:0 8px;border:1px solid var(--border);border-radius:4px;font-size:12px">
+        <button class="btn btn-primary" id="addDoneRepo" style="height:30px;font-size:12px;padding:0 12px">添加</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Merge bottom bar (多选态提示条) -->
+<div class="merge-bar" id="mergeBar">
+  <span class="mb-info">已选 <strong id="mbCount">0</strong> 张</span>
+  <span class="mb-mod" id="mbModule">模块—</span>
+  <button class="mb-btn mb-cancel" id="mbCancel">取消</button>
+  <button class="mb-btn mb-ok" id="mbConfirm" disabled>确认合并</button>
+</div>
+
+<!-- Merge title input modal -->
+<div class="day-modal-mask" id="mergeTitleMask">
+  <div class="day-modal" style="width:420px">
+    <div class="day-modal-header">
+      <div style="font-weight:600;color:#F53F3F">🔗 合并卡片</div>
+    </div>
+    <div class="day-modal-body" style="padding:16px 18px">
+      <div style="font-size:12px;color:var(--text-tertiary);margin-bottom:10px">将选中的 <strong id="mtmCount" style="color:var(--text)">0</strong> 张卡片合并为一张合并卡，请输入合并卡标题（≤ 15 字）：</div>
+      <input type="text" id="mtmTitle" maxlength="15" placeholder="如：批量修复分拣相关" style="width:100%;height:32px;padding:0 10px;border:1px solid var(--border);border-radius:4px;font-size:13px">
+      <div style="font-size:11px;color:var(--text-tertiary);margin-top:6px">合并后：子卡从月历/Backup 隐藏，领取/完成操作将同步扩散到所有子卡。</div>
+    </div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border-light);display:flex;justify-content:flex-end;gap:8px;background:#FAFAFA;border-radius:0 0 10px 10px">
+      <button class="btn btn-default" id="mtmCancel">取消</button>
+      <button class="btn btn-primary" id="mtmOk" style="background:#F53F3F;border-color:#F53F3F">确认合并</button>
+    </div>
+  </div>
+</div>
+
+<!-- Release day confirm modal -->
+<div class="day-modal-mask" id="releaseConfirmMask">
+  <div class="day-modal" style="width:360px">
+    <div class="day-modal-header">
+      <div style="font-weight:600" id="releaseConfirmTitle">设置为发版日</div>
+    </div>
+    <div class="day-modal-body" id="releaseConfirmBody" style="padding:16px 18px;font-size:13px;color:var(--text);line-height:1.7">—</div>
+    <div style="padding:12px 18px;border-top:1px solid var(--border-light);display:flex;justify-content:flex-end;gap:8px;background:#FAFAFA;border-radius:0 0 10px 10px">
+      <button class="btn btn-default" id="releaseConfirmCancel">取消</button>
+      <button class="btn btn-primary" id="releaseConfirmOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<script src="../../../../../依赖文档/设计标准/front/assets/nav-web.js"></script>
+<script>
+/* ──────────────────────────────────────────────
+   Mock data: 目录 → 编号前缀
+────────────────────────────────────────────── */
+const MODULE_CODES = {
+  'store-request':'SR','usage-analytics':'UA','people-flow-monitoring':'PFM',
+  'hardware-management':'HM','product-query':'PQ','product-apply':'PA',
+  'capacity-manage':'CM','inventory-comprehensive-report':'ICR',
+  'visitor-appointment':'VA','fulfillment-rate':'FR','contract':'CT',
+  'srm':'SRM','voucher':'VC','threeMatchWay':'TMW',
+  'snackingdom-portal':'SP','wecom-login':'WL','feature-schedule':'FS'
+};
+function moduleCodeOf(path){ return MODULE_CODES[path] || 'MISC'; }
+
+/* 发版日数据 */
+const RELEASE_DAYS = {};
+// key = 'YYYY-MM-DD', value = true
+
+/* 用户 / 日志 */
+const CURRENT_USER = { id: 1004, name: '李四' };
+const SYSTEM_USER  = { id: 0,    name: '系统（commit 采集）' };
+const OP_LABEL = {
+  CREATED:'创建', SCHEDULED:'排期', UNSCHEDULED:'移回 Backup',
+  RESCHEDULED:'改期', EDITED:'编辑', MARKED_DONE:'标记完成',
+  TAKEN:'领取开发', RELEASED:'取消领取',
+  REVERTED:'回退待开发', DELETED:'删除'
+};
+function pad2(n){ return String(n).padStart(2,'0'); }
+function formatDateTime(d){
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function atWith(baseDate, hour, minute){
+  const x = new Date(baseDate); x.setHours(hour, minute, 0, 0);
+  return formatDateTime(x);
+}
+function appendLog(card, type, detail, by){
+  card.logs = card.logs || [];
+  card.logs.push({
+    type, detail: detail||'',
+    operatorName: (by || CURRENT_USER).name,
+    at: formatDateTime(new Date())
+  });
+}
+
+/* 源 commit 仓库（新增卡片时来源仓库列表） */
+const SOURCE_REPOS = [
+  { repo:'snackingdom-mall-web', name:'零食王国主干 Web',  defaultBranch:'main' },
+  { repo:'snackingdom-mall-api', name:'零食王国主干 API',  defaultBranch:'main' },
+  { repo:'snackingdom-wms',      name:'WMS 仓储',          defaultBranch:'main' },
+  { repo:'busyming-skills',      name:'Skill 文档仓（零食王国）', defaultBranch:'master',
+    pathPrefixWhitelist:['零食王国/'],
+    pathPrefixBlacklist:['.agents/'] }
+];
+
+/* 完成 commit 仓库（标记完成时可选仓库列表） */
+const DONE_REPOS = [
+  { repo:'snackingdom-mall-web', name:'零食王国主干 Web',  defaultBranch:'main' },
+  { repo:'snackingdom-mall-api', name:'零食王国主干 API',  defaultBranch:'main' },
+  { repo:'snackingdom-wms',      name:'WMS 仓储',          defaultBranch:'main' }
+];
+
+/* 通用查找 */
+const ALL_REPOS = [...SOURCE_REPOS];
+const REPOS = DONE_REPOS; // 完成选择器兼容旧引用
+
+/* 「skills 仓库筛选」：默认全选 = 不过滤；作用于日历 + Backup + 统计（按卡片 sourceRepo） */
+const SELECTED_REPOS = new Set(SOURCE_REPOS.map(r => r.repo));
+function repoFilterIsAll(){ return SELECTED_REPOS.size === 0 || SELECTED_REPOS.size === SOURCE_REPOS.length; }
+function passRepoFilter(c){ return repoFilterIsAll() || SELECTED_REPOS.has(c.sourceRepo); }
+const REPO_COMMITS = {
+  'snackingdom-mall-web': [
+    { hash:'88aa11c', author:'张三', at:'2026-05-03 14:12', msg:'fix(pick): 回收分拣任务超时锁' },
+    { hash:'99bb22d', author:'张三', at:'2026-05-04 10:05', msg:'feat(store-request): 要货明细导出 Excel' },
+    { hash:'aa33e44', author:'张三', at:'2026-05-06 09:42', msg:'chore(report): 优化库存报表缓存策略' },
+    { hash:'b7e1d44', author:'王五', at:'2026-05-06 16:20', msg:'feat(usage): 埋点客户端失败重试' },
+    { hash:'c2f99aa', author:'李雷', at:'2026-05-05 11:34', msg:'feat(capacity): 批量编辑弹层动画优化' },
+    { hash:'d91b3ec', author:'韩梅梅', at:'2026-05-05 15:08', msg:'fix(query): 扫码结果闪现问题' },
+    { hash:'e45d8f1', author:'赵六', at:'2026-05-04 17:44', msg:'fix(pfm): 客单转化率 0 除错误' },
+    { hash:'f1a7b22', author:'李四', at:'2026-05-07 10:01', msg:'feat(schedule): 插入完成 commit 选择器框架' },
+    { hash:'1234abc', author:'张三', at:'2026-05-07 14:22', msg:'fix(pick): 补充分拣单状态机单测' },
+    { hash:'2345bcd', author:'王五', at:'2026-05-07 18:33', msg:'refactor(usage): 抽取上报 SDK 通用阻塞队列' }
+  ],
+  'snackingdom-mall-api': [
+    { hash:'a01b2c3', author:'李雷', at:'2026-05-06 09:11', msg:'feat(schedule): 新增卡片操作流水表与接口' },
+    { hash:'b12c3d4', author:'王五', at:'2026-05-05 13:40', msg:'feat(commits): 代理云效 Codeup commit 列表接口' },
+    { hash:'c23d4e5', author:'韩梅梅', at:'2026-05-05 10:22', msg:'fix(auth): 解决 token 过期后端没刷新问题' },
+    { hash:'d34e5f6', author:'张三', at:'2026-05-04 18:50', msg:'feat(store): 要货单导出接口支持按类别筛选' }
+  ],
+  'snackingdom-wms': [
+    { hash:'9a8b7c6', author:'赵六', at:'2026-05-06 11:05', msg:'feat(pick): 优化分拣任务看板推送频率' },
+    { hash:'8b7c6d5', author:'张三', at:'2026-05-04 16:30', msg:'fix(outbound): 出库状态同步超时' }
+  ]
+};
+function commitUrl(repo, hash){
+  return `https://codeup.aliyun.com/snackingdom/${repo}/commits/${hash}`;
+}
+function findRepoCommit(repo, hash){
+  return (REPO_COMMITS[repo]||[]).find(c=>c.hash===hash);
+}
+function searchRepoCommits(repo, q){
+  const list = REPO_COMMITS[repo] || [];
+  if(!q) return list.slice(0,50);
+  const k = q.toLowerCase();
+  return list.filter(c =>
+    c.hash.toLowerCase().includes(k) ||
+    c.author.toLowerCase().includes(k) ||
+    c.msg.toLowerCase().includes(k)
+  ).slice(0,50);
+}
+
+/* ──────────────────────────────────────────────
+   Mock commits → Cards
+────────────────────────────────────────────── */
+// 以今天为基准生成相对日期，保证演示效果稳定
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+function dateStr(d){ const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,'0'),dd=String(d.getDate()).padStart(2,'0'); return `${y}-${m}-${dd}`; }
+function ymd(d){ return dateStr(d).replace(/-/g,''); }
+function shift(base, days){ const d=new Date(base); d.setDate(d.getDate()+days); return d; }
+
+// 生成卡片时统一用 commit author 日期作为 YYYYMMDD 段
+function titleFromMsg(msg){
+  // 去除 conventional commit 前缀
+  let t = msg.replace(/^(feat|fix|chore|docs|refactor|style|test|perf|build)(\([^)]+\))?:\s*/i,'').trim();
+  if(t.length>15) t = t.slice(0,15);
+  return t;
+}
+
+// 非需求改动：不再自动判断，改为手动标记（保留函数但不再用于自动分类）
+function isNonFeatureCommit(msg){
+  return false; // 已废弃自动分类
+}
+
+// 为每个 commit 生成 cardNo：{MODULE_CODE}-{YYYYMMDD}-{NN}
+const NO_SEQ = {}; // key = CODE-YYYYMMDD  value = seq
+function nextCardNo(modulePath, d){
+  const code = moduleCodeOf(modulePath);
+  const key = `${code}-${ymd(d)}`;
+  NO_SEQ[key] = (NO_SEQ[key]||0)+1;
+  return `${key}-${String(NO_SEQ[key]).padStart(2,'0')}`;
+}
+
+const MOCK_COMMITS = [
+  { repo:'snackingdom-mall-web', module:'store-request', hash:'a3f9c2d', author:'张三', at: shift(TODAY,-6), msg:'fix(pick): 修复分拣任务超时不释放的问题' },
+  { repo:'snackingdom-mall-web', module:'store-request', hash:'b72e1d4', author:'张三', at: shift(TODAY,-6), msg:'feat(store-request): 门店要货单导出 Excel' },
+  { repo:'snackingdom-mall-web', module:'usage-analytics', hash:'c11aa92', author:'王五', at: shift(TODAY,-5), msg:'feat(usage): 埋点批量上报队列落地' },
+  { repo:'snackingdom-mall-web', module:'people-flow-monitoring', hash:'d4c8ff0', author:'赵六', at: shift(TODAY,-4), msg:'fix(pfm): 客单转化率 0 除错误' },
+  { repo:'snackingdom-mall-web', module:'hardware-management', hash:'e018b71', author:'王五', at: shift(TODAY,-3), msg:'feat(hardware): 设备离线告警推送', hardwareManagement:'门店摄像头-离线检测' },
+  { repo:'snackingdom-mall-web', module:'inventory-comprehensive-report', hash:'f229a03', author:'张三', at: shift(TODAY,-3), msg:'chore(report): 优化库存报表缓存' },
+  { repo:'snackingdom-mall-web', module:'capacity-manage', hash:'12ab4cd', author:'李雷', at: shift(TODAY,-2), msg:'feat(capacity): 批量库容编辑弹层' },
+  { repo:'snackingdom-mall-web', module:'product-query', hash:'34bc5de', author:'韩梅梅', at: shift(TODAY,-2), msg:'fix(query): 扫码结果闪现问题' },
+  { repo:'snackingdom-mall-web', module:'voucher', hash:'56cd6ef', author:'李雷', at: shift(TODAY,-1), msg:'feat(voucher): 凭证模板版本管理' },
+  { repo:'snackingdom-mall-web', module:'srm', hash:'78de7f0', author:'韩梅梅', at: shift(TODAY,-1), msg:'feat(srm): 新品申请批量审核' },
+  { repo:'snackingdom-mall-web', module:'threeMatchWay', hash:'9aef801', author:'王五', at: shift(TODAY,0), msg:'fix(3match): 红蓝票对冲边界错误' },
+  { repo:'snackingdom-mall-web', module:'visitor-appointment', hash:'bb01912', author:'赵六', at: shift(TODAY,0), msg:'feat(visitor): 预约码批量分享' },
+  { repo:'snackingdom-mall-web', module:'fulfillment-rate', hash:'cc12a23', author:'张三', at: shift(TODAY,1), msg:'feat(fr): 满足率下钻到单据' },
+  { repo:'snackingdom-mall-web', module:'snackingdom-portal', hash:'dd23b34', author:'李雷', at: shift(TODAY,1), msg:'chore(portal): RBAC 菜单懒加载' },
+  { repo:'snackingdom-mall-web', module:'feature-schedule', hash:'ee34c45', author:'李四', at: shift(TODAY,2), msg:'feat(schedule): 排期卡片拖拽原型' },
+
+  // ── 同模块合并测试数据：保证每个重点模块都有 ≥ 2 张 PENDING/IN_PROGRESS 候选卡 ──
+  // store-request（+3）：Backup 2 张 + 月历 1 张，供「Backup 内合并」和「同日月历格合并」场景
+  { repo:'snackingdom-mall-web', module:'store-request', hash:'sr01a01', author:'张三', at: shift(TODAY,-1), msg:'fix(store-request): 要货单批量导入模板字段校验' },
+  { repo:'snackingdom-mall-web', module:'store-request', hash:'sr01a02', author:'张三', at: shift(TODAY,-1), msg:'fix(store-request): 要货单备注编辑丢失换行' },
+  { repo:'snackingdom-mall-web', module:'store-request', hash:'sr01a03', author:'韩梅梅', at: shift(TODAY,0), msg:'feat(store-request): 要货单批量作废二次确认' },
+
+  // usage-analytics（+2）：共 3 张 PENDING，Backup 2 + 月历 1，测「标准合并」
+  { repo:'snackingdom-mall-web', module:'usage-analytics', hash:'ua02b01', author:'王五', at: shift(TODAY,-1), msg:'feat(usage): 埋点采样率动态下发' },
+  { repo:'snackingdom-mall-web', module:'usage-analytics', hash:'ua02b02', author:'王五', at: shift(TODAY,0),  msg:'chore(usage): 埋点 SDK 升级到 2.3.0' },
+
+  // hardware-management（+2）：共 3 张，包含 hardwareManagement 字段，测「带硬件信息的合并」
+  { repo:'snackingdom-mall-web', module:'hardware-management', hash:'hm03c01', author:'王五', at: shift(TODAY,-1), msg:'feat(hardware): 温湿度传感器对接', hardwareManagement:'冷链仓-温湿度采集' },
+  { repo:'snackingdom-mall-web', module:'hardware-management', hash:'hm03c02', author:'赵六', at: shift(TODAY,1),  msg:'feat(hardware): 摄像头心跳检测间隔可配', hardwareManagement:'门店摄像头-心跳' },
+
+  // product-query（+2）：Backup 内全量合并测试
+  { repo:'snackingdom-mall-web', module:'product-query', hash:'pq04d01', author:'韩梅梅', at: shift(TODAY,-2), msg:'fix(query): 货架 SKU 模糊搜索排序' },
+  { repo:'snackingdom-mall-web', module:'product-query', hash:'pq04d02', author:'李雷',   at: shift(TODAY,-1), msg:'feat(query): 商品详情添加尚未上架警示' }
+];
+
+// 来自 Skill 文档仓的演示 commit：仅 零食王国/ 下的修改会生成卡片，.agents/ 被过滤
+const SKILL_MOCK_COMMITS = [
+  { repo:'busyming-skills', module:'MISC', hash:'sk01aaa', author:'李四',
+    at: shift(TODAY,-3), msg:'docs(零食王国): 更新访客预约 SKILL',
+    changedPaths:['零食王国/上线/营运/管理/访客预约/SKILL.md'] },
+  { repo:'busyming-skills', module:'MISC', hash:'sk02bbb', author:'张三',
+    at: shift(TODAY,-2), msg:'chore(skills): page-blueprint token 同步',
+    changedPaths:['.agents/skills/page-blueprint/tokens/web.css'] }
+];
+
+// 根据源仓的 pathPrefixWhitelist / pathPrefixBlacklist 过滤单条 commit
+// 规则：
+//   1) 若源仓未配置任何前缀，默认全部采集
+//   2) 若配置了 whitelist，则必须至少一个 changed path 命中 whitelist 前缀
+//   3) 若配置了 blacklist，则所有 changed paths 全部命中 blacklist 时跟过滤
+//   4) 混合变更（部分 whitelist、部分 blacklist）仍然采集，避免漏掉有效更改
+// 仅 Mock 原型演示；Job 实现见 reference/job-schedule.md §5 路径前缀过滤。
+function collectIncludeCommit(commit, repoCfg){
+  if(!repoCfg) return true;
+  const wl = (repoCfg.pathPrefixWhitelist || []);
+  const bl = (repoCfg.pathPrefixBlacklist || []);
+  if(wl.length === 0 && bl.length === 0) return true;
+  const paths = commit.changedPaths || [];
+  if(paths.length === 0){
+    // 无变更路径信息时保守采集（由 Job 层二次校验）
+    return true;
+  }
+  const inWhite = wl.length === 0 || paths.some(p => wl.some(w => p.startsWith(w)));
+  const allBlack = bl.length > 0 && paths.every(p => bl.some(b => p.startsWith(b)));
+  return inWhite && !allBlack;
+}
+
+// 将 Skill Mock commit 按路径前缀过滤后追加至 MOCK_COMMITS。
+// 演示效果：仅 零食王国/ 下的卡片会进入 Backup，.agents/ 被过滤，
+// 控制台打出 `[fs-collect] skipped` 汇总方便核对。
+(function applySkillCommitFilter(){
+  const skillRepo = SOURCE_REPOS.find(r => r.repo === 'busyming-skills');
+  const kept = [];
+  const skipped = [];
+  SKILL_MOCK_COMMITS.forEach(c => {
+    if(collectIncludeCommit(c, skillRepo)) kept.push(c);
+    else skipped.push(c);
+  });
+  Array.prototype.push.apply(MOCK_COMMITS, kept);
+  if(skipped.length > 0){
+    const samples = skipped.map(c => `${c.hash.slice(0,7)}:${(c.changedPaths||[])[0] || '?'}`).join(' | ');
+    console.info(`[fs-collect] busyming-skills 路径过滤：kept=${kept.length} skipped=${skipped.length}【${samples}】`);
+  }
+})();
+
+// 为演示效果，手工给部分卡片预排期与状态
+const PRESET = {
+  'a3f9c2d': { scheduled: shift(TODAY,-4), status:'DONE', doneHash:'88aa11c', doneRepo:'snackingdom-mall-web', doneUrl:'https://codeup.aliyun.com/x/commit/88aa11c', devOwner:'张三' },
+  'b72e1d4': { scheduled: shift(TODAY,-3), status:'DONE', doneHash:'99bb22d', doneRepo:'snackingdom-mall-web', doneUrl:'https://codeup.aliyun.com/x/commit/99bb22d', devOwner:'张三' },
+  'c11aa92': { scheduled: shift(TODAY,-2), status:'PENDING' }, // 延期（过期未完成）
+  'd4c8ff0': { scheduled: shift(TODAY,-1), status:'PENDING' }, // 延期
+  'e018b71': { scheduled: TODAY,            status:'IN_PROGRESS', devOwner:'王五' },
+  'f229a03': { scheduled: TODAY,            status:'DONE', doneHash:'aa33e44', doneRepo:'snackingdom-mall-web', doneUrl:'https://codeup.aliyun.com/x/commit/aa33e44', devOwner:'张三' },
+  '12ab4cd': { scheduled: shift(TODAY,1),   status:'IN_PROGRESS', devOwner:'李雷' },
+  '34bc5de': { scheduled: shift(TODAY,2),   status:'PENDING' },
+  '56cd6ef': { scheduled: shift(TODAY,3),   status:'PENDING' },
+  '78de7f0': { scheduled: shift(TODAY,4),   status:'PENDING' },
+  // ── 合并测试预置：占据 Backup 和月历的混合场景，默认其余为 null 在 Backup ──
+  'sr01a03': { scheduled: shift(TODAY,1),   status:'PENDING' },     // store-request 在月历格
+  'ua02b02': { scheduled: shift(TODAY,2),   status:'IN_PROGRESS', devOwner:'王五' }, // usage-analytics 开发中
+  'hm03c01': { scheduled: shift(TODAY,3),   status:'PENDING' }      // hardware-management 在月历格
+  // 其余默认 null（在 Backup 区）
+};
+
+// v2.7 演示预置：需求性质 / 业务对接人 / REQ 单关联标记（必填时点=排期保存，抽屉保存不拦截）
+// ① REQ 关联卡：抽屉预填提交人可改，排期免检；② 私下需求已填：排期放行；
+// ③ 已排期未填（存量卡）：改期被拦（自然收口演示）；④⑤ TECH：豁免必填
+// 其余 Backup 卡默认 reqLinked=false + bizContact='' → 拖到日历即被拦（新排期拦截演示）
+const CARD_EXT = {
+  '56cd6ef': { reqLinked:true,  reqSubmitter:'王芳', bizContact:'王芳' },                 // ① REQ-20260918-004 关联卡（排期免检）
+  '78de7f0': { reqLinked:false, bizContact:'周莉' },                                      // ② 私下需求·已填（排期放行）
+  '34bc5de': { reqLinked:false, bizContact:'' },                                          // ③ 已排期未填（改期拦截演示）
+  'f229a03': { reqLinked:false, reqNature:'TECH', bizContact:'刘强' },                    // ④ 技术支持性质
+  'dd23b34': { reqLinked:false, reqNature:'TECH', bizContact:'' }                         // ⑤ Backup 未填 TECH（拖拽豁免演示）
+};
+
+// v2.7：排期写入前校验——无 REQ 单关联 且 非 TECH 且 未填对接人 → 需先补录
+function needsBizContact(card){
+  return !card.reqLinked && (card.reqNature||'BIZ') !== 'TECH' && !(card.bizContact||'').trim();
+}
+
+// 构建卡片列表
+const CARDS = MOCK_COMMITS.map((c, i) => {
+  const preset = PRESET[c.hash] || {};
+  const ext = CARD_EXT[c.hash] || {};
+  // 采集入库时间（createdAt）：以提交日为基准叠加不同小时数，模拟不同 commit 入库时点
+  const cHour = 9 + (i % 9);
+  const cMin  = (i * 7) % 60;
+  const createdAt = atWith(c.at, cHour, cMin);
+  const card = {
+    cardNo: nextCardNo(c.module, c.at),
+    title: titleFromMsg(c.msg),
+    content: c.msg,
+    owner: c.author,
+    status: preset.status || 'PENDING',
+    scheduledDate: preset.scheduled ? dateStr(preset.scheduled) : null,
+    sourceRepo: c.repo,
+    sourceModule: c.module,
+    sourceCommit: c.hash,
+    devOwner: preset.devOwner || null,
+    doneRepo: preset.doneRepo || null,
+    doneHash: preset.doneHash || null,
+    doneUrl:  preset.doneUrl  || null,
+    hardwareManagement: c.hardwareManagement || null,
+    reqLinked: ext.reqLinked || false,
+    reqSubmitter: ext.reqSubmitter || null,
+    reqNature: ext.reqNature || 'BIZ',
+    bizContact: ext.bizContact || '',
+    createdAt: createdAt,
+    logs: []
+  };
+  // 流水：创建 → （可选）排期 → （可选）完成
+  card.logs.push({
+    type: 'CREATED',
+    detail: `由源 commit ${c.hash}（${c.repo} / ${c.module}）自动生成卡片`,
+    operatorName: SYSTEM_USER.name,
+    at: createdAt
+  });
+  if(card.scheduledDate){
+    card.logs.push({
+      type: 'SCHEDULED',
+      detail: `排期到 ${card.scheduledDate}`,
+      operatorName: CURRENT_USER.name,
+      at: atWith(c.at, cHour+1, (cMin+11)%60)
+    });
+  }
+  if(card.status === 'IN_PROGRESS'){
+    card.logs.push({
+      type: 'TAKEN',
+      detail: `${card.devOwner||c.author} 领取开发`,
+      operatorName: card.devOwner || c.author,
+      at: atWith(c.at, cHour+2, (cMin+19)%60)
+    });
+  }
+  if(card.status === 'DONE'){
+    card.logs.push({
+      type: 'MARKED_DONE',
+      detail: `关联完成 commit：${card.doneRepo} / ${card.doneHash}`,
+      operatorName: card.devOwner || card.owner,
+      at: atWith(c.at, cHour+3, (cMin+27)%60)
+    });
+  }
+  return card;
+});
+
+/* ──────────────────────────────────────────────
+   View state
+────────────────────────────────────────────── */
+let viewYear = TODAY.getFullYear();
+let viewMonth = TODAY.getMonth(); // 0~11
+
+/* ──────────────────────────────────────────────
+   Helpers
+────────────────────────────────────────────── */
+function byCardNo(no){ return CARDS.find(c=>c.cardNo===no); }
+function sameDate(a,b){ return a && b && a===b; }
+function todayStr(){ return dateStr(TODAY); }
+function isDelayed(card){
+  if(card.status!=='PENDING' || !card.scheduledDate) return false;
+  return card.scheduledDate < dateStr(TODAY);
+}
+function renderStatusTag(card){
+  if(card.status==='NON_FEATURE') return {cls:'non-feature', text:'非需求改动'};
+  if(card.status==='DONE') return {cls:'done', text:'开发完成'};
+  if(card.status==='IN_PROGRESS') return {cls:'in-progress', text:'开发中'};
+  if(isDelayed(card))     return {cls:'delayed', text:'延期'};
+  return {cls:'pending', text:'待开发'};
+}
+
+/* 相对时间：输入 'YYYY-MM-DD HH:mm' 返回 '刚刚/X分钟前/X小时前/X天前/X个月前/X年前' */
+function relativeTimeFromNow(dateTimeStr){
+  if(!dateTimeStr) return '';
+  // 兼容 'YYYY-MM-DD HH:mm' 与 'YYYY-MM-DD HH:mm:ss'
+  const normalized = dateTimeStr.replace(' ', 'T');
+  const t = new Date(normalized.length===16 ? normalized+':00' : normalized);
+  if(isNaN(t.getTime())) return '';
+  const diff = Math.max(0, (Date.now() - t.getTime())/1000); // seconds
+  if(diff < 60) return '刚刚';
+  if(diff < 3600) return `${Math.floor(diff/60)} 分钟前`;
+  if(diff < 86400) return `${Math.floor(diff/3600)} 小时前`;
+  const days = Math.floor(diff/86400);
+  if(days < 30) return `${days} 天前`;
+  if(days < 365) return `${Math.floor(days/30)} 个月前`;
+  return `${Math.floor(days/365)} 年前`;
+}
+// 是否视为「陈旧」：commit 超过 7 天仍在 Backup，用橙色提示
+function isStaleCommit(dateTimeStr){
+  if(!dateTimeStr) return false;
+  const t = new Date(dateTimeStr.replace(' ', 'T')+':00');
+  if(isNaN(t.getTime())) return false;
+  return (Date.now() - t.getTime()) / 86400000 > 7;
+}
+
+/* ──────────────────────────────────────────────
+   Render: Backup
+────────────────────────────────────────────── */
+const $backupList = document.getElementById('backupList');
+const $backupCount = document.getElementById('backupCount');
+
+// 全局过滤：是否仅查看自己的卡片（作用于月历 + Backup + +N 弹层，按 git 提交人 = 当前登录用户名匹配）
+let ONLY_MINE = false;
+
+/* 卡片搜索：当月卡片的标题/内容模糊匹配（空格 / 逗号 分隔多关键字，AND） */
+let SEARCH_KEYWORDS = []; // 小写关键字数组；空数组表示无搜索
+function parseSearchKeywords(raw){
+  if(!raw) return [];
+  // 同时支持英文逗号 , 中文逗号 ，、、、 和任意空白分隔
+  return String(raw)
+    .split(/[\s,，、]+/)
+    .map(s => s.trim().toLowerCase())
+    .filter(s => s.length > 0);
+}
+function cardMatchesSearch(card){
+  if(SEARCH_KEYWORDS.length === 0) return true;
+  const hay = `${card.title || ''}\n${card.content || ''}`.toLowerCase();
+  // AND：每个关键字均需命中
+  return SEARCH_KEYWORDS.every(k => hay.indexOf(k) !== -1);
+}
+
+function renderBackup(){
+  let items = CARDS.filter(c=>!c.scheduledDate && c.status!=='NON_FEATURE' && !c.parentMergeCardNo);
+  items = items.filter(passRepoFilter);
+  if(ONLY_MINE){
+    items = items.filter(c => c.owner === CURRENT_USER.name);
+  }
+  if(SEARCH_KEYWORDS.length > 0){
+    items = items.filter(cardMatchesSearch);
+  }
+  $backupCount.textContent = items.length;
+  const emptyHint = SEARCH_KEYWORDS.length > 0
+    ? `没有匹配 「${escapeHtml(SEARCH_KEYWORDS.join(' '))}」 的卡片<br>清空搜索或调整关键字重试`
+    : (ONLY_MINE
+        ? '没有由你提交的卡片<br>关闭「只看自己」可查看全部'
+        : 'Backup 池为空<br>新 commit 会自动出现在这里');
+  $backupList.innerHTML = items.length
+    ? items.map(c => renderCard(c, { showTime: true })).join('')
+    : `<div class="backup-empty">${emptyHint}</div>`;
+  attachCardHandlers($backupList);
+}
+
+/* ──────────────────────────────────────────────
+   Render: Calendar
+────────────────────────────────────────────── */
+const $grid = document.getElementById('calendarGrid');
+const $monthLabel = document.getElementById('monthLabel');
+
+function renderCalendar(){
+  $monthLabel.textContent = `${viewYear}年${String(viewMonth+1).padStart(2,'0')}月`;
+
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const lastDay  = new Date(viewYear, viewMonth+1, 0);
+  // 以周一为首：Date.getDay() 0=Sun..6=Sat → 转换
+  const firstDow = (firstDay.getDay()+6)%7;
+  const totalDays = lastDay.getDate();
+  const totalCells = Math.ceil((firstDow + totalDays)/7)*7;
+
+  const cells = [];
+  const startDate = new Date(viewYear, viewMonth, 1 - firstDow);
+  for(let i=0; i<totalCells; i++){
+    const d = new Date(startDate); d.setDate(startDate.getDate()+i);
+    const isOff = d.getMonth() !== viewMonth;
+    const isToday = dateStr(d)===dateStr(TODAY);
+    const dStr = dateStr(d);
+    const cards = CARDS.filter(c=>c.scheduledDate===dStr && !c.parentMergeCardNo && passRepoFilter(c) && (!ONLY_MINE || c.owner === CURRENT_USER.name));
+    const visible = cards.slice(0,3);
+    const rest = cards.length - visible.length;
+
+    const isReleaseDay = !!RELEASE_DAYS[dStr];
+
+    cells.push(`
+      <div class="day-cell ${isOff?'off-month':''} ${isToday?'today':''} ${isReleaseDay?'release-day':''}" data-date="${dStr}" data-off="${isOff}">
+        <div class="day-head">
+          <span class="day-num">${d.getDate()}</span>
+          ${isToday?'<span class="day-lunar" style="color:var(--primary)">今天</span>':''}
+        </div>
+        <div class="day-cards">
+          ${visible.map(renderCard).join('')}
+          ${rest>0?`<button class="more-btn" data-more="${dStr}">+${rest} 张卡片</button>`:''}
+        </div>
+      </div>
+    `);
+  }
+  $grid.innerHTML = cells.join('');
+  attachCardHandlers($grid);
+  attachDropZones();
+  bindMoreBtns();
+  bindDayCellClick();
+  renderStats();
+}
+
+function renderCard(card, opts){
+  // opts 允许传对象 { showTime: true, popup: true }；当通过 Array.map(renderCard) 时 opts 会是 index 数字，此处容错为 false
+  const isOpts = opts && typeof opts === 'object';
+  const showTime = !!(isOpts && opts.showTime);
+  const popup = !!(isOpts && opts.popup);
+  const tag = renderStatusTag(card);
+  const moduleTag = card.sourceModule
+    ? `<span class="c-module" title="${escapeHtml(card.sourceModule)}">${escapeHtml(card.sourceModule)}</span>`
+    : '';
+  // popup 模式下：只要有开发人就展示（不再受状态限制）；未指派仍不展示，行为保持不变
+  const showDev = !!card.devOwner && (popup || card.status==='IN_PROGRESS' || card.status==='DONE');
+  const devTag = showDev
+    ? `<span class="c-dev" title="开发：${escapeHtml(card.devOwner)}">👤 ${escapeHtml(card.devOwner)}</span>`
+    : '';
+  const row2 = (moduleTag || devTag)
+    ? `<div class="c-module-row">${moduleTag}${devTag}</div>`
+    : '';
+  const timeRow = (showTime && card.createdAt)
+    ? `<div class="c-time-row"><span class="c-commit-time" title="源 commit 提交时间">🕒 ${escapeHtml(card.createdAt)}</span><span class="c-rel-time ${isStaleCommit(card.createdAt)?'stale':''}">${escapeHtml(relativeTimeFromNow(card.createdAt))}</span></div>`
+    : '';
+  const locked = card.status==='DONE';
+  let searchCls = '';
+  if(SEARCH_KEYWORDS.length > 0){
+    searchCls = cardMatchesSearch(card) ? 'search-hit' : 'search-dim';
+  }
+  return `
+    <div class="card status-${tag.cls} ${card.isMerged?'is-merged':''} ${locked?'locked':''} ${searchCls}" draggable="${locked?'false':'true'}" data-no="${card.cardNo}" data-module="${escapeHtml(card.sourceModule||'')}" data-status="${card.status}" title="${escapeHtml(card.content)}">
+      <span class="select-ck"></span>
+      ${card.isMerged?`<span class="merge-badge" title="合并了 ${(card.mergeChildren||[]).length} 张子卡">${(card.mergeChildren||[]).length} 项</span>`:''}
+      <div class="c-title">${escapeHtml(card.title)}</div>
+      <div class="c-meta">
+        <span class="c-no">${card.cardNo}</span>
+        <span class="c-owner">${escapeHtml(card.owner)}</span>
+      </div>
+      ${timeRow}
+      ${row2}
+    </div>
+  `;
+}
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* ──────────────────────────────────────────────
+   Stats
+────────────────────────────────────────────── */
+function renderStats(){
+  // 统计的是当前月视图内的卡片 + Backup + 非需求改动（全局）；「只看自己」开启时仅统计本人卡片
+  let pending=0, inProgress=0, done=0, delayed=0, backup=0, nonFeature=0;
+  const m = `${viewYear}-${String(viewMonth+1).padStart(2,'0')}`;
+  CARDS.forEach(c=>{
+    if(ONLY_MINE && c.owner !== CURRENT_USER.name) return;
+    if(!passRepoFilter(c)) return;
+    if(c.status==='NON_FEATURE'){ nonFeature++; return; }
+    if(!c.scheduledDate){ backup++; return; }
+    if(!c.scheduledDate.startsWith(m)) return;
+    if(c.status==='DONE'){ done++; return; }
+    if(c.status==='IN_PROGRESS'){ inProgress++; return; }
+    if(isDelayed(c)){ delayed++; return; }
+    pending++;
+  });
+  document.getElementById('stPending').textContent = pending;
+  document.getElementById('stInProgress').textContent = inProgress;
+  document.getElementById('stDone').textContent = done;
+  document.getElementById('stDelayed').textContent = delayed;
+  document.getElementById('stBackup').textContent = backup;
+  document.getElementById('stNonFeature').textContent = nonFeature;
+}
+
+/* ──────────────────────────────────────────────
+   Drag & Drop
+────────────────────────────────────────────── */
+let dragNo = null;
+function attachCardHandlers(root){
+  root.querySelectorAll('.card').forEach(el=>{
+    el.addEventListener('dragstart', e=>{
+      const no = el.getAttribute('data-no');
+      const card = byCardNo(no);
+      if(card && card.status==='DONE'){
+        e.preventDefault();
+        alert('已完成的卡片不可移动；如需改期请先将状态回退为「待开发」');
+        return;
+      }
+      dragNo = no;
+      el.classList.add('dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain', dragNo);
+      // 若卡片来自当日详情弹层，让全屏遮罩在拖动期间隐身（保持 DOM 在场以维持拖拽源），
+      // 否则 Backup / 其他日格的 dragover/drop 会被遮罩拦截。
+      // 延迟到下一个事件循环再切换样式，避免在 dragstart 内同步修改导致 Chromium 取消拖拽。
+      if(el.closest('#dayModalBody')){
+        setTimeout(()=> document.getElementById('dayModalMask').classList.add('during-drag'), 0);
+      }
+    });
+    el.addEventListener('dragend', ()=>{
+      dragNo=null;
+      document.querySelectorAll('.card.dragging').forEach(c=>c.classList.remove('dragging'));
+      document.querySelectorAll('.drag-over').forEach(c=>c.classList.remove('drag-over'));
+      document.getElementById('dayModalMask').classList.remove('during-drag');
+    });
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      openDrawer(el.getAttribute('data-no'));
+    });
+  });
+}
+
+function attachDropZones(){
+  // day cells
+  $grid.querySelectorAll('.day-cell').forEach(cell=>{
+    if(cell.getAttribute('data-off')==='true') return;
+    cell.addEventListener('dragover', e=>{ e.preventDefault(); cell.classList.add('drag-over'); });
+    cell.addEventListener('dragleave', ()=> cell.classList.remove('drag-over'));
+    cell.addEventListener('drop', e=>{
+      e.preventDefault();
+      cell.classList.remove('drag-over');
+      const no = e.dataTransfer.getData('text/plain') || dragNo;
+      const card = byCardNo(no);
+      if(!card) return;
+      // 已完成卡片不允许移动（双重保险）
+      if(card.status==='DONE'){
+        alert('已完成的卡片不可移动；如需改期请先将状态回退为「待开发」');
+        return;
+      }
+      const newDate = cell.getAttribute('data-date');
+      // 不允许排到今天之前
+      if(newDate < todayStr()){
+        alert('不允许将卡片排到比今天更早的日期');
+        return;
+      }
+      const oldDate = card.scheduledDate;
+      if(newDate === oldDate) return;
+      // v2.7：排期保存时校验业务对接人（无 REQ 关联且非 TECH 卡必填；拦截后引导抽屉补录，补录后再排期）
+      if(needsBizContact(card)){
+        alert(`「${card.title}」尚未填写业务对接人，排期前请先补录\n（无 REQ 单关联的需求排期保存时必填；技术支持类豁免）`);
+        openDrawer(no);
+        document.getElementById('dfBizContact').focus();
+        return;
+      }
+      card.scheduledDate = newDate;
+      if(oldDate){
+        appendLog(card, 'RESCHEDULED', `从 ${oldDate} 改到 ${newDate}`);
+      } else {
+        appendLog(card, 'SCHEDULED', `排期到 ${newDate}`);
+      }
+      renderAll();
+      refreshDayModalIfOpen();
+    });
+  });
+  // backup list
+  $backupList.addEventListener('dragover', e=>{ e.preventDefault(); $backupList.classList.add('drag-over'); });
+  $backupList.addEventListener('dragleave', ()=> $backupList.classList.remove('drag-over'));
+  $backupList.addEventListener('drop', e=>{
+    e.preventDefault();
+    $backupList.classList.remove('drag-over');
+    const no = e.dataTransfer.getData('text/plain') || dragNo;
+    const card = byCardNo(no);
+    if(!card) return;
+    if(card.status==='DONE'){
+      alert('已完成的卡片不可移动；如需取消排期请先将状态回退为「待开发」');
+      return;
+    }
+    const oldDate = card.scheduledDate;
+    if(!oldDate) return;
+    card.scheduledDate = null;
+    appendLog(card, 'UNSCHEDULED', `从 ${oldDate} 移回 Backup 卡片池`);
+    renderAll();
+    refreshDayModalIfOpen();
+  });
+}
+
+function renderAll(){ renderBackup(); renderCalendar(); }
+
+/* ──────────────────────────────────────────────
+   Drawer
+────────────────────────────────────────────── */
+const $mask = document.getElementById('drawerMask');
+const $drawer = document.getElementById('drawer');
+let editingNo = null;
+
+function openDrawer(no){
+  const card = byCardNo(no);
+  if(!card) return;
+  editingNo = no;
+  const tag = renderStatusTag(card);
+  document.getElementById('drawerNo').textContent = card.cardNo;
+  const $tag = document.getElementById('drawerTag');
+  $tag.className = 'tag '+tag.cls;
+  $tag.textContent = tag.text;
+
+  document.getElementById('dfCardNo').textContent = card.cardNo;
+  document.getElementById('dfSource').textContent = `${card.sourceRepo} · ${card.sourceModule} · ${card.sourceCommit}`;
+  const $hwField = document.getElementById('fieldHwMgmt');
+  if(card.hardwareManagement){
+    $hwField.style.display = '';
+    document.getElementById('dfHardwareManagement').textContent = card.hardwareManagement;
+  } else {
+    $hwField.style.display = 'none';
+  }
+  document.getElementById('dfCreatedAt').textContent = card.createdAt || '—';
+  document.getElementById('dfDate').textContent = card.scheduledDate || '未排期（Backup）';
+  document.getElementById('dfTitle').value = card.title;
+  document.getElementById('dfContent').value = card.content;
+  document.getElementById('dfOwner').value = card.owner;
+  updateTitleCount();
+
+  document.querySelectorAll('.status-opt').forEach(b=>{
+    b.classList.toggle('active', b.getAttribute('data-val')===card.status);
+  });
+  updateDevOwnerField(card.status, card.devOwner);
+  toggleDoneSection(card.status==='DONE');
+  // 非需求改动：隐藏状态切换器 / 开发人 / 完成 commit 选择器，切换「移入非需求改动」按钮
+  const isNonFeature = card.status === 'NON_FEATURE';
+  document.getElementById('fieldStatus').style.display = isNonFeature ? 'none' : '';
+  document.getElementById('fieldNonFeatureHint').style.display = isNonFeature ? '' : 'none';
+  const $nfBtn = document.getElementById('btnMoveToNf');
+  if(isNonFeature){
+    $nfBtn.textContent = '↩ 恢复为待开发';
+    $nfBtn.style.color = ''; $nfBtn.style.borderColor = ''; $nfBtn.style.background = '';
+  } else {
+    $nfBtn.innerHTML = '🔧 移入非需求改动';
+    $nfBtn.style.color = '#F57F17'; $nfBtn.style.borderColor = '#FFE082'; $nfBtn.style.background = '#FFFBE6';
+  }
+  if(isNonFeature){
+    document.getElementById('fieldDevOwner').style.display = 'none';
+    toggleDoneSection(false);
+  }
+
+  // v2.7：需求性质 / 业务对接人
+  // - 需求性质：单选回显；NON_FEATURE 态禁用（该态仅 title/content/owner 可编辑）
+  // - 业务对接人：均可编辑（REQ 关联卡预填提交人，手改覆盖优先）；必填时点=排期保存（拖拽/改期校验），抽屉保存不拦截
+  const nature = card.reqNature || 'BIZ';
+  document.querySelectorAll('input[name="dfReqNature"]').forEach(r=>{
+    r.checked = (r.value === nature);
+    r.disabled = isNonFeature;
+  });
+  document.getElementById('dfReqNatureGroup').classList.toggle('disabled', isNonFeature);
+  syncReqNatureUI();
+  const $bc = document.getElementById('dfBizContact');
+  $bc.value = card.bizContact || '';
+  $bc.disabled = isNonFeature;
+  refreshBizContactHint();
+
+  if(card.status==='DONE'){
+    openCommitPicker(card.doneRepo || REPOS[0].repo, card.doneHash || null);
+  } else {
+    // 预置选择器初始值（从源仓默认），让用户一点“开发完成”就有数据可选
+    _pendingPickerRepo = card.sourceRepo in REPO_COMMITS ? card.sourceRepo : REPOS[0].repo;
+  }
+
+  renderLogs(card);
+
+  // 合并卡：显示明细列表 + 解散按钮 + Tab；子卡：显示只读提示
+  renderMergeBlocks(card);
+
+  $mask.classList.add('show');
+  $drawer.classList.add('show');
+}
+
+// 渲染合并卡明细块与子卡只读提示
+function renderMergeBlocks(card){
+  const $block = document.getElementById('mergeItemsBlock');
+  const $list  = document.getElementById('mergeItemsList');
+  const $cnt   = document.getElementById('mergeItemsCnt');
+  const $tabs  = document.getElementById('drawerTabs');
+  const $tabItemsCnt = document.getElementById('tabItemsCnt');
+  const $dissolve = document.getElementById('btnDissolve');
+  const $childHint = document.getElementById('childReadonlyHint');
+  const $childNo = document.getElementById('childParentNo');
+
+  // Reset
+  $block && ($block.style.display = 'none');
+  $tabs && ($tabs.style.display = 'none');
+  $dissolve && ($dissolve.style.display = 'none');
+  $childHint && ($childHint.style.display = 'none');
+
+  if(card.isMerged && Array.isArray(card.mergeItems) && card.mergeItems.length){
+    const items = card.mergeItems;
+    if($cnt) $cnt.textContent = items.length;
+    if($tabItemsCnt) $tabItemsCnt.textContent = `(${items.length})`;
+    if($list){
+      $list.innerHTML = items.map(it => {
+        const stLabel = { PENDING:'待开发', IN_PROGRESS:'开发中', DONE:'完成', NON_FEATURE:'非需求' }[it.preMergeStatus] || it.preMergeStatus;
+        const dateStr = it.preMergeScheduledDate ? it.preMergeScheduledDate : '未排期';
+        const devStr  = it.preMergeDevUserName ? `👤 ${escapeHtml(it.preMergeDevUserName)}` : '';
+        return `
+          <div class="merge-item-row" data-child-no="${it.childCardNo}">
+            <div class="mi-head">
+              <span class="mi-title">${escapeHtml(it.title)}</span>
+              <span class="mi-no">${it.childCardNo}</span>
+            </div>
+            <div class="mi-meta">
+              <span class="mi-pill mod">${escapeHtml(it.sourceModule||'-')}</span>
+              <span class="mi-pill st-${it.preMergeStatus}">${stLabel}</span>
+              <span class="mi-pill">🗓 ${escapeHtml(dateStr)}</span>
+              ${devStr?`<span class="mi-pill">${devStr}</span>`:''}
+            </div>
+          </div>`;
+      }).join('');
+      // 点击子卡行 → 打开子卡抽屉
+      $list.querySelectorAll('.merge-item-row').forEach(row => {
+        row.addEventListener('click', () => {
+          const childNo = row.getAttribute('data-child-no');
+          if(childNo) openDrawer(childNo);
+        });
+      });
+    }
+    if($block) $block.style.display = '';
+    if($tabs)  $tabs.style.display = 'flex';
+    if($dissolve){
+      $dissolve.style.display = '';
+      $dissolve.disabled = (card.status === 'DONE');
+    }
+  } else if(card.parentMergeCardNo){
+    // 子卡只读提示
+    if($childHint){
+      $childHint.style.display = '';
+      if($childNo) $childNo.textContent = card.parentMergeCardNo;
+    }
+  }
+}
+function closeDrawer(){
+  $mask.classList.remove('show');
+  $drawer.classList.remove('show');
+  editingNo = null;
+}
+function toggleDoneSection(on){
+  document.getElementById('doneSection').classList.toggle('hidden', !on);
+}
+
+// 根据当前选中的状态更新「开发人」字段的展示
+function updateDevOwnerField(status, persistedDev){
+  const $f = document.getElementById('fieldDevOwner');
+  const $v = document.getElementById('dfDevOwner');
+  if(status==='IN_PROGRESS'){
+    $f.style.display = '';
+    if(persistedDev){
+      $v.textContent = persistedDev;
+    } else {
+      $v.innerHTML = `${escapeHtml(CURRENT_USER.name)} <span style="color:var(--text-tertiary);font-size:11px">（将在保存后生效）</span>`;
+    }
+  } else if(status==='DONE'){
+    $f.style.display = '';
+    const dev = persistedDev || CURRENT_USER.name;
+    if(persistedDev){
+      $v.textContent = dev;
+    } else {
+      $v.innerHTML = `${escapeHtml(dev)} <span style="color:var(--text-tertiary);font-size:11px">（将在保存后生效）</span>`;
+    }
+  } else {
+    $f.style.display = 'none';
+    $v.textContent = '—';
+  }
+}
+
+// title char count
+function updateTitleCount(){
+  const el = document.getElementById('dfTitle');
+  const n = el.value.length;
+  const c = document.getElementById('dfTitleCount');
+  c.textContent = `${n} / 15`;
+  c.classList.toggle('warn', n>=15);
+}
+document.getElementById('dfTitle').addEventListener('input', updateTitleCount);
+
+// 需求性质单选：选中态高亮同步（样式对齐 status-switcher）
+function syncReqNatureUI(){
+  document.querySelectorAll('.req-nature-opt').forEach(l=>{
+    const r = l.querySelector('input');
+    l.classList.toggle('active', !!(r && r.checked));
+  });
+  refreshBizContactHint();
+}
+
+// v2.7：业务对接人 hint 按卡片关联态与需求性质刷新
+// REQ 关联卡=预填提交人可改（聚合兜底取值）；TECH=豁免；其余=排期前必填（保存不拦截）
+function refreshBizContactHint(){
+  const $bcHint = document.getElementById('dfBizContactHint');
+  const card = typeof byCardNo === 'function' ? byCardNo(editingNo) : null;
+  if(!card){ $bcHint.style.display = 'none'; $bcHint.textContent = ''; return; }
+  const nature = (document.querySelector('input[name="dfReqNature"]:checked')||{}).value || card.reqNature || 'BIZ';
+  if(card.reqLinked){
+    $bcHint.style.display = '';
+    $bcHint.textContent = `REQ 单提交人：${card.reqSubmitter || '—'}（未手填时实施排期聚合自动取值兜底，可手改覆盖）`;
+  } else if(nature === 'TECH'){
+    $bcHint.style.display = '';
+    $bcHint.textContent = '技术支持类需求：豁免业务对接人必填，可直接排期';
+  } else {
+    $bcHint.style.display = '';
+    $bcHint.textContent = '无 REQ 单关联：排期（拖到日历 / 改期）前必填；保存本抽屉不拦截';
+  }
+}
+document.querySelectorAll('input[name="dfReqNature"]').forEach(r=> r.addEventListener('change', syncReqNatureUI));
+syncReqNatureUI();
+
+document.querySelectorAll('.status-opt').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.status-opt').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    const val = b.getAttribute('data-val');
+    const card = byCardNo(editingNo);
+    toggleDoneSection(val==='DONE');
+    updateDevOwnerField(val, card ? card.devOwner : null);
+    if(val==='DONE'){
+      openCommitPicker(
+        (card && card.doneRepo) || _pendingPickerRepo || REPOS[0].repo,
+        (card && card.doneHash) || null
+      );
+    }
+  });
+});
+
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.getElementById('drawerCancel').addEventListener('click', closeDrawer);
+$mask.addEventListener('click', closeDrawer);
+
+/* ── Operation log timeline ── */
+function renderLogs(card){
+  const logs = [...(card.logs||[])].reverse(); // 最新优先
+  document.getElementById('logCount').textContent = logs.length;
+  document.getElementById('logList').innerHTML = logs.map(l=>`
+    <li class="log-item op-${l.type}">
+      <div class="log-head">
+        <span class="log-op">${OP_LABEL[l.type]||l.type}</span>
+        <span>· ${escapeHtml(l.operatorName)}</span>
+        <span class="log-time">${l.at}</span>
+      </div>
+      ${l.detail?`<div class="log-detail">${escapeHtml(l.detail)}</div>`:''}
+    </li>
+  `).join('');
+}
+
+/* ── Commit picker ── */
+let _pendingPickerRepo = null;
+
+function openCommitPicker(repo, preselectedHash){
+  const $repo = document.getElementById('pickRepo');
+  $repo.innerHTML = REPOS.map(r=>`<option value="${r.repo}">${r.name} (${r.repo})</option>`).join('');
+  $repo.value = (repo in REPO_COMMITS) ? repo : REPOS[0].repo;
+  document.getElementById('pickSearch').value = '';
+  renderCommitList($repo.value, '', preselectedHash);
+  if(preselectedHash){
+    selectCommitInternal($repo.value, preselectedHash);
+  } else {
+    document.getElementById('selectedCommit').style.display = 'none';
+    setDoneFields('','','');
+  }
+}
+
+function renderCommitList(repo, q, selectedHash){
+  const list = searchRepoCommits(repo, q);
+  const $list = document.getElementById('commitList');
+  if(!list.length){
+    $list.innerHTML = '<div class="commit-empty">未找到匹配的 commit</div>';
+    return;
+  }
+  $list.innerHTML = list.map(c=>`
+    <div class="commit-option ${c.hash===selectedHash?'selected':''}" data-hash="${c.hash}">
+      <div class="co-line1">
+        <span class="co-hash">${c.hash}</span>
+        <span class="co-author">${escapeHtml(c.author)}</span>
+        <span class="co-time">${c.at}</span>
+      </div>
+      <div class="co-msg">${escapeHtml(c.msg)}</div>
+    </div>
+  `).join('');
+  $list.querySelectorAll('.commit-option').forEach(el=>{
+    el.addEventListener('click', ()=> selectCommitInternal(repo, el.getAttribute('data-hash')));
+  });
+}
+
+function selectCommitInternal(repo, hash){
+  const c = findRepoCommit(repo, hash);
+  if(!c) return;
+  document.getElementById('commitList').querySelectorAll('.commit-option').forEach(el=>{
+    el.classList.toggle('selected', el.getAttribute('data-hash')===hash);
+  });
+  document.getElementById('selectedCommit').style.display = '';
+  document.getElementById('scHash').textContent = c.hash;
+  document.getElementById('scAuthor').textContent = c.author;
+  document.getElementById('scAt').textContent = c.at;
+  document.getElementById('scMsg').textContent = c.msg;
+  const url = commitUrl(repo, c.hash);
+  document.getElementById('scUrl').textContent = url;
+  setDoneFields(repo, c.hash, url);
+}
+
+function setDoneFields(repo, hash, url){
+  document.getElementById('dfDoneRepo').value = repo;
+  document.getElementById('dfDoneHash').value = hash;
+  document.getElementById('dfDoneUrl').value = url;
+}
+
+document.getElementById('pickRepo').addEventListener('change', e=>{
+  const repo = e.target.value;
+  document.getElementById('pickSearch').value = '';
+  renderCommitList(repo, '', null);
+  document.getElementById('selectedCommit').style.display = 'none';
+  setDoneFields('','','');
+});
+document.getElementById('pickSearch').addEventListener('input', e=>{
+  const repo = document.getElementById('pickRepo').value;
+  const sel = document.getElementById('dfDoneHash').value;
+  renderCommitList(repo, e.target.value, sel);
+});
+
+document.getElementById('drawerSave').addEventListener('click', ()=>{
+  const card = byCardNo(editingNo); if(!card) return;
+  const title = document.getElementById('dfTitle').value.trim();
+  if(!title){ alert('标题不能为空'); return; }
+  if(title.length>15){ alert('标题不超过 15 字'); return; }
+  const newContent = document.getElementById('dfContent').value;
+  const newOwner = document.getElementById('dfOwner').value.trim() || card.owner;
+
+  // 非需求改动：仅允许改 title/content/owner，不改状态/排期
+  if(card.status === 'NON_FEATURE'){
+    const changes = [];
+    if(card.title   !== title)      changes.push(`标题：${card.title} → ${title}`);
+    if(card.owner   !== newOwner)   changes.push(`负责人：${card.owner} → ${newOwner}`);
+    if(card.content !== newContent) changes.push(`内容已更新`);
+    card.title = title;
+    card.content = newContent;
+    card.owner = newOwner;
+    if(changes.length) appendLog(card, 'EDITED', changes.join('；'));
+    closeDrawer();
+    renderAll();
+    return;
+  }
+
+  // v2.7：抽屉保存不再强制对接人——必填时点前移至排期保存（拖拽/改期时校验）；此处仅落库
+  const reqNature = (document.querySelector('input[name="dfReqNature"]:checked')||{}).value || 'BIZ';
+  const bizContact = document.getElementById('dfBizContact').value.trim();
+
+  const status = document.querySelector('.status-opt.active').getAttribute('data-val');
+
+  // 完成态校验：必须从选择器选中
+  let doneRepo = null, doneHash = null, doneUrl = null;
+  if(status==='DONE'){
+    doneRepo = document.getElementById('dfDoneRepo').value;
+    doneHash = document.getElementById('dfDoneHash').value;
+    doneUrl  = document.getElementById('dfDoneUrl').value;
+    if(!doneRepo || !doneHash || !doneUrl){
+      alert('完成态必须从仓库 commit 列表中点选一条'); return;
+    }
+    if(!findRepoCommit(doneRepo, doneHash)){
+      alert('选中的 commit 不在仓库内，请重新选择'); return;
+    }
+  }
+
+  // diff & log
+  const changes = [];
+  if(card.title   !== title)      changes.push(`标题：${card.title} → ${title}`);
+  if(card.owner   !== newOwner)   changes.push(`负责人：${card.owner} → ${newOwner}`);
+  if(card.content !== newContent) changes.push(`内容已更新`);
+  if((card.reqNature||'BIZ') !== reqNature) changes.push(`需求性质：${reqNature==='TECH'?'业务功能 → 技术支持':'技术支持 → 业务功能'}`);
+  if((card.bizContact||'') !== bizContact)  changes.push(`业务对接人：${card.bizContact||'—'} → ${bizContact||'—'}`);
+
+  const oldStatus = card.status;
+  const oldDev = card.devOwner;
+  card.title = title;
+  card.content = newContent;
+  card.owner = newOwner;
+  card.status = status;
+  card.reqNature = reqNature;
+  card.bizContact = bizContact;
+
+  // 状态转移处理：devOwner 维护 + 流水
+  if(status==='DONE'){
+    // 保留或回填 devOwner
+    if(!card.devOwner) card.devOwner = oldDev || CURRENT_USER.name;
+    card.doneRepo = doneRepo;
+    card.doneHash = doneHash;
+    card.doneUrl  = doneUrl;
+    if(oldStatus !== 'DONE'){
+      appendLog(card, 'MARKED_DONE', `关联完成 commit：${doneRepo} / ${doneHash}；开发人：${card.devOwner}`);
+    } else {
+      // 仍然是 DONE但换了 commit，记为 EDITED
+      changes.push(`完成 commit 已更新：${doneRepo} / ${doneHash}`);
+    }
+  } else if(status==='IN_PROGRESS'){
+    // 领取 / 维持领取
+    if(oldStatus==='PENDING'){
+      card.devOwner = CURRENT_USER.name;
+      appendLog(card, 'TAKEN', `${CURRENT_USER.name} 领取开发`);
+    } else if(oldStatus==='DONE'){
+      // DONE → IN_PROGRESS：回退 done_*，保留或回填 devOwner
+      card.doneRepo = null; card.doneHash = null; card.doneUrl = null;
+      if(!card.devOwner) card.devOwner = oldDev || CURRENT_USER.name;
+      appendLog(card, 'REVERTED', `回退到开发中，清空完成 commit 关联`);
+    }
+    // IN_PROGRESS → IN_PROGRESS：无状态流水
+  } else if(status==='PENDING'){
+    if(oldStatus==='DONE'){
+      card.doneRepo = null; card.doneHash = null; card.doneUrl = null;
+      card.devOwner = null;
+      appendLog(card, 'REVERTED', '回退为待开发，清空完成 commit 与开发人');
+    } else if(oldStatus==='IN_PROGRESS'){
+      card.devOwner = null;
+      appendLog(card, 'RELEASED', `${oldDev||'—'} 取消领取开发`);
+    }
+  }
+
+  if(changes.length){
+    appendLog(card, 'EDITED', changes.join('；'));
+  }
+
+  closeDrawer();
+  renderAll();
+});
+
+document.getElementById('drawerDelete').addEventListener('click', ()=>{
+  if(!confirm('确认删除该卡片？源 commit 不会再次生成新卡片。')) return;
+  const i = CARDS.findIndex(c=>c.cardNo===editingNo);
+  if(i>=0){
+    // 正式环境会写入流水再软删；原型直接从内存移除
+    CARDS.splice(i,1);
+  }
+  closeDrawer();
+  renderAll();
+});
+
+/* 移入非需求改动 / 恢复为待开发 */
+document.getElementById('btnMoveToNf').addEventListener('click', ()=>{
+  const card = byCardNo(editingNo); if(!card) return;
+  if(card.status === 'NON_FEATURE'){
+    // 恢复为待开发
+    if(!confirm(`确认将卡片「${card.title}」恢复为待开发？`)) return;
+    card.status = 'PENDING';
+    appendLog(card, 'EDITED', '从非需求改动恢复为待开发');
+    closeDrawer();
+    renderAll();
+    return;
+  }
+  if(!confirm(`确认将卡片「${card.title}」移入非需求改动？\n移入后将：清空排期、开发人、完成 commit，不进入 Backup 和日历。`)) return;
+  const oldStatus = card.status;
+  card.status = 'NON_FEATURE';
+  card.scheduledDate = null;
+  card.devOwner = null;
+  card.doneRepo = null; card.doneHash = null; card.doneUrl = null;
+  appendLog(card, 'EDITED', `从「${oldStatus}」移入非需求改动`);
+  closeDrawer();
+  renderAll();
+});
+
+/* ──────────────────────────────────────────────
+   Day cell click → toggle release day
+────────────────────────────────────────────── */
+function bindDayCellClick(){
+  $grid.querySelectorAll('.day-cell').forEach(cell=>{
+    if(cell.getAttribute('data-off')==='true') return;
+    cell.addEventListener('click', e=>{
+      // 忽略 card / more-btn 点击
+      if(e.target.closest('.card') || e.target.closest('.more-btn')) return;
+      const d = cell.getAttribute('data-date');
+      openReleaseDayConfirm(d);
+    });
+  });
+}
+
+/* 发版日确认弹框 */
+function openReleaseDayConfirm(dateStr){
+  const isReleaseDay = !!RELEASE_DAYS[dateStr];
+  const $mask = document.getElementById('releaseConfirmMask');
+  const $title = document.getElementById('releaseConfirmTitle');
+  const $body = document.getElementById('releaseConfirmBody');
+  const $ok = document.getElementById('releaseConfirmOk');
+  if(isReleaseDay){
+    $title.textContent = '取消发版日标记';
+    $body.innerHTML = `确认取消 <strong>${dateStr}</strong> 的发版日标记？`;
+    $ok.className = 'btn btn-danger';
+    $ok.textContent = '取消发版日';
+  } else {
+    $title.textContent = '设置为发版日';
+    $body.innerHTML = `确认将 <strong>${dateStr}</strong> 标记为发版日？`;
+    $ok.className = 'btn btn-primary';
+    $ok.textContent = '设为发版日';
+  }
+  $mask.setAttribute('data-date', dateStr);
+  $mask.classList.add('show');
+}
+function closeReleaseConfirm(){
+  document.getElementById('releaseConfirmMask').classList.remove('show');
+}
+document.getElementById('releaseConfirmOk').addEventListener('click', ()=>{
+  const $mask = document.getElementById('releaseConfirmMask');
+  const d = $mask.getAttribute('data-date');
+  if(!d) return;
+  if(RELEASE_DAYS[d]) delete RELEASE_DAYS[d];
+  else RELEASE_DAYS[d] = true;
+  closeReleaseConfirm();
+  renderCalendar();
+});
+document.getElementById('releaseConfirmCancel').addEventListener('click', closeReleaseConfirm);
+document.getElementById('releaseConfirmMask').addEventListener('click', e=>{
+  if(e.target.id==='releaseConfirmMask') closeReleaseConfirm();
+});
+
+/* ──────────────────────────────────────────────
+   Day detail modal (more button)
+────────────────────────────────────────────── */
+const $dayMask = document.getElementById('dayModalMask');
+// 当前打开的当日详情弹层对应的日期；用于 drop 后刷新弹层内容
+let currentDayModalDate = null;
+function bindMoreBtns(){
+  document.querySelectorAll('.more-btn').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      const d = b.getAttribute('data-more');
+      const cards = CARDS.filter(c=>c.scheduledDate===d && !c.parentMergeCardNo && (!ONLY_MINE || c.owner === CURRENT_USER.name));
+      currentDayModalDate = d;
+      document.getElementById('dayModalTitle').textContent = `${d} · 共 ${cards.length} 张卡片`;
+      document.getElementById('dayModalBody').innerHTML = cards.map(c=>renderCard(c,{popup:true})).join('');
+      $dayMask.classList.add('show');
+      attachCardHandlers(document.getElementById('dayModalBody'));
+    });
+  });
+}
+// 若当日详情弹层处于打开状态，则按最新数据刷新；当日卡片为空时自动关闭
+function refreshDayModalIfOpen(){
+  if(!$dayMask.classList.contains('show') || !currentDayModalDate) return;
+  const d = currentDayModalDate;
+  const cards = CARDS.filter(c=>c.scheduledDate===d && !c.parentMergeCardNo && (!ONLY_MINE || c.owner === CURRENT_USER.name));
+  if(cards.length === 0){
+    $dayMask.classList.remove('show');
+    currentDayModalDate = null;
+    return;
+  }
+  document.getElementById('dayModalTitle').textContent = `${d} · 共 ${cards.length} 张卡片`;
+  document.getElementById('dayModalBody').innerHTML = cards.map(c=>renderCard(c,{popup:true})).join('');
+  attachCardHandlers(document.getElementById('dayModalBody'));
+}
+document.getElementById('dayModalClose').addEventListener('click', ()=>{ $dayMask.classList.remove('show'); currentDayModalDate = null; });
+$dayMask.addEventListener('click', e=>{ if(e.target===$dayMask){ $dayMask.classList.remove('show'); currentDayModalDate = null; } });
+
+/* ──────────────────────────────────────────────
+   Non-feature card list modal
+────────────────────────────────────────────── */
+const $nfMask = document.getElementById('nonFeatureMask');
+function openNonFeatureList(){
+  const list = CARDS.filter(c=>c.status==='NON_FEATURE')
+    .sort((a,b)=> (b.createdAt||'').localeCompare(a.createdAt||''));
+  document.getElementById('nfListCount').textContent = list.length;
+  const $body = document.getElementById('nonFeatureBody');
+  $body.innerHTML = list.length
+    ? list.map(renderCard).join('')
+    : '<div class="backup-empty" style="padding:36px 0">暂无非需求改动卡片</div>';
+  $nfMask.classList.add('show');
+  attachCardHandlers($body);
+}
+document.getElementById('btnNonFeature').addEventListener('click', openNonFeatureList);
+document.getElementById('nonFeatureClose').addEventListener('click', ()=> $nfMask.classList.remove('show'));
+$nfMask.addEventListener('click', e=>{ if(e.target===$nfMask) $nfMask.classList.remove('show'); });
+
+/* ──────────────────────────────────────────────
+   Repo config modal
+────────────────────────────────────────────── */
+const $repoMask = document.getElementById('repoConfigMask');
+
+function renderRepoRow(repo, listId, repoArray){
+  const wl = (repo.pathPrefixWhitelist || []);
+  const bl = (repo.pathPrefixBlacklist || []);
+  const filterTags = (listId === 'source' && (wl.length || bl.length))
+    ? `<div style="flex-basis:100%;display:flex;flex-wrap:wrap;gap:4px;margin-top:4px">
+        ${wl.map(p=>`<span style="font-size:10px;color:#2E7D32;background:#E8F5E9;padding:1px 6px;border-radius:3px">✓ ${escapeHtml(p)}</span>`).join('')}
+        ${bl.map(p=>`<span style="font-size:10px;color:#C62828;background:#FFEBEE;padding:1px 6px;border-radius:3px">✗ ${escapeHtml(p)}</span>`).join('')}
+      </div>`
+    : '';
+  return `<div style="display:flex;flex-wrap:wrap;align-items:center;gap:8px;padding:6px 10px;background:var(--bg);border-radius:4px;font-size:12px">
+    <span style="font-family:SF Mono,Consolas,monospace;color:var(--info);font-weight:500;flex:1">${escapeHtml(repo.repo)}</span>
+    <span style="color:var(--text-secondary);flex:1">${escapeHtml(repo.name)}</span>
+    <button class="btn btn-danger" style="height:24px;font-size:11px;padding:0 8px" data-del-repo="${escapeHtml(repo.repo)}" data-del-list="${listId}">删除</button>
+    ${filterTags}
+  </div>`;
+}
+
+function renderRepoConfig(){
+  document.getElementById('sourceRepoList').innerHTML = SOURCE_REPOS.length
+    ? SOURCE_REPOS.map(r=>renderRepoRow(r,'source','SOURCE_REPOS')).join('')
+    : '<div style="color:var(--text-tertiary);font-size:12px;padding:8px 0">暂无源 commit 仓库</div>';
+  document.getElementById('doneRepoList').innerHTML = DONE_REPOS.length
+    ? DONE_REPOS.map(r=>renderRepoRow(r,'done','DONE_REPOS')).join('')
+    : '<div style="color:var(--text-tertiary);font-size:12px;padding:8px 0">暂无完成 commit 仓库</div>';
+  // bind delete buttons
+  document.querySelectorAll('[data-del-repo]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const repo = btn.getAttribute('data-del-repo');
+      const list = btn.getAttribute('data-del-list');
+      const arr = list==='SOURCE_REPOS' ? SOURCE_REPOS : DONE_REPOS;
+      const idx = arr.findIndex(r=>r.repo===repo);
+      if(idx>=0) arr.splice(idx,1);
+      // 同步更新 ALL_REPOS / REPOS 引用
+      ALL_REPOS.length = 0; ALL_REPOS.push(...SOURCE_REPOS);
+      REPOS.length = 0; REPOS.push(...DONE_REPOS);
+      renderRepoConfig();
+    });
+  });
+}
+
+function addRepoToArray(arr, repo, name){
+  if(!repo.trim() || !name.trim()){ alert('仓库标识和名称不能为空'); return; }
+  if(arr.find(r=>r.repo===repo.trim())){ alert('该仓库标识已存在'); return; }
+  arr.push({ repo: repo.trim(), name: name.trim(), defaultBranch: 'main' });
+  // 同步更新 ALL_REPOS / REPOS 引用
+  ALL_REPOS.length = 0; ALL_REPOS.push(...SOURCE_REPOS);
+  REPOS.length = 0; REPOS.push(...DONE_REPOS);
+  renderRepoConfig();
+}
+
+document.getElementById('btnRepoConfig').addEventListener('click', ()=>{
+  renderRepoConfig();
+  $repoMask.classList.add('show');
+});
+document.getElementById('repoConfigClose').addEventListener('click', ()=> $repoMask.classList.remove('show'));
+$repoMask.addEventListener('click', e=>{ if(e.target===$repoMask) $repoMask.classList.remove('show'); });
+document.getElementById('addSourceRepo').addEventListener('click', ()=>{
+  addRepoToArray(SOURCE_REPOS, document.getElementById('newSourceRepo').value, document.getElementById('newSourceRepoName').value);
+  document.getElementById('newSourceRepo').value = '';
+  document.getElementById('newSourceRepoName').value = '';
+});
+document.getElementById('addDoneRepo').addEventListener('click', ()=>{
+  addRepoToArray(DONE_REPOS, document.getElementById('newDoneRepo').value, document.getElementById('newDoneRepoName').value);
+  document.getElementById('newDoneRepo').value = '';
+  document.getElementById('newDoneRepoName').value = '';
+});
+
+/* ──────────────────────────────────────────────
+   Month navigation
+────────────────────────────────────────────── */
+document.getElementById('btnPrev').addEventListener('click', ()=>{
+  viewMonth--; if(viewMonth<0){ viewMonth=11; viewYear--; }
+  renderCalendar();
+});
+document.getElementById('btnNext').addEventListener('click', ()=>{
+  viewMonth++; if(viewMonth>11){ viewMonth=0; viewYear++; }
+  renderCalendar();
+});
+document.getElementById('btnToday').addEventListener('click', ()=>{
+  viewYear = TODAY.getFullYear(); viewMonth = TODAY.getMonth();
+  renderCalendar();
+});
+
+// Month picker dropdown
+const $picker = document.getElementById('monthPicker');
+const $pickerYear = document.getElementById('pickerYear');
+const $monthGrid = document.getElementById('monthGrid');
+let pickerYearVal = viewYear;
+function renderMonthGrid(){
+  $pickerYear.textContent = pickerYearVal;
+  $monthGrid.innerHTML = Array.from({length:12},(_,i)=>{
+    const cur = (pickerYearVal===viewYear && i===viewMonth)?'current':'';
+    return `<div class="month-cell ${cur}" data-m="${i}">${String(i+1).padStart(2,'0')}月</div>`;
+  }).join('');
+  $monthGrid.querySelectorAll('.month-cell').forEach(c=>{
+    c.addEventListener('click', e=>{
+      e.stopPropagation();
+      viewYear = pickerYearVal;
+      viewMonth = parseInt(c.getAttribute('data-m'));
+      $picker.classList.remove('open');
+      renderCalendar();
+    });
+  });
+}
+document.getElementById('monthLabel').addEventListener('click', e=>{
+  e.stopPropagation();
+  pickerYearVal = viewYear;
+  renderMonthGrid();
+  $picker.classList.toggle('open');
+});
+$picker.querySelectorAll('[data-dir]').forEach(b=>{
+  b.addEventListener('click', e=>{
+    e.stopPropagation();
+    pickerYearVal += parseInt(b.getAttribute('data-dir'));
+    renderMonthGrid();
+  });
+});
+document.addEventListener('click', ()=> $picker.classList.remove('open'));
+
+/* ──────────────────────────────────────────────
+   「只看自己」全局过滤开关（月历 + Backup + +N 弹层）
+────────────────────────────────────────────── */
+const $onlyMineToggle = document.getElementById('onlyMineToggle');
+const $onlyMineLabel  = document.getElementById('onlyMineLabel');
+const $onlyMineHint   = document.getElementById('onlyMineHint');
+$onlyMineToggle.addEventListener('change', e=>{
+  ONLY_MINE = e.target.checked;
+  $onlyMineLabel.classList.toggle('toggle-label-active', ONLY_MINE);
+  $onlyMineHint.textContent = ONLY_MINE
+    ? `仅显示提交人 = ${CURRENT_USER.name}`
+    : '默认显示全部';
+  renderAll();
+  refreshDayModalIfOpen();
+});
+
+/* ──────────────────────────────────
+   skills 仓库筛选（下拉多选，默认全选）
+────────────────────────────────── */
+const $repoFilter = document.getElementById('repoFilter');
+const $btnRepoFilter = document.getElementById('btnRepoFilter');
+const $repoFilterDropdown = document.getElementById('repoFilterDropdown');
+const $repoFilterLabel = document.getElementById('repoFilterLabel');
+function renderRepoFilter(){
+  const allChecked = SELECTED_REPOS.size === SOURCE_REPOS.length;
+  $repoFilterLabel.textContent = repoFilterIsAll() ? '全部' : String(SELECTED_REPOS.size);
+  const rows = [
+    `<label class="repo-opt all"><input type="checkbox" data-all ${allChecked?'checked':''}><span>全部</span></label>`,
+    `<div class="repo-filter-divider"></div>`,
+    ...SOURCE_REPOS.map(r =>
+      `<label class="repo-opt"><input type="checkbox" data-repo="${r.repo}" ${SELECTED_REPOS.has(r.repo)?'checked':''}><span title="${r.repo}">${escapeHtml(r.name||r.repo)}</span></label>`),
+    `<div class="repo-filter-hint">取消全部 = 展示全部</div>`
+  ];
+  $repoFilterDropdown.innerHTML = rows.join('');
+}
+function applyRepoFilter(){ renderRepoFilter(); renderAll(); renderStats(); refreshDayModalIfOpen(); }
+$btnRepoFilter.addEventListener('click', e=>{ e.stopPropagation(); $repoFilter.classList.toggle('open'); });
+$repoFilterDropdown.addEventListener('click', e=> e.stopPropagation());
+$repoFilterDropdown.addEventListener('change', e=>{
+  const t = e.target;
+  if(t.hasAttribute('data-all')){
+    if(t.checked) SOURCE_REPOS.forEach(r=>SELECTED_REPOS.add(r.repo));
+    else SELECTED_REPOS.clear();
+  } else if(t.hasAttribute('data-repo')){
+    const repo = t.getAttribute('data-repo');
+    if(t.checked) SELECTED_REPOS.add(repo); else SELECTED_REPOS.delete(repo);
+  }
+  applyRepoFilter();
+});
+document.addEventListener('click', ()=> $repoFilter.classList.remove('open'));
+renderRepoFilter();
+
+/* ──────────────────────────────────
+   卡片搜索框（当月卡片 标题/内容 模糊匹配）
+────────────────────────────────── */
+const $cardSearchInput = document.getElementById('cardSearchInput');
+const $cardSearchClear = document.getElementById('cardSearchClear');
+const $cardSearchHint  = document.getElementById('cardSearchHint');
+function applyCardSearch(raw){
+  SEARCH_KEYWORDS = parseSearchKeywords(raw);
+  $cardSearchClear.classList.toggle('show', !!raw);
+  if(SEARCH_KEYWORDS.length > 0){
+    const tags = SEARCH_KEYWORDS.map(k => `<span class="kw">${escapeHtml(k)}</span>`).join(' + ');
+    $cardSearchHint.innerHTML = `在当月卡片中匹配：${tags}（AND关系）`;
+  } else {
+    $cardSearchHint.textContent = '空格 / 逗号 分隔多关键字（AND 模糊匹配），仅搜当月';
+  }
+  renderAll();
+}
+$cardSearchInput.addEventListener('input', e => applyCardSearch(e.target.value));
+$cardSearchClear.addEventListener('click', ()=>{
+  $cardSearchInput.value = '';
+  applyCardSearch('');
+  $cardSearchInput.focus();
+});
+$cardSearchInput.addEventListener('keydown', e=>{
+  if(e.key === 'Escape'){
+    $cardSearchInput.value = '';
+    applyCardSearch('');
+  }
+});
+
+/* ──────────────────────────────────────────────
+   First render
+────────────────────────────────────────────── */
+/* Card Merge 原型交互：工具栏切换多选态 / 卡片勾选 / 同模块锁定 / 底部悬浮条 / 标题 modal / 生成合并卡 */
+(function(){
+  const $btn = document.getElementById('btnMergeToggle');
+  const $bar = document.getElementById('mergeBar');
+  const $cnt = document.getElementById('mbCount');
+  const $mod = document.getElementById('mbModule');
+  const $ok  = document.getElementById('mbConfirm');
+  const $cancel = document.getElementById('mbCancel');
+  const $mask = document.getElementById('mergeTitleMask');
+  const $mtmTitle = document.getElementById('mtmTitle');
+  const $mtmCount = document.getElementById('mtmCount');
+  const $mtmOk = document.getElementById('mtmOk');
+  const $mtmCancel = document.getElementById('mtmCancel');
+  if(!$btn) return;
+
+  let mergeMode = false;
+  const selected = new Set();
+  let lockedModule = null;
+  let mergeSeq = 0;
+
+  function getCardEl(t){ return t && (t.closest ? t.closest('.card') : null); }
+  function statusFromEl(el){
+    if(el.classList.contains('status-done')) return 'DONE';
+    if(el.classList.contains('status-in-progress')) return 'IN_PROGRESS';
+    if(el.classList.contains('status-non-feature')) return 'NON_FEATURE';
+    if(el.classList.contains('status-delayed')) return 'PENDING'; // 延期本质仍为 PENDING
+    return 'PENDING';
+  }
+  function cardInfo(el){
+    const modEl = el.querySelector('.c-module');
+    const module = el.dataset.module || (modEl ? modEl.textContent.trim() : '-');
+    const status = el.dataset.status || statusFromEl(el);
+    return { module, status };
+  }
+  function refreshBar(){
+    $cnt.textContent = selected.size;
+    $mod.textContent = lockedModule ? ('模块 ' + lockedModule) : '模块 —';
+    $ok.disabled = selected.size < 2;
+  }
+  function refreshDisabled(){
+    document.querySelectorAll('.card').forEach(el=>{
+      el.classList.remove('ck-disabled');
+      const info = cardInfo(el);
+      // DONE / NON_FEATURE 禁用；锁定模块后不同模块禁用
+      if(info.status === 'DONE' || info.status === 'NON_FEATURE'){
+        el.classList.add('ck-disabled');
+      } else if(lockedModule && info.module !== lockedModule){
+        el.classList.add('ck-disabled');
+      }
+    });
+  }
+  function enterMerge(){
+    mergeMode = true;
+    document.body.classList.add('merge-mode');
+    $btn.classList.add('active');
+    $bar.classList.add('show');
+    selected.clear(); lockedModule = null;
+    refreshBar(); refreshDisabled();
+  }
+  function exitMerge(){
+    mergeMode = false;
+    document.body.classList.remove('merge-mode');
+    $btn.classList.remove('active');
+    $bar.classList.remove('show');
+    document.querySelectorAll('.card.ck-on').forEach(el=>el.classList.remove('ck-on'));
+    document.querySelectorAll('.card.ck-disabled').forEach(el=>el.classList.remove('ck-disabled'));
+    selected.clear(); lockedModule = null;
+  }
+  $btn.addEventListener('click', ()=>{ mergeMode ? exitMerge() : enterMerge(); });
+  $cancel.addEventListener('click', exitMerge);
+  document.addEventListener('click', (e)=>{
+    if(!mergeMode) return;
+    const el = getCardEl(e.target);
+    if(!el) return;
+    if(el.classList.contains('ck-disabled')) { e.preventDefault(); e.stopPropagation(); return; }
+    e.preventDefault(); e.stopPropagation();
+    const info = cardInfo(el);
+    const no = el.dataset.no;
+    if(!no) return;
+    if(el.classList.contains('ck-on')){
+      el.classList.remove('ck-on'); selected.delete(no);
+      if(selected.size === 0){ lockedModule = null; }
+    } else {
+      if(!lockedModule){ lockedModule = info.module; }
+      el.classList.add('ck-on'); selected.add(no);
+    }
+    refreshBar(); refreshDisabled();
+  }, true);
+  $ok.addEventListener('click', ()=>{
+    if(selected.size < 2) return;
+    $mtmCount.textContent = selected.size;
+    $mtmTitle.value = '';
+    $mask.classList.add('show');
+    setTimeout(()=>$mtmTitle.focus(), 50);
+  });
+  $mtmCancel.addEventListener('click', ()=>{ $mask.classList.remove('show'); });
+  $mtmOk.addEventListener('click', ()=>{
+    const title = ($mtmTitle.value || '').trim();
+    if(!title){ $mtmTitle.focus(); return; }
+    doMerge(title);
+    $mask.classList.remove('show');
+    exitMerge();
+  });
+  document.addEventListener('keydown', (e)=>{
+    if(e.key !== 'Escape') return;
+    if($mask.classList.contains('show')){ $mask.classList.remove('show'); return; }
+    if(mergeMode){ exitMerge(); }
+  });
+
+  // 生成合并卡、设置子卡 parentMergeCardNo、扁平化嵌套合并、重新渲染
+  function doMerge(title){
+  	const nos = Array.from(selected);
+    // 1) 生成合并卡 cardNo：FS-{YYYYMMDD}-{NNN}
+    mergeSeq++;
+    const ymdToday = ymd(TODAY);
+    const mergeNo = `FS-${ymdToday}-${String(mergeSeq).padStart(3,'0')}`;
+
+    // 2) 收集子卡：如果选中本身是合并卡 → 扁平化其 mergeChildren
+    const childCardNos = [];
+    const cardByNo = {};
+    CARDS.forEach(c => { cardByNo[c.cardNo] = c; });
+    const oldMergeNos = [];
+    nos.forEach(no => {
+      const c = cardByNo[no];
+      if(!c) return;
+      if(c.isMerged && Array.isArray(c.mergeChildren)){
+        // 嵌套扁平化：子卡仍是原始子卡，原合并卡 会被移除
+        c.mergeChildren.forEach(ch => childCardNos.push(ch));
+        oldMergeNos.push(no);
+      } else {
+        childCardNos.push(no);
+      }
+    });
+
+    // 3) 以子卡同值 scheduledDate 作为合并卡排期，否则 NULL 回 Backup
+    const dates = childCardNos.map(no => (cardByNo[no]||{}).scheduledDate || null);
+    const allSame = dates.length > 0 && dates.every(d => d === dates[0]);
+    const inheritDate = allSame ? dates[0] : null;
+
+    // 4) 为子卡记录快照（mergeItems）并设置 parentMergeCardNo
+    const mergeItems = childCardNos.map(no => {
+      const ch = cardByNo[no];
+      const snap = {
+        childCardNo: no,
+        title: ch.title,
+        sourceModule: ch.sourceModule,
+        preMergeStatus: ch.status,
+        preMergeScheduledDate: ch.scheduledDate,
+        preMergeDevUserName: ch.devOwner || null,
+        preMergeDevTakenAt: null,
+        addedAt: nowStr()
+      };
+      ch.parentMergeCardNo = mergeNo;
+      return snap;
+    });
+
+    // 5) 创建合并卡并入 CARDS；content = 子卡内容的并集（扁平化后的叶子子卡）
+    const mergedContent = childCardNos.map(no => {
+      const ch = cardByNo[no]; if(!ch) return '';
+      return `【${no} · ${ch.title}】\n${ch.content || ''}`;
+    }).filter(Boolean).join('\n\n');
+    const mergeCard = {
+      cardNo: mergeNo,
+      title: title,
+      content: mergedContent,
+      owner: CURRENT_USER.name,
+      status: 'PENDING',
+      scheduledDate: inheritDate,
+      sourceRepo: '_merge',
+      sourceModule: lockedModule,
+      sourceCommit: 'MERGE:' + mergeNo,
+      devOwner: null,
+      doneRepo: null, doneHash: null, doneUrl: null,
+      hardwareManagement: null,
+      createdAt: nowStr(),
+      isMerged: true,
+      mergeChildren: childCardNos,
+      mergeItems: mergeItems,
+      logs: [{
+        type: 'MERGED',
+        detail: `合并 ${childCardNos.length} 张：${childCardNos.join(', ')}` + (oldMergeNos.length ? `（扁平化 ${oldMergeNos.length} 张原合并卡：${oldMergeNos.join(', ')}）` : ''),
+        operatorName: CURRENT_USER.name,
+        at: nowStr()
+      }]
+    };
+    CARDS.push(mergeCard);
+
+    // 6) 移除被扁平化的原合并卡
+    if(oldMergeNos.length){
+      for(let i=CARDS.length-1; i>=0; i--){
+        if(oldMergeNos.indexOf(CARDS[i].cardNo) !== -1){ CARDS.splice(i, 1); }
+      }
+    }
+
+    // 7) 重新渲染
+    if(typeof renderAll === 'function') renderAll();
+  }
+
+  function nowStr(){
+    const d = new Date();
+    const pad = n => String(n).padStart(2,'0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+})();
+
+renderAll();
+</script>
+</body>
+</html>

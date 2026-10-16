@@ -1,0 +1,431 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>报告列表 · 研发周报 App</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Design Tokens
+   真源：.agents/skills/page-blueprint/tokens/web.css + tokens/app.ts (light)
+   ⚠️ 仅本 :root 块允许出现原子字面值；业务样式一律通过 var(--ac-*) 消费
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ---------- palette ---------- */
+  --ac-palette-white:#FFFFFF;
+  --ac-palette-gray-1:#F7F8FA;
+  --ac-palette-gray-2:#F2F3F5;
+  --ac-palette-gray-3:#E5E6EB;
+  --ac-palette-gray-4:#C9CDD4;
+  --ac-palette-gray-6:#86909C;
+  --ac-palette-gray-8:#4E5969;
+  --ac-palette-gray-10:#1D2129;
+  --ac-palette-red-1:#FFECE8;
+  --ac-palette-red-6:#F53F3F;
+  --ac-palette-red-7:#CB272D;
+  --ac-palette-orange-1:#FFF7E8;
+  --ac-palette-orange-7:#D25F00;
+  --ac-palette-green-1:#E8FFEA;
+  --ac-palette-green-7:#009A29;
+  --ac-palette-blue-1:#E8F7FF;
+  --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB;
+  --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF;
+  --ac-palette-purple-6:#722ED1;
+  /* ---------- brand ---------- */
+  --ac-brand-red:#E60013;
+  /* ---------- semantic ---------- */
+  --ac-text-1:var(--ac-palette-gray-10);
+  --ac-text-2:var(--ac-palette-gray-8);
+  --ac-text-3:var(--ac-palette-gray-6);
+  --ac-text-4:var(--ac-palette-gray-4);
+  --ac-text-white:var(--ac-palette-white);
+  --ac-bg-1:var(--ac-palette-white);
+  --ac-bg-2:var(--ac-palette-gray-1);
+  --ac-bg-3:var(--ac-palette-gray-2);
+  --ac-fill-1:var(--ac-palette-gray-1);
+  --ac-fill-2:var(--ac-palette-gray-2);
+  --ac-border-1:var(--ac-palette-gray-2);
+  --ac-border-2:var(--ac-palette-gray-3);
+  /* ---------- space（rem·1rem = 16px @375 视口）---------- */
+  --ac-space-1:.25rem;
+  --ac-space-2:.5rem;
+  --ac-space-3:.75rem;
+  --ac-space-4:1rem;
+  --ac-space-5:1.25rem;
+  --ac-space-10:2.5rem;
+  /* ---------- radius ---------- */
+  --ac-radius-sm:.25rem;
+  --ac-radius-md:.375rem;
+  --ac-radius-xl:.75rem;
+  --ac-radius-full:9999px;
+  /* ---------- shadow / overlay ---------- */
+  --ac-shadow-1:0 .0625rem .125rem 0 rgba(0,0,0,.04);
+  --ac-shadow-3:0 .25rem 1rem 0 rgba(0,0,0,.10);
+  --ac-mask-bg:rgba(29,33,41,.60);
+  --ac-toast-bg:rgba(29,33,41,.92);
+  --ac-ripple:rgba(255,255,255,.12);
+  /* ---------- typography ---------- */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:.75rem;
+  --ac-fs-sm:.8125rem;
+  --ac-fs-md:.875rem;
+  --ac-fs-lg:.9375rem;
+  --ac-fs-xl:1rem;
+  --ac-fs-2xl:1.125rem;
+  --ac-fs-3xl:1.25rem;
+  --ac-fw-medium:500;
+  --ac-fw-semibold:600;
+  --ac-lh-normal:1.5;
+  /* ---------- motion / z-index / hit ---------- */
+  --ac-duration-fast:.15s;
+  --ac-easing-standard:cubic-bezier(.4,0,.2,1);
+  --ac-z-header:200;
+  --ac-z-sheet:600;
+  --ac-z-toast:800;
+  --ac-hit-touch:2.75rem;
+  /* ---------- layout ---------- */
+  --ac-device-width:23.4375rem;      /* 375px */
+  --ac-h-protobar:2rem;
+  --ac-h-navbar:2.75rem;
+  --ac-safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* 375 设计稿等比 */
+html{font-size:4.2667vw}
+@media (min-width:23.4375rem){html{font-size:16px}}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);
+  background:var(--ac-bg-3);line-height:var(--ac-lh-normal);
+  min-height:100vh;display:flex;justify-content:center
+}
+
+/* ══ Device Frame ══ */
+.ac-device{
+  width:100%;max-width:var(--ac-device-width);min-height:100vh;
+  background:var(--ac-bg-2);position:relative;box-shadow:var(--ac-shadow-3);
+  display:flex;flex-direction:column
+}
+
+/* ══ Proto Bar（原型互跳，非业务 UI）══ */
+.ac-proto-bar{
+  height:var(--ac-h-protobar);flex-shrink:0;background:var(--ac-text-1);
+  display:flex;align-items:center;gap:var(--ac-space-2);padding:0 var(--ac-space-3);
+  position:sticky;top:0;z-index:var(--ac-z-toast);overflow-x:auto;scrollbar-width:none
+}
+.ac-proto-bar::-webkit-scrollbar{display:none}
+.ac-proto-bar a,.ac-proto-bar button{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-text-white);
+  background:var(--ac-ripple);border:0;border-radius:var(--ac-radius-full);
+  padding:.125rem var(--ac-space-2);text-decoration:none;white-space:nowrap;flex-shrink:0
+}
+.ac-proto-bar a.is-active{background:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
+
+/* ══ Navbar ══ */
+.ac-navbar{
+  height:var(--ac-h-navbar);flex-shrink:0;background:var(--ac-brand-red);color:var(--ac-text-white);
+  display:flex;align-items:center;padding:0 var(--ac-space-1);
+  position:sticky;top:var(--ac-h-protobar);z-index:var(--ac-z-header)
+}
+.ac-navbar-back{
+  cursor:pointer;width:var(--ac-hit-touch);height:var(--ac-hit-touch);
+  display:flex;align-items:center;justify-content:center;color:var(--ac-text-white);
+  background:transparent;border:0;font-size:var(--ac-fs-xl)
+}
+.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-semibold)}
+.ac-navbar-action{
+  cursor:pointer;min-width:var(--ac-hit-touch);height:var(--ac-hit-touch);padding:0 var(--ac-space-2);
+  display:flex;align-items:center;justify-content:center;
+  font-size:var(--ac-fs-lg);color:var(--ac-text-white);background:transparent;border:0
+}
+.ac-navbar-action:active{opacity:.6}
+
+/* ══ 搜索条（点搜索图标展开）══ */
+.ac-searchbar{
+  display:none;flex-shrink:0;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-2) var(--ac-space-3);background:var(--ac-bg-1);
+  box-shadow:inset 0 -.0625rem 0 var(--ac-border-1)
+}
+.ac-searchbar.is-open{display:flex}
+.ac-searchbar__input.ac-input__inner{
+  flex:1;height:2rem;padding:0 var(--ac-space-3);border:0;border-radius:var(--ac-radius-full);
+  background:var(--ac-fill-2);font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-text-1);
+  outline:none
+}
+.ac-searchbar__cancel{
+  cursor:pointer;border:0;background:transparent;font-size:var(--ac-fs-md);color:var(--ac-text-2)
+}
+
+/* ══ 类型筛选 chips（横滑）══ */
+.ac-chips{
+  flex-shrink:0;display:flex;gap:var(--ac-space-2);overflow-x:auto;scrollbar-width:none;
+  padding:var(--ac-space-3) var(--ac-space-3) var(--ac-space-2);
+  position:sticky;top:calc(var(--ac-h-protobar) + var(--ac-h-navbar));z-index:var(--ac-z-header);
+  background:var(--ac-bg-2)
+}
+.ac-chips::-webkit-scrollbar{display:none}
+.ac-chip{
+  cursor:pointer;flex-shrink:0;height:1.75rem;padding:0 var(--ac-space-3);
+  display:inline-flex;align-items:center;border:0;border-radius:var(--ac-radius-full);
+  background:var(--ac-bg-1);font-family:inherit;font-size:var(--ac-fs-sm);color:var(--ac-text-2)
+}
+.ac-chip.is-active{background:var(--ac-brand-red);color:var(--ac-text-white);font-weight:var(--ac-fw-medium)}
+
+/* ══ 骨架拓扑（对齐 page-blueprint app/list-page 骨架）══ */
+.tpl-page{display:flex;flex-direction:column}
+.tpl-panel--list{background:transparent;box-shadow:none;padding:0}
+
+/* ══ Scroll Container ══ */
+.ac-scroll{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding-bottom:calc(var(--ac-space-10) + var(--ac-safe-bottom))
+}
+
+/* ══ 周分组 ══ */
+.week-group{padding:var(--ac-space-2) var(--ac-space-3) 0}
+.week-group__head{
+  display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-2) var(--ac-space-1)
+}
+.week-group__title{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1)}
+.week-group__range{font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.week-group__badge{
+  margin-left:auto;font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
+  height:1.25rem;padding:0 var(--ac-space-2);display:inline-flex;align-items:center;
+  border-radius:var(--ac-radius-full)
+}
+.week-group__badge.is-full{background:var(--ac-palette-green-1);color:var(--ac-palette-green-7)}
+.week-group__badge.is-partial{background:var(--ac-palette-orange-1);color:var(--ac-palette-orange-7)}
+
+/* ══ 报告卡片 ══ */
+.ac-card{
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);padding:var(--ac-space-3);
+  margin-bottom:var(--ac-space-2);box-shadow:var(--ac-shadow-1);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)
+}
+.ac-card:active{background:var(--ac-fill-1)}
+.ac-card.is-missing{box-shadow:none;background:var(--ac-fill-1)}
+.ac-card.is-missing:active{background:var(--ac-fill-1)}
+.ac-card-top{display:flex;flex-direction:column;align-items:flex-start;gap:var(--ac-space-2)}
+.ac-card-title{
+  width:100%;font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1);
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden
+}
+.ac-card.is-missing .ac-card-title{font-weight:var(--ac-fw-medium);color:var(--ac-text-4)}
+.ac-card-meta{
+  display:flex;align-items:center;gap:var(--ac-space-3);
+  margin-top:var(--ac-space-2);font-size:var(--ac-fs-xs);color:var(--ac-text-3)
+}
+.ac-card-meta .mono{font-family:var(--ac-ff-mono)}
+.ac-card-meta__ver{margin-left:auto;font-family:var(--ac-ff-mono);color:var(--ac-text-2)}
+
+/* ══ Pill ══ */
+.ac-pill{
+  display:inline-flex;align-items:center;flex-shrink:0;
+  height:1.25rem;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);font-weight:var(--ac-fw-medium)
+}
+.ac-pill.is-weekly{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-pill.is-snack{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
+.ac-pill.is-ydtj{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
+.ac-pill.is-missing{background:var(--ac-fill-2);color:var(--ac-text-4)}
+
+/* ══ Toast ══ */
+.ac-toast{
+  position:fixed;left:50%;bottom:20%;transform:translateX(-50%);
+  display:none;max-width:80%;padding:var(--ac-space-2) var(--ac-space-4);
+  background:var(--ac-toast-bg);color:var(--ac-text-white);
+  border-radius:var(--ac-radius-md);font-size:var(--ac-fs-md);z-index:var(--ac-z-toast)
+}
+.ac-toast.is-open{display:block}
+</style>
+</head>
+<body>
+<div class="ac-device">
+
+  <!-- 原型导航条：仅供原型预览切换，真实页面不存在 -->
+  <div class="ac-proto-bar">
+    <a href="./report-list.html" class="is-active">报告列表</a>
+    <a href="./report-detail.html">报告详情</a>
+  </div>
+
+  <!-- 顶部导航栏 -->
+  <div class="ac-navbar">
+    <span class="ac-navbar-back" onclick="acToast('返回工作台')">‹</span>
+    <div class="ac-navbar-title">研发周报</div>
+    <span class="ac-navbar-action" id="searchToggle" aria-label="搜索">⌕</span>
+  </div>
+
+  <!-- 搜索条（默认收起） -->
+  <div class="ac-searchbar" id="searchbar">
+    <input class="ac-searchbar__input ac-input__inner" placeholder="按报告标题搜索" id="searchInput">
+    <span class="ac-searchbar__cancel" id="searchCancel">取消</span>
+  </div>
+
+  <!-- 类型筛选 chips -->
+  <div class="ac-chips">
+    <span class="ac-chip is-active" data-chip>全部</span>
+    <span class="ac-chip" data-chip>研发周报</span>
+    <span class="ac-chip" data-chip>一致性·零食王国</span>
+    <span class="ac-chip" data-chip>一致性·有点推荐</span>
+  </div>
+
+  <!-- 周分组卡片流 -->
+  <div class="ac-scroll">
+   <section class="tpl-page">
+    <div class="tpl-panel tpl-panel--list">
+
+    <!-- 第 36 周 -->
+    <div class="week-group">
+      <div class="week-group__head">
+        <span class="week-group__title">第 36 周</span>
+        <span class="week-group__range">08-31 ~ 09-06</span>
+        <span class="week-group__badge is-full">3/3</span>
+      </div>
+
+      <div class="ac-card" onclick="location.href='./report-detail.html'">
+        <div class="ac-card-top">
+          <span class="ac-pill is-weekly">研发周报</span>
+          <span class="ac-card-title">研发周报 - 2026-08-31</span>
+        </div>
+        <div class="ac-card-meta">
+          <span class="mono">08-31</span>
+          <span>自动</span>
+          <span class="ac-card-meta__ver">v1</span>
+        </div>
+      </div>
+
+      <div class="ac-card" onclick="location.href='./report-detail.html'">
+        <div class="ac-card-top">
+          <span class="ac-pill is-snack">一致性·零食王国</span>
+          <span class="ac-card-title">一致性检查报告（零食王国） - 2026-08-31</span>
+        </div>
+        <div class="ac-card-meta">
+          <span class="mono">08-31</span>
+          <span>自动</span>
+          <span class="ac-card-meta__ver">v1</span>
+        </div>
+      </div>
+
+      <div class="ac-card" onclick="location.href='./report-detail.html'">
+        <div class="ac-card-top">
+          <span class="ac-pill is-ydtj">一致性·有点推荐</span>
+          <span class="ac-card-title">一致性检查报告（有点推荐） - 2026-08-31</span>
+        </div>
+        <div class="ac-card-meta">
+          <span class="mono">08-31</span>
+          <span>手动</span>
+          <span class="ac-card-meta__ver">v2</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 35 周（待补） -->
+    <div class="week-group">
+      <div class="week-group__head">
+        <span class="week-group__title">第 35 周</span>
+        <span class="week-group__range">08-24 ~ 08-30</span>
+        <span class="week-group__badge is-partial">2/3</span>
+      </div>
+
+      <div class="ac-card is-missing">
+        <div class="ac-card-top">
+          <span class="ac-pill is-missing">研发周报</span>
+          <span class="ac-card-title">未入库</span>
+        </div>
+      </div>
+
+      <div class="ac-card" onclick="location.href='./report-detail.html'">
+        <div class="ac-card-top">
+          <span class="ac-pill is-snack">一致性·零食王国</span>
+          <span class="ac-card-title">一致性检查报告（零食王国） - 2026-08-26</span>
+        </div>
+        <div class="ac-card-meta">
+          <span class="mono">08-26</span>
+          <span>自动</span>
+          <span class="ac-card-meta__ver">v1</span>
+        </div>
+      </div>
+
+      <div class="ac-card" onclick="location.href='./report-detail.html'">
+        <div class="ac-card-top">
+          <span class="ac-pill is-ydtj">一致性·有点推荐</span>
+          <span class="ac-card-title">一致性检查报告（有点推荐） - 2026-08-26</span>
+        </div>
+        <div class="ac-card-meta">
+          <span class="mono">08-26</span>
+          <span>自动</span>
+          <span class="ac-card-meta__ver">v1</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 34 周 -->
+    <div class="week-group">
+      <div class="week-group__head">
+        <span class="week-group__title">第 34 周</span>
+        <span class="week-group__range">08-17 ~ 08-23</span>
+        <span class="week-group__badge is-full">3/3</span>
+      </div>
+
+      <div class="ac-card" onclick="location.href='./report-detail.html'">
+        <div class="ac-card-top">
+          <span class="ac-pill is-weekly">研发周报</span>
+          <span class="ac-card-title">研发周报 - 2026-08-23</span>
+        </div>
+        <div class="ac-card-meta">
+          <span class="mono">08-23</span>
+          <span>自动</span>
+          <span class="ac-card-meta__ver">v1</span>
+        </div>
+      </div>
+    </div>
+    </div>
+   </section>
+  </div>
+</div>
+
+<div class="ac-toast" id="acToast"></div>
+
+<script>
+(function () {
+  /* ── 类型筛选 chips ── */
+  document.querySelectorAll('[data-chip]').forEach(function (chip) {
+    chip.addEventListener('click', function () {
+      document.querySelectorAll('[data-chip]').forEach(function (c) { c.classList.remove('is-active'); });
+      chip.classList.add('is-active');
+      acToast('已筛选：' + chip.textContent.trim());
+    });
+  });
+
+  /* ── 搜索条展开 / 收起 ── */
+  var bar = document.getElementById('searchbar');
+  document.getElementById('searchToggle').addEventListener('click', function () {
+    bar.classList.add('is-open');
+    document.getElementById('searchInput').focus();
+  });
+  document.getElementById('searchCancel').addEventListener('click', function () {
+    bar.classList.remove('is-open');
+    document.getElementById('searchInput').value = '';
+  });
+  document.getElementById('searchInput').addEventListener('keydown', function (e) {
+    if (e.key === 'Enter') acToast('搜索：' + (e.target.value || '（空）'));
+  });
+})();
+
+/* ── Toast ── */
+var acToastTimer;
+function acToast(text) {
+  var box = document.getElementById('acToast');
+  box.textContent = text;
+  box.classList.add('is-open');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2000);
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>费用明细 · 研发成本统计</title>
+<!--
+  cost-detail · Web 原型（requirement-add Step 5）
+  骨架：page-blueprint skeletons/web/form-grouped.vue.tpl（.tpl-page--with-actionbar + 分组 .tpl-panel.tpl-section + 底部 .tpl-actionbar）
+  Token 真源：page-blueprint/tokens/web.css（外链引用，禁止内联 :root）
+  规则真源：references/business-rule.md §2 字段枚举 / §3 品牌分摊规则（比例合计=100%、同品牌唯一、末行倒算防尾差）
+  页面描述：references/web-ui.md §费用明细（编辑态示例：FY202609110001 系统采购 12,000.00）
+-->
+<link rel="stylesheet" href="../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--ac-ff-sans); font-size: var(--ac-fs-md); line-height: var(--ac-lh-normal); color: var(--ac-color-text-1); background: var(--ac-color-fill-2); min-height: 100vh; }
+
+  /* ═══ 骨架容器（form-grouped） ═══ */
+  .tpl-page { width: 100%; max-width: 1400px; margin: 0 auto; padding: var(--ac-space-6); display: flex; flex-direction: column; gap: var(--ac-space-4); }
+  .tpl-page--with-actionbar { padding-bottom: calc(var(--ac-space-6) + 64px); }
+  .tpl-panel { background: var(--ac-color-bg-1); border-radius: var(--ac-radius-lg); box-shadow: var(--ac-shadow-1); padding: var(--ac-space-5); display: flex; flex-direction: column; gap: var(--ac-space-4); }
+  .tpl-section__title { font-size: var(--ac-fs-lg); font-weight: var(--ac-fw-medium); color: var(--ac-color-text-1); }
+  .tpl-section__grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--ac-space-6); row-gap: var(--ac-space-4); }
+  .tpl-section__item { min-width: 0; }
+
+  /* ═══ 只读单据信息区 ═══ */
+  .desc-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); column-gap: var(--ac-space-6); row-gap: var(--ac-space-4); }
+  .desc-item { display: flex; flex-direction: column; gap: var(--ac-space-1); }
+  .desc-item__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-3); }
+  .desc-item__value { font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); }
+  .desc-item__value.is-mono { font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; }
+
+  /* ═══ 表单控件（Ac 渲染输出） ═══ */
+  .ac-form-item { display: flex; flex-direction: column; gap: var(--ac-space-1); min-width: 0; }
+  .ac-form-item__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-2); }
+  .ac-form-item__label .is-required { color: var(--ac-color-danger-6); margin-right: 2px; }
+  .ac-input { display: flex; align-items: center; height: var(--ac-hit-click); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); padding: 0 var(--ac-space-3); }
+  .ac-input__inner { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font-family: inherit; font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); }
+  .ac-input__inner::placeholder { color: var(--ac-color-text-4); }
+  .ac-input:hover, .ac-select:hover, .ac-date-picker:hover { border-color: var(--ac-color-primary-6); }
+  .ac-input.is-readonly, .ac-input:has(.ac-input__inner:disabled) { background: var(--ac-color-fill-1); }
+  .ac-input__suffix { color: var(--ac-color-text-3); font-size: var(--ac-fs-xs); margin-left: var(--ac-space-2); }
+  .ac-select, .ac-date-picker { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); height: var(--ac-hit-click); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); padding: 0 var(--ac-space-3); font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); cursor: pointer; }
+  .ac-select__view, .ac-date-picker__view { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ac-select__suffix, .ac-date-picker__suffix { color: var(--ac-color-text-3); font-size: var(--ac-fs-xs); }
+  .ac-form-item__err { font-size: var(--ac-fs-xs); color: var(--ac-color-danger-6); display: none; }
+  .ac-form-item.is-error .ac-form-item__err { display: block; }
+  .ac-form-item.is-error .ac-input, .ac-form-item.is-error .ac-select, .ac-form-item.is-error .ac-date-picker { border-color: var(--ac-color-danger-6); }
+
+  /* ═══ 按钮 ═══ */
+  .ac-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--ac-hit-click); padding: 0 var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); color: var(--ac-color-text-1); font-family: inherit; font-size: var(--ac-fs-sm); font-weight: var(--ac-fw-medium); white-space: nowrap; cursor: pointer; text-decoration: none; }
+  .ac-btn:hover { border-color: var(--ac-color-primary-6); color: var(--ac-color-primary-6); }
+  .ac-btn--primary { background: var(--ac-color-primary-6); border-color: var(--ac-color-primary-6); color: var(--ac-color-text-white); }
+  .ac-btn--primary:hover { background: var(--ac-color-primary-5); border-color: var(--ac-color-primary-5); color: var(--ac-color-text-white); }
+  .ac-btn--outline { background: var(--ac-color-bg-1); border-color: var(--ac-color-primary-6); color: var(--ac-color-primary-6); }
+  .ac-btn--text { border: 0; background: transparent; color: var(--ac-color-primary-6); padding: 0; height: auto; font-weight: var(--ac-fw-regular); }
+  .ac-btn--text.is-danger { color: var(--ac-color-danger-6); }
+  .ac-btn--text.is-disabled { color: var(--ac-color-text-4); cursor: not-allowed; }
+
+  /* ═══ 状态标签 ═══ */
+  .ac-tag { display: inline-flex; align-items: center; height: 22px; padding: 0 var(--ac-space-3); border-radius: var(--ac-radius-full); font-size: var(--ac-fs-xs); }
+  .ac-tag.is-warning { background: var(--ac-color-warning-1); color: var(--ac-color-warning-6); }
+
+  /* ═══ 分摊明细子表 ═══ */
+  .share-head { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-4); }
+  .share-head__hint { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+  .share-head__actions { display: flex; gap: var(--ac-space-2); }
+  .ac-btn--sm { height: var(--ac-hit-sm); padding: 0 var(--ac-space-3); }
+  .ac-table { width: 100%; border-collapse: collapse; font-size: var(--ac-fs-sm); }
+  .ac-table th { text-align: left; font-weight: var(--ac-fw-medium); color: var(--ac-color-text-2); background: var(--ac-color-fill-1); padding: var(--ac-space-2) var(--ac-space-3); white-space: nowrap; }
+  .ac-table td { padding: var(--ac-space-2) var(--ac-space-3); border-top: 1px solid var(--ac-color-border-1); vertical-align: middle; }
+  .ac-table .cell-num { text-align: right; font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; }
+  .share-brand-select { width: 200px; }
+  .share-ratio-input { width: 140px; }
+  .share-total td { background: var(--ac-color-fill-1); font-weight: var(--ac-fw-medium); }
+  .share-total .is-bad { color: var(--ac-color-danger-6); }
+  .share-total .is-good { color: var(--ac-color-success-6); }
+  .ac-tag.is-info { background: var(--ac-color-info-1); color: var(--ac-color-info-6); border-radius: var(--ac-radius-xs); height: 20px; padding: 0 var(--ac-space-2); }
+  .share-alert { display: none; align-items: center; gap: var(--ac-space-2); padding: var(--ac-space-2) var(--ac-space-3); border-radius: var(--ac-radius-sm); background: var(--ac-color-danger-1); color: var(--ac-color-danger-6); font-size: var(--ac-fs-sm); }
+  .share-alert.is-show { display: flex; }
+
+  /* ═══ 底部 ActionBar ═══ */
+  .tpl-actionbar { position: fixed; left: 0; right: 0; bottom: 0; height: 64px; background: var(--ac-color-bg-1); border-top: 1px solid var(--ac-color-border-2); z-index: var(--ac-z-header); }
+  .tpl-actionbar__inner { height: 100%; max-width: 1400px; margin: 0 auto; display: flex; align-items: center; justify-content: flex-end; gap: var(--ac-space-2); padding: 0 var(--ac-space-6); }
+
+  /* ═══ 原型页间互联条 ═══ */
+  .ac-proto-bar { position: fixed; right: var(--ac-space-5); bottom: calc(64px + var(--ac-space-5)); display: flex; gap: var(--ac-space-1); background: var(--ac-color-text-1); border-radius: var(--ac-radius-full); padding: var(--ac-space-1); z-index: var(--ac-z-toast); box-shadow: var(--ac-shadow-1); }
+  .ac-proto-bar a { font-size: var(--ac-fs-xs); color: var(--ac-color-text-white); text-decoration: none; padding: 2px var(--ac-space-3); border-radius: var(--ac-radius-full); }
+  .ac-proto-bar a.is-active { background: var(--ac-color-primary-6); font-weight: var(--ac-fw-semibold); }
+
+  /* ═══ Toast ═══ */
+  .ac-toast { position: fixed; top: var(--ac-space-6); left: 50%; transform: translateX(-50%); background: var(--ac-color-text-1); color: var(--ac-color-text-white); font-size: var(--ac-fs-sm); padding: var(--ac-space-2) var(--ac-space-4); border-radius: var(--ac-radius-sm); opacity: 0; transition: opacity var(--ac-duration-fast) var(--ac-easing-standard); z-index: var(--ac-z-toast); pointer-events: none; }
+  .ac-toast.is-show { opacity: 1; }
+</style>
+</head>
+<body>
+<section class="tpl-page tpl-page--with-actionbar">
+
+  <!-- 分组 1：单据信息（编辑/查看态只读，新增态不渲染） -->
+  <div class="tpl-panel tpl-section">
+    <h2 class="tpl-section__title">单据信息</h2>
+    <div class="desc-grid">
+      <div class="desc-item"><span class="desc-item__label">流水号</span><span class="desc-item__value is-mono">FY202609110001</span></div>
+      <div class="desc-item"><span class="desc-item__label">单据状态</span><span class="desc-item__value"><span class="ac-tag is-warning">待审核</span></span></div>
+      <div class="desc-item"><span class="desc-item__label">制单人</span><span class="desc-item__value">王芳</span></div>
+      <div class="desc-item"><span class="desc-item__label">制单时间</span><span class="desc-item__value is-mono">2026-09-11 10:23:45</span></div>
+      <div class="desc-item"><span class="desc-item__label">审核人</span><span class="desc-item__value">—</span></div>
+      <div class="desc-item"><span class="desc-item__label">审核时间</span><span class="desc-item__value">—</span></div>
+    </div>
+  </div>
+
+  <!-- 分组 2：单据头 -->
+  <div class="tpl-panel tpl-section">
+    <h2 class="tpl-section__title">费用信息</h2>
+    <form class="ac-form" onsubmit="return false">
+      <div class="tpl-section__grid">
+        <div class="ac-form-item tpl-section__item" id="fiSubject">
+          <label class="ac-form-item__label"><span class="is-required">*</span>费用科目</label>
+          <div class="ac-select">
+            <span class="ac-select__view">系统采购</span>
+            <span class="ac-select__suffix">▾</span>
+          </div>
+          <div class="ac-form-item__err">请选择费用科目</div>
+        </div>
+        <div class="ac-form-item tpl-section__item" id="fiAmount">
+          <label class="ac-form-item__label"><span class="is-required">*</span>费用金额（元）</label>
+          <div class="ac-input">
+            <input class="ac-input__inner" id="amount" value="12000.00" inputmode="decimal">
+          </div>
+          <div class="ac-form-item__err">请输入大于 0 的金额（两位小数）</div>
+        </div>
+        <div class="ac-form-item tpl-section__item" id="fiStartMonth">
+          <label class="ac-form-item__label"><span class="is-required">*</span>费用开始年月</label>
+          <div class="ac-date-picker">
+            <span class="ac-date-picker__view">2026-07</span>
+            <span class="ac-date-picker__suffix">📅</span>
+          </div>
+          <div class="ac-form-item__err">请选择费用开始年月 / 开始年月不能晚于结束年月</div>
+        </div>
+        <div class="ac-form-item tpl-section__item" id="fiEndMonth">
+          <label class="ac-form-item__label"><span class="is-required">*</span>费用结束年月</label>
+          <div class="ac-date-picker">
+            <span class="ac-date-picker__view">2026-09</span>
+            <span class="ac-date-picker__suffix">📅</span>
+          </div>
+          <div class="ac-form-item__err">请选择费用结束年月 / 结束年月不能早于开始年月</div>
+        </div>
+        <div class="ac-form-item tpl-section__item">
+          <label class="ac-form-item__label">月均分摊</label>
+          <div class="ac-input is-readonly">
+            <input class="ac-input__inner" id="monthAvg" disabled>
+          </div>
+        </div>
+      </div>
+    </form>
+  </div>
+
+  <!-- 分组 3：品牌分摊明细（末行倒算防尾差） -->
+  <div class="tpl-panel tpl-section">
+    <div class="share-head">
+      <h2 class="tpl-section__title">品牌分摊明细</h2>
+      <div class="share-head__actions">
+        <button type="button" class="ac-btn ac-btn--sm" id="btnAvg">均摊</button>
+        <button type="button" class="ac-btn ac-btn--sm ac-btn--outline" id="btnAdd">+ 添加分摊品牌</button>
+      </div>
+    </div>
+    <div class="share-head__hint">同一品牌只允许一行；比例合计须等于 100%；最后一行按比例倒算（防尾差），分摊金额 = 费用金额 × 比例</div>
+    <div class="share-alert" id="shareAlert">比例合计须等于 100%，当前差额 <b id="shareDiff">0.00</b>%</div>
+    <table class="ac-table" id="shareTable">
+      <thead>
+        <tr>
+          <th>品牌</th>
+          <th style="text-align:right">分摊比例（%）</th>
+          <th style="text-align:right">分摊金额（元）</th>
+          <th style="width:80px">操作</th>
+        </tr>
+      </thead>
+      <tbody id="shareBody"></tbody>
+      <tfoot>
+        <tr class="share-total">
+          <td>合计</td>
+          <td class="cell-num" id="totalRatio">100.00%</td>
+          <td class="cell-num" id="totalAmount">12,000.00</td>
+          <td></td>
+        </tr>
+      </tfoot>
+    </table>
+  </div>
+
+  <!-- 底部 ActionBar -->
+  <div class="tpl-actionbar">
+    <div class="tpl-actionbar__inner">
+      <a class="ac-btn" href="./cost-list.html">返回</a>
+      <button type="button" class="ac-btn ac-btn--primary" id="btnSave">保存</button>
+    </div>
+  </div>
+</section>
+
+<!-- 原型页间互联 -->
+<div class="ac-proto-bar">
+  <a href="./cost-list.html">费用列表</a>
+  <a href="./cost-detail.html" class="is-active">费用明细</a>
+  <a href="./cost-report.html">品牌成本报表</a>
+</div>
+<div class="ac-toast" id="toast"></div>
+
+<script>
+  var BRANDS = ['零食王国', '有点推荐', '满气食品', '数字化中心'];
+  /* 演示数据：编辑态 FY202609110001，系统采购 12,000.00，末行倒算 */
+  var rows = [
+    { brand: '零食王国', ratio: 50.00 },
+    { brand: '有点推荐', ratio: 30.00 },
+    { brand: '数字化中心', ratio: null } /* null = 末行倒算 */
+  ];
+
+  function fmt(n) { return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function getAmount() {
+    var v = parseFloat(document.getElementById('amount').value);
+    return isNaN(v) ? 0 : Math.round(v * 100) / 100;
+  }
+  function acToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('is-show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function () { t.classList.remove('is-show'); }, 1800);
+  }
+
+  function recalc() {
+    var amount = getAmount();
+    var sumRatio = 0, sumAmount = 0;
+    rows.forEach(function (r, i) {
+      if (i < rows.length - 1) {
+        var ratio = r.ratio || 0;
+        sumRatio = Math.round((sumRatio + ratio) * 100) / 100;
+        r.amount = Math.round(amount * ratio) / 100;
+        sumAmount = Math.round((sumAmount + r.amount) * 100) / 100;
+      }
+    });
+    /* 末行倒算：比例 = 100% − 前行之和；金额 = 总额 − 前行之和（防尾差） */
+    var last = rows[rows.length - 1];
+    last.ratio = Math.round((100 - sumRatio) * 100) / 100;
+    last.amount = Math.round((amount - sumAmount) * 100) / 100;
+    render();
+  }
+
+  function render() {
+    var body = document.getElementById('shareBody');
+    body.innerHTML = '';
+    var usedBrands = rows.map(function (r) { return r.brand; });
+    rows.forEach(function (r, i) {
+      var isLast = i === rows.length - 1;
+      var tr = document.createElement('tr');
+
+      var tdBrand = document.createElement('td');
+      var sel = document.createElement('div');
+      sel.className = 'ac-select share-brand-select';
+      var view = document.createElement('span');
+      view.className = 'ac-select__view' + (r.brand ? '' : ' is-placeholder');
+      view.textContent = r.brand || '请选择品牌';
+      sel.appendChild(view);
+      var suffix = document.createElement('span');
+      suffix.className = 'ac-select__suffix';
+      suffix.textContent = '▾';
+      sel.appendChild(suffix);
+      sel.title = '可选：' + BRANDS.filter(function (b) { return b === r.brand || usedBrands.indexOf(b) < 0; }).join(' / ') + '（已选品牌互斥）';
+      sel.onclick = function () {
+        var candidates = BRANDS.filter(function (b) { return usedBrands.indexOf(b) < 0; });
+        if (!candidates.length) { acToast('4 个品牌均已分摊，无可添加品牌'); return; }
+        r.brand = candidates[0];
+        render();
+      };
+      tdBrand.appendChild(sel);
+      tr.appendChild(tdBrand);
+
+      var tdRatio = document.createElement('td');
+      tdRatio.className = 'cell-num';
+      if (isLast) {
+        var wrap = document.createElement('div');
+        wrap.className = 'ac-input share-ratio-input is-readonly';
+        wrap.style.marginLeft = 'auto';
+        var inp = document.createElement('input');
+        inp.className = 'ac-input__inner';
+        inp.disabled = true;
+        inp.style.textAlign = 'right';
+        inp.value = r.ratio === null ? '' : fmt(r.ratio);
+        wrap.appendChild(inp);
+        var tag = document.createElement('span');
+        tag.className = 'ac-tag is-info';
+        tag.textContent = '倒算';
+        tag.style.marginLeft = 'var(--ac-space-2)';
+        tdRatio.appendChild(wrap);
+        tdRatio.appendChild(tag);
+      } else {
+        var wrap2 = document.createElement('div');
+        wrap2.className = 'ac-input share-ratio-input';
+        wrap2.style.marginLeft = 'auto';
+        var inp2 = document.createElement('input');
+        inp2.className = 'ac-input__inner';
+        inp2.style.textAlign = 'right';
+        inp2.value = r.ratio === null ? '' : fmt(r.ratio);
+        inp2.onchange = function () {
+          var v = parseFloat(inp2.value);
+          if (isNaN(v) || v <= 0 || v > 100) { acToast('比例需大于 0 且不超过 100'); inp2.value = fmt(r.ratio || 0); return; }
+          r.ratio = Math.round(v * 100) / 100;
+          recalc();
+        };
+        wrap2.appendChild(inp2);
+        tdRatio.appendChild(wrap2);
+      }
+      tr.appendChild(tdRatio);
+
+      var tdAmount = document.createElement('td');
+      tdAmount.className = 'cell-num';
+      tdAmount.textContent = r.amount === undefined ? '—' : fmt(r.amount);
+      tr.appendChild(tdAmount);
+
+      var tdOp = document.createElement('td');
+      var del = document.createElement('button');
+      del.type = 'button';
+      del.className = 'ac-btn ac-btn--text is-danger' + (rows.length <= 1 ? ' is-disabled' : '');
+      del.textContent = '删除';
+      del.onclick = function () {
+        if (rows.length <= 1) { acToast('至少保留 1 条分摊明细'); return; }
+        rows.splice(i, 1);
+        recalc();
+      };
+      tdOp.appendChild(del);
+      tr.appendChild(tdOp);
+
+      body.appendChild(tr);
+    });
+
+    /* 合计行与校验 */
+    var totalRatio = rows.reduce(function (s, r) { return s + (r.ratio || 0); }, 0);
+    var totalAmount = rows.reduce(function (s, r) { return s + (r.amount || 0); }, 0);
+    totalRatio = Math.round(totalRatio * 100) / 100;
+    var elR = document.getElementById('totalRatio');
+    var elA = document.getElementById('totalAmount');
+    elR.textContent = fmt(totalRatio) + '%';
+    elA.textContent = fmt(totalAmount);
+    var bad = Math.abs(totalRatio - 100) > 0.004 || (rows[rows.length - 1].ratio <= 0);
+    elR.className = 'cell-num ' + (bad ? 'is-bad' : 'is-good');
+    elA.className = 'cell-num ' + (bad ? 'is-bad' : 'is-good');
+    var alert = document.getElementById('shareAlert');
+    if (Math.abs(totalRatio - 100) > 0.004) {
+      document.getElementById('shareDiff').textContent = fmt(100 - totalRatio);
+      alert.classList.add('is-show');
+    } else if (rows[rows.length - 1].ratio <= 0) {
+      document.getElementById('shareDiff').textContent = '末行倒算 ≤ 0';
+      alert.classList.add('is-show');
+    } else {
+      alert.classList.remove('is-show');
+    }
+    document.getElementById('btnAdd').classList.toggle('is-disabled', rows.length >= 4);
+  }
+
+  document.getElementById('btnAdd').onclick = function () {
+    if (rows.length >= 4) { acToast('明细行数已达品牌总数上限（4 行）'); return; }
+    var used = rows.map(function (r) { return r.brand; });
+    var next = BRANDS.filter(function (b) { return used.indexOf(b) < 0; })[0];
+    /* 新行插入到末行之前，保持末行为倒算行 */
+    rows.splice(rows.length - 1, 0, { brand: next, ratio: 10.00 });
+    recalc();
+  };
+  document.getElementById('btnAvg').onclick = function () {
+    var n = rows.length;
+    var base = Math.floor(10000 / n) / 100;
+    for (var i = 0; i < n - 1; i++) rows[i].ratio = base;
+    recalc();
+    acToast('已按品牌数等比均摊，末行倒算兜底');
+  };
+  var COVER_MONTHS = 3; /* 演示单据覆盖 2026-07 ~ 2026-09 */
+  function updateMonthAvg() {
+    document.getElementById('monthAvg').value = '覆盖 ' + COVER_MONTHS + ' 个月 · 月均 ' + fmt(getAmount() / COVER_MONTHS) + ' 元/月';
+  }
+  document.getElementById('amount').addEventListener('change', function () {
+    var v = getAmount();
+    if (v <= 0) { acToast('请输入大于 0 的金额（两位小数）'); return; }
+    updateMonthAvg();
+    recalc();
+  });
+  document.getElementById('btnSave').onclick = function () {
+    var totalRatio = Math.round(rows.reduce(function (s, r) { return s + (r.ratio || 0); }, 0) * 100) / 100;
+    if (getAmount() <= 0) { acToast('请输入大于 0 的费用金额'); return; }
+    if (rows.some(function (r) { return !r.brand; })) { acToast('存在未选择品牌的分摊行'); return; }
+    if (Math.abs(totalRatio - 100) > 0.004) { acToast('比例合计须等于 100%，请调整后保存'); return; }
+    if (rows[rows.length - 1].ratio <= 0) { acToast('末行倒算比例小于等于 0，请调整前行比例'); return; }
+    acToast('保存成功，1s 后返回费用列表');
+    setTimeout(function () { location.href = './cost-list.html'; }, 1000);
+  };
+
+  updateMonthAvg();
+  recalc();
+</script>
+</body>
+</html>

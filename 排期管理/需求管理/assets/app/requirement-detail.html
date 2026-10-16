@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>需求详情 · 需求管理 App</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Design Tokens
+   真源：.agents/skills/page-blueprint/tokens/web.css + tokens/app.ts (light)
+   ⚠️ 仅本 :root 块允许出现原子字面值；业务样式一律通过 var(--ac-*) 消费
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ---------- palette ---------- */
+  --ac-palette-white:#FFFFFF;
+  --ac-palette-gray-1:#F7F8FA;
+  --ac-palette-gray-2:#F2F3F5;
+  --ac-palette-gray-3:#E5E6EB;
+  --ac-palette-gray-4:#C9CDD4;
+  --ac-palette-gray-6:#86909C;
+  --ac-palette-gray-8:#4E5969;
+  --ac-palette-gray-10:#1D2129;
+  --ac-palette-red-1:#FFECE8;
+  --ac-palette-red-6:#F53F3F;
+  --ac-palette-red-7:#CB272D;
+  --ac-palette-orange-1:#FFF7E8;
+  --ac-palette-orange-6:#FF7D00;
+  --ac-palette-orange-7:#D25F00;
+  --ac-palette-gold-1:#FFFCE8;
+  --ac-palette-gold-7:#CC9213;
+  --ac-palette-green-1:#E8FFEA;
+  --ac-palette-green-6:#00B42A;
+  --ac-palette-green-7:#009A29;
+  --ac-palette-blue-1:#E8F7FF;
+  --ac-palette-blue-6:#3491FA;
+  --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB;
+  --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF;
+  --ac-palette-purple-6:#722ED1;
+  /* ---------- brand ---------- */
+  --ac-brand-red:#E60013;
+  --ac-brand-red-active:#B30010;
+  /* ---------- semantic ---------- */
+  --ac-text-1:var(--ac-palette-gray-10);
+  --ac-text-2:var(--ac-palette-gray-8);
+  --ac-text-3:var(--ac-palette-gray-6);
+  --ac-text-4:var(--ac-palette-gray-4);
+  --ac-text-white:var(--ac-palette-white);
+  --ac-bg-1:var(--ac-palette-white);
+  --ac-bg-2:var(--ac-palette-gray-1);
+  --ac-bg-3:var(--ac-palette-gray-2);
+  --ac-fill-1:var(--ac-palette-gray-1);
+  --ac-fill-2:var(--ac-palette-gray-2);
+  --ac-fill-3:var(--ac-palette-gray-3);
+  --ac-border-1:var(--ac-palette-gray-2);
+  --ac-border-2:var(--ac-palette-gray-3);
+  --ac-primary-1:var(--ac-palette-red-1);
+  --ac-primary-6:var(--ac-palette-red-6);
+  --ac-primary-7:var(--ac-palette-red-7);
+  --ac-success-1:var(--ac-palette-green-1);
+  --ac-success-6:var(--ac-palette-green-6);
+  --ac-success-7:var(--ac-palette-green-7);
+  --ac-warning-1:var(--ac-palette-orange-1);
+  --ac-warning-6:var(--ac-palette-orange-6);
+  --ac-warning-7:var(--ac-palette-orange-7);
+  --ac-danger-1:var(--ac-palette-red-1);
+  --ac-danger-6:var(--ac-palette-red-6);
+  --ac-danger-7:var(--ac-palette-red-7);
+  --ac-info-1:var(--ac-palette-blue-1);
+  --ac-info-6:var(--ac-palette-blue-6);
+  --ac-info-7:var(--ac-palette-blue-7);
+  /* ---------- 业务线四色（与 Web 端映射一致）---------- */
+  --ac-bizline-ops-bg:var(--ac-palette-blue-1);
+  --ac-bizline-ops-fg:var(--ac-palette-blue-7);
+  --ac-bizline-fin-bg:var(--ac-palette-gold-1);
+  --ac-bizline-fin-fg:var(--ac-palette-gold-7);
+  --ac-bizline-scm-bg:var(--ac-palette-cyan-1);
+  --ac-bizline-scm-fg:var(--ac-palette-cyan-7);
+  --ac-bizline-digital-bg:var(--ac-palette-purple-1);
+  --ac-bizline-digital-fg:var(--ac-palette-purple-6);
+  /* ---------- space（rem·1rem = 16px @375 视口）---------- */
+  --ac-space-1:.25rem;
+  --ac-space-2:.5rem;
+  --ac-space-3:.75rem;
+  --ac-space-4:1rem;
+  --ac-space-5:1.25rem;
+  --ac-space-6:1.5rem;
+  --ac-space-8:2rem;
+  --ac-space-10:2.5rem;
+  /* ---------- radius ---------- */
+  --ac-radius-sm:.25rem;
+  --ac-radius-md:.375rem;
+  --ac-radius-lg:.5rem;
+  --ac-radius-xl:.75rem;
+  --ac-radius-2xl:1rem;
+  --ac-radius-full:9999px;
+  /* ---------- shadow / overlay ---------- */
+  --ac-shadow-1:0 .0625rem .125rem 0 rgba(0,0,0,.04);
+  --ac-shadow-2:0 .125rem .5rem 0 rgba(0,0,0,.08);
+  --ac-shadow-3:0 .25rem 1rem 0 rgba(0,0,0,.10);
+  --ac-shadow-up:0 -.125rem .5rem 0 rgba(0,0,0,.06);
+  --ac-mask-bg:rgba(29,33,41,.60);
+  --ac-toast-bg:rgba(29,33,41,.92);
+  --ac-ripple:rgba(255,255,255,.12);
+  --ac-pulse-ring:rgba(52,145,250,.30);
+  --ac-pulse-ring-0:rgba(52,145,250,0);
+  /* ---------- typography ---------- */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:.75rem;
+  --ac-fs-sm:.8125rem;
+  --ac-fs-md:.875rem;
+  --ac-fs-lg:.9375rem;
+  --ac-fs-xl:1rem;
+  --ac-fs-2xl:1.125rem;
+  --ac-fs-3xl:1.25rem;
+  --ac-fw-regular:400;
+  --ac-fw-medium:500;
+  --ac-fw-semibold:600;
+  --ac-fw-bold:700;
+  --ac-lh-tight:1.2;
+  --ac-lh-normal:1.5;
+  --ac-lh-relaxed:1.7;
+  /* ---------- motion / z-index / hit ---------- */
+  --ac-duration-fast:.15s;
+  --ac-duration-base:.25s;
+  --ac-easing-standard:cubic-bezier(.4,0,.2,1);
+  --ac-easing-emphasized:cubic-bezier(.32,.72,.46,.97);
+  --ac-z-header:200;
+  --ac-z-actionbar:300;
+  --ac-z-mask:500;
+  --ac-z-sheet:600;
+  --ac-z-toast:800;
+  --ac-hit-touch:2.75rem;
+  /* ---------- layout ---------- */
+  --ac-device-width:23.4375rem;
+  --ac-h-protobar:2rem;
+  --ac-h-navbar:2.75rem;
+  --ac-safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* 375 设计稿等比：视口 < 375px 时 root 字号随 vw 缩放，其余锁定 16px */
+html{font-size:4.2667vw}
+@media (min-width:23.4375rem){html{font-size:16px}}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);
+  background:var(--ac-bg-3);line-height:var(--ac-lh-normal);
+  min-height:100vh;display:flex;justify-content:center
+}
+
+/* ══ Device Frame ══ */
+.ac-device{
+  width:100%;max-width:var(--ac-device-width);min-height:100vh;
+  background:var(--ac-bg-2);position:relative;box-shadow:var(--ac-shadow-3);
+  display:flex;flex-direction:column
+}
+
+/* ══ Proto Bar ══ */
+.ac-proto-bar{
+  height:var(--ac-h-protobar);flex-shrink:0;background:var(--ac-text-1);
+  display:flex;align-items:center;gap:var(--ac-space-2);padding:0 var(--ac-space-3);
+  position:sticky;top:0;z-index:var(--ac-z-toast);overflow-x:auto;scrollbar-width:none
+}
+.ac-proto-bar::-webkit-scrollbar{display:none}
+.ac-proto-bar a,.ac-proto-bar button{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-text-white);
+  background:var(--ac-ripple);border:0;border-radius:var(--ac-radius-full);
+  padding:.125rem var(--ac-space-2);text-decoration:none;white-space:nowrap;flex-shrink:0
+}
+.ac-proto-bar a.is-active{background:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
+
+/* ══ Navbar ══ */
+.ac-navbar{
+  height:var(--ac-h-navbar);flex-shrink:0;background:var(--ac-brand-red);color:var(--ac-text-white);
+  display:flex;align-items:center;padding:0 var(--ac-space-1);
+  position:sticky;top:var(--ac-h-protobar);z-index:var(--ac-z-header)
+}
+.ac-navbar-back{
+  width:var(--ac-hit-touch);height:var(--ac-hit-touch);display:flex;align-items:center;
+  justify-content:center;color:var(--ac-text-white);background:transparent;border:0
+}
+.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-semibold)}
+.ac-navbar-placeholder{width:var(--ac-hit-touch)}
+
+/* ══ Scroll Container ══ */
+.ac-scroll{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:var(--ac-space-3) var(--ac-space-3) 0
+}
+.ac-scroll.has-actionbar{padding-bottom:calc(var(--ac-space-10) + var(--ac-space-6) + var(--ac-safe-bottom))}
+.ac-scroll:not(.has-actionbar){padding-bottom:var(--ac-space-5)}
+
+/* ══ Card / Section ══ */
+.ac-card{
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);
+  padding:var(--ac-space-4);margin-bottom:var(--ac-space-3);box-shadow:var(--ac-shadow-1)
+}
+.ac-section-title{
+  display:flex;align-items:center;gap:var(--ac-space-2);margin-bottom:var(--ac-space-3);
+  font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1)
+}
+.ac-section-title::before{
+  content:'';width:.1875rem;height:.875rem;border-radius:var(--ac-radius-full);
+  background:var(--ac-brand-red)
+}
+.ac-section-title .sub{
+  margin-left:auto;font-size:var(--ac-fs-xs);font-weight:var(--ac-fw-regular);color:var(--ac-text-3)
+}
+
+/* ══ 需求信息区 ══ */
+.ac-info-head{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-2)}
+.ac-info-code{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.ac-info-title{
+  margin-top:var(--ac-space-2);font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-bold);
+  color:var(--ac-text-1);line-height:var(--ac-lh-normal)
+}
+.ac-info-desc{
+  margin-top:var(--ac-space-2);font-size:var(--ac-fs-md);color:var(--ac-text-2);
+  line-height:var(--ac-lh-relaxed)
+}
+.ac-info-desc.is-clamped{
+  display:-webkit-box;-webkit-line-clamp:5;-webkit-box-orient:vertical;overflow:hidden
+}
+.ac-info-more{
+  margin-top:var(--ac-space-1);font-family:var(--ac-ff-sans);font-size:var(--ac-fs-sm);
+  color:var(--ac-info-7);background:transparent;border:0;padding:0
+}
+.ac-info-tags{
+  display:flex;flex-wrap:wrap;gap:var(--ac-space-1);
+  margin-top:var(--ac-space-3);padding-top:var(--ac-space-3);
+  border-top:.0625rem solid var(--ac-border-1)
+}
+.ac-info-rows{margin-top:var(--ac-space-2)}
+.ac-info-row{display:flex;align-items:flex-start;font-size:var(--ac-fs-md);padding:var(--ac-space-1) 0}
+.ac-info-row .lbl{width:5rem;flex-shrink:0;color:var(--ac-text-3)}
+.ac-info-row .val{flex:1;color:var(--ac-text-1);text-align:right}
+.ac-alert--danger{
+  display:flex;gap:var(--ac-space-2);margin-bottom:var(--ac-space-3);
+  padding:var(--ac-space-2) var(--ac-space-3);border-radius:var(--ac-radius-lg);
+  background:var(--ac-danger-1);color:var(--ac-danger-7);font-size:var(--ac-fs-sm);
+  line-height:var(--ac-lh-normal)
+}
+
+/* ══ Pill / Tag ══ */
+.ac-pill,.ac-tag{
+  display:inline-flex;align-items:center;height:1.25rem;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);
+  font-weight:var(--ac-fw-medium);white-space:nowrap
+}
+.ac-pill--ops{background:var(--ac-bizline-ops-bg);color:var(--ac-bizline-ops-fg)}
+.ac-pill--fin{background:var(--ac-bizline-fin-bg);color:var(--ac-bizline-fin-fg)}
+.ac-pill--scm{background:var(--ac-bizline-scm-bg);color:var(--ac-bizline-scm-fg)}
+.ac-pill--digital{background:var(--ac-bizline-digital-bg);color:var(--ac-bizline-digital-fg)}
+.ac-tag--gray{background:var(--ac-fill-2);color:var(--ac-text-3)}
+.ac-tag--blue{background:var(--ac-info-1);color:var(--ac-info-7)}
+.ac-tag--orange{background:var(--ac-warning-1);color:var(--ac-warning-7)}
+.ac-tag--green{background:var(--ac-success-1);color:var(--ac-success-7)}
+.ac-tag--red{background:var(--ac-danger-1);color:var(--ac-danger-7)}
+
+/* ══ 审批进度时间线（纵向）══ */
+.ac-timeline{position:relative;padding-left:var(--ac-space-6)}
+.ac-timeline::before{
+  content:'';position:absolute;left:.4375rem;top:.5rem;bottom:.75rem;width:.0625rem;
+  background:var(--ac-border-2)
+}
+.ac-tl-node{position:relative;padding-bottom:var(--ac-space-4)}
+.ac-tl-node:last-child{padding-bottom:0}
+.ac-tl-dot{
+  position:absolute;left:calc(var(--ac-space-6) * -1 + .0625rem);top:.375rem;
+  width:.875rem;height:.875rem;border-radius:var(--ac-radius-full);
+  background:var(--ac-bg-1);border:.125rem solid var(--ac-border-2);
+  display:flex;align-items:center;justify-content:center;color:var(--ac-text-white)
+}
+.ac-tl-node--done .ac-tl-dot{background:var(--ac-success-6);border-color:var(--ac-success-6)}
+.ac-tl-node--current .ac-tl-dot{
+  background:var(--ac-info-6);border-color:var(--ac-info-6);
+  animation:ac-pulse 1.6s var(--ac-easing-standard) infinite
+}
+.ac-tl-node--rejected .ac-tl-dot{background:var(--ac-danger-6);border-color:var(--ac-danger-6)}
+@keyframes ac-pulse{
+  0%{box-shadow:0 0 0 0 var(--ac-pulse-ring)}
+  70%{box-shadow:0 0 0 .5rem var(--ac-pulse-ring-0)}
+  100%{box-shadow:0 0 0 0 var(--ac-pulse-ring-0)}
+}
+.ac-tl-body{
+  background:var(--ac-fill-1);border:.0625rem solid var(--ac-border-1);
+  border-radius:var(--ac-radius-lg);padding:var(--ac-space-3)
+}
+.ac-tl-node--current .ac-tl-body{background:var(--ac-info-1);border-color:var(--ac-info-6)}
+.ac-tl-node--done .ac-tl-body{background:var(--ac-bg-1)}
+.ac-tl-head{display:flex;align-items:center;gap:var(--ac-space-2)}
+.ac-tl-step{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1)}
+.ac-tl-head .ac-tag{margin-left:auto}
+.ac-tl-meta{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.ac-tl-person{margin-top:var(--ac-space-1);font-size:var(--ac-fs-sm);color:var(--ac-text-2)}
+.ac-tl-opinion{
+  margin-top:var(--ac-space-2);padding:var(--ac-space-2);border-radius:var(--ac-radius-md);
+  background:var(--ac-bg-1);border:.0625rem dashed var(--ac-border-2);
+  font-size:var(--ac-fs-sm);color:var(--ac-text-2);line-height:var(--ac-lh-normal)
+}
+.ac-tl-extra{
+  margin-top:var(--ac-space-2);font-size:var(--ac-fs-sm);color:var(--ac-success-7)
+}
+
+/* ══ 排期关联区 ══ */
+.ac-plan-card{
+  border:.0625rem solid var(--ac-border-2);border-radius:var(--ac-radius-lg);
+  padding:var(--ac-space-3);margin-bottom:var(--ac-space-2)
+}
+.ac-plan-card:last-child{margin-bottom:0}
+.ac-plan-head{display:flex;align-items:center;gap:var(--ac-space-2)}
+.ac-plan-code{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-md);font-weight:var(--ac-fw-medium);color:var(--ac-text-1)}
+.ac-plan-head .ac-tag{margin-left:auto}
+.ac-plan-rows{margin-top:var(--ac-space-2);display:flex;flex-wrap:wrap;gap:var(--ac-space-1) var(--ac-space-4)}
+.ac-plan-rows span{font-size:var(--ac-fs-sm);color:var(--ac-text-3)}
+.ac-plan-rows b{font-weight:var(--ac-fw-medium);color:var(--ac-text-2)}
+.ac-plan-none{
+  padding:var(--ac-space-5) 0;text-align:center;
+  font-size:var(--ac-fs-md);color:var(--ac-text-3)
+}
+.ac-plan-none .hint{display:block;margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-text-4)}
+
+/* ══ 底部操作栏（SafeArea 内）══ */
+.ac-actionbar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:var(--ac-device-width);
+  display:flex;gap:var(--ac-space-3);
+  padding:var(--ac-space-2) var(--ac-space-4) calc(var(--ac-space-2) + var(--ac-safe-bottom));
+  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-up);z-index:var(--ac-z-actionbar)
+}
+.ac-actionbar[hidden]{display:none}
+.ac-btn{
+  flex:1;height:var(--ac-hit-touch);border-radius:var(--ac-radius-lg);border:.0625rem solid transparent;
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-medium);
+  display:flex;align-items:center;justify-content:center;gap:var(--ac-space-1)
+}
+.ac-btn--approve{background:var(--ac-success-6);color:var(--ac-text-white)}
+.ac-btn--approve:active{background:var(--ac-success-7)}
+.ac-btn--reject{background:var(--ac-danger-1);border-color:var(--ac-danger-6);color:var(--ac-danger-7)}
+.ac-btn--reject:active{background:var(--ac-danger-6);color:var(--ac-text-white)}
+.ac-btn--primary{background:var(--ac-brand-red);color:var(--ac-text-white)}
+.ac-btn--ghost{background:var(--ac-bg-1);border-color:var(--ac-border-2);color:var(--ac-text-2)}
+.ac-btn:disabled{background:var(--ac-fill-3);border-color:transparent;color:var(--ac-text-4)}
+
+/* ══ Mask + Sheet（半屏）══ */
+.ac-mask{
+  position:fixed;inset:0;background:var(--ac-mask-bg);z-index:var(--ac-z-mask);
+  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-base) var(--ac-easing-standard)
+}
+.ac-mask.is-show{opacity:1;pointer-events:auto}
+.ac-sheet{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
+  width:100%;max-width:var(--ac-device-width);
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-2xl) var(--ac-radius-2xl) 0 0;
+  z-index:var(--ac-z-sheet);transition:transform var(--ac-duration-base) var(--ac-easing-emphasized);
+  padding-bottom:var(--ac-safe-bottom);max-height:88vh;display:flex;flex-direction:column
+}
+.ac-sheet.is-show{transform:translateX(-50%) translateY(0)}
+.ac-sheet-bar{
+  width:2.25rem;height:.25rem;border-radius:var(--ac-radius-full);background:var(--ac-fill-3);
+  margin:var(--ac-space-2) auto 0
+}
+.ac-sheet-title{
+  padding:var(--ac-space-3) var(--ac-space-4) 0;
+  font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);text-align:center
+}
+.ac-sheet-body{padding:var(--ac-space-3) var(--ac-space-4);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ac-sheet-foot{
+  display:flex;gap:var(--ac-space-3);padding:var(--ac-space-2) var(--ac-space-4) var(--ac-space-4);
+  border-top:.0625rem solid var(--ac-border-1)
+}
+.ac-textarea{
+  width:100%;min-height:7.5rem;padding:var(--ac-space-3);
+  border:.0625rem solid var(--ac-border-2);border-radius:var(--ac-radius-lg);
+  background:var(--ac-fill-1);color:var(--ac-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);line-height:var(--ac-lh-normal);
+  resize:none;outline:none
+}
+.ac-textarea::placeholder{color:var(--ac-text-4)}
+.ac-textarea:focus{border-color:var(--ac-brand-red);background:var(--ac-bg-1)}
+.ac-counter{
+  margin-top:var(--ac-space-1);display:flex;justify-content:space-between;align-items:center;
+  font-size:var(--ac-fs-xs);color:var(--ac-text-3)
+}
+.ac-counter .err{color:var(--ac-danger-6)}
+.ac-option{
+  display:flex;align-items:center;gap:var(--ac-space-2);width:100%;
+  min-height:var(--ac-hit-touch);padding:0 var(--ac-space-3);margin-bottom:var(--ac-space-2);
+  border:.0625rem solid var(--ac-border-2);border-radius:var(--ac-radius-lg);
+  background:var(--ac-bg-1);font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);
+  color:var(--ac-text-1);text-align:left
+}
+.ac-option .role{margin-left:auto;font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.ac-option.is-checked{border-color:var(--ac-brand-red);background:var(--ac-primary-1);color:var(--ac-primary-7)}
+.ac-field-label{
+  display:block;margin-bottom:var(--ac-space-2);font-size:var(--ac-fs-md);
+  font-weight:var(--ac-fw-medium);color:var(--ac-text-1)
+}
+.ac-field-label .req{color:var(--ac-danger-6);margin-right:.125rem}
+.ac-field-label + .ac-field-tip{margin-top:calc(var(--ac-space-2) * -1)}
+.ac-field-tip{margin-bottom:var(--ac-space-2);font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.ac-sheet-error{
+  margin-bottom:var(--ac-space-2);padding:var(--ac-space-2) var(--ac-space-3);
+  border-radius:var(--ac-radius-md);background:var(--ac-danger-1);color:var(--ac-danger-7);
+  font-size:var(--ac-fs-sm)
+}
+.ac-sheet-error[hidden]{display:none}
+
+/* ══ Toast ══ */
+.ac-toast{
+  position:fixed;top:5rem;left:50%;transform:translateX(-50%) translateY(-.75rem);
+  max-width:17.5rem;padding:var(--ac-space-2) var(--ac-space-4);
+  border-radius:var(--ac-radius-lg);background:var(--ac-toast-bg);color:var(--ac-text-white);
+  font-size:var(--ac-fs-md);text-align:center;z-index:var(--ac-z-toast);
+  opacity:0;pointer-events:none;transition:all var(--ac-duration-base) var(--ac-easing-standard)
+}
+.ac-toast.is-show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ac-toast.is-success{background:var(--ac-success-6)}
+.ac-toast.is-error{background:var(--ac-danger-7)}
+</style>
+</head>
+<body>
+
+<div class="ac-device">
+
+  <!-- Proto Bar：原型互跳 + 视角/排期演示开关 -->
+  <nav class="ac-proto-bar">
+    <a href="requirement-list.html">需求列表</a>
+    <a class="is-active" href="requirement-detail.html">需求详情</a>
+    <a href="requirement-submit.html">提交需求</a>
+    <button type="button" id="demoRole">视角：当前审批人</button>
+    <button type="button" id="demoPlan">排期：未关联</button>
+  </nav>
+
+  <!-- Navbar -->
+  <header class="ac-navbar">
+    <button class="ac-navbar-back" type="button" onclick="location.href='requirement-list.html'" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 class="ac-navbar-title">需求详情</h1>
+    <span class="ac-navbar-placeholder"></span>
+  </header>
+
+  <!-- Scroll Content -->
+  <div class="ac-scroll has-actionbar" id="scroll">
+
+    <!-- 需求信息区 -->
+    <section class="ac-card">
+      <div class="ac-info-head">
+        <span class="ac-info-code">REQ20260728007</span>
+        <span class="ac-tag ac-tag--blue">实施确认中</span>
+      </div>
+      <h2 class="ac-info-title">店仓盘点差异表增加负库存兜底校验规则</h2>
+      <p class="ac-info-desc is-clamped" id="desc">当前店仓盘点差异表在盘亏量大于账面库存时会直接生成负数结论，导致门店无法据此复盘，也无法与中心仓对账。期望在生成差异表时增加负库存兜底：账面库存为负时以 0 参与差异计算，并在明细行标记「负库存兜底」标识，同时在汇总区单独统计兜底行数，便于财务在月结前定位异常门店。上线后需同步更新导出模板与字段说明文档，确保 Web 端与 App 端口径一致。</p>
+      <button class="ac-info-more" type="button" id="descToggle">展开全部</button>
+
+      <div class="ac-info-tags">
+        <span class="ac-pill ac-pill--scm">供应链</span>
+        <span class="ac-tag ac-tag--red">P0 紧急</span>
+        <span class="ac-tag ac-tag--gray">数据报表</span>
+      </div>
+
+      <div class="ac-info-rows">
+        <div class="ac-info-row"><span class="lbl">目标日期</span><span class="val">2026-08-21</span></div>
+        <div class="ac-info-row"><span class="lbl">提交人</span><span class="val">李静 · 供应链管理部</span></div>
+        <div class="ac-info-row"><span class="lbl">提交时间</span><span class="val">2026-07-28 08:30</span></div>
+      </div>
+    </section>
+
+    <!-- 审批进度时间线 -->
+    <section class="ac-card">
+      <h3 class="ac-section-title">审批进度<span class="sub">第 1 轮</span></h3>
+      <div class="ac-timeline">
+
+        <div class="ac-tl-node ac-tl-node--done">
+          <span class="ac-tl-dot">
+            <svg width="8" height="8" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          </span>
+          <div class="ac-tl-body">
+            <div class="ac-tl-head">
+              <span class="ac-tl-step">L1 业务线审批</span>
+              <span class="ac-tag ac-tag--green">已通过</span>
+            </div>
+            <p class="ac-tl-meta">角色：供应链业务线负责人</p>
+            <p class="ac-tl-person">审批人：周涛</p>
+            <p class="ac-tl-opinion">痛点明确，负库存场景本月已出现 3 次，同意进入实施评估。</p>
+            <p class="ac-tl-meta">2026-07-28 09:12</p>
+          </div>
+        </div>
+
+        <div class="ac-tl-node ac-tl-node--current">
+          <span class="ac-tl-dot"></span>
+          <div class="ac-tl-body">
+            <div class="ac-tl-head">
+              <span class="ac-tl-step">L2 实施确认</span>
+              <span class="ac-tag ac-tag--blue">审批中</span>
+            </div>
+            <p class="ac-tl-meta">角色：研发实施负责人</p>
+            <p class="ac-tl-person">审批人：吴迪、韩雪（或签）</p>
+            <p class="ac-tl-meta">已等待 2 天</p>
+          </div>
+        </div>
+
+        <div class="ac-tl-node">
+          <span class="ac-tl-dot"></span>
+          <div class="ac-tl-body">
+            <div class="ac-tl-head">
+              <span class="ac-tl-step">L3 产品确认</span>
+              <span class="ac-tag ac-tag--gray">未开始</span>
+            </div>
+            <p class="ac-tl-meta">角色：产品经理（提交对象）</p>
+            <p class="ac-tl-person">审批人：沈括</p>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- 排期关联区（只读，App 端不提供关联/解除入口） -->
+    <section class="ac-card">
+      <h3 class="ac-section-title">排期关联<span class="sub">只读 · 需到 Web 端操作</span></h3>
+      <div id="planArea"></div>
+    </section>
+
+  </div><!-- /ac-scroll -->
+
+  <!-- 底部操作栏：仅当前审批人可见 -->
+  <div class="ac-actionbar" id="actionbar">
+    <button class="ac-btn ac-btn--approve" type="button" id="btnApprove">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      通过
+    </button>
+    <button class="ac-btn ac-btn--reject" type="button" id="btnReject">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+      驳回
+    </button>
+  </div>
+
+</div><!-- /ac-device -->
+
+<!-- Mask -->
+<div class="ac-mask" id="mask"></div>
+
+<!-- 通过半屏：审批链已于提交时确定，仅填可选意见 -->
+<div class="ac-sheet" id="sheetApprove" role="dialog" aria-modal="true" aria-labelledby="sheetApproveTitle">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title" id="sheetApproveTitle">确认通过</h4>
+  <div class="ac-sheet-body">
+    <p class="ac-field-tip">通过后需求流转至 L3 产品确认（提交对象：沈括）。</p>
+    <span class="ac-field-label">审批意见（选填）</span>
+    <textarea class="ac-textarea" id="approveOpinion" placeholder="填写通过意见，将展示在审批时间线上" maxlength="200"></textarea>
+  </div>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>取消</button>
+    <button class="ac-btn ac-btn--approve" type="button" id="approveConfirm">确认通过</button>
+  </div>
+</div>
+
+<!-- 驳回半屏：意见必填 10–200 字 -->
+<div class="ac-sheet" id="sheetReject" role="dialog" aria-modal="true" aria-labelledby="sheetRejectTitle">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title" id="sheetRejectTitle">驳回原因</h4>
+  <div class="ac-sheet-body">
+    <span class="ac-field-label"><i class="req">*</i>驳回意见</span>
+    <textarea class="ac-textarea" id="rejectOpinion" placeholder="请填写驳回原因，不少于 10 字，将同步通知提交人" maxlength="200"></textarea>
+    <div class="ac-counter">
+      <span class="err" id="rejectTip">驳回意见不少于 10 字</span>
+      <span id="rejectCount">0/200</span>
+    </div>
+  </div>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>取消</button>
+    <button class="ac-btn ac-btn--reject" type="button" id="rejectConfirm" disabled>确认驳回</button>
+  </div>
+</div>
+
+<div class="ac-toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var elMask   = document.getElementById('mask');
+  var elBar    = document.getElementById('actionbar');
+  var elScroll = document.getElementById('scroll');
+  var sheets   = {approve:document.getElementById('sheetApprove'), reject:document.getElementById('sheetReject')};
+  var openKey  = null;
+
+  /* ── Toast ── */
+  var elToast = document.getElementById('toast'), timer = null;
+  function toast(msg, type){
+    elToast.textContent = msg;
+    elToast.className = 'ac-toast is-show' + (type ? ' is-' + type : '');
+    clearTimeout(timer);
+    timer = setTimeout(function(){ elToast.className = 'ac-toast'; }, 2000);
+  }
+
+  /* ── Sheet ── */
+  function openSheet(key){
+    openKey = key;
+    sheets[key].classList.add('is-show');
+    elMask.classList.add('is-show');
+  }
+  function closeSheet(){
+    if(!openKey) return;
+    sheets[openKey].classList.remove('is-show');
+    elMask.classList.remove('is-show');
+    openKey = null;
+  }
+  elMask.addEventListener('click', closeSheet);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function(btn){
+    btn.addEventListener('click', closeSheet);
+  });
+
+  /* ── 描述折叠 ── */
+  var elDesc = document.getElementById('desc');
+  document.getElementById('descToggle').addEventListener('click', function(){
+    var clamped = elDesc.classList.toggle('is-clamped');
+    this.textContent = clamped ? '展开全部' : '收起';
+  });
+
+  /* ── 排期关联区（PENDING 灰 / IN_PROGRESS 蓝 / DONE 绿，真源 mobile-ui.md §全局约定）── */
+  var PLAN_STATUS = {
+    PENDING:     {label:'待开发',   cls:'ac-tag--gray'},
+    IN_PROGRESS: {label:'开发中',   cls:'ac-tag--blue'},
+    DONE:        {label:'开发完成', cls:'ac-tag--green'}
+  };
+  var PLANS = [
+    {code:'FS-20260812-004', status:'IN_PROGRESS', date:'2026-08-12 ~ 2026-08-19', dev:'吴迪'},
+    {code:'FS-20260826-002', status:'PENDING',     date:'2026-08-26 ~ 2026-08-28', dev:'韩雪'},
+    {code:'FS-20260730-007', status:'DONE',        date:'2026-07-30 ~ 2026-08-04', dev:'林可'}
+  ];
+  var elPlan = document.getElementById('planArea');
+  var planLinked = false;
+  /* 一条需求只能关联一张卡片（business-rule §5），PLANS 仅供三种开发状态轮流展示 */
+  var planIndex = 0;
+
+  function renderPlan(){
+    if(!planLinked){
+      elPlan.innerHTML = '<p class="ac-plan-none">待关联排期卡片' +
+        '<span class="hint">产品确认通过后由产品经理在 Web 端关联</span></p>';
+      return;
+    }
+    elPlan.innerHTML = [PLANS[planIndex]].map(function(p){
+      var s = PLAN_STATUS[p.status];
+      return '<div class="ac-plan-card">' +
+               '<div class="ac-plan-head"><span class="ac-plan-code">' + p.code + '</span>' +
+                 '<span class="ac-tag ' + s.cls + '">' + s.label + '</span></div>' +
+               '<div class="ac-plan-rows">' +
+                 '<span>预计排期 <b>' + p.date + '</b></span>' +
+                 '<span>开发人 <b>' + p.dev + '</b></span>' +
+               '</div>' +
+             '</div>';
+    }).join('');
+  }
+
+  document.getElementById('demoPlan').addEventListener('click', function(){
+    planLinked = !planLinked;
+    if(planLinked){ planIndex = (planIndex + 1) % PLANS.length; }
+    this.textContent = planLinked ? '排期：已关联' : '排期：未关联';
+    renderPlan();
+  });
+  renderPlan();
+
+  /* ── 视角切换：仅当前审批人可见底部操作栏 ── */
+  var isApprover = true;
+  document.getElementById('demoRole').addEventListener('click', function(){
+    isApprover = !isApprover;
+    this.textContent = isApprover ? '视角：当前审批人' : '视角：其他角色';
+    elBar.hidden = !isApprover;
+    elScroll.classList.toggle('has-actionbar', isApprover);
+    if(!isApprover) closeSheet();
+    toast(isApprover ? '当前审批人：可执行通过 / 驳回' : '非当前审批人：操作栏已隐藏');
+  });
+
+  /* ── 通过流程（审批链已于提交时确定，无需指派）── */
+  document.getElementById('btnApprove').addEventListener('click', function(){ openSheet('approve'); });
+  document.getElementById('approveConfirm').addEventListener('click', function(){
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = '提交中…';
+    setTimeout(function(){
+      btn.disabled = false;
+      btn.textContent = '确认通过';
+      closeSheet();
+      toast('已通过，需求流转至产品确认', 'success');
+    }, 700);
+  });
+
+  /* ── 驳回流程（意见 10–200 字）── */
+  var elOpinion = document.getElementById('rejectOpinion');
+  var elCount   = document.getElementById('rejectCount');
+  var elTip     = document.getElementById('rejectTip');
+  var elConfirm = document.getElementById('rejectConfirm');
+
+  document.getElementById('btnReject').addEventListener('click', function(){ openSheet('reject'); });
+  elOpinion.addEventListener('input', function(){
+    var len = this.value.trim().length;
+    elCount.textContent = len + '/200';
+    var ok = len >= 10 && len <= 200;
+    elConfirm.disabled = !ok;
+    elTip.textContent = ok ? '' : '驳回意见不少于 10 字';
+  });
+  elConfirm.addEventListener('click', function(){
+    var btn = this;
+    btn.disabled = true;
+    btn.textContent = '提交中…';
+    setTimeout(function(){
+      btn.textContent = '确认驳回';
+      closeSheet();
+      toast('已驳回，需求已退回提交人', 'success');
+      elOpinion.value = '';
+      elCount.textContent = '0/200';
+      elTip.textContent = '驳回意见不少于 10 字';
+    }, 700);
+  });
+})();
+</script>
+</body>
+</html>

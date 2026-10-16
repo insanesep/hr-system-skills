@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<!--
+  需求管理 · 公开 H5 结果页（免登录原型）
+  ================================================================
+  规格真源：../../references/public-ui.md §提交成功页 / §链接失效页
+  DOM 范本：.agents/skills/page-blueprint/skeletons/app/result-page.tsx.tpl
+            拓扑 = .ac-device > .ac-result(插图 > 主标题 > [编号区] > 说明区) > [.ac-result-foot]
+  Token   ：.agents/skills/page-blueprint/tokens/app.ts（下方 :root 为 token 定义层，
+            业务样式一律只写 var(--ac-*)，rem 单位，1rem = 16px @375 视口）
+  边界    ：免登录页面，无侧边菜单/无面包屑/无返回按钮/无登录态组件；
+            真实页面与提交页共用同一路由 /public/requirement?token={token}，
+            按 token 校验结果与提交结果在页内切换渲染，本原型用 ?state= 模拟形态；
+            顶部黑色原型导航条仅供原型预览切换，真实页面不存在。
+  形态    ：success（提交成功）/ used（已提交）/ expired（已过期）/ revoked（已撤销）
+            / invalid（链接无效）/ loading（校验中骨架屏）/ error（网络异常）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>提交结果 · 有点推荐</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Design Tokens
+   真源：.agents/skills/page-blueprint/tokens/app.ts (light)
+   ⚠️ 仅本 :root 块允许出现原子字面值；业务样式一律通过 var(--ac-*) 消费
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ---------- palette ---------- */
+  --ac-palette-white:#FFFFFF;
+  --ac-palette-gray-1:#F7F8FA;
+  --ac-palette-gray-2:#F2F3F5;
+  --ac-palette-gray-3:#E5E6EB;
+  --ac-palette-gray-4:#C9CDD4;
+  --ac-palette-gray-6:#86909C;
+  --ac-palette-gray-8:#4E5969;
+  --ac-palette-gray-10:#1D2129;
+  --ac-palette-red-1:#FFECE8;
+  --ac-palette-red-6:#F53F3F;
+  --ac-palette-red-7:#CB272D;
+  --ac-palette-orange-1:#FFF7E8;
+  --ac-palette-orange-6:#FF7D00;
+  --ac-palette-orange-7:#D25F00;
+  --ac-palette-green-1:#E8FFEA;
+  --ac-palette-green-6:#00B42A;
+  --ac-palette-green-7:#009A29;
+  --ac-palette-blue-1:#E8F7FF;
+  --ac-palette-blue-6:#3491FA;
+  --ac-palette-blue-7:#206CCF;
+  /* ---------- brand ---------- */
+  --ac-brand-red:#E60013;
+  --ac-brand-red-active:#B30010;
+  /* ---------- semantic ---------- */
+  --ac-text-1:var(--ac-palette-gray-10);
+  --ac-text-2:var(--ac-palette-gray-8);
+  --ac-text-3:var(--ac-palette-gray-6);
+  --ac-text-4:var(--ac-palette-gray-4);
+  --ac-text-white:var(--ac-palette-white);
+  --ac-bg-1:var(--ac-palette-white);
+  --ac-bg-2:var(--ac-palette-gray-1);
+  --ac-bg-3:var(--ac-palette-gray-2);
+  --ac-fill-1:var(--ac-palette-gray-1);
+  --ac-fill-2:var(--ac-palette-gray-2);
+  --ac-fill-3:var(--ac-palette-gray-3);
+  --ac-border-1:var(--ac-palette-gray-2);
+  --ac-border-2:var(--ac-palette-gray-3);
+  --ac-primary-1:var(--ac-palette-red-1);
+  --ac-primary-6:var(--ac-palette-red-6);
+  --ac-primary-7:var(--ac-palette-red-7);
+  --ac-success-1:var(--ac-palette-green-1);
+  --ac-success-6:var(--ac-palette-green-6);
+  --ac-success-7:var(--ac-palette-green-7);
+  --ac-warning-1:var(--ac-palette-orange-1);
+  --ac-warning-6:var(--ac-palette-orange-6);
+  --ac-warning-7:var(--ac-palette-orange-7);
+  --ac-danger-1:var(--ac-palette-red-1);
+  --ac-danger-6:var(--ac-palette-red-6);
+  --ac-danger-7:var(--ac-palette-red-7);
+  --ac-info-1:var(--ac-palette-blue-1);
+  --ac-info-6:var(--ac-palette-blue-6);
+  --ac-info-7:var(--ac-palette-blue-7);
+  /* ---------- space（rem·1rem = 16px @375 视口）---------- */
+  --ac-space-1:.25rem;
+  --ac-space-2:.5rem;
+  --ac-space-3:.75rem;
+  --ac-space-4:1rem;
+  --ac-space-5:1.25rem;
+  --ac-space-6:1.5rem;
+  --ac-space-8:2rem;
+  --ac-space-10:2.5rem;
+  /* ---------- radius ---------- */
+  --ac-radius-sm:.25rem;
+  --ac-radius-md:.375rem;
+  --ac-radius-lg:.5rem;
+  --ac-radius-xl:.75rem;
+  --ac-radius-2xl:1rem;
+  --ac-radius-full:9999px;
+  /* ---------- shadow / overlay ---------- */
+  --ac-shadow-1:0 .0625rem .125rem 0 rgba(0,0,0,.04);
+  --ac-shadow-2:0 .125rem .5rem 0 rgba(0,0,0,.08);
+  --ac-shadow-3:0 .25rem 1rem 0 rgba(0,0,0,.10);
+  --ac-toast-bg:rgba(29,33,41,.92);
+  --ac-ripple:rgba(255,255,255,.12);
+  --ac-skeleton-base:#F2F3F5;
+  --ac-skeleton-shine:#E5E6EB;
+  /* ---------- typography ---------- */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:.75rem;
+  --ac-fs-sm:.8125rem;
+  --ac-fs-md:.875rem;
+  --ac-fs-lg:.9375rem;
+  --ac-fs-xl:1rem;
+  --ac-fs-2xl:1.125rem;
+  --ac-fs-3xl:1.25rem;
+  --ac-fs-4xl:1.5rem;
+  --ac-fw-regular:400;
+  --ac-fw-medium:500;
+  --ac-fw-semibold:600;
+  --ac-fw-bold:700;
+  --ac-lh-tight:1.2;
+  --ac-lh-normal:1.5;
+  --ac-lh-relaxed:1.7;
+  /* ---------- motion / z-index / hit ---------- */
+  --ac-duration-fast:.15s;
+  --ac-duration-base:.25s;
+  --ac-duration-slow:1.2s;
+  --ac-easing-standard:cubic-bezier(.4,0,.2,1);
+  --ac-easing-emphasized:cubic-bezier(.32,.72,.46,.97);
+  --ac-z-toast:800;
+  --ac-hit-touch:2.75rem;
+  /* ---------- layout ---------- */
+  --ac-device-width:23.4375rem;
+  --ac-h-protobar:2rem;
+  --ac-illus-size:5rem;
+  --ac-safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* 375 设计稿等比：视口 < 375px 时 root 字号随 vw 缩放，其余锁定 16px */
+html{font-size:4.2667vw}
+@media (min-width:23.4375rem){html{font-size:16px}}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);
+  background:var(--ac-bg-3);line-height:var(--ac-lh-normal);
+  min-height:100vh;display:flex;justify-content:center
+}
+
+/* ══ Device Frame ══ */
+.ac-device{
+  width:100%;max-width:var(--ac-device-width);min-height:100vh;
+  background:var(--ac-bg-1);position:relative;box-shadow:var(--ac-shadow-3);
+  display:flex;flex-direction:column
+}
+
+/* ══ Proto Bar（仅原型预览用，真实页面不存在） ══ */
+.ac-proto-bar{
+  height:var(--ac-h-protobar);flex-shrink:0;background:var(--ac-text-1);
+  display:flex;align-items:center;gap:var(--ac-space-2);padding:0 var(--ac-space-3);
+  position:sticky;top:0;z-index:var(--ac-z-toast);overflow-x:auto;scrollbar-width:none
+}
+.ac-proto-bar::-webkit-scrollbar{display:none}
+.ac-proto-bar a,.ac-proto-bar button{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-text-white);
+  background:var(--ac-ripple);border:0;border-radius:var(--ac-radius-full);
+  padding:.125rem var(--ac-space-2);text-decoration:none;white-space:nowrap;flex-shrink:0;
+  cursor:pointer
+}
+.ac-proto-bar button.is-active{background:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
+
+/* ══ Result 主体（单栏居中·无返回按钮·无导航栏） ══ */
+.ac-result{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:var(--ac-space-10) var(--ac-space-5) var(--ac-space-6);
+  text-align:center
+}
+.ac-illus{
+  width:var(--ac-illus-size);height:var(--ac-illus-size);flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;
+  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-4xl);
+  font-weight:var(--ac-fw-bold);margin-bottom:var(--ac-space-5)
+}
+.ac-illus--success{background:var(--ac-success-1);color:var(--ac-success-7)}
+.ac-illus--used{background:var(--ac-success-1);color:var(--ac-success-7)}
+.ac-illus--expired{background:var(--ac-warning-1);color:var(--ac-warning-7)}
+.ac-illus--revoked{background:var(--ac-fill-2);color:var(--ac-text-3)}
+.ac-illus--invalid{background:var(--ac-fill-2);color:var(--ac-text-3)}
+.ac-illus--error{background:var(--ac-danger-1);color:var(--ac-danger-7)}
+
+.ac-result-title{
+  font-size:var(--ac-fs-3xl);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1);
+  line-height:var(--ac-lh-tight)
+}
+.ac-result-desc{
+  margin-top:var(--ac-space-3);font-size:var(--ac-fs-md);color:var(--ac-text-3);
+  line-height:var(--ac-lh-relaxed)
+}
+
+/* 需求编号区：视觉重点 */
+.ac-no-card{
+  width:100%;margin-top:var(--ac-space-6);padding:var(--ac-space-4);
+  background:var(--ac-bg-2);border-radius:var(--ac-radius-xl);
+  display:flex;flex-direction:column;align-items:center;gap:var(--ac-space-2)
+}
+.ac-no-label{font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.ac-no-value{
+  font-family:var(--ac-ff-mono);font-size:var(--ac-fs-4xl);font-weight:var(--ac-fw-semibold);
+  color:var(--ac-text-1);letter-spacing:.0625rem;
+  /* 长按可选中复制（兜底 clipboard 失败） */
+  -webkit-user-select:text;user-select:text
+}
+.ac-no-copy{
+  min-height:var(--ac-hit-touch);display:inline-flex;align-items:center;
+  background:transparent;border:0;cursor:pointer;padding:0 var(--ac-space-2);
+  font-family:inherit;font-size:var(--ac-fs-md);font-weight:var(--ac-fw-medium);
+  color:var(--ac-brand-red)
+}
+
+/* 说明文案列表（灰色 3 行） */
+.ac-notes{
+  width:100%;margin-top:var(--ac-space-5);display:flex;flex-direction:column;
+  gap:var(--ac-space-2);text-align:left
+}
+.ac-note{
+  display:flex;gap:var(--ac-space-2);font-size:var(--ac-fs-md);
+  color:var(--ac-text-3);line-height:var(--ac-lh-relaxed)
+}
+.ac-note-dot{flex-shrink:0;color:var(--ac-text-4)}
+.ac-note strong{color:var(--ac-text-2);font-weight:var(--ac-fw-medium)}
+
+/* 统一引导文案 */
+.ac-guide{
+  width:100%;margin-top:var(--ac-space-6);padding:var(--ac-space-3);
+  background:var(--ac-bg-2);border-radius:var(--ac-radius-lg);
+  font-size:var(--ac-fs-md);color:var(--ac-text-3);line-height:var(--ac-lh-relaxed)
+}
+
+/* 底部 inline 提示 */
+.ac-result-foot{
+  flex-shrink:0;padding:var(--ac-space-4) var(--ac-space-5)
+    calc(var(--ac-space-5) + var(--ac-safe-bottom));
+  font-size:var(--ac-fs-xs);color:var(--ac-text-4);text-align:center
+}
+
+/* 错误态的重新加载按钮（仅 error 形态出现，非失效形态） */
+.ac-btn{
+  min-width:9rem;min-height:var(--ac-hit-touch);margin-top:var(--ac-space-6);
+  display:inline-flex;align-items:center;justify-content:center;
+  border:0;border-radius:var(--ac-radius-full);cursor:pointer;
+  font-family:inherit;font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);
+  background:var(--ac-fill-2);color:var(--ac-text-1);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)
+}
+.ac-btn--primary{background:var(--ac-brand-red);color:var(--ac-text-white)}
+.ac-btn--primary:active{background:var(--ac-brand-red-active)}
+
+/* ══ Skeleton（token 校验中·与提交页共用同一加载态） ══ */
+.ac-skeleton{
+  flex:1;display:flex;flex-direction:column;align-items:center;
+  padding:var(--ac-space-10) var(--ac-space-5)
+}
+.ac-sk-block{
+  background:var(--ac-skeleton-base);border-radius:var(--ac-radius-lg);
+  animation:ac-sk-pulse var(--ac-duration-slow) var(--ac-easing-standard) infinite
+}
+.ac-sk-circle{
+  width:var(--ac-illus-size);height:var(--ac-illus-size);
+  border-radius:var(--ac-radius-full);margin-bottom:var(--ac-space-5)
+}
+.ac-sk-line-lg{width:60%;height:1.25rem;margin-bottom:var(--ac-space-3)}
+.ac-sk-line-md{width:80%;height:.875rem;margin-bottom:var(--ac-space-2)}
+.ac-sk-line-sm{width:50%;height:.875rem}
+@keyframes ac-sk-pulse{
+  0%,100%{background:var(--ac-skeleton-base)}
+  50%{background:var(--ac-skeleton-shine)}
+}
+
+/* ══ Toast ══ */
+.ac-toast{
+  position:fixed;left:50%;bottom:var(--ac-space-10);transform:translateX(-50%);
+  max-width:18rem;padding:var(--ac-space-2) var(--ac-space-4);
+  background:var(--ac-toast-bg);color:var(--ac-text-white);border-radius:var(--ac-radius-full);
+  font-size:var(--ac-fs-md);text-align:center;z-index:var(--ac-z-toast);
+  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-base) var(--ac-easing-standard)
+}
+.ac-toast.is-open{opacity:1}
+
+.is-hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="ac-device">
+
+  <!-- 原型导航条：仅供原型预览切换，真实公开页面不存在 -->
+  <div class="ac-proto-bar">
+    <a href="requirement-public-submit.html">提交页</a>
+    <button data-state="success">提交成功</button>
+    <button data-state="used">已提交</button>
+    <button data-state="expired">已过期</button>
+    <button data-state="revoked">已撤销</button>
+    <button data-state="invalid">链接无效</button>
+    <button data-state="loading">校验中</button>
+    <button data-state="error">网络异常</button>
+  </div>
+
+  <!-- ══════════ 加载态：token 校验中的整页骨架屏 ══════════ -->
+  <div class="ac-skeleton is-hidden" id="viewLoading">
+    <div class="ac-sk-block ac-sk-circle"></div>
+    <div class="ac-sk-block ac-sk-line-lg"></div>
+    <div class="ac-sk-block ac-sk-line-md"></div>
+    <div class="ac-sk-block ac-sk-line-sm"></div>
+  </div>
+
+  <!-- ══════════ 结果主体：成功态与四类失效态共用同一骨架 ══════════ -->
+  <div class="ac-result is-hidden" id="viewResult">
+
+    <div class="ac-illus" id="rIllus">✓</div>
+    <div class="ac-result-title" id="rTitle">提交成功</div>
+    <div class="ac-result-desc is-hidden" id="rDesc"></div>
+
+    <!-- 需求编号区：仅 success / used 形态渲染 -->
+    <div class="ac-no-card is-hidden" id="rNoCard">
+      <span class="ac-no-label">需求编号</span>
+      <span class="ac-no-value" id="rNo">REQ-20260806-011</span>
+      <button class="ac-no-copy" id="btnCopy">复制编号</button>
+    </div>
+
+    <!-- 说明文案区：仅 success 形态渲染 3 行 -->
+    <div class="ac-notes is-hidden" id="rNotes">
+      <div class="ac-note"><span class="ac-note-dot">·</span><span>请保存该编号作为提交凭证</span></div>
+      <div class="ac-note"><span class="ac-note-dot">·</span><span>内部团队将对需求进行评估，<strong>处理结果由邀约人线下告知你</strong></span></div>
+      <div class="ac-note"><span class="ac-note-dot">·</span><span>系统不会向你发送短信或其他通知</span></div>
+    </div>
+
+    <!-- 统一引导文案：四类失效态渲染 -->
+    <div class="ac-guide is-hidden" id="rGuide">
+      如仍需提交需求，请联系向你发送链接的邀约人重新获取。
+    </div>
+
+    <!-- 重新加载：仅 error 形态渲染（网络异常与链接失效严格区分） -->
+    <button class="ac-btn ac-btn--primary is-hidden" id="btnReload">重新加载</button>
+  </div>
+
+  <!-- 底部 inline 提示：仅 success 形态渲染 -->
+  <div class="ac-result-foot is-hidden" id="rFoot">
+    本链接已完成提交，再次打开将不能再填写
+  </div>
+
+</div>
+
+<div class="ac-toast" id="toast"></div>
+
+<script>
+/* ══════════════════════════════════════════════════════════════════════
+   形态配置
+   真实页面：由 token 校验接口 + 提交接口返回决定形态，无 URL 参数
+   本原型  ：用 ?state= 模拟，便于逐形态预览
+   ══════════════════════════════════════════════════════════════════════ */
+var SUBMIT_LIMIT = 1;                  /* 链接配置的提交次数上限，由后端下发 */
+
+var STATES = {
+  success: {
+    illus: 'success', glyph: '✓',
+    title: '提交成功',
+    desc: '',
+    no: true, notes: true, guide: false, foot: true, reload: false
+  },
+  used: {
+    illus: 'used', glyph: '✓',
+    title: '该链接已完成提交',
+    desc: '你已通过本链接提交过需求，每个链接仅可提交 ' + SUBMIT_LIMIT + ' 次',
+    no: true, notes: false, guide: true, foot: false, reload: false
+  },
+  expired: {
+    illus: 'expired', glyph: '!',
+    title: '链接已过期',
+    /* 不展示过期时间，避免暴露内部有效期策略 */
+    desc: '该邀约链接已超过有效期，无法继续提交',
+    no: false, notes: false, guide: true, foot: false, reload: false
+  },
+  revoked: {
+    illus: 'revoked', glyph: '—',
+    title: '链接已失效',
+    /* 不展示撤销原因与撤销人 */
+    desc: '该邀约链接已被发放人收回，无法继续提交',
+    no: false, notes: false, guide: true, foot: false, reload: false
+  },
+  invalid: {
+    illus: 'invalid', glyph: '?',
+    title: '链接无效',
+    desc: '链接不完整或已失效，请确认是否从邀约人处完整复制',
+    no: false, notes: false, guide: true, foot: false, reload: false
+  },
+  error: {
+    illus: 'error', glyph: '!',
+    title: '加载失败',
+    /* 网络异常 ≠ 链接失效：文案不提「过期/撤销/无效」，并给出重试出口 */
+    desc: '网络异常，暂时无法打开页面，请检查网络后重试',
+    no: false, notes: false, guide: false, foot: false, reload: true
+  }
+};
+
+var viewLoading = document.getElementById('viewLoading');
+var viewResult = document.getElementById('viewResult');
+var rIllus = document.getElementById('rIllus');
+var rTitle = document.getElementById('rTitle');
+var rDesc = document.getElementById('rDesc');
+var rNoCard = document.getElementById('rNoCard');
+var rNo = document.getElementById('rNo');
+var rNotes = document.getElementById('rNotes');
+var rGuide = document.getElementById('rGuide');
+var rFoot = document.getElementById('rFoot');
+var btnReload = document.getElementById('btnReload');
+var btnCopy = document.getElementById('btnCopy');
+
+function toggle(el, show) { el.classList[show ? 'remove' : 'add']('is-hidden'); }
+
+function render(state, no) {
+  /* 加载态：整页骨架屏，与提交页共用同一形态 */
+  if (state === 'loading') {
+    toggle(viewLoading, true);
+    toggle(viewResult, false);
+    toggle(rFoot, false);
+    return;
+  }
+  var cfg = STATES[state] || STATES.invalid;
+  toggle(viewLoading, false);
+  toggle(viewResult, true);
+
+  rIllus.className = 'ac-illus ac-illus--' + cfg.illus;
+  rIllus.textContent = cfg.glyph;
+  rTitle.textContent = cfg.title;
+
+  rDesc.textContent = cfg.desc;
+  toggle(rDesc, !!cfg.desc);
+
+  if (cfg.no && no) rNo.textContent = no;
+  toggle(rNoCard, cfg.no);
+  toggle(rNotes, cfg.notes);
+  toggle(rGuide, cfg.guide);
+  toggle(rFoot, cfg.foot);
+  toggle(btnReload, cfg.reload);
+
+  document.title = cfg.title + ' · 有点推荐';
+}
+
+/* ── 复制编号：失败兜底提示长按选中 ── */
+btnCopy.addEventListener('click', function () {
+  var text = rNo.textContent.trim();
+  var done = function () { acToast('需求编号已复制'); };
+  var fail = function () { acToast('复制失败，请手动长按选中编号'); };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(text).then(done).catch(fail);
+  } else {
+    fail();
+  }
+});
+
+/* ── 重新加载：仅网络异常态可用，重新走 token 校验 ── */
+btnReload.addEventListener('click', function () {
+  render('loading');
+  /* 原型演示：模拟重试后校验成功但链接已被使用 */
+  setTimeout(function () { render('used', 'REQ-20260806-011'); }, 900);
+});
+
+/* ── 原型导航：切换形态（真实页面无此入口） ── */
+Array.prototype.forEach.call(document.querySelectorAll('[data-state]'), function (btn) {
+  btn.addEventListener('click', function () {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-state]'), function (b) {
+      b.classList.remove('is-active');
+    });
+    btn.classList.add('is-active');
+    render(btn.getAttribute('data-state'), 'REQ-20260806-011');
+  });
+});
+
+/* ── Toast ── */
+var toastEl = document.getElementById('toast');
+var toastTimer = null;
+function acToast(msg) {
+  toastEl.textContent = msg;
+  toastEl.classList.add('is-open');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function () { toastEl.classList.remove('is-open'); }, 2000);
+}
+
+/* ── 入口：按 URL query 初始化形态（与提交页 location.replace 对齐） ── */
+(function init() {
+  var q = new URLSearchParams(location.search);
+  var state = q.get('state') || 'success';
+  var no = q.get('no') || 'REQ-20260806-011';
+  var active = document.querySelector('[data-state="' + state + '"]');
+  if (active) active.classList.add('is-active');
+  render(state, no);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,770 @@
+<!doctype html>
+<!--
+  需求管理 · 需求详情页（Web 端原型）
+  ================================================================
+  规格真源：../../references/web-ui.md §需求详情页
+  DOM 范本：.agents/skills/page-blueprint/skeletons/web/detail-page.vue.tpl
+            拓扑 = .tpl-page--with-actionbar > [信息卡 panel] > [审批时间线 panel]
+                   > [排期关联 panel] > .tpl-actionbar（沉底）
+  Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
+            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
+  当前示例状态：IMPL_REVIEWING 实施确认中（L2 为当前待审节点，登录人=当前审批人）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>需求详情 · 需求管理</title>
+<style>
+/* ==========================================================================
+   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
+   ========================================================================== */
+:root{
+  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
+  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
+  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+  --ac-success-1:#E8FFEA; --ac-success-5:#23C343; --ac-success-6:#00B42A; --ac-success-7:#009A29;
+  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
+  --ac-danger-1:#FFECE8; --ac-danger-5:#F76560; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
+  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
+  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
+  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
+  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
+  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
+  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
+  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
+  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
+  --ac-lh-normal:1.5; --ac-lh-relaxed:1.7; --ac-lh-tight:1.2;
+  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+  --ac-z-dropdown:100; --ac-z-sticky:10; --ac-z-toast:800;
+}
+
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-breadcrumb{display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) 0;font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
+.tpl-breadcrumb a{color:var(--ac-color-text-3);text-decoration:none}
+.tpl-breadcrumb a:hover{color:var(--ac-primary-6)}
+.tpl-breadcrumb__sep{color:var(--ac-text-4)}
+.tpl-breadcrumb__current{color:var(--ac-color-text-1)}
+
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-page--with-actionbar{padding-bottom:var(--ac-space-8)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
+  display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel__title{margin:0;font-size:var(--ac-fs-xl);line-height:var(--ac-lh-normal);
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-1)}
+.tpl-panel__title-row{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);text-decoration:none;
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--secondary{background:var(--ac-fill-2);border-color:transparent}
+.ac-btn--secondary:hover{background:var(--ac-fill-3)}
+.ac-btn--success{background:var(--ac-color-success);border-color:var(--ac-color-success);color:var(--ac-text-white)}
+.ac-btn--success:hover{background:var(--ac-success-5);border-color:var(--ac-success-5)}
+.ac-btn--danger{background:var(--ac-color-danger);border-color:var(--ac-color-danger);color:var(--ac-text-white)}
+.ac-btn--danger:hover{background:var(--ac-danger-5);border-color:var(--ac-danger-5)}
+.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;color:var(--ac-primary-6)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+.ac-btn--lg{height:36px;padding:0 var(--ac-space-5)}
+
+/* ===== 标签 ===== */
+.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
+.ac-tag--pill{border-radius:var(--ac-radius-full);padding:0 var(--ac-space-3)}
+.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
+.ac-tag.is-processing{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
+.ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
+.ac-tag.is-ops{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-fin{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
+.ac-tag.is-scm{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
+.ac-tag.is-digital{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
+
+/* ===== Panel A · 需求信息卡 ===== */
+.tpl-detail__head{display:flex;align-items:flex-start;justify-content:space-between;gap:var(--ac-space-4)}
+.tpl-detail__head-main{display:flex;flex-direction:column;gap:var(--ac-space-2);min-width:0}
+.tpl-detail__code{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);color:var(--ac-color-text-3)}
+.tpl-detail__title-row{display:flex;align-items:center;gap:var(--ac-space-3);flex-wrap:wrap}
+.tpl-detail__title{margin:0;font-size:var(--ac-fs-3xl);line-height:var(--ac-lh-tight);
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-1)}
+.tpl-desc__grid{margin:0;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  column-gap:var(--ac-space-5);row-gap:var(--ac-space-3)}
+.tpl-desc__item{display:flex;align-items:baseline;gap:var(--ac-space-2);min-width:0}
+.tpl-desc__item--full{grid-column:1 / -1}
+.tpl-desc__label{flex-shrink:0;min-width:84px;text-align:right;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
+.tpl-desc__value{margin:0;flex:1;min-width:0;font-size:var(--ac-fs-md);
+  color:var(--ac-color-text-1);word-break:break-word}
+.tpl-desc__value--rich{line-height:var(--ac-lh-relaxed);color:var(--ac-color-text-2)}
+
+/* ===== Panel B · 审批进度时间线（纵向步骤条） ===== */
+.tpl-timeline{display:flex;flex-direction:column}
+.tpl-timeline__node{display:grid;grid-template-columns:24px minmax(0,1fr);
+  gap:var(--ac-space-4);padding-bottom:var(--ac-space-5)}
+.tpl-timeline__node:last-child{padding-bottom:0}
+.tpl-timeline__rail{position:relative;display:flex;justify-content:center}
+.tpl-timeline__dot{position:relative;z-index:1;width:22px;height:22px;flex-shrink:0;
+  display:inline-flex;align-items:center;justify-content:center;
+  border:2px solid var(--ac-border-3);border-radius:var(--ac-radius-full);
+  background:var(--ac-bg-1);font-size:var(--ac-fs-xs);font-weight:var(--ac-fw-semibold);
+  color:var(--ac-color-text-3)}
+.tpl-timeline__line{position:absolute;top:22px;bottom:calc(-1 * var(--ac-space-5));
+  width:2px;background:var(--ac-border-2)}
+.tpl-timeline__node:last-child .tpl-timeline__line{display:none}
+.tpl-timeline__card{border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-4);display:flex;flex-direction:column;gap:var(--ac-space-3)}
+.tpl-timeline__head{display:flex;align-items:center;gap:var(--ac-space-2);flex-wrap:wrap}
+.tpl-timeline__level{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
+  padding:0 var(--ac-space-1);border-radius:var(--ac-radius-xs);
+  background:var(--ac-fill-2);color:var(--ac-color-text-2)}
+.tpl-timeline__role{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-medium);color:var(--ac-color-text-1)}
+.tpl-timeline__meta{margin:0;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));
+  column-gap:var(--ac-space-5);row-gap:var(--ac-space-2)}
+.tpl-timeline__opinion{padding:var(--ac-space-3);background:var(--ac-fill-1);
+  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-sm);color:var(--ac-color-text-2);
+  line-height:var(--ac-lh-relaxed)}
+.tpl-timeline__extra{font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.tpl-timeline__extra strong{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+/* 已通过 → 绿 */
+.tpl-timeline__node.is-passed .tpl-timeline__dot{background:var(--ac-color-success);
+  border-color:var(--ac-color-success);color:var(--ac-text-white)}
+.tpl-timeline__node.is-passed .tpl-timeline__line{background:var(--ac-success-1)}
+/* 当前节点 → 蓝色高亮描边 */
+.tpl-timeline__node.is-current .tpl-timeline__dot{border-color:var(--ac-palette-blue-6);
+  color:var(--ac-palette-blue-7)}
+.tpl-timeline__node.is-current .tpl-timeline__card{border-color:var(--ac-palette-blue-6);
+  background:var(--ac-palette-blue-1)}
+.tpl-timeline__node.is-current .tpl-timeline__opinion{background:var(--ac-bg-1)}
+/* 未开始 → 灰 */
+.tpl-timeline__node.is-pending .tpl-timeline__card{background:var(--ac-fill-1);border-style:dashed}
+.tpl-timeline__node.is-pending .tpl-timeline__role{color:var(--ac-color-text-2)}
+.tpl-timeline__history{display:flex;align-items:center;gap:var(--ac-space-2);
+  padding-top:var(--ac-space-3);border-top:1px solid var(--ac-border-1);
+  font-size:var(--ac-fs-sm);color:var(--ac-color-text-3)}
+
+/* ===== Panel C · 排期关联区 ===== */
+.tpl-link__row{display:flex;align-items:center;justify-content:space-between;
+  gap:var(--ac-space-4);padding:var(--ac-space-4);
+  border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm)}
+.tpl-link__fields{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+  column-gap:var(--ac-space-5);row-gap:var(--ac-space-2);flex:1;min-width:0}
+.tpl-link__empty{display:flex;flex-direction:column;align-items:center;gap:var(--ac-space-3);
+  padding:var(--ac-space-8) var(--ac-space-5);background:var(--ac-fill-1);
+  border-radius:var(--ac-radius-sm)}
+.tpl-link__empty-icon{width:48px;height:48px;display:inline-flex;align-items:center;
+  justify-content:center;border-radius:var(--ac-radius-full);background:var(--ac-fill-3);
+  color:var(--ac-color-text-3);font-size:var(--ac-fs-3xl)}
+.tpl-link__empty-text{font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
+.tpl-variant{border-top:1px dashed var(--ac-border-2);padding-top:var(--ac-space-4);
+  display:flex;flex-direction:column;gap:var(--ac-space-3)}
+.tpl-variant__cap{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.cell-link{color:var(--ac-primary-6);text-decoration:none;font-family:var(--ac-ff-mono);
+  font-size:var(--ac-fs-sm)}
+.cell-link:hover{text-decoration:underline}
+
+/* ===== 底部固定 ActionBar（意见 + 通过/驳回） ===== */
+.tpl-actionbar{position:fixed;left:0;right:0;bottom:0;min-width:1200px;
+  background:var(--ac-bg-1);border-top:1px solid var(--ac-border-2);
+  box-shadow:var(--ac-shadow-2);z-index:var(--ac-z-sticky)}
+.tpl-actionbar__inner{display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--ac-space-3);padding:var(--ac-space-3) var(--ac-space-5)}
+.tpl-actionbar__field{flex:1;min-width:0;display:flex;align-items:center;gap:var(--ac-space-3)}
+.tpl-actionbar__label{flex-shrink:0;font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.ac-textarea{flex:1;min-width:0;height:40px;padding:var(--ac-space-2) var(--ac-space-3);
+  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);resize:vertical}
+.ac-textarea::placeholder{color:var(--ac-color-text-3)}
+.ac-textarea:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+.tpl-actionbar__tip{flex-shrink:0;font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+body{padding-bottom:72px}
+
+/* ===== 关联排期弹窗（AcModal，web-ui.md「关联排期弹窗」小节） ===== */
+.ac-modal-mask{position:fixed;inset:0;display:none;align-items:flex-start;justify-content:center;
+  padding-top:10vh;background:rgba(0,0,0,0.45);z-index:var(--ac-z-dropdown)}
+.ac-modal-mask.is-open{display:flex}
+.ac-modal{width:760px;max-height:76vh;display:flex;flex-direction:column;
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3)}
+.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__title{margin:0;font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-medium)}
+.ac-modal__close{border:none;background:transparent;cursor:pointer;
+  font-size:var(--ac-fs-xl);color:var(--ac-color-text-3);line-height:1}
+.ac-modal__tabs{display:flex;gap:var(--ac-space-5);padding:0 var(--ac-space-5);
+  border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__tab{padding:var(--ac-space-3) 0;border:none;background:transparent;cursor:pointer;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-2);
+  border-bottom:2px solid transparent}
+.ac-modal__tab.is-active{color:var(--ac-primary-6);border-bottom-color:var(--ac-primary-6);
+  font-weight:var(--ac-fw-medium)}
+.ac-modal__body{padding:var(--ac-space-4) var(--ac-space-5);overflow-y:auto;
+  display:flex;flex-direction:column;gap:var(--ac-space-3)}
+.ac-modal__pane{display:none;flex-direction:column;gap:var(--ac-space-3)}
+.ac-modal__pane.is-active{display:flex}
+.ac-modal__search-row{display:flex;gap:var(--ac-space-2)}
+.ac-input,.ac-select{height:32px;padding:0 var(--ac-space-3);
+  border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  background:var(--ac-bg-1)}
+.ac-input:focus,.ac-select:focus{outline:none;border-color:var(--ac-primary-6)}
+.ac-input--grow{flex:1;min-width:0}
+.ac-filterbar{display:flex;align-items:center;gap:var(--ac-space-2);flex-wrap:wrap}
+.ac-filterbar__label{font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.ac-filterbar__hint{width:100%;font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.ac-cardtable{width:100%;border-collapse:collapse;font-size:var(--ac-fs-sm)}
+.ac-cardtable th{padding:var(--ac-space-2) var(--ac-space-3);text-align:left;
+  background:var(--ac-fill-1);color:var(--ac-color-text-2);font-weight:var(--ac-fw-medium);
+  border-bottom:1px solid var(--ac-border-2);white-space:nowrap}
+.ac-cardtable td{padding:var(--ac-space-2) var(--ac-space-3);
+  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1);vertical-align:middle}
+.ac-cardtable tbody tr{cursor:pointer}
+.ac-cardtable tbody tr:hover{background:var(--ac-fill-1)}
+.ac-cardtable tbody tr.is-selected{background:var(--ac-primary-1)}
+.ac-cardtable .cell-no{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
+  color:var(--ac-color-text-2);white-space:nowrap}
+.ac-cardtable .cell-title{max-width:180px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-cardtable__empty td{padding:var(--ac-space-6);text-align:center;color:var(--ac-color-text-3)}
+.ac-linked-badge{display:inline-flex;align-items:center;height:20px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);background:var(--ac-color-warning-1);
+  color:var(--ac-color-warning-7);font-size:var(--ac-fs-xs);white-space:nowrap;cursor:help}
+.ac-search-result{border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-3) var(--ac-space-4);display:none;flex-direction:column;gap:var(--ac-space-2)}
+.ac-search-result.is-open{display:flex}
+.ac-search-result__row{display:flex;align-items:center;gap:var(--ac-space-4);flex-wrap:wrap;
+  font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.ac-search-result__row strong{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+.ac-modal__confirm{display:none;align-items:center;justify-content:space-between;gap:var(--ac-space-3);
+  margin:0 var(--ac-space-5);padding:var(--ac-space-3) var(--ac-space-4);
+  background:var(--ac-color-warning-1);border-radius:var(--ac-radius-sm)}
+.ac-modal__confirm.is-open{display:flex}
+.ac-modal__confirm-text{font-size:var(--ac-fs-sm);color:var(--ac-color-warning-7)}
+.ac-modal__foot{display:flex;align-items:center;justify-content:flex-end;gap:var(--ac-space-3);
+  padding:var(--ac-space-3) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
+.ac-btn:disabled{opacity:0.5;cursor:not-allowed}
+
+/* ===== Toast ===== */
+.ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
+  display:none;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);z-index:var(--ac-z-toast)}
+.ac-toast.is-open{display:flex}
+.ac-toast__icon{color:var(--ac-color-success)}
+.ac-toast.is-error .ac-toast__icon{color:var(--ac-color-danger)}
+
+/* ===== 响应式 ===== */
+@media (max-width:1280px){
+  .tpl-desc__grid,.tpl-link__fields{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+
+  <nav class="tpl-breadcrumb">
+    <a href="#">首页</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="#">研发</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="./requirement-list.html">需求管理</a><span class="tpl-breadcrumb__sep">/</span>
+    <span class="tpl-breadcrumb__current">需求详情</span>
+  </nav>
+
+  <section class="tpl-page tpl-page--with-actionbar">
+
+    <!-- ① 需求信息卡 -->
+    <div class="tpl-panel">
+      <div class="tpl-detail__head">
+        <div class="tpl-detail__head-main">
+          <span class="tpl-detail__code">REQ-20260731-012</span>
+          <div class="tpl-detail__title-row">
+            <h1 class="tpl-detail__title">会员储值到期提醒规则调整</h1>
+            <span class="ac-tag is-processing">实施确认中</span>
+          </div>
+        </div>
+        <!-- 编辑按钮：仅提交人本人 + 草稿/已驳回状态可见，当前状态下不渲染 -->
+      </div>
+
+      <dl class="tpl-desc__grid">
+        <div class="tpl-desc__item tpl-desc__item--full">
+          <dt class="tpl-desc__label">需求描述</dt>
+          <dd class="tpl-desc__value tpl-desc__value--rich">
+            当前会员储值余额到期仅在到期当日推送一次，门店反馈会员感知不足、到期作废投诉集中在月末。
+            期望改为「到期前 30 / 7 / 1 天」三档提醒，并支持按业务线配置提醒模板；
+            提醒渠道沿用小程序订阅消息 + 门店企微群提示，不新增短信成本。
+          </dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">提交对象</dt>
+          <dd class="tpl-desc__value">陈默（产品经理）</dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">所属业务线</dt>
+          <dd class="tpl-desc__value"><span class="ac-tag ac-tag--pill is-ops">运营</span></dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">优先级</dt>
+          <dd class="tpl-desc__value"><span class="ac-tag is-processing">P2 中</span></dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">需求类型</dt>
+          <dd class="tpl-desc__value">功能优化</dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">目标日期</dt>
+          <dd class="tpl-desc__value">2026-09-15</dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">提交人</dt>
+          <dd class="tpl-desc__value">陈静（会员运营组）</dd>
+        </div>
+        <div class="tpl-desc__item">
+          <dt class="tpl-desc__label">提交时间</dt>
+          <dd class="tpl-desc__value">2026-07-31 14:26:08</dd>
+        </div>
+      </dl>
+    </div>
+
+    <!-- ② 审批进度时间线（3 节点纵向步骤条） -->
+    <div class="tpl-panel">
+      <div class="tpl-panel__title-row">
+        <h2 class="tpl-panel__title">审批进度</h2>
+        <span class="tpl-detail__code">第 1 轮 · 三级或签</span>
+      </div>
+
+      <div class="tpl-timeline">
+        <!-- L1 已通过 -->
+        <div class="tpl-timeline__node is-passed">
+          <div class="tpl-timeline__rail">
+            <span class="tpl-timeline__dot">✓</span>
+            <span class="tpl-timeline__line"></span>
+          </div>
+          <div class="tpl-timeline__card">
+            <div class="tpl-timeline__head">
+              <span class="tpl-timeline__level">L1</span>
+              <span class="tpl-timeline__role">业务线负责人</span>
+              <span class="ac-tag is-success">已通过</span>
+            </div>
+            <dl class="tpl-timeline__meta">
+              <div class="tpl-desc__item">
+                <dt class="tpl-desc__label">审批人</dt>
+                <dd class="tpl-desc__value">周文杰（运营中心）</dd>
+              </div>
+              <div class="tpl-desc__item">
+                <dt class="tpl-desc__label">操作时间</dt>
+                <dd class="tpl-desc__value">2026-07-31 16:42:11</dd>
+              </div>
+            </dl>
+            <div class="tpl-timeline__opinion">审批意见：会员到期投诉确实集中，规则调整合理，建议与储值活动排期一并评估。</div>
+          </div>
+        </div>
+
+        <!-- L2 当前待审（蓝色高亮） -->
+        <div class="tpl-timeline__node is-current">
+          <div class="tpl-timeline__rail">
+            <span class="tpl-timeline__dot">2</span>
+            <span class="tpl-timeline__line"></span>
+          </div>
+          <div class="tpl-timeline__card">
+            <div class="tpl-timeline__head">
+              <span class="tpl-timeline__level">L2</span>
+              <span class="tpl-timeline__role">实施负责人</span>
+              <span class="ac-tag is-processing">审批中</span>
+            </div>
+            <dl class="tpl-timeline__meta">
+              <div class="tpl-desc__item">
+                <dt class="tpl-desc__label">审批人</dt>
+                <dd class="tpl-desc__value">李思远、孙浩（或签）</dd>
+              </div>
+              <div class="tpl-desc__item">
+                <dt class="tpl-desc__label">操作时间</dt>
+                <dd class="tpl-desc__value">—</dd>
+              </div>
+            </dl>
+            <div class="tpl-timeline__opinion">审批意见：待填写（通过后流转至 L3 产品确认）</div>
+          </div>
+        </div>
+
+        <!-- L3 未开始（灰）：审批人即提交对象 -->
+        <div class="tpl-timeline__node is-pending">
+          <div class="tpl-timeline__rail">
+            <span class="tpl-timeline__dot">3</span>
+          </div>
+          <div class="tpl-timeline__card">
+            <div class="tpl-timeline__head">
+              <span class="tpl-timeline__level">L3</span>
+              <span class="tpl-timeline__role">产品经理（提交对象）</span>
+              <span class="ac-tag is-default">待审</span>
+            </div>
+            <dl class="tpl-timeline__meta">
+              <div class="tpl-desc__item">
+                <dt class="tpl-desc__label">审批人</dt>
+                <dd class="tpl-desc__value">陈默</dd>
+              </div>
+              <div class="tpl-desc__item">
+                <dt class="tpl-desc__label">操作时间</dt>
+                <dd class="tpl-desc__value">—</dd>
+              </div>
+            </dl>
+            <div class="tpl-timeline__opinion">审批意见：—</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tpl-timeline__history">
+        <span>历史轮次：</span>
+        <button type="button" class="ac-btn ac-btn--text" onclick="acToast('已展开第 1 轮之前的审批记录')">查看第 0 轮审批记录（本需求暂无驳回重提）</button>
+      </div>
+    </div>
+
+    <!-- ③ 排期关联区 -->
+    <div class="tpl-panel">
+      <div class="tpl-panel__title-row">
+        <h2 class="tpl-panel__title">排期关联</h2>
+        <button type="button" class="ac-btn" onclick="acToast('排期状态已刷新')">刷新</button>
+      </div>
+
+      <!-- 已关联态 -->
+      <div class="tpl-link__row">
+        <dl class="tpl-link__fields tpl-desc__grid">
+          <div class="tpl-desc__item">
+            <dt class="tpl-desc__label">卡片编号</dt>
+            <dd class="tpl-desc__value"><a class="cell-link" href="#" target="_blank">FS-20260908-007</a></dd>
+          </div>
+          <div class="tpl-desc__item">
+            <dt class="tpl-desc__label">排期日期</dt>
+            <dd class="tpl-desc__value">2026-09-08 ~ 2026-09-12</dd>
+          </div>
+          <div class="tpl-desc__item">
+            <dt class="tpl-desc__label">开发状态</dt>
+            <dd class="tpl-desc__value"><span class="ac-tag is-processing">开发中</span></dd>
+          </div>
+          <div class="tpl-desc__item">
+            <dt class="tpl-desc__label">开发人</dt>
+            <dd class="tpl-desc__value">吴凯</dd>
+          </div>
+        </dl>
+        <button type="button" class="ac-btn" onclick="acToast('已解除与卡片 FS-20260908-007 的关联')">解除关联</button>
+      </div>
+
+      <!-- 未关联态（同一区块的另一形态，供联调对照） -->
+      <div class="tpl-variant">
+        <span class="tpl-variant__cap">形态对照 · 未关联排期（状态=待关联排期且当前用户为提交对象（产品经理）/管理员时可操作）</span>
+        <div class="tpl-link__empty">
+          <span class="tpl-link__empty-icon">＋</span>
+          <span class="tpl-link__empty-text">未关联排期卡片</span>
+          <button type="button" class="ac-btn ac-btn--primary" onclick="openLinkModal()">关联排期</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 底部固定操作栏：当前审批人可见「通过 / 驳回」+ 意见输入 -->
+<div class="tpl-actionbar">
+  <div class="tpl-actionbar__inner">
+    <div class="tpl-actionbar__field">
+      <span class="tpl-actionbar__label">审批意见</span>
+      <textarea class="ac-textarea" id="opinion" maxlength="200"
+        placeholder="通过时选填；驳回时必填，10–200 字，请说明驳回原因与修改建议"></textarea>
+    </div>
+    <span class="tpl-actionbar__tip">审批链已于提交时按提交对象确定，通过后自动流转下一级</span>
+    <button type="button" class="ac-btn ac-btn--lg ac-btn--success" onclick="onApprove()">通过</button>
+    <button type="button" class="ac-btn ac-btn--lg ac-btn--danger" onclick="onReject()">驳回</button>
+  </div>
+</div>
+
+<!-- 关联排期弹窗（规格真源 web-ui.md「关联排期弹窗」+ business-rule.md §5.1） -->
+<div class="ac-modal-mask" id="linkModal">
+  <div class="ac-modal" role="dialog" aria-modal="true" aria-label="关联排期卡片">
+    <div class="ac-modal__head">
+      <h3 class="ac-modal__title">关联排期卡片</h3>
+      <button type="button" class="ac-modal__close" onclick="closeLinkModal()" aria-label="关闭">×</button>
+    </div>
+    <div class="ac-modal__tabs">
+      <button type="button" class="ac-modal__tab" id="tabSearch" onclick="switchLinkTab('search')">方式一 · 编号搜索</button>
+      <button type="button" class="ac-modal__tab is-active" id="tabList" onclick="switchLinkTab('list')">方式二 · 候选列表</button>
+    </div>
+    <div class="ac-modal__body">
+      <!-- 方式一：card_no 精确搜索 -->
+      <div class="ac-modal__pane" id="paneSearch">
+        <div class="ac-modal__search-row">
+          <input class="ac-input ac-input--grow" id="cardNoInput" placeholder="输入排期卡片编号，如 FS-20260908-007" />
+          <button type="button" class="ac-btn" onclick="searchCardByNo()">搜索</button>
+        </div>
+        <div class="ac-search-result" id="searchResult">
+          <div class="ac-search-result__row">
+            <strong id="srNo">FS-20260908-007</strong>
+            <span>排期日期 <strong id="srDate">2026-09-08</strong></span>
+            <span>开发状态 <span class="ac-tag is-processing" id="srStatus">开发中</span></span>
+            <span>开发人 <strong id="srDev">吴凯</strong></span>
+            <button type="button" class="ac-btn ac-btn--text" onclick="pickSearchedCard()">选定该卡片</button>
+          </div>
+        </div>
+      </div>
+      <!-- 方式二：候选排期卡片列表 -->
+      <div class="ac-modal__pane is-active" id="paneList">
+        <div class="ac-filterbar">
+          <span class="ac-filterbar__label">排期月份</span>
+          <select class="ac-select" id="fltMonth" onchange="onFilterChange()">
+            <option value="2026-09" selected>2026-09</option>
+            <option value="2026-08">2026-08</option>
+          </select>
+          <span class="ac-filterbar__label">开发人</span>
+          <select class="ac-select" id="fltDev" onchange="onFilterChange()">
+            <option value="" selected>全部</option>
+            <option value="吴凯">吴凯</option>
+            <option value="赵倩">赵倩</option>
+          </select>
+          <span class="ac-filterbar__label">需求提交人</span>
+          <select class="ac-select" id="fltSubmitter" onchange="onFilterChange()">
+            <option value="" selected>全部</option>
+            <option value="陈静">陈静</option>
+            <option value="李强">李强</option>
+          </select>
+          <span class="ac-filterbar__hint">开发人筛选：仅已被领取开发 / 已完成的卡片有开发人，待开发卡片不参与该筛选；需求提交人筛选：仅内部提交单参与，展示该提交人已关联需求所在的卡片</span>
+        </div>
+        <table class="ac-cardtable">
+          <thead>
+            <tr><th style="width:32px"></th><th>卡片编号</th><th>标题</th><th>排期日期</th><th>开发状态</th><th>开发人</th><th>已关联需求</th></tr>
+          </thead>
+          <tbody id="cardTbody"></tbody>
+        </table>
+      </div>
+    </div>
+    <!-- 同挂二次确认条：选中已关联卡片时展示 -->
+    <div class="ac-modal__confirm" id="linkConfirmBar">
+      <span class="ac-modal__confirm-text" id="linkConfirmText"></span>
+    </div>
+    <div class="ac-modal__foot">
+      <button type="button" class="ac-btn" onclick="closeLinkModal()">取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" id="linkSubmitBtn" disabled onclick="confirmLink()">确认关联</button>
+    </div>
+  </div>
+</div>
+
+<div class="ac-toast" id="acToast"><span class="ac-toast__icon">✓</span><span id="acToastText"></span></div>
+
+<script>
+var acToastTimer;
+function acToast(text, isError) {
+  var box = document.getElementById('acToast');
+  document.getElementById('acToastText').textContent = text;
+  box.classList.toggle('is-error', !!isError);
+  box.querySelector('.ac-toast__icon').textContent = isError ? '!' : '✓';
+  box.classList.add('is-open');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2400);
+}
+
+/* 通过：审批链已于提交时按提交对象确定（原型以 toast 表达结果） */
+function onApprove() {
+  acToast('已通过，需求流转至产品确认');
+}
+
+/* 驳回：意见必填 10–200 字 */
+function onReject() {
+  var v = document.getElementById('opinion').value.trim();
+  if (v.length < 10) {
+    acToast('请填写驳回意见，不少于 10 字', true);
+    document.getElementById('opinion').focus();
+    return;
+  }
+  acToast('已驳回，需求已退回提交人');
+}
+
+/* ================= 关联排期弹窗（演示逻辑） ================= */
+/* 演示数据：对应 card-candidates 契约（api-spec §1.6），月份=2026-09；
+   候选集含已关联卡，排除 NON_FEATURE 与已删除卡（business-rule §5.1） */
+var CARD_POOL = {
+  '2026-09': [
+    { no:'FS-20260901-002', title:'会员券包核销性能优化', date:'2026-09-03', status:'PENDING',     dev:null,   linkedCount:0, submitters:[] },
+    { no:'FS-20260902-005', title:'门店要货单批量导入',   date:'2026-09-04', status:'IN_PROGRESS', dev:'吴凯', linkedCount:2, submitters:['陈静','王志远（外部）'] },
+    { no:'FS-20260908-007', title:'储值到期提醒规则调整', date:'2026-09-08', status:'IN_PROGRESS', dev:'吴凯', linkedCount:1, submitters:['陈静'] },
+    { no:'FS-20260908-011', title:'会员标签同步乐檬',     date:'2026-09-09', status:'DONE',        dev:'赵倩', linkedCount:1, submitters:['陈静'] },
+    { no:'FS-20260910-003', title:'盘点任务超时提醒',     date:'2026-09-11', status:'PENDING',     dev:null,   linkedCount:0, submitters:[] },
+    { no:'FS-20260915-009', title:'促销价签打印模板调整', date:'2026-09-16', status:'PENDING',     dev:null,   linkedCount:0, submitters:[] }
+  ],
+  '2026-08': []
+};
+var CARD_STATUS = {
+  PENDING:     { label:'待开发',   cls:'is-default' },
+  IN_PROGRESS: { label:'开发中',   cls:'is-processing' },
+  DONE:        { label:'开发完成', cls:'is-success' }
+};
+var selectedCard = null; /* 当前选中的候选卡片（方式二）或搜索命中卡片（方式一） */
+var confirmArmed = false; /* 同挂二次确认是否已亮出 */
+
+function openLinkModal() {
+  document.getElementById('linkModal').classList.add('is-open');
+  switchLinkTab('list');
+}
+function closeLinkModal() {
+  document.getElementById('linkModal').classList.remove('is-open');
+  resetLinkState();
+}
+function resetLinkState() {
+  selectedCard = null;
+  confirmArmed = false;
+  document.getElementById('linkConfirmBar').classList.remove('is-open');
+  document.getElementById('searchResult').classList.remove('is-open');
+  document.getElementById('cardNoInput').value = '';
+  document.getElementById('fltMonth').value = '2026-09';
+  document.getElementById('fltDev').value = '';
+  document.getElementById('fltSubmitter').value = '';
+  renderCandidates();
+  syncSubmitBtn();
+}
+function switchLinkTab(which) {
+  var isList = which === 'list';
+  document.getElementById('tabList').classList.toggle('is-active', isList);
+  document.getElementById('tabSearch').classList.toggle('is-active', !isList);
+  document.getElementById('paneList').classList.toggle('is-active', isList);
+  document.getElementById('paneSearch').classList.toggle('is-active', !isList);
+  /* 两种方式互斥：切换时清空另一侧选择 */
+  selectedCard = null;
+  confirmArmed = false;
+  document.getElementById('linkConfirmBar').classList.remove('is-open');
+  if (isList) renderCandidates();
+  syncSubmitBtn();
+}
+
+/* 方式一：card_no 精确搜索 */
+function searchCardByNo() {
+  var no = document.getElementById('cardNoInput').value.trim().toUpperCase();
+  var hit = null;
+  Object.keys(CARD_POOL).forEach(function (m) {
+    CARD_POOL[m].forEach(function (c) { if (c.no === no) hit = c; });
+  });
+  if (!hit) {
+    document.getElementById('searchResult').classList.remove('is-open');
+    acToast('卡片不存在或已删除', true);
+    return;
+  }
+  document.getElementById('srNo').textContent = hit.no;
+  document.getElementById('srDate').textContent = hit.date;
+  document.getElementById('srDev').textContent = hit.dev || '—';
+  var st = CARD_STATUS[hit.status];
+  var stEl = document.getElementById('srStatus');
+  stEl.textContent = st.label;
+  stEl.className = 'ac-tag ' + st.cls;
+  document.getElementById('searchResult').classList.add('is-open');
+  searchHit = hit;
+}
+var searchHit = null;
+function pickSearchedCard() {
+  if (!searchHit) return;
+  selectedCard = searchHit;
+  armConfirmIfLinked();
+  syncSubmitBtn();
+}
+
+/* 方式二：候选列表渲染（月份 + 开发人 + 需求提交人 三筛选叠加） */
+function onFilterChange() {
+  selectedCard = null;
+  confirmArmed = false;
+  document.getElementById('linkConfirmBar').classList.remove('is-open');
+  renderCandidates();
+  syncSubmitBtn();
+}
+function renderCandidates() {
+  var month = document.getElementById('fltMonth').value;
+  var dev = document.getElementById('fltDev').value;
+  var submitter = document.getElementById('fltSubmitter').value;
+  var list = (CARD_POOL[month] || []).filter(function (c) {
+    if (dev && c.dev !== dev) return false;
+    if (submitter && c.submitters.indexOf(submitter) === -1) return false;
+    return true;
+  });
+  var tbody = document.getElementById('cardTbody');
+  if (!list.length) {
+    var hasFilter = dev || submitter;
+    tbody.innerHTML = '<tr class="ac-cardtable__empty"><td colspan="7">' +
+      (hasFilter ? '无符合条件的卡片，可调整筛选或改用编号搜索' : '当月暂无排期卡片') + '</td></tr>';
+    return;
+  }
+  tbody.innerHTML = list.map(function (c) {
+    var st = CARD_STATUS[c.status];
+    var badge = c.linkedCount > 0
+      ? '<span class="ac-linked-badge" title="已关联需求的提交人：' + c.submitters.join('、') + '">已关联 ' + c.linkedCount + ' 条需求</span>'
+      : '<span style="color:var(--ac-color-text-3)">—</span>';
+    var checked = selectedCard && selectedCard.no === c.no ? ' is-selected' : '';
+    return '<tr class="' + checked.trim() + '" onclick="selectCandidate(\'' + c.no + '\')">' +
+      '<td><input type="radio" name="cardPick" ' + (checked ? 'checked' : '') + ' onclick="event.stopPropagation();selectCandidate(\'' + c.no + '\')" /></td>' +
+      '<td class="cell-no">' + c.no + '</td>' +
+      '<td class="cell-title" title="' + c.title + '">' + c.title + '</td>' +
+      '<td class="cell-no">' + c.date + '</td>' +
+      '<td><span class="ac-tag ' + st.cls + '">' + st.label + '</span></td>' +
+      '<td>' + (c.dev || '—') + '</td>' +
+      '<td>' + badge + '</td></tr>';
+  }).join('');
+}
+function selectCandidate(no) {
+  var month = document.getElementById('fltMonth').value;
+  selectedCard = (CARD_POOL[month] || []).filter(function (c) { return c.no === no; })[0] || null;
+  confirmArmed = false;
+  renderCandidates();
+  armConfirmIfLinked();
+  syncSubmitBtn();
+}
+
+/* 选中已关联卡：亮出同挂二次确认条，确认按钮改为「确认同挂」 */
+function armConfirmIfLinked() {
+  var bar = document.getElementById('linkConfirmBar');
+  if (selectedCard && selectedCard.linkedCount > 0) {
+    document.getElementById('linkConfirmText').textContent =
+      '该卡片已承载 ' + selectedCard.linkedCount + ' 条需求（提交人：' + selectedCard.submitters.join('、') +
+      '），确认将本需求同挂到该卡片？再次点击底部按钮完成同挂。';
+    bar.classList.add('is-open');
+  } else {
+    bar.classList.remove('is-open');
+  }
+}
+function syncSubmitBtn() {
+  var btn = document.getElementById('linkSubmitBtn');
+  btn.disabled = !selectedCard;
+  btn.textContent = (selectedCard && selectedCard.linkedCount > 0) ? '确认同挂' : '确认关联';
+}
+function confirmLink() {
+  if (!selectedCard) return;
+  /* 已关联卡需先亮出同挂确认条，第二次点击才提交（弹窗内二次确认） */
+  if (selectedCard.linkedCount > 0 && !confirmArmed) {
+    confirmArmed = true;
+    armConfirmIfLinked();
+    return;
+  }
+  acToast('已关联排期卡片 ' + selectedCard.no);
+  closeLinkModal();
+}
+/* 点击遮罩关闭 */
+document.getElementById('linkModal').addEventListener('click', function (e) {
+  if (e.target === this) closeLinkModal();
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<!--
+  需求管理 · 公开 H5 需求提交页（免登录原型）
+  ================================================================
+  规格真源：../../references/public-ui.md §需求提交页
+  DOM 范本：.agents/skills/page-blueprint/skeletons/app/form-grouped.tsx.tpl
+            拓扑 = .ac-device > [说明 .ac-hero] > .ac-scroll(.ac-group×3) > .ac-actionbar
+  Token   ：.agents/skills/page-blueprint/tokens/app.ts（下方 :root 为 token 定义层，
+            业务样式一律只写 var(--ac-*)，rem 单位，1rem = 16px @375 视口）
+  边界    ：免登录页面，无侧边菜单/无面包屑/无返回按钮/无登录态组件；
+            顶部黑色原型导航条仅供原型预览切换，真实页面不存在。
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>需求提交 · 有点推荐</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Design Tokens
+   真源：.agents/skills/page-blueprint/tokens/app.ts (light)
+   ⚠️ 仅本 :root 块允许出现原子字面值；业务样式一律通过 var(--ac-*) 消费
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ---------- palette ---------- */
+  --ac-palette-white:#FFFFFF;
+  --ac-palette-gray-1:#F7F8FA;
+  --ac-palette-gray-2:#F2F3F5;
+  --ac-palette-gray-3:#E5E6EB;
+  --ac-palette-gray-4:#C9CDD4;
+  --ac-palette-gray-6:#86909C;
+  --ac-palette-gray-8:#4E5969;
+  --ac-palette-gray-10:#1D2129;
+  --ac-palette-red-1:#FFECE8;
+  --ac-palette-red-6:#F53F3F;
+  --ac-palette-red-7:#CB272D;
+  --ac-palette-orange-1:#FFF7E8;
+  --ac-palette-orange-6:#FF7D00;
+  --ac-palette-orange-7:#D25F00;
+  --ac-palette-green-1:#E8FFEA;
+  --ac-palette-green-6:#00B42A;
+  --ac-palette-green-7:#009A29;
+  --ac-palette-blue-1:#E8F7FF;
+  --ac-palette-blue-6:#3491FA;
+  --ac-palette-blue-7:#206CCF;
+  /* ---------- brand ---------- */
+  --ac-brand-red:#E60013;
+  --ac-brand-red-active:#B30010;
+  /* ---------- semantic ---------- */
+  --ac-text-1:var(--ac-palette-gray-10);
+  --ac-text-2:var(--ac-palette-gray-8);
+  --ac-text-3:var(--ac-palette-gray-6);
+  --ac-text-4:var(--ac-palette-gray-4);
+  --ac-text-white:var(--ac-palette-white);
+  --ac-bg-1:var(--ac-palette-white);
+  --ac-bg-2:var(--ac-palette-gray-1);
+  --ac-bg-3:var(--ac-palette-gray-2);
+  --ac-fill-1:var(--ac-palette-gray-1);
+  --ac-fill-2:var(--ac-palette-gray-2);
+  --ac-fill-3:var(--ac-palette-gray-3);
+  --ac-border-1:var(--ac-palette-gray-2);
+  --ac-border-2:var(--ac-palette-gray-3);
+  --ac-primary-1:var(--ac-palette-red-1);
+  --ac-primary-6:var(--ac-palette-red-6);
+  --ac-primary-7:var(--ac-palette-red-7);
+  --ac-success-1:var(--ac-palette-green-1);
+  --ac-success-6:var(--ac-palette-green-6);
+  --ac-success-7:var(--ac-palette-green-7);
+  --ac-warning-1:var(--ac-palette-orange-1);
+  --ac-warning-6:var(--ac-palette-orange-6);
+  --ac-warning-7:var(--ac-palette-orange-7);
+  --ac-danger-1:var(--ac-palette-red-1);
+  --ac-danger-6:var(--ac-palette-red-6);
+  --ac-danger-7:var(--ac-palette-red-7);
+  --ac-info-1:var(--ac-palette-blue-1);
+  --ac-info-6:var(--ac-palette-blue-6);
+  --ac-info-7:var(--ac-palette-blue-7);
+  /* ---------- space（rem·1rem = 16px @375 视口）---------- */
+  --ac-space-1:.25rem;
+  --ac-space-2:.5rem;
+  --ac-space-3:.75rem;
+  --ac-space-4:1rem;
+  --ac-space-5:1.25rem;
+  --ac-space-6:1.5rem;
+  --ac-space-8:2rem;
+  --ac-space-10:2.5rem;
+  /* ---------- radius ---------- */
+  --ac-radius-sm:.25rem;
+  --ac-radius-md:.375rem;
+  --ac-radius-lg:.5rem;
+  --ac-radius-xl:.75rem;
+  --ac-radius-2xl:1rem;
+  --ac-radius-full:9999px;
+  /* ---------- shadow / overlay ---------- */
+  --ac-shadow-1:0 .0625rem .125rem 0 rgba(0,0,0,.04);
+  --ac-shadow-2:0 .125rem .5rem 0 rgba(0,0,0,.08);
+  --ac-shadow-3:0 .25rem 1rem 0 rgba(0,0,0,.10);
+  --ac-shadow-up:0 -.125rem .5rem 0 rgba(0,0,0,.06);
+  --ac-mask-bg:rgba(29,33,41,.60);
+  --ac-toast-bg:rgba(29,33,41,.92);
+  --ac-ripple:rgba(255,255,255,.12);
+  /* ---------- typography ---------- */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:.75rem;
+  --ac-fs-sm:.8125rem;
+  --ac-fs-md:.875rem;
+  --ac-fs-lg:.9375rem;
+  --ac-fs-xl:1rem;
+  --ac-fs-2xl:1.125rem;
+  --ac-fs-3xl:1.25rem;
+  --ac-fw-regular:400;
+  --ac-fw-medium:500;
+  --ac-fw-semibold:600;
+  --ac-fw-bold:700;
+  --ac-lh-tight:1.2;
+  --ac-lh-normal:1.5;
+  --ac-lh-relaxed:1.7;
+  /* ---------- motion / z-index / hit ---------- */
+  --ac-duration-fast:.15s;
+  --ac-duration-base:.25s;
+  --ac-easing-standard:cubic-bezier(.4,0,.2,1);
+  --ac-easing-emphasized:cubic-bezier(.32,.72,.46,.97);
+  --ac-z-header:200;
+  --ac-z-actionbar:300;
+  --ac-z-mask:500;
+  --ac-z-sheet:600;
+  --ac-z-toast:800;
+  --ac-hit-touch:2.75rem;
+  /* ---------- layout ---------- */
+  --ac-device-width:23.4375rem;
+  --ac-h-protobar:2rem;
+  --ac-safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* 375 设计稿等比：视口 < 375px 时 root 字号随 vw 缩放，其余锁定 16px */
+html{font-size:4.2667vw}
+@media (min-width:23.4375rem){html{font-size:16px}}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);
+  background:var(--ac-bg-3);line-height:var(--ac-lh-normal);
+  min-height:100vh;display:flex;justify-content:center
+}
+
+/* ══ Device Frame ══ */
+.ac-device{
+  width:100%;max-width:var(--ac-device-width);min-height:100vh;
+  background:var(--ac-bg-2);position:relative;box-shadow:var(--ac-shadow-3);
+  display:flex;flex-direction:column
+}
+
+/* ══ Proto Bar（仅原型预览用，真实页面不存在） ══ */
+.ac-proto-bar{
+  height:var(--ac-h-protobar);flex-shrink:0;background:var(--ac-text-1);
+  display:flex;align-items:center;gap:var(--ac-space-2);padding:0 var(--ac-space-3);
+  position:sticky;top:0;z-index:var(--ac-z-toast);overflow-x:auto;scrollbar-width:none
+}
+.ac-proto-bar::-webkit-scrollbar{display:none}
+.ac-proto-bar a,.ac-proto-bar button{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-text-white);
+  background:var(--ac-ripple);border:0;border-radius:var(--ac-radius-full);
+  padding:.125rem var(--ac-space-2);text-decoration:none;white-space:nowrap;flex-shrink:0;
+  cursor:pointer
+}
+.ac-proto-bar a.is-active{background:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
+
+/* ══ 顶部说明区（无返回按钮 · 无面包屑） ══ */
+.ac-hero{
+  flex-shrink:0;background:var(--ac-bg-1);padding:var(--ac-space-5) var(--ac-space-4) var(--ac-space-4);
+  display:flex;flex-direction:column;gap:var(--ac-space-2)
+}
+.ac-hero-title{font-size:var(--ac-fs-3xl);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1)}
+.ac-hero-sub{font-size:var(--ac-fs-md);color:var(--ac-text-3)}
+.ac-alert{
+  display:flex;gap:var(--ac-space-2);padding:var(--ac-space-3);
+  background:var(--ac-info-1);border-radius:var(--ac-radius-lg);
+  font-size:var(--ac-fs-md);color:var(--ac-text-2);line-height:var(--ac-lh-relaxed)
+}
+.ac-alert-icon{flex-shrink:0;color:var(--ac-info-7);font-weight:var(--ac-fw-semibold)}
+.ac-alert strong{color:var(--ac-primary-6);font-weight:var(--ac-fw-semibold)}
+
+/* ══ Scroll Container ══ */
+.ac-scroll{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:var(--ac-space-3) var(--ac-space-3)
+    calc(var(--ac-hit-touch) + var(--ac-space-8) + var(--ac-safe-bottom));
+  display:flex;flex-direction:column;gap:var(--ac-space-3)
+}
+
+/* ══ Form Group（Cell 分组卡片） ══ */
+.ac-group{background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);overflow:hidden}
+.ac-group-title{
+  padding:var(--ac-space-3) var(--ac-space-4) var(--ac-space-1);
+  font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-text-2)
+}
+.ac-cell{
+  display:flex;align-items:flex-start;gap:var(--ac-space-3);
+  padding:var(--ac-space-3) var(--ac-space-4);
+  border-bottom:.0625rem solid var(--ac-border-1)
+}
+.ac-cell:last-child{border-bottom:0}
+.ac-cell-label{
+  flex-shrink:0;width:5.25rem;padding-top:.125rem;
+  font-size:var(--ac-fs-lg);color:var(--ac-text-1)
+}
+.ac-cell-label.is-required::before{content:'*';margin-right:var(--ac-space-1);color:var(--ac-danger-6)}
+.ac-cell-body{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--ac-space-1)}
+.ac-cell-extra{font-size:var(--ac-fs-xs);color:var(--ac-text-3);line-height:var(--ac-lh-normal)}
+.ac-cell-error{font-size:var(--ac-fs-xs);color:var(--ac-danger-6)}
+
+.ac-input{
+  width:100%;min-height:var(--ac-hit-touch);padding:var(--ac-space-2) 0;border:0;
+  background:transparent;font-family:inherit;font-size:var(--ac-fs-lg);color:var(--ac-text-1)
+}
+.ac-input::placeholder{color:var(--ac-text-4)}
+.ac-input:focus{outline:none}
+.ac-textarea{
+  width:100%;min-height:6rem;padding:var(--ac-space-2) 0;border:0;resize:none;
+  background:transparent;font-family:inherit;font-size:var(--ac-fs-lg);
+  color:var(--ac-text-1);line-height:var(--ac-lh-relaxed)
+}
+.ac-textarea::placeholder{color:var(--ac-text-4)}
+.ac-textarea:focus{outline:none}
+.ac-counter{align-self:flex-end;font-size:var(--ac-fs-xs);color:var(--ac-text-3);font-family:var(--ac-ff-mono)}
+
+/* Picker 触发行 */
+.ac-picker{
+  min-height:var(--ac-hit-touch);display:flex;align-items:center;justify-content:space-between;
+  gap:var(--ac-space-2);background:transparent;border:0;padding:0;cursor:pointer;
+  font-family:inherit;font-size:var(--ac-fs-lg);color:var(--ac-text-1);text-align:left
+}
+.ac-picker-arrow{flex-shrink:0;color:var(--ac-text-4);font-size:var(--ac-fs-md)}
+
+/* 图形验证码 */
+.ac-captcha{display:flex;align-items:center;gap:var(--ac-space-3)}
+.ac-captcha .ac-input{flex:1;min-width:0}
+.ac-captcha-img{
+  flex-shrink:0;width:5.5rem;height:2.25rem;display:flex;align-items:center;justify-content:center;
+  background:var(--ac-fill-2);border-radius:var(--ac-radius-sm);cursor:pointer;
+  font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);
+  letter-spacing:.125rem;color:var(--ac-text-2);border:0
+}
+
+/* ══ 页脚提示 ══ */
+.ac-footnote{
+  padding:0 var(--ac-space-4) var(--ac-space-2);
+  font-size:var(--ac-fs-xs);color:var(--ac-text-4);text-align:center
+}
+
+/* ══ Action Bar（SafeArea 内） ══ */
+.ac-actionbar{
+  position:sticky;bottom:0;flex-shrink:0;z-index:var(--ac-z-actionbar);
+  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-up);
+  padding:var(--ac-space-3) var(--ac-space-4) calc(var(--ac-space-3) + var(--ac-safe-bottom))
+}
+.ac-btn{
+  width:100%;min-height:var(--ac-hit-touch);display:flex;align-items:center;justify-content:center;
+  gap:var(--ac-space-1);border:0;border-radius:var(--ac-radius-full);cursor:pointer;
+  font-family:inherit;font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);
+  background:var(--ac-fill-2);color:var(--ac-text-1);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)
+}
+.ac-btn--primary{background:var(--ac-brand-red);color:var(--ac-text-white)}
+.ac-btn--primary:active{background:var(--ac-brand-red-active)}
+.ac-btn--ghost{background:var(--ac-fill-2);color:var(--ac-text-1)}
+.ac-btn:disabled{background:var(--ac-fill-3);color:var(--ac-text-4);cursor:not-allowed}
+
+/* ══ Mask / ActionSheet（Picker + 预览确认） ══ */
+.ac-mask{
+  position:fixed;inset:0;background:var(--ac-mask-bg);z-index:var(--ac-z-mask);
+  display:none;align-items:flex-end;justify-content:center
+}
+.ac-mask.is-open{display:flex}
+.ac-sheet{
+  width:100%;max-width:var(--ac-device-width);max-height:82vh;
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-2xl) var(--ac-radius-2xl) 0 0;
+  z-index:var(--ac-z-sheet);display:flex;flex-direction:column
+}
+.ac-sheet-head{
+  flex-shrink:0;padding:var(--ac-space-4) var(--ac-space-4) var(--ac-space-2);
+  display:flex;flex-direction:column;gap:var(--ac-space-1);
+  border-bottom:.0625rem solid var(--ac-border-1)
+}
+.ac-sheet-title{font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1)}
+.ac-sheet-warn{font-size:var(--ac-fs-md);color:var(--ac-danger-6)}
+.ac-sheet-body{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:var(--ac-space-2) var(--ac-space-4)
+}
+.ac-sheet-foot{
+  flex-shrink:0;display:flex;gap:var(--ac-space-3);
+  padding:var(--ac-space-3) var(--ac-space-4) calc(var(--ac-space-3) + var(--ac-safe-bottom));
+  border-top:.0625rem solid var(--ac-border-1)
+}
+.ac-sheet-option{
+  min-height:var(--ac-hit-touch);display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-2) 0;border-bottom:.0625rem solid var(--ac-border-1);
+  font-size:var(--ac-fs-lg);color:var(--ac-text-1);cursor:pointer
+}
+.ac-sheet-option:last-child{border-bottom:0}
+.ac-sheet-option.is-checked{color:var(--ac-brand-red);font-weight:var(--ac-fw-medium)}
+
+/* 预览确认：只读信息行 */
+.ac-preview-row{
+  display:flex;flex-direction:column;gap:var(--ac-space-1);
+  padding:var(--ac-space-3) 0;border-bottom:.0625rem solid var(--ac-border-1)
+}
+.ac-preview-row:last-child{border-bottom:0}
+.ac-preview-label{font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
+.ac-preview-value{font-size:var(--ac-fs-lg);color:var(--ac-text-1);word-break:break-word;white-space:pre-wrap}
+
+/* ══ Toast ══ */
+.ac-toast{
+  position:fixed;left:50%;bottom:var(--ac-space-10);transform:translateX(-50%);
+  max-width:18rem;padding:var(--ac-space-2) var(--ac-space-4);
+  background:var(--ac-toast-bg);color:var(--ac-text-white);border-radius:var(--ac-radius-full);
+  font-size:var(--ac-fs-md);text-align:center;z-index:var(--ac-z-toast);
+  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-base) var(--ac-easing-standard)
+}
+.ac-toast.is-open{opacity:1}
+
+.is-hidden{display:none !important}
+</style>
+</head>
+<body>
+<div class="ac-device">
+
+  <!-- 原型导航条：仅供原型预览切换，真实公开页面不存在 -->
+  <div class="ac-proto-bar">
+    <a href="requirement-public-submit.html" class="is-active">提交页</a>
+    <a href="requirement-public-result.html">成功 / 失效页</a>
+    <button data-demo-invalid>模拟：token 已失效</button>
+  </div>
+
+  <!-- 顶部说明区：无返回按钮、无面包屑、无登录态入口 -->
+  <div class="ac-hero">
+    <div class="ac-hero-title">有点推荐 · 需求提交</div>
+    <div class="ac-hero-sub">本表单由「杭州蜜集商贸 · 王琳」的邀约链接进入，提交后由内部团队评估处理</div>
+    <div class="ac-alert">
+      <span class="ac-alert-icon">!</span>
+      <span>本链接<strong>仅可提交 1 次</strong>，提交后无法修改或撤回，请确认内容后再提交。</span>
+    </div>
+  </div>
+
+  <div class="ac-scroll">
+
+    <!-- ① 需求信息组 -->
+    <div class="ac-group">
+      <div class="ac-group-title">需求信息</div>
+
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">标题</span>
+        <div class="ac-cell-body">
+          <input class="ac-input" id="fTitle" placeholder="一句话概括你的需求" maxlength="128" />
+          <div class="ac-cell-error is-hidden" id="eTitle">请输入需求标题（不超过 128 字）</div>
+        </div>
+      </div>
+
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">描述</span>
+        <div class="ac-cell-body">
+          <textarea class="ac-textarea" id="fDesc" maxlength="2000"
+            placeholder="请说明你遇到的问题、期望的效果，以及大致的使用场景"></textarea>
+          <span class="ac-counter" id="cDesc">0/2000</span>
+          <div class="ac-cell-extra">描述越具体越容易被采纳；本页暂不支持上传附件，如需附图请在描述中说明</div>
+          <div class="ac-cell-error is-hidden" id="eDesc">请填写需求描述，不少于 20 字</div>
+        </div>
+      </div>
+
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">需求类型</span>
+        <div class="ac-cell-body">
+          <button class="ac-picker" data-picker="type">
+            <span id="fType">新功能</span>
+            <span class="ac-picker-arrow">›</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ② 提交人信息组：外部人手填，不关联组织架构 -->
+    <div class="ac-group">
+      <div class="ac-group-title">你的信息</div>
+
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">姓名</span>
+        <div class="ac-cell-body">
+          <input class="ac-input" id="fName" value="王琳" maxlength="64" placeholder="请填写你的姓名" />
+          <div class="ac-cell-error is-hidden" id="eName">请填写你的姓名</div>
+        </div>
+      </div>
+
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">所属部门</span>
+        <div class="ac-cell-body">
+          <input class="ac-input" id="fDept" maxlength="128" placeholder="请填写公司或部门名称" />
+          <div class="ac-cell-extra">填写你所在的公司或部门名称即可</div>
+          <div class="ac-cell-error is-hidden" id="eDept">请填写你所在的公司或部门</div>
+        </div>
+      </div>
+
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">手机号</span>
+        <div class="ac-cell-body">
+          <input class="ac-input" id="fPhone" type="tel" maxlength="11" placeholder="请填写 11 位手机号" />
+          <div class="ac-cell-extra">仅供内部团队必要时联系你，不会收到任何短信</div>
+          <div class="ac-cell-error is-hidden" id="ePhone">请填写正确的 11 位手机号</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ③ 验证组 -->
+    <div class="ac-group">
+      <div class="ac-group-title">安全验证</div>
+      <div class="ac-cell">
+        <span class="ac-cell-label is-required">验证码</span>
+        <div class="ac-cell-body">
+          <div class="ac-captcha">
+            <input class="ac-input" id="fCode" maxlength="4" placeholder="请输入右侧 4 位验证码" />
+            <button class="ac-captcha-img" id="captchaImg">7K2M</button>
+          </div>
+          <div class="ac-cell-extra">看不清可点击图片刷新，验证码 5 分钟内有效</div>
+          <div class="ac-cell-error is-hidden" id="eCode">请输入验证码</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="ac-footnote">本页面为一次性邀约链接，请勿转发他人</div>
+  </div>
+
+  <!-- 底部固定操作栏：不提供暂存草稿、不提供重置 -->
+  <div class="ac-actionbar">
+    <button class="ac-btn ac-btn--primary" id="btnSubmit">提交需求</button>
+  </div>
+</div>
+
+<!-- ══ 需求类型 Picker ══ -->
+<div class="ac-mask" id="typeMask">
+  <div class="ac-sheet">
+    <div class="ac-sheet-head"><span class="ac-sheet-title">选择需求类型</span></div>
+    <div class="ac-sheet-body">
+      <div class="ac-sheet-option is-checked" data-type>新功能<span>✓</span></div>
+      <div class="ac-sheet-option" data-type>功能优化<span></span></div>
+      <div class="ac-sheet-option" data-type>缺陷修复<span></span></div>
+      <div class="ac-sheet-option" data-type>数据报表<span></span></div>
+      <div class="ac-sheet-option" data-type>系统集成<span></span></div>
+    </div>
+    <div class="ac-sheet-foot">
+      <button class="ac-btn ac-btn--ghost" data-close>取消</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ 提交前预览确认（强制环节，不可跳过） ══ -->
+<div class="ac-mask" id="previewMask">
+  <div class="ac-sheet">
+    <div class="ac-sheet-head">
+      <span class="ac-sheet-title">请确认提交内容</span>
+      <span class="ac-sheet-warn">提交后无法修改、无法撤回，本链接也将失效</span>
+    </div>
+    <div class="ac-sheet-body">
+      <div class="ac-preview-row">
+        <span class="ac-preview-label">需求标题</span>
+        <span class="ac-preview-value" id="pTitle">—</span>
+      </div>
+      <div class="ac-preview-row">
+        <span class="ac-preview-label">需求描述</span>
+        <span class="ac-preview-value" id="pDesc">—</span>
+      </div>
+      <div class="ac-preview-row">
+        <span class="ac-preview-label">需求类型</span>
+        <span class="ac-preview-value" id="pType">—</span>
+      </div>
+      <div class="ac-preview-row">
+        <span class="ac-preview-label">姓名</span>
+        <span class="ac-preview-value" id="pName">—</span>
+      </div>
+      <div class="ac-preview-row">
+        <span class="ac-preview-label">所属部门</span>
+        <span class="ac-preview-value" id="pDept">—</span>
+      </div>
+      <div class="ac-preview-row">
+        <span class="ac-preview-label">手机号</span>
+        <span class="ac-preview-value" id="pPhone">—</span>
+      </div>
+    </div>
+    <div class="ac-sheet-foot">
+      <button class="ac-btn ac-btn--ghost" data-close>返回修改</button>
+      <button class="ac-btn ac-btn--primary" id="btnConfirm">确认提交</button>
+    </div>
+  </div>
+</div>
+
+<div class="ac-toast" id="acToast"></div>
+
+<script>
+(function () {
+  /* ── 描述字数实时提示 ── */
+  var fDesc = document.getElementById('fDesc');
+  var cDesc = document.getElementById('cDesc');
+  fDesc.addEventListener('input', function () {
+    cDesc.textContent = fDesc.value.length + '/2000';
+  });
+
+  /* ── 需求类型 Picker ── */
+  var typeMask = document.getElementById('typeMask');
+  document.querySelector('[data-picker="type"]').addEventListener('click', function () {
+    typeMask.classList.add('is-open');
+  });
+  document.querySelectorAll('[data-type]').forEach(function (opt) {
+    opt.addEventListener('click', function () {
+      document.querySelectorAll('[data-type]').forEach(function (o) {
+        o.classList.remove('is-checked');
+        o.querySelector('span').textContent = '';
+      });
+      opt.classList.add('is-checked');
+      opt.querySelector('span').textContent = '✓';
+      document.getElementById('fType').textContent = opt.textContent.replace('✓', '').trim();
+      typeMask.classList.remove('is-open');
+    });
+  });
+
+  /* ── 验证码刷新（连续错 3 次强制刷新并清空） ── */
+  var codeErrors = 0;
+  var captchaImg = document.getElementById('captchaImg');
+  function refreshCaptcha() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXY3456789';
+    var code = '';
+    for (var i = 0; i < 4; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
+    captchaImg.textContent = code;
+    document.getElementById('fCode').value = '';
+  }
+  captchaImg.addEventListener('click', function () {
+    refreshCaptcha();
+    acToast('验证码已刷新');
+  });
+
+  /* ── 校验 ── */
+  function setError(id, show) {
+    document.getElementById(id).classList.toggle('is-hidden', !show);
+    return !show;
+  }
+  function validate() {
+    var title = document.getElementById('fTitle').value.trim();
+    var desc = fDesc.value.trim();
+    var name = document.getElementById('fName').value.trim();
+    var dept = document.getElementById('fDept').value.trim();
+    var phone = document.getElementById('fPhone').value.trim();
+    var code = document.getElementById('fCode').value.trim();
+    var ok = true;
+    ok = setError('eTitle', title.length < 1 || title.length > 128) && ok;
+    ok = setError('eDesc', desc.length < 20) && ok;
+    ok = setError('eName', name.length < 1) && ok;
+    ok = setError('eDept', dept.length < 1) && ok;
+    ok = setError('ePhone', !/^1\d{10}$/.test(phone)) && ok;
+    ok = setError('eCode', code.length !== 4) && ok;
+    if (!ok) {
+      var firstErr = document.querySelector('.ac-cell-error:not(.is-hidden)');
+      if (firstErr) firstErr.closest('.ac-cell').scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }
+    return ok;
+  }
+
+  /* ── 提交：必须先过预览确认弹窗 ── */
+  var previewMask = document.getElementById('previewMask');
+  document.getElementById('btnSubmit').addEventListener('click', function () {
+    if (!validate()) return;
+    document.getElementById('pTitle').textContent = document.getElementById('fTitle').value.trim();
+    document.getElementById('pDesc').textContent = fDesc.value.trim();
+    document.getElementById('pType').textContent = document.getElementById('fType').textContent;
+    document.getElementById('pName').textContent = document.getElementById('fName').value.trim();
+    document.getElementById('pDept').textContent = document.getElementById('fDept').value.trim();
+    document.getElementById('pPhone').textContent = document.getElementById('fPhone').value.trim();
+    previewMask.classList.add('is-open');
+  });
+
+  /* ── 确认提交：按钮立即锁定，防止重复提交耗尽唯一次数 ── */
+  var btnConfirm = document.getElementById('btnConfirm');
+  btnConfirm.addEventListener('click', function () {
+    btnConfirm.disabled = true;
+    btnConfirm.textContent = '提交中…';
+    setTimeout(function () {
+      /* 模拟验证码错误分支：输入 0000 时走失败流 */
+      if (document.getElementById('fCode').value.trim() === '0000') {
+        previewMask.classList.remove('is-open');
+        btnConfirm.disabled = false;
+        btnConfirm.textContent = '确认提交';
+        codeErrors += 1;
+        setError('eCode', true);
+        document.getElementById('eCode').textContent = '验证码错误，请重新输入';
+        refreshCaptcha();
+        if (codeErrors >= 3) acToast('验证码连续错误 3 次，已强制刷新');
+        return;
+      }
+      /* 成功：整页替换为提交成功页（同路由内切换，不入历史栈） */
+      location.replace('requirement-public-result.html?state=success&no=REQ-20260806-011');
+    }, 900);
+  });
+
+  /* ── 关闭半屏（点遮罩 / 返回修改，均不消耗提交次数） ── */
+  document.querySelectorAll('[data-close]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      typeMask.classList.remove('is-open');
+      previewMask.classList.remove('is-open');
+    });
+  });
+  [typeMask, previewMask].forEach(function (mask) {
+    mask.addEventListener('click', function (e) {
+      if (e.target === mask) mask.classList.remove('is-open');
+    });
+  });
+
+  /* ── 原型演示：token 失效时整页替换为失效页 ── */
+  document.querySelector('[data-demo-invalid]').addEventListener('click', function () {
+    location.replace('requirement-public-result.html?state=expired');
+  });
+})();
+
+/* ── Toast ── */
+var acToastTimer;
+function acToast(text) {
+  var box = document.getElementById('acToast');
+  box.textContent = text;
+  box.classList.add('is-open');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2000);
+}
+</script>
+</body>
+</html>

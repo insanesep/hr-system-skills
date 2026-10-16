@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Qoder 用量分析 · Web 管理后台</title>
+<!--
+  qoder-usage-analysis · Web 原型（requirement-add Step 5 重生成）
+  骨架：page-blueprint skeletons/web/dashboard-multi.vue.tpl 通用约定（.tpl-page 根 + .tpl-panel 卡片）
+  Token 真源：page-blueprint/tokens/web.css（外链引用，禁止内联 :root）
+  信息架构：公共筛选 → KPI 5 卡 → 日消耗堆叠柱形图（按模型分类：Ultimate / Kimi K3 / GLM 5.3 / DeepSeek V4 Pro / Qwen3.8 Max / 其他）→ 日期×成员透视表 → 成员×模型等级透视表
+  规则真源：references/business-rule.md §1-§6；页面描述：references/web-ui.md
+-->
+<link rel="stylesheet" href="../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--ac-ff-sans); font-size: var(--ac-fs-md); line-height: var(--ac-lh-normal); color: var(--ac-color-text-1); background: var(--ac-color-fill-2); min-height: 100vh; }
+
+  /* ═══ 骨架容器 ═══ */
+  .tpl-page { width: 100%; max-width: 1400px; margin: 0 auto; padding: var(--ac-space-6); display: flex; flex-direction: column; gap: var(--ac-space-4); }
+  .tpl-panel { background: var(--ac-color-bg-1); border-radius: var(--ac-radius-lg); box-shadow: var(--ac-shadow-1); padding: var(--ac-space-5); display: flex; flex-direction: column; gap: var(--ac-space-4); }
+  .tpl-panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-4); }
+  .tpl-panel__title { font-size: var(--ac-fs-xl); font-weight: var(--ac-fw-medium); color: var(--ac-color-text-1); }
+  .tpl-panel__hint { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+
+  /* ═══ 筛选区（AcForm 渲染输出） ═══ */
+  .ac-form.tpl-filter { display: flex; align-items: flex-end; gap: var(--ac-space-4); flex-wrap: wrap; }
+  .tpl-filter__item { display: flex; flex-direction: column; gap: var(--ac-space-1); min-width: 0; }
+  .ac-form-item__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-2); }
+  .ac-form-item__control { display: flex; }
+  .tpl-filter__actions { display: flex; gap: var(--ac-space-2); }
+  .ac-date-picker, .ac-select { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); height: var(--ac-hit-click); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); padding: 0 var(--ac-space-3); font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); cursor: pointer; }
+  .ac-date-picker { width: 280px; font-family: var(--ac-ff-mono); }
+  .ac-select { width: 240px; }
+  .ac-date-picker:hover, .ac-select:hover { border-color: var(--ac-color-primary-6); }
+  .ac-date-picker__view, .ac-select__view { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ac-date-picker__suffix, .ac-select__suffix { color: var(--ac-color-text-3); font-size: var(--ac-fs-xs); }
+  .ac-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--ac-hit-click); padding: 0 var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); color: var(--ac-color-text-1); font-family: inherit; font-size: var(--ac-fs-sm); font-weight: var(--ac-fw-medium); white-space: nowrap; cursor: pointer; }
+  .ac-btn:hover { border-color: var(--ac-color-primary-6); color: var(--ac-color-primary-6); }
+  .ac-btn--primary { background: var(--ac-color-primary-6); border-color: var(--ac-color-primary-6); color: var(--ac-color-text-white); }
+  .ac-btn--primary:hover { background: var(--ac-color-primary-5); border-color: var(--ac-color-primary-5); color: var(--ac-color-text-white); }
+
+  /* ═══ KPI 卡片 ═══ */
+  .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--ac-space-4); }
+  .kpi-card { display: flex; flex-direction: column; gap: var(--ac-space-2); padding: var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-md); min-height: 96px; }
+  .kpi-card__title { font-size: var(--ac-fs-md); color: var(--ac-color-text-3); }
+  .kpi-card__number { display: flex; align-items: baseline; gap: var(--ac-space-1); }
+  .kpi-card__value { font-size: var(--ac-fs-3xl); font-weight: var(--ac-fw-medium); color: var(--ac-color-text-1); font-family: var(--ac-ff-mono); }
+  .kpi-card__unit { font-size: var(--ac-fs-md); color: var(--ac-color-text-3); }
+  .kpi-card__trend { display: flex; align-items: center; gap: var(--ac-space-1); font-size: var(--ac-fs-xs); }
+  .kpi-card__trend-label { color: var(--ac-color-text-3); }
+  .kpi-card__trend-tag { display: inline-flex; align-items: center; padding: 0 var(--ac-space-1); border-radius: var(--ac-radius-xs); font-weight: var(--ac-fw-medium); }
+  .kpi-card__trend-tag.is-up { color: var(--ac-color-success-6); background: var(--ac-color-success-1); }
+  .kpi-card__trend-tag.is-down { color: var(--ac-color-danger-6); background: var(--ac-color-danger-1); }
+  .kpi-card__trend-tag.is-flat { color: var(--ac-color-text-3); background: var(--ac-color-fill-2); }
+
+  /* ═══ 柱状图图例 ═══ */
+  .chart-legend { display: flex; align-items: center; gap: var(--ac-space-4); font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+  .chart-legend__item { display: inline-flex; align-items: center; gap: var(--ac-space-1); }
+  .chart-legend__swatch { width: 10px; height: 10px; border-radius: var(--ac-radius-xs); flex-shrink: 0; }
+  .chart-body { width: 100%; border-radius: var(--ac-radius-md); overflow: hidden; }
+
+  /* ═══ 表格（AcTable 渲染输出） ═══ */
+  .table-wrap { overflow-x: auto; }
+  .ac-table { width: 100%; border-collapse: collapse; font-size: var(--ac-fs-sm); }
+  .ac-table th, .ac-table td { text-align: left; padding: var(--ac-space-3) var(--ac-space-4); border-bottom: 1px solid var(--ac-color-border-1); color: var(--ac-color-text-1); vertical-align: middle; white-space: nowrap; }
+  .ac-table th { background: var(--ac-color-fill-1); color: var(--ac-color-text-2); font-weight: var(--ac-fw-medium); }
+  .ac-table th.is-right, .ac-table td.is-right { text-align: right; }
+  .ac-table td.is-num { text-align: right; font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; }
+  .ac-table tbody tr:hover td { background: var(--ac-color-fill-1); }
+  .ac-table tr.is-total td { font-weight: var(--ac-fw-bold); background: var(--ac-color-fill-1); border-top: 1px solid var(--ac-color-border-2); border-bottom: none; }
+</style>
+</head>
+<body>
+<section class="tpl-page">
+
+  <!-- ═══ 公共筛选区 ═══ -->
+  <section class="tpl-panel">
+    <form class="ac-form tpl-filter" onsubmit="return false">
+      <div class="tpl-filter__item">
+        <label class="ac-form-item__label">日期范围</label>
+        <div class="ac-form-item__control">
+          <span class="ac-date-picker"><span class="ac-date-picker__view">2026-06-25 ~ 2026-07-01（前7天）</span><span class="ac-date-picker__suffix">&#9662;</span></span>
+        </div>
+      </div>
+      <div class="tpl-filter__item">
+        <label class="ac-form-item__label">成员</label>
+        <div class="ac-form-item__control">
+          <span class="ac-select"><span class="ac-select__view">全部成员</span><span class="ac-select__suffix">&#9662;</span></span>
+        </div>
+      </div>
+      <div class="tpl-filter__actions">
+        <button type="button" class="ac-btn ac-btn--primary">查询</button>
+        <button type="button" class="ac-btn">重置</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- ═══ KPI 卡片行 ═══ -->
+  <section class="tpl-panel">
+    <div class="kpi-grid">
+      <div class="kpi-card">
+        <span class="kpi-card__title">总用量</span>
+        <div class="kpi-card__number"><span class="kpi-card__value">4,832</span><span class="kpi-card__unit">Credits</span></div>
+        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 12.5%</span></div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__title">总请求数</span>
+        <div class="kpi-card__number"><span class="kpi-card__value">198</span><span class="kpi-card__unit">次</span></div>
+        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 5.6%</span></div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__title">次均消耗</span>
+        <div class="kpi-card__number"><span class="kpi-card__value">24.4</span><span class="kpi-card__unit">Credits/次</span></div>
+        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 6.5%</span></div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__title">人均用量</span>
+        <div class="kpi-card__number"><span class="kpi-card__value">966</span><span class="kpi-card__unit">Credits</span></div>
+        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 8.3%</span></div>
+      </div>
+      <div class="kpi-card">
+        <span class="kpi-card__title">活跃成员</span>
+        <div class="kpi-card__number"><span class="kpi-card__value">5</span><span class="kpi-card__unit">人</span></div>
+        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-flat">&#8212; 0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 日 Credits 消耗堆叠柱形图（按模型分类堆叠） ═══ -->
+  <section class="tpl-panel">
+    <div class="tpl-panel__head">
+      <span class="tpl-panel__title">日 Credits 消耗趋势</span>
+      <div class="chart-legend">
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-primary-4);"></span>Ultimate</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-purple-4);"></span>Kimi K3</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-info-4);"></span>GLM 5.3</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-cyan-4);"></span>DeepSeek V4 Pro</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-warning-4);"></span>Qwen3.8 Max</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-gray-4);"></span>其他</span>
+      </div>
+    </div>
+    <div class="chart-body">
+      <svg viewBox="0 0 800 250" preserveAspectRatio="xMidYMid meet" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
+        <line x1="60" y1="220" x2="780" y2="220" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
+        <line x1="60" y1="180" x2="780" y2="180" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
+        <line x1="60" y1="140" x2="780" y2="140" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
+        <line x1="60" y1="100" x2="780" y2="100" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
+        <line x1="60" y1="60" x2="780" y2="60" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
+        <line x1="60" y1="20" x2="780" y2="20" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
+        <text x="50" y="224" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">0</text>
+        <text x="50" y="184" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">200</text>
+        <text x="50" y="144" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">400</text>
+        <text x="50" y="104" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">600</text>
+        <text x="50" y="64" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">800</text>
+        <text x="50" y="24" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">1000</text>
+        <!-- 堆叠柱形：每日一根，自下而上 Ultimate / Kimi K3 / GLM 5.3 / DeepSeek V4 Pro / Qwen3.8 Max / 其他 -->
+        <!-- 06-25 合计 702 -->
+        <rect x="89.4" y="177.8" width="44" height="42.2" fill="var(--ac-color-primary-4)"/>
+        <rect x="89.4" y="144.2" width="44" height="33.6" fill="var(--ac-palette-purple-4)"/>
+        <rect x="89.4" y="119" width="44" height="25.2" fill="var(--ac-color-info-4)"/>
+        <rect x="89.4" y="102.2" width="44" height="16.8" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="89.4" y="88.2" width="44" height="14" fill="var(--ac-color-warning-4)"/>
+        <rect x="89.4" y="79.6" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-26 合计 713 -->
+        <rect x="192.3" y="180" width="44" height="40" fill="var(--ac-color-primary-4)"/>
+        <rect x="192.3" y="144.4" width="44" height="35.6" fill="var(--ac-palette-purple-4)"/>
+        <rect x="192.3" y="120.2" width="44" height="24.2" fill="var(--ac-color-info-4)"/>
+        <rect x="192.3" y="101.6" width="44" height="18.6" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="192.3" y="86" width="44" height="15.6" fill="var(--ac-color-warning-4)"/>
+        <rect x="192.3" y="77.4" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-27 合计 695 -->
+        <rect x="295.1" y="177" width="44" height="43" fill="var(--ac-color-primary-4)"/>
+        <rect x="295.1" y="145" width="44" height="32" fill="var(--ac-palette-purple-4)"/>
+        <rect x="295.1" y="121.4" width="44" height="23.6" fill="var(--ac-color-info-4)"/>
+        <rect x="295.1" y="103.4" width="44" height="18" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="295.1" y="89.6" width="44" height="13.8" fill="var(--ac-color-warning-4)"/>
+        <rect x="295.1" y="81" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-28 合计 731 -->
+        <rect x="398" y="182" width="44" height="38" fill="var(--ac-color-primary-4)"/>
+        <rect x="398" y="144" width="44" height="38" fill="var(--ac-palette-purple-4)"/>
+        <rect x="398" y="117.6" width="44" height="26.4" fill="var(--ac-color-info-4)"/>
+        <rect x="398" y="98.6" width="44" height="19" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="398" y="82.4" width="44" height="16.2" fill="var(--ac-color-warning-4)"/>
+        <rect x="398" y="73.8" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-29 合计 695 -->
+        <rect x="500.9" y="175.6" width="44" height="44.4" fill="var(--ac-color-primary-4)"/>
+        <rect x="500.9" y="145" width="44" height="30.6" fill="var(--ac-palette-purple-4)"/>
+        <rect x="500.9" y="121.4" width="44" height="23.6" fill="var(--ac-color-info-4)"/>
+        <rect x="500.9" y="103.4" width="44" height="18" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="500.9" y="89.6" width="44" height="13.8" fill="var(--ac-color-warning-4)"/>
+        <rect x="500.9" y="81" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-30 合计 708 -->
+        <rect x="603.7" y="179" width="44" height="41" fill="var(--ac-color-primary-4)"/>
+        <rect x="603.7" y="145" width="44" height="34" fill="var(--ac-palette-purple-4)"/>
+        <rect x="603.7" y="119.6" width="44" height="25.4" fill="var(--ac-color-info-4)"/>
+        <rect x="603.7" y="101.2" width="44" height="18.4" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="603.7" y="87" width="44" height="14.2" fill="var(--ac-color-warning-4)"/>
+        <rect x="603.7" y="78.4" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
+        <!-- 07-01 合计 588 -->
+        <rect x="706.6" y="184.8" width="44" height="35.2" fill="var(--ac-color-primary-4)"/>
+        <rect x="706.6" y="156.6" width="44" height="28.2" fill="var(--ac-palette-purple-4)"/>
+        <rect x="706.6" y="136.6" width="44" height="20" fill="var(--ac-color-info-4)"/>
+        <rect x="706.6" y="121.4" width="44" height="15.2" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="706.6" y="109.6" width="44" height="11.8" fill="var(--ac-color-warning-4)"/>
+        <rect x="706.6" y="102.4" width="44" height="7.2" fill="var(--ac-palette-gray-4)"/>
+        <text x="111.4" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-25</text>
+        <text x="214.3" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-26</text>
+        <text x="317.1" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-27</text>
+        <text x="420" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-28</text>
+        <text x="522.9" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-29</text>
+        <text x="625.7" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-30</text>
+        <text x="728.6" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">07-01</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ═══ 日期 × 成员透视表（成员列按合计降序） ═══ -->
+  <section class="tpl-panel">
+    <div class="tpl-panel__head">
+      <span class="tpl-panel__title">Credits 用量透视表</span>
+    </div>
+    <div class="table-wrap">
+      <table class="ac-table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th class="is-right">周义潇</th>
+            <th class="is-right">苏浩宇</th>
+            <th class="is-right">王芳</th>
+            <th class="is-right">李明</th>
+            <th class="is-right">赵敏</th>
+            <th class="is-right">合计</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>2026-06-25</td><td class="is-num">186</td><td class="is-num">142</td><td class="is-num">201</td><td class="is-num">95</td><td class="is-num">78</td><td class="is-num">702</td></tr>
+          <tr><td>2026-06-26</td><td class="is-num">210</td><td class="is-num">168</td><td class="is-num">89</td><td class="is-num">134</td><td class="is-num">112</td><td class="is-num">713</td></tr>
+          <tr><td>2026-06-27</td><td class="is-num">175</td><td class="is-num">203</td><td class="is-num">156</td><td class="is-num">67</td><td class="is-num">94</td><td class="is-num">695</td></tr>
+          <tr><td>2026-06-28</td><td class="is-num">225</td><td class="is-num">119</td><td class="is-num">143</td><td class="is-num">178</td><td class="is-num">66</td><td class="is-num">731</td></tr>
+          <tr><td>2026-06-29</td><td class="is-num">198</td><td class="is-num">87</td><td class="is-num">112</td><td class="is-num">145</td><td class="is-num">153</td><td class="is-num">695</td></tr>
+          <tr><td>2026-06-30</td><td class="is-num">156</td><td class="is-num">192</td><td class="is-num">167</td><td class="is-num">108</td><td class="is-num">85</td><td class="is-num">708</td></tr>
+          <tr><td>2026-07-01</td><td class="is-num">134</td><td class="is-num">155</td><td class="is-num">98</td><td class="is-num">121</td><td class="is-num">80</td><td class="is-num">588</td></tr>
+          <tr class="is-total"><td>合计</td><td class="is-num">1,284</td><td class="is-num">1,066</td><td class="is-num">966</td><td class="is-num">848</td><td class="is-num">668</td><td class="is-num">4,832</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ 成员 × 模型等级透视表 ═══ -->
+  <section class="tpl-panel">
+    <div class="tpl-panel__head">
+      <span class="tpl-panel__title">模型用量透视表</span>
+      <span class="tpl-panel__hint">成员 × 模型等级 · 单位 Credits（保留两位小数） · 复用顶部公共筛选</span>
+    </div>
+    <div class="table-wrap">
+      <table class="ac-table">
+        <thead>
+          <tr>
+            <th>成员</th>
+            <th class="is-right">Auto</th>
+            <th class="is-right">Ultimate</th>
+            <th class="is-right">Performance</th>
+            <th class="is-right">Efficient</th>
+            <th class="is-right">Lite</th>
+            <th class="is-right">合计</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>周义潇</td><td class="is-num">320.45</td><td class="is-num">512.30</td><td class="is-num">268.10</td><td class="is-num">142.66</td><td class="is-num">40.50</td><td class="is-num">1,284.01</td></tr>
+          <tr><td>苏浩宇</td><td class="is-num">410.20</td><td class="is-num">305.75</td><td class="is-num">198.40</td><td class="is-num">121.33</td><td class="is-num">30.00</td><td class="is-num">1,065.68</td></tr>
+          <tr><td>李明</td><td class="is-num">265.50</td><td class="is-num">240.00</td><td class="is-num">180.25</td><td class="is-num">130.45</td><td class="is-num">31.80</td><td class="is-num">848.00</td></tr>
+          <tr><td>王芳</td><td class="is-num">300.10</td><td class="is-num">285.60</td><td class="is-num">210.75</td><td class="is-num">140.20</td><td class="is-num">29.35</td><td class="is-num">966.00</td></tr>
+          <tr><td>赵敏</td><td class="is-num">180.30</td><td class="is-num">160.85</td><td class="is-num">150.60</td><td class="is-num">131.25</td><td class="is-num">45.00</td><td class="is-num">668.00</td></tr>
+          <tr class="is-total"><td>合计</td><td class="is-num">1,476.55</td><td class="is-num">1,504.50</td><td class="is-num">1,008.10</td><td class="is-num">665.89</td><td class="is-num">176.65</td><td class="is-num">4,831.69</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</section>
+</body>
+</html>

@@ -1,0 +1,569 @@
+<!doctype html>
+<!--
+  原型：UsageEvents（事务流水明细）
+  路由：/portal/usage-events
+  permCode：MENU:RND:MANAGE:USAGE_EVENTS
+  类型：list（对齐 .agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl）
+  生成依据：page-blueprint v3.4.0 / page-gen.prompt.md（7 段分析见 SKILL.md 同目录提交记录）
+  外壳：不带（业务页只放 <section class="tpl-page">；面包屑 / 顶栏 / 侧边由 Layout 承载）
+-->
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1366, initial-scale=1" />
+  <title>UsageEvents · 事务流水明细 · 原型</title>
+  <style>
+    /* ============ Token 真源（节选自 .agents/skills/page-blueprint/tokens/web.css） ============ */
+    :root {
+      --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4;
+      --ac-primary-1:#FFECE8; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+      --ac-success-1:#E8FFEA; --ac-success-6:#00B42A;
+      --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00;
+      --ac-danger-1:#FFECE8;  --ac-danger-6:#F53F3F;
+      --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA; --ac-bg-3:#F2F3F5;
+      --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+      --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+      --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+      --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+      --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-lg:8px; --ac-radius-full:9999px;
+      --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI','PingFang SC','Microsoft YaHei',sans-serif;
+      --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+      --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+      --ac-fw-medium:500; --ac-fw-semibold:600; --ac-fw-bold:700;
+      --ac-biz-pending:#FF7D00; --ac-biz-positive:#00B42A; --ac-biz-processing:#F53F3F;
+      --ac-duration-base:0.25s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+      --ac-hit-click:32px;
+    }
+    *,*::before,*::after { box-sizing: border-box; }
+    html,body { margin:0; padding:0; background: var(--ac-bg-2); color: var(--ac-text-1); font-family: var(--ac-ff-sans); font-size: var(--ac-fs-md); }
+
+    /* ============ 骨架（list-page.vue.tpl 1:1 对齐） ============ */
+    .tpl-page { min-height:100vh; padding: var(--ac-space-5); display:flex; flex-direction:column; gap: var(--ac-space-4); background: var(--ac-bg-2); }
+    .tpl-panel { background: var(--ac-bg-1); border-radius: var(--ac-radius-lg); padding: var(--ac-space-5); box-shadow: 0 1px 2px rgba(0,0,0,.03), 0 1px 3px rgba(0,0,0,.04); display:flex; flex-direction:column; gap: var(--ac-space-4); }
+    .tpl-divider { height:1px; background: var(--ac-border-2); margin: 0 calc(-1 * var(--ac-space-5)) var(--ac-space-5); }
+    .tpl-toolbar { display:flex; justify-content:space-between; align-items:center; }
+    .tpl-toolbar__left, .tpl-toolbar__right { display:flex; align-items:center; gap: var(--ac-space-2); }
+    .tpl-toolbar__title { font-size: var(--ac-fs-lg); font-weight: var(--ac-fw-semibold); color: var(--ac-text-1); }
+    .tpl-toolbar__meta  { font-size: var(--ac-fs-sm); color: var(--ac-text-3); }
+    .tpl-pagination { display:flex; justify-content:flex-end; }
+
+    /* ============ 筛选区（Grid 自适应等宽） ============ */
+    .tpl-filter { display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); column-gap: var(--ac-space-6); row-gap: var(--ac-space-4); align-items:end; }
+    .tpl-filter__item { display:flex; flex-direction:column; gap: var(--ac-space-1); min-width:0; }
+    .tpl-filter__item--wide { grid-column: span 2; }
+    .tpl-filter__label { font-size: var(--ac-fs-sm); color: var(--ac-text-2); font-weight: var(--ac-fw-medium); }
+    .tpl-filter__actions { display:inline-flex; align-items:end; gap: var(--ac-space-3); }
+
+    /* ============ Ac 组件外观（白名单 must-build / ready 一致映射） ============ */
+    .ac-input, .ac-select { height:32px; padding: 0 var(--ac-space-3); border:1px solid var(--ac-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-bg-1); color: var(--ac-text-1); font-size: var(--ac-fs-md); width:100%; outline:none; transition: border-color var(--ac-duration-base) var(--ac-easing-standard); }
+    .ac-input:focus, .ac-select:focus { border-color: var(--ac-primary-6); }
+    .ac-select { background-image: linear-gradient(45deg, transparent 50%, var(--ac-text-3) 50%), linear-gradient(135deg, var(--ac-text-3) 50%, transparent 50%); background-position: calc(100% - 14px) 14px, calc(100% - 9px) 14px; background-size: 5px 5px; background-repeat: no-repeat; appearance:none; padding-right: 24px; }
+    .ac-input--search { padding-left: 30px; background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 16 16' fill='none' stroke='%2386909C' stroke-width='1.5'><circle cx='7' cy='7' r='5'/><path d='M11 11l3 3'/></svg>"); background-repeat:no-repeat; background-position: 10px center; }
+    .ac-input--range { display:flex; align-items:center; gap: var(--ac-space-2); padding: 0 var(--ac-space-3); }
+    .ac-input--range input { border:none; outline:none; flex:1; min-width:0; height:30px; font-size: var(--ac-fs-md); color: var(--ac-text-1); background:transparent; font-family: var(--ac-ff-mono); }
+    .ac-input--range .sep { color: var(--ac-text-3); font-size: var(--ac-fs-xs); }
+    .ac-button { display:inline-flex; align-items:center; gap:6px; height:32px; padding: 0 var(--ac-space-4); border:1px solid var(--ac-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-bg-1); color: var(--ac-text-1); font-size: var(--ac-fs-md); font-weight: var(--ac-fw-medium); cursor:pointer; transition: all var(--ac-duration-base) var(--ac-easing-standard); white-space:nowrap; min-width: var(--ac-hit-click); }
+    .ac-button:hover { border-color: var(--ac-primary-6); color: var(--ac-primary-6); }
+    .ac-button--primary { background: var(--ac-primary-6); border-color: var(--ac-primary-6); color:#fff; }
+    .ac-button--primary:hover { background: var(--ac-primary-7); border-color: var(--ac-primary-7); color:#fff; }
+    .ac-button--text { border:none; background:transparent; color: var(--ac-primary-6); padding: 0 var(--ac-space-2); height:24px; min-width:auto; }
+    .ac-button--text:hover { color: var(--ac-primary-7); background: var(--ac-primary-1); border-radius: var(--ac-radius-sm); }
+    .ac-button--small { height:24px; padding: 0 var(--ac-space-2); font-size: var(--ac-fs-sm); }
+    .ac-button .ac-icon { width:14px; height:14px; }
+
+    /* ============ AcStatistic（数值唯一） ============ */
+    .ac-statistic { display:flex; flex-direction:column; gap: var(--ac-space-1); }
+    .ac-statistic__title { font-size: var(--ac-fs-sm); color: var(--ac-text-2); }
+    .ac-statistic__value { font-family: var(--ac-ff-mono); font-size: 28px; line-height:1.15; font-weight: var(--ac-fw-semibold); color: var(--ac-text-1); letter-spacing:-0.4px; font-variant-numeric: tabular-nums; }
+    .ac-statistic__suffix { font-size: var(--ac-fs-xs); font-weight: var(--ac-fw-medium); color: var(--ac-text-3); margin-left: 4px; }
+    .ac-statistic--time .ac-statistic__value { font-size: 18px; }
+
+    /* ============ 摘要 4 卡 ============ */
+    .summary-grid { display:grid; grid-template-columns: repeat(4, 1fr); gap: var(--ac-space-5); }
+    @media (max-width:1280px){ .summary-grid { grid-template-columns: repeat(2, 1fr); } }
+
+    /* ============ AcTable ============ */
+    .ac-table { width:100%; border-collapse: separate; border-spacing:0; font-size: var(--ac-fs-md); }
+    .ac-table thead th { background: var(--ac-fill-1); color: var(--ac-text-2); font-weight: var(--ac-fw-semibold); text-align:left; padding: var(--ac-space-3) var(--ac-space-4); border-bottom: 1px solid var(--ac-border-2); white-space:nowrap; font-size: var(--ac-fs-sm); }
+    .ac-table tbody td { padding: var(--ac-space-3) var(--ac-space-4); border-bottom: 1px solid var(--ac-border-1); color: var(--ac-text-1); vertical-align: middle; }
+    .ac-table tbody tr:hover td { background: var(--ac-fill-1); }
+    .ac-table tbody tr.is-selected td { background: var(--ac-primary-1); }
+    .ac-table .col-mono { font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; }
+    .ac-table .col-time { font-family: var(--ac-ff-mono); color: var(--ac-text-2); white-space:nowrap; }
+    .ac-table .col-route { font-family: var(--ac-ff-mono); color: var(--ac-text-2); font-size: var(--ac-fs-sm); }
+
+    /* ============ Tag / Status 药丸 ============ */
+    .ac-tag { display:inline-flex; align-items:center; gap:4px; height:22px; padding: 0 8px; border-radius: var(--ac-radius-sm); font-size: var(--ac-fs-xs); font-weight: var(--ac-fw-medium); white-space:nowrap; }
+    .ac-tag--web    { background: rgba(53,145,250,.10); color:#F53F3F; }
+    .ac-tag--app    { background: rgba(0,180,42,.10);    color: var(--ac-success-6); }
+    .ac-tag--view   { background: var(--ac-fill-2); color: var(--ac-text-2); }
+    .ac-tag--click  { background: var(--ac-primary-1); color: var(--ac-primary-6); }
+    .ac-tag--auto   { background: rgba(255,125,0,.10); color: var(--ac-warning-6); }
+
+    /* ============ AcAlert ============ */
+    .ac-alert { display:flex; align-items:flex-start; gap: var(--ac-space-2); padding: var(--ac-space-3) var(--ac-space-4); border-radius: var(--ac-radius-md); border:1px solid; font-size: var(--ac-fs-md); }
+    .ac-alert--error    { background: var(--ac-danger-1);  border-color: rgba(245,63,63,.30);  color: var(--ac-danger-6); }
+    .ac-alert--warning  { background: var(--ac-warning-1); border-color: rgba(255,125,0,.30); color: var(--ac-warning-6); }
+    .ac-alert__icon { width:16px; height:16px; flex-shrink:0; margin-top:2px; }
+    .ac-alert__body { flex:1; }
+    .ac-alert__title { font-weight: var(--ac-fw-semibold); margin-bottom: 2px; }
+    .ac-alert__retry { background:transparent; border:none; color: var(--ac-danger-6); font-size: var(--ac-fs-sm); cursor:pointer; padding:0; text-decoration: underline; }
+
+    /* ============ AcEmpty ============ */
+    .ac-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; padding: var(--ac-space-8) 0; gap: var(--ac-space-2); color: var(--ac-text-3); }
+    .ac-empty__icon { width:64px; height:64px; opacity:.6; }
+    .ac-empty__desc { font-size: var(--ac-fs-md); color: var(--ac-text-3); text-align:center; max-width: 360px; }
+
+    /* ============ AcPagination ============ */
+    .ac-pagination { display:flex; align-items:center; gap: var(--ac-space-3); font-size: var(--ac-fs-sm); color: var(--ac-text-2); }
+    .ac-pagination__total { color: var(--ac-text-3); margin-right: var(--ac-space-2); }
+    .ac-pagination__list { display:inline-flex; gap: 4px; }
+    .ac-pagination__item { min-width:32px; height:32px; padding:0 8px; border:1px solid var(--ac-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-bg-1); color: var(--ac-text-1); cursor:pointer; display:inline-flex; align-items:center; justify-content:center; font-family: var(--ac-ff-mono); }
+    .ac-pagination__item.is-active { background: var(--ac-primary-1); border-color: var(--ac-primary-6); color: var(--ac-primary-6); font-weight: var(--ac-fw-semibold); }
+
+    /* ============ AcDrawer（原型默认渲染，便于静态审稿） ============ */
+    .ac-drawer-mask { position:fixed; inset:0; background: rgba(29,33,41,.32); z-index:1000; display:none; }
+    .ac-drawer-mask.is-open { display:block; }
+    .ac-drawer { position:fixed; top:0; right:0; bottom:0; width:520px; background: var(--ac-bg-1); box-shadow: -4px 0 16px rgba(0,0,0,.12); z-index:1001; transform: translateX(0); transition: transform var(--ac-duration-base) var(--ac-easing-standard); display:flex; flex-direction:column; }
+    .ac-drawer.is-closed { transform: translateX(100%); }
+    .ac-drawer__hint { padding: var(--ac-space-2) var(--ac-space-5); background: var(--ac-primary-1); color: var(--ac-primary-6); font-size: var(--ac-fs-xs); display:flex; align-items:center; gap: var(--ac-space-2); border-bottom: 1px solid rgba(245,63,63,.16); }
+    .ac-drawer__header { padding: var(--ac-space-4) var(--ac-space-5); border-bottom: 1px solid var(--ac-border-2); display:flex; align-items:center; justify-content:space-between; }
+    .ac-drawer__title  { font-size: var(--ac-fs-lg); font-weight: var(--ac-fw-semibold); color: var(--ac-text-1); }
+    .ac-drawer__close  { background:none; border:none; font-size:18px; color: var(--ac-text-3); cursor:pointer; line-height:1; padding: 4px; }
+    .ac-drawer__body   { flex:1; overflow:auto; padding: var(--ac-space-5); display:flex; flex-direction:column; gap: var(--ac-space-5); }
+    .ac-drawer__footer { padding: var(--ac-space-3) var(--ac-space-5); border-top: 1px solid var(--ac-border-2); display:flex; justify-content:flex-end; gap: var(--ac-space-2); }
+
+    /* ============ AcDescriptions ============ */
+    .ac-descriptions__title { font-size: var(--ac-fs-md); font-weight: var(--ac-fw-semibold); color: var(--ac-text-1); margin-bottom: var(--ac-space-3); }
+    .ac-descriptions__grid  { display:grid; grid-template-columns: 96px 1fr; row-gap: var(--ac-space-2); column-gap: var(--ac-space-3); font-size: var(--ac-fs-sm); }
+    .ac-descriptions__label { color: var(--ac-text-3); }
+    .ac-descriptions__value { color: var(--ac-text-1); word-break: break-all; }
+    .ac-descriptions__value.is-mono { font-family: var(--ac-ff-mono); }
+
+    /* ============ AcTimeline ============ */
+    .ac-timeline { display:flex; flex-direction:column; gap: var(--ac-space-3); position:relative; padding-left: var(--ac-space-5); }
+    .ac-timeline::before { content:''; position:absolute; left: 5px; top:6px; bottom:6px; width:1px; background: var(--ac-border-2); }
+    .ac-timeline__item { position:relative; }
+    .ac-timeline__dot  { position:absolute; left: calc(-1 * var(--ac-space-5) + 1px); top: 6px; width:9px; height:9px; border-radius:50%; background: var(--ac-primary-6); border: 2px solid var(--ac-bg-1); }
+    .ac-timeline__time { font-family: var(--ac-ff-mono); font-size: var(--ac-fs-xs); color: var(--ac-text-3); }
+    .ac-timeline__text { font-size: var(--ac-fs-sm); color: var(--ac-text-1); margin-top: 2px; }
+
+    /* ============ AcSpin / 图标占位 ============ */
+    .ac-spin { display:inline-block; width:16px; height:16px; border:2px solid var(--ac-fill-3); border-top-color: var(--ac-primary-6); border-radius:50%; animation: ac-rotate .8s linear infinite; }
+    @keyframes ac-rotate { to { transform: rotate(360deg); } }
+    @media (prefers-reduced-motion: reduce) { .ac-spin { animation: none; } }
+    .ac-icon { display:inline-block; vertical-align:-2px; }
+    .col-actions { white-space: nowrap; }
+  </style>
+</head>
+<body>
+
+  <!-- ⚠️ 业务页只放一个 <section class="tpl-page">；面包屑 / 顶栏 / 侧边由 PortalLayout 承载 -->
+  <section class="tpl-page" style="padding-right: 540px;">
+
+    <!-- ───────── 下钻上下文（来自 usage-report 跳转时显示，演示态默认开） ───────── -->
+    <div class="ac-alert ac-alert--warning" style="background: var(--ac-primary-1); border-color: rgba(245,63,63,.28); color: var(--ac-primary-6);">
+      <svg class="ac-alert__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      <div class="ac-alert__body">
+        <div class="ac-alert__title">来自「使用情况报表」下钻</div>
+        <div style="color: var(--ac-text-2);">已自动应用筛选 · 功能 = <strong style="font-family: var(--ac-ff-mono); color: var(--ac-text-1);">门店要货单管理（RND.MANAGE.STORE_REQUEST）</strong> · 时间 = 近 7 日</div>
+      </div>
+      <button class="ac-button ac-button--text">清除上下文</button>
+    </div>
+
+    <!-- ───────── Card 1 / 4：筛选 ───────── -->
+    <div class="tpl-panel">
+      <div class="tpl-filter">
+        <div class="tpl-filter__item tpl-filter__item--wide">
+          <span class="tpl-filter__label">时间范围（默认近 24 小时）</span>
+          <!-- AcDatePicker(type=range)（A4：禁止双 AcDatePicker） -->
+          <div class="ac-input ac-input--range">
+            <input type="text" value="2026-05-21 00:00:00" aria-label="开始时间" />
+            <span class="sep">—</span>
+            <input type="text" value="2026-05-22 00:00:00" aria-label="结束时间" />
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">端</span>
+          <select class="ac-select">
+            <option value="">全部</option>
+            <option value="WEB">Web</option>
+            <option value="APP">App</option>
+          </select>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">用户（autocomplete）</span>
+          <input class="ac-input ac-input--search" placeholder="输入用户名 / 手机号 / 工号" />
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">角色</span>
+          <select class="ac-select">
+            <option value="">全部</option>
+            <option>系统管理员</option><option>区域督导</option><option>店长</option><option>店员</option>
+          </select>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">路由关键词</span>
+          <input class="ac-input" placeholder="如：/portal/store-request" />
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">功能（sys_function_catalog）</span>
+          <select class="ac-select">
+            <option value="">全部</option>
+            <option>门店要货单管理</option><option>访客预约审核</option><option>使用情况报表</option><option>积分账户流水</option>
+          </select>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">事件类型</span>
+          <select class="ac-select">
+            <option value="">全部</option>
+            <option>VIEW（页面访问，自动）</option>
+            <option>CLICK（按钮点击）</option>
+            <option>OPERATION（业务动作）</option>
+          </select>
+        </div>
+        <div class="tpl-filter__actions">
+          <!-- 隐式查询：change → 自动触发；显式按钮兜底 -->
+          <button class="ac-button ac-button--primary">查询</button>
+          <button class="ac-button">重置</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── Card 2 / 4：摘要（AcStatistic 唯一） ───────── -->
+    <div class="tpl-panel">
+      <div class="summary-grid">
+        <div class="ac-statistic">
+          <span class="ac-statistic__title">事件总数（当前条件）</span>
+          <span class="ac-statistic__value">128,540<span class="ac-statistic__suffix">条</span></span>
+        </div>
+        <div class="ac-statistic">
+          <span class="ac-statistic__title">去重用户数</span>
+          <span class="ac-statistic__value">3,287<span class="ac-statistic__suffix">人</span></span>
+        </div>
+        <div class="ac-statistic">
+          <span class="ac-statistic__title">去重功能数</span>
+          <span class="ac-statistic__value">142<span class="ac-statistic__suffix">项</span></span>
+        </div>
+        <div class="ac-statistic ac-statistic--time">
+          <span class="ac-statistic__title">最近事件时间</span>
+          <span class="ac-statistic__value">2026-05-22 11:42:38</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ───────── Card 3 / 4：错误态（默认隐藏；接口失败时显示） ───────── -->
+    <!--
+    <div class="ac-alert ac-alert--error" role="alert">
+      <svg class="ac-alert__icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="6.5"/><path d="M8 5v3.5M8 11v.01"/></svg>
+      <div class="ac-alert__body">
+        <div class="ac-alert__title">查询失败</div>
+        <div>事件流水接口暂时不可用，请稍后重试。</div>
+      </div>
+      <button class="ac-alert__retry">重试</button>
+    </div>
+    -->
+
+    <!-- ───────── Card 4 / 4：表格 ───────── -->
+    <div class="tpl-panel">
+      <!-- toolbar：__left 留空（C5 禁拼"共 N 条"） / __right 仅过程性按钮 -->
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left">
+          <span class="tpl-toolbar__title">事件流水</span>
+          <span class="tpl-toolbar__meta">最近刷新 11:42:55</span>
+        </div>
+        <div class="tpl-toolbar__right">
+          <button class="ac-button" title="刷新">
+            <svg class="ac-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 3v3h-3"/></svg>
+            刷新
+          </button>
+          <!-- v-permission="'BTN:RND:MANAGE:USAGE_EVENTS:EXPORT'" -->
+          <button class="ac-button" title="导出 CSV（最多 5 万行，超量引导离线导出）">
+            <svg class="ac-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2M8 2v8M5 7l3 3 3-3"/></svg>
+            导出 CSV
+          </button>
+        </div>
+      </div>
+
+      <div class="tpl-divider"></div>
+
+      <!-- AcTable -->
+      <table class="ac-table">
+        <thead>
+          <tr>
+            <th style="width:72px">端</th>
+            <th style="width:120px">用户</th>
+            <th style="width:100px">角色</th>
+            <th style="width:120px">手机号</th>
+            <th>页面（路由）</th>
+            <th style="width:160px">功能</th>
+            <th style="width:96px">事件类型</th>
+            <th style="width:160px">时间</th>
+            <th style="width:80px" class="col-actions">操作</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="is-selected">
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>李文静</td>
+            <td>区域督导</td>
+            <td class="col-mono">138****0921</td>
+            <td class="col-route">/portal/store-request/manage</td>
+            <td>门店要货单管理</td>
+            <td><span class="ac-tag ac-tag--click">CLICK</span></td>
+            <td class="col-time">2026-05-22 11:42:38</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--app">App</span></td>
+            <td>王浩然</td>
+            <td>店长</td>
+            <td class="col-mono">139****1138</td>
+            <td class="col-route">/m/visitor/appointment</td>
+            <td>访客预约审核</td>
+            <td><span class="ac-tag ac-tag--view">VIEW</span></td>
+            <td class="col-time">2026-05-22 11:41:05</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>张敏</td>
+            <td>店长</td>
+            <td class="col-mono">137****6629</td>
+            <td class="col-route">/portal/usage-report</td>
+            <td>使用情况报表</td>
+            <td><span class="ac-tag ac-tag--view">VIEW</span></td>
+            <td class="col-time">2026-05-22 11:40:51</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>陈思源</td>
+            <td>系统管理员</td>
+            <td class="col-mono">186****0207</td>
+            <td class="col-route">/portal/usage-catalog</td>
+            <td>功能目录管理</td>
+            <td><span class="ac-tag ac-tag--click">CLICK</span></td>
+            <td class="col-time">2026-05-22 11:38:14</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--app">App</span></td>
+            <td>赵建国</td>
+            <td>店员</td>
+            <td class="col-mono">131****4582</td>
+            <td class="col-route">/m/inventory/scan</td>
+            <td>库存扫码盘点</td>
+            <td><span class="ac-tag ac-tag--auto">OPERATION</span></td>
+            <td class="col-time">2026-05-22 11:35:42</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>孙佳琪</td>
+            <td>店长</td>
+            <td class="col-mono">135****8870</td>
+            <td class="col-route">/portal/voucher/cashflow-manage</td>
+            <td>凭证流量项目</td>
+            <td><span class="ac-tag ac-tag--click">CLICK</span></td>
+            <td class="col-time">2026-05-22 11:32:09</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--app">App</span></td>
+            <td>周晓彤</td>
+            <td>区域督导</td>
+            <td class="col-mono">133****2945</td>
+            <td class="col-route">/m/store-request/list</td>
+            <td>门店要货单（移动）</td>
+            <td><span class="ac-tag ac-tag--view">VIEW</span></td>
+            <td class="col-time">2026-05-22 11:28:33</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>吴俊杰</td>
+            <td>系统管理员</td>
+            <td class="col-mono">189****6731</td>
+            <td class="col-route">/portal/usage-events</td>
+            <td>事务流水明细</td>
+            <td><span class="ac-tag ac-tag--view">VIEW</span></td>
+            <td class="col-time">2026-05-22 11:24:18</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--app">App</span></td>
+            <td>郑梓涵</td>
+            <td>店员</td>
+            <td class="col-mono">132****0044</td>
+            <td class="col-route">/m/task/list</td>
+            <td>任务中心（移动）</td>
+            <td><span class="ac-tag ac-tag--auto">OPERATION</span></td>
+            <td class="col-time">2026-05-22 11:21:27</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>钱雅婷</td>
+            <td>店长</td>
+            <td class="col-mono">130****5519</td>
+            <td class="col-route">/portal/score/account-flow</td>
+            <td>积分账户流水</td>
+            <td><span class="ac-tag ac-tag--click">CLICK</span></td>
+            <td class="col-time">2026-05-22 11:18:55</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--web">Web</span></td>
+            <td>冯泽宇</td>
+            <td>店长</td>
+            <td class="col-mono">134****7783</td>
+            <td class="col-route">/portal/people-flow/manage</td>
+            <td>客流分析</td>
+            <td><span class="ac-tag ac-tag--view">VIEW</span></td>
+            <td class="col-time">2026-05-22 11:16:02</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+          <tr>
+            <td><span class="ac-tag ac-tag--app">App</span></td>
+            <td>韩诗雨</td>
+            <td>店员</td>
+            <td class="col-mono">158****8821</td>
+            <td class="col-route">/m/visitor/list</td>
+            <td>访客预约（移动）</td>
+            <td><span class="ac-tag ac-tag--click">CLICK</span></td>
+            <td class="col-time">2026-05-22 11:13:48</td>
+            <td class="col-actions"><button class="ac-button ac-button--text">查看详情</button></td>
+          </tr>
+        </tbody>
+      </table>
+
+      <!-- 空态备份（AcTable #empty 槽渲染时切换；演示态注释） -->
+      <!--
+      <div class="ac-empty">
+        <svg class="ac-empty__icon" viewBox="0 0 64 64" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="10" y="14" width="44" height="36" rx="3"/><path d="M10 24h44M20 14v-4M44 14v-4"/></svg>
+        <div class="ac-empty__desc">当前条件下没有事件，建议放宽时间范围或更换功能</div>
+      </div>
+      -->
+
+      <!-- 分页 -->
+      <div class="tpl-pagination">
+        <div class="ac-pagination">
+          <span class="ac-pagination__total">共 128,540 条</span>
+          <div class="ac-pagination__list">
+            <span class="ac-pagination__item">‹</span>
+            <span class="ac-pagination__item is-active">1</span>
+            <span class="ac-pagination__item">2</span>
+            <span class="ac-pagination__item">3</span>
+            <span class="ac-pagination__item">…</span>
+            <span class="ac-pagination__item">6,427</span>
+            <span class="ac-pagination__item">›</span>
+          </div>
+          <select class="ac-select" style="width:96px">
+            <option>20 / 页</option><option>50 / 页</option><option>100 / 页</option>
+          </select>
+        </div>
+      </div>
+    </div>
+
+  </section>
+
+  <!-- ───────── AcDrawer：事件详情（演示态默认开 · 上线初值加 .is-closed） ───────── -->
+  <!-- 注：原型态隐藏 mask 避免遮挡审稿；实装走 v-model 控制 .is-closed 与 mask -->
+  <aside class="ac-drawer" role="dialog" aria-labelledby="drawer-title">
+    <header class="ac-drawer__header">
+      <span id="drawer-title" class="ac-drawer__title">事件详情 · #20260522114238-LWJ</span>
+      <button class="ac-drawer__close" aria-label="关闭">×</button>
+    </header>
+    <div class="ac-drawer__hint">
+      <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 8h10M9 4l4 4-4 4"/></svg>
+      下钻视图 · 从表格行「查看详情」进入
+    </div>
+    <div class="ac-drawer__body">
+
+      <!-- 1) AcDescriptions：事件详情 -->
+      <section>
+        <div class="ac-descriptions__title">事件详情</div>
+        <div class="ac-descriptions__grid">
+          <span class="ac-descriptions__label">端</span>
+          <span class="ac-descriptions__value"><span class="ac-tag ac-tag--web">Web</span></span>
+          <span class="ac-descriptions__label">用户</span>
+          <span class="ac-descriptions__value">李文静（区域督导 · USR0011）</span>
+          <span class="ac-descriptions__label">手机号</span>
+          <span class="ac-descriptions__value is-mono">138****0921</span>
+          <span class="ac-descriptions__label">事件类型</span>
+          <span class="ac-descriptions__value"><span class="ac-tag ac-tag--click">CLICK</span></span>
+          <span class="ac-descriptions__label">页面路由</span>
+          <span class="ac-descriptions__value is-mono">/portal/store-request/manage</span>
+          <span class="ac-descriptions__label">功能编码</span>
+          <span class="ac-descriptions__value is-mono">RND.MANAGE.STORE_REQUEST.AUDIT</span>
+          <span class="ac-descriptions__label">触发时间</span>
+          <span class="ac-descriptions__value is-mono">2026-05-22 11:42:38.247</span>
+          <span class="ac-descriptions__label">客户端 UA</span>
+          <span class="ac-descriptions__value is-mono">Chrome 124 · macOS 14.5</span>
+          <span class="ac-descriptions__label">IP</span>
+          <span class="ac-descriptions__value is-mono">10.20.33.108（华东 · 苏州）</span>
+          <span class="ac-descriptions__label">追踪 ID</span>
+          <span class="ac-descriptions__value is-mono">trace-7c22f9-2026052211423824</span>
+        </div>
+      </section>
+
+      <!-- 2) AcTimeline：用户近期相邻事件 -->
+      <section>
+        <div class="ac-descriptions__title">该用户近期相邻事件（前后各 5 条）</div>
+        <div class="ac-timeline">
+          <div class="ac-timeline__item"><span class="ac-timeline__dot"></span>
+            <div class="ac-timeline__time">11:42:38 · 当前事件</div>
+            <div class="ac-timeline__text">CLICK · /portal/store-request/manage · 「批量审核」</div>
+          </div>
+          <div class="ac-timeline__item"><span class="ac-timeline__dot"></span>
+            <div class="ac-timeline__time">11:42:11</div>
+            <div class="ac-timeline__text">VIEW · /portal/store-request/manage</div>
+          </div>
+          <div class="ac-timeline__item"><span class="ac-timeline__dot"></span>
+            <div class="ac-timeline__time">11:41:50</div>
+            <div class="ac-timeline__text">CLICK · /portal/store-request/manage · 「展开筛选」</div>
+          </div>
+          <div class="ac-timeline__item"><span class="ac-timeline__dot"></span>
+            <div class="ac-timeline__time">11:38:24</div>
+            <div class="ac-timeline__text">VIEW · /portal/usage-report</div>
+          </div>
+          <div class="ac-timeline__item"><span class="ac-timeline__dot"></span>
+            <div class="ac-timeline__time">11:35:09</div>
+            <div class="ac-timeline__text">VIEW · /portal/store-request/manage</div>
+          </div>
+          <div class="ac-timeline__item"><span class="ac-timeline__dot"></span>
+            <div class="ac-timeline__time">11:30:48</div>
+            <div class="ac-timeline__text">CLICK · /portal/voucher/cashflow-manage · 「导出 CSV」</div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 3) AcStatistic ×3：近 7 日摘要 -->
+      <section>
+        <div class="ac-descriptions__title">该用户近 7 日行为摘要</div>
+        <div class="summary-grid" style="grid-template-columns: repeat(3, 1fr);">
+          <div class="ac-statistic">
+            <span class="ac-statistic__title">事件数</span>
+            <span class="ac-statistic__value">1,287<span class="ac-statistic__suffix">条</span></span>
+          </div>
+          <div class="ac-statistic">
+            <span class="ac-statistic__title">涉及功能数</span>
+            <span class="ac-statistic__value">23<span class="ac-statistic__suffix">项</span></span>
+          </div>
+          <div class="ac-statistic">
+            <span class="ac-statistic__title">最常用功能</span>
+            <span class="ac-statistic__value" style="font-size:18px">门店要货单管理</span>
+          </div>
+        </div>
+      </section>
+
+    </div>
+    <footer class="ac-drawer__footer">
+      <button class="ac-button">关闭（Esc）</button>
+      <button class="ac-button ac-button--primary">跳转该功能报表</button>
+    </footer>
+  </aside>
+
+</body>
+</html>

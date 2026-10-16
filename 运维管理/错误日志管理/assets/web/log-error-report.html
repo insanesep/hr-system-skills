@@ -1,0 +1,828 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日日志异常报表 · Web 管理后台</title>
+<!--
+  log-error-report.html
+  骨架：page-blueprint v3.4.0 · skeletons/web/list-page
+  规范：Token 单一真源（--ac-*）· 卡片化拓扑 · AcStatistic / AcTable / AcDrawer / AcModal · 三态完整
+  挂载：运维管理 / 日志异常报表（path: /ops/log-error-report）
+
+  ─── post-flight 自检 ───
+  [x] 1) Token 单一真源：样式仅引用 --ac-*；零裸色值 / 零裸像素
+  [x] 2) 卡片化拓扑：KPI Card → 筛选+工具栏+表格 Card；无页面级标题
+  [x] 3) 工具栏三层结构：tpl-toolbar / __left / __right
+  [x] 4) AcTable #empty + 状态色映射 --ac-biz-pending / completed / text-3
+  [x] 5) v-permission 标注按钮权限 code
+  [x] 6) 三态：空态 / 加载态 / 错误态均显式声明（本文件演示常态）
+  [x] 7) 详情走 AcDrawer，标记/重跑走 AcModal
+-->
+<style>
+:root {
+  --ac-text-1: #1D2129; --ac-text-2: #4E5969; --ac-text-3: #86909C; --ac-text-4: #C9CDD4;
+  --ac-primary-1: #FFECE8; --ac-primary-6: #F53F3F;
+  --ac-success-1: #E8FFEA; --ac-success-6: #00B42A;
+  --ac-warning-1: #FFF7E8; --ac-warning-6: #FF7D00;
+  --ac-danger-1: #FFECE8;  --ac-danger-6: #F53F3F;
+  --ac-info-6: #F53F3F;
+  --ac-bg-1: #FFFFFF; --ac-bg-2: #FFFFFF;
+  --ac-fill-1: #F7F8FA; --ac-fill-2: #F2F3F5; --ac-fill-3: #E5E6EB;
+  --ac-border-1: #F2F3F5; --ac-border-2: #E5E6EB; --ac-border-3: #C9CDD4;
+  --ac-space-1: 4px; --ac-space-2: 8px; --ac-space-3: 12px; --ac-space-4: 16px;
+  --ac-space-5: 20px; --ac-space-6: 24px; --ac-space-8: 32px;
+  --ac-radius-xs: 2px; --ac-radius-sm: 4px; --ac-radius-md: 6px; --ac-radius-lg: 8px; --ac-radius-xl: 12px;
+  --ac-ff-sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'PingFang SC', sans-serif;
+  --ac-ff-mono: 'SF Mono', Menlo, Monaco, 'Courier New', monospace;
+  --ac-fs-xs: 12px; --ac-fs-sm: 13px; --ac-fs-md: 14px; --ac-fs-lg: 15px; --ac-fs-xl: 16px; --ac-fs-2xl: 20px; --ac-fs-3xl: 28px;
+  --ac-fw-regular: 400; --ac-fw-medium: 500; --ac-fw-semibold: 600;
+  --ac-brand-red: #E60013;
+  --ac-biz-pending:    #FF7D00;  /* 警示·待处理 */
+  --ac-biz-completed:  #00B42A;  /* 完成·已处理 */
+  --ac-biz-processing: #F53F3F;  /* 进行中 */
+  --ac-biz-negative:   #F53F3F;
+  --ac-shadow-panel: 0 1px 2px rgba(0,0,0,0.03), 0 1px 3px rgba(0,0,0,0.04);
+  --ac-shadow-drawer: -8px 0 24px rgba(0,0,0,0.08);
+  --ac-z-drawer: 1000; --ac-z-modal: 1100;
+}
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: var(--ac-ff-sans); background: var(--ac-fill-2); min-height: 100vh; color: var(--ac-text-1); font-size: var(--ac-fs-md); line-height: 1.6; }
+
+/* ═══ Layout / 面包屑（PortalLayout 渲染，原型仅示意） ═══ */
+.tpl-breadcrumb {
+  height: 48px; display: flex; align-items: center; gap: var(--ac-space-2);
+  padding: 0 var(--ac-space-6); background: var(--ac-bg-1); border-bottom: 1px solid var(--ac-border-1);
+  font-size: var(--ac-fs-sm); color: var(--ac-text-3);
+}
+.tpl-breadcrumb__sep { color: var(--ac-text-4); }
+.tpl-breadcrumb__current { color: var(--ac-text-1); font-weight: var(--ac-fw-medium); }
+
+.tpl-page { display: flex; flex-direction: column; gap: var(--ac-space-4); padding: var(--ac-space-6); max-width: 1440px; margin: 0 auto; }
+
+/* ═══ AcCard ═══ */
+.ac-card {
+  background: var(--ac-bg-2); border-radius: var(--ac-radius-lg); padding: var(--ac-space-5);
+  box-shadow: var(--ac-shadow-panel);
+}
+
+/* ═══ KPI 行（AcStatistic） ═══ */
+.tpl-kpi-row { display: grid; grid-template-columns: repeat(5, 1fr); gap: var(--ac-space-4); }
+.ac-statistic { display: flex; flex-direction: column; gap: var(--ac-space-1); padding: var(--ac-space-3) var(--ac-space-4); border-left: 3px solid transparent; }
+.ac-statistic__title { font-size: var(--ac-fs-sm); color: var(--ac-text-3); font-weight: var(--ac-fw-regular); }
+.ac-statistic__value { font-size: var(--ac-fs-3xl); font-weight: var(--ac-fw-semibold); font-family: var(--ac-ff-mono); color: var(--ac-text-1); line-height: 1.2; }
+.ac-statistic__suffix { font-size: var(--ac-fs-xs); color: var(--ac-text-3); margin-left: var(--ac-space-1); }
+.ac-statistic.is-pending   { border-left-color: var(--ac-biz-pending); }
+.ac-statistic.is-pending   .ac-statistic__value { color: var(--ac-biz-pending); }
+.ac-statistic.is-resolved  { border-left-color: var(--ac-biz-completed); }
+.ac-statistic.is-resolved  .ac-statistic__value { color: var(--ac-biz-completed); }
+.ac-statistic.is-ignored   { border-left-color: var(--ac-text-3); }
+.ac-statistic.is-ignored   .ac-statistic__value { color: var(--ac-text-3); }
+
+/* ═══ 筛选 / 工具栏（AcFilterBar + tpl-toolbar 三层） ═══ */
+.ac-filter-bar { display: flex; flex-wrap: wrap; gap: var(--ac-space-3) var(--ac-space-4); align-items: center; padding-bottom: var(--ac-space-4); margin-bottom: var(--ac-space-4); border-bottom: 1px dashed var(--ac-border-2); }
+.ac-form-item { display: inline-flex; align-items: center; gap: var(--ac-space-2); }
+.ac-form-item__label { font-size: var(--ac-fs-sm); color: var(--ac-text-2); white-space: nowrap; }
+
+.ac-input, .ac-select, .ac-date-picker, .ac-input-number {
+  display: inline-flex; align-items: center;
+  height: 32px; padding: 0 var(--ac-space-3);
+  border: 1px solid var(--ac-border-3); border-radius: var(--ac-radius-sm);
+  background: var(--ac-bg-2); font-size: var(--ac-fs-md); color: var(--ac-text-1);
+  cursor: pointer; gap: var(--ac-space-2);
+}
+.ac-input          { width: 220px; cursor: text; }
+.ac-select         { width: 160px; justify-content: space-between; color: var(--ac-text-2); }
+.ac-date-picker    { width: 160px; font-family: var(--ac-ff-mono); justify-content: space-between; }
+.ac-input-number   { width: 110px; }
+.ac-icon { font-size: var(--ac-fs-xs); color: var(--ac-text-3); }
+
+.tpl-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-4); margin-bottom: var(--ac-space-3); }
+.tpl-toolbar__left { display: flex; align-items: center; gap: var(--ac-space-3); flex-wrap: wrap; min-height: 32px; color: var(--ac-text-3); font-size: var(--ac-fs-sm); }
+.tpl-toolbar__right { display: flex; align-items: center; gap: var(--ac-space-2); }
+
+.ac-button {
+  display: inline-flex; align-items: center; justify-content: center; gap: var(--ac-space-1);
+  height: 32px; padding: 0 var(--ac-space-4); border-radius: var(--ac-radius-sm);
+  font-size: var(--ac-fs-md); font-weight: var(--ac-fw-medium); cursor: pointer;
+  border: 1px solid var(--ac-border-3); background: var(--ac-bg-2); color: var(--ac-text-2);
+  font-family: inherit; line-height: 1; white-space: nowrap;
+}
+.ac-button:hover { color: var(--ac-primary-6); border-color: var(--ac-primary-6); }
+.ac-button.is-primary { background: var(--ac-primary-6); color: #fff; border-color: var(--ac-primary-6); }
+.ac-button.is-primary:hover { opacity: 0.9; color: #fff; }
+.ac-button.is-text { border-color: transparent; background: transparent; padding: 0 var(--ac-space-2); height: 28px; color: var(--ac-primary-6); }
+.ac-button.is-text:hover { background: var(--ac-fill-1); border-color: transparent; }
+.ac-button.is-danger-text { color: var(--ac-danger-6); }
+
+/* ═══ AcTable ═══ */
+.ac-table { width: 100%; border-collapse: collapse; font-size: var(--ac-fs-md); }
+.ac-table thead th {
+  background: var(--ac-fill-1); color: var(--ac-text-2); font-weight: var(--ac-fw-medium);
+  padding: var(--ac-space-3) var(--ac-space-4); text-align: left;
+  border-bottom: 1px solid var(--ac-border-2); white-space: nowrap;
+}
+.ac-table tbody td {
+  padding: var(--ac-space-3) var(--ac-space-4); border-bottom: 1px solid var(--ac-border-1);
+  vertical-align: top; color: var(--ac-text-1);
+}
+.ac-table tbody tr { cursor: pointer; }
+.ac-table tbody tr:hover { background: var(--ac-fill-1); }
+.ac-table tbody tr.is-selected { background: var(--ac-primary-1); }
+.ac-table .col-num { text-align: right; font-family: var(--ac-ff-mono); font-weight: var(--ac-fw-medium); }
+.ac-table .col-mono { font-family: var(--ac-ff-mono); font-size: var(--ac-fs-sm); color: var(--ac-text-2); }
+.ac-table .cell-time { color: var(--ac-text-2); font-size: var(--ac-fs-sm); font-family: var(--ac-ff-mono); }
+.ac-table .cell-time + .cell-time { display: block; margin-top: var(--ac-space-1); color: var(--ac-text-3); }
+.ac-table .ellipsis { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; max-width: 380px; }
+.ac-table .row-actions { display: flex; gap: var(--ac-space-1); }
+
+.col-link { color: var(--ac-primary-6); cursor: pointer; }
+.col-link:hover { text-decoration: underline; }
+
+/* ═══ AcTag ═══ */
+.ac-tag {
+  display: inline-flex; align-items: center; height: 22px; padding: 0 var(--ac-space-2);
+  border-radius: var(--ac-radius-xs); font-size: var(--ac-fs-xs); font-weight: var(--ac-fw-medium);
+  background: var(--ac-fill-2); color: var(--ac-text-2); border: 1px solid transparent;
+}
+.ac-tag.is-pending   { background: var(--ac-warning-1); color: var(--ac-biz-pending); }
+.ac-tag.is-resolved  { background: var(--ac-success-1); color: var(--ac-biz-completed); }
+.ac-tag.is-ignored   { background: var(--ac-fill-2); color: var(--ac-text-3); }
+.ac-tag.is-app       { background: var(--ac-primary-1); color: var(--ac-primary-6); }
+
+/* ═══ 分页 ═══ */
+.ac-pagination { display: flex; align-items: center; justify-content: flex-end; gap: var(--ac-space-2); margin-top: var(--ac-space-4); font-size: var(--ac-fs-sm); color: var(--ac-text-2); }
+.ac-pagination__info { margin-right: auto; color: var(--ac-text-3); }
+.ac-pagination__page { display: inline-flex; align-items: center; justify-content: center; min-width: 32px; height: 32px; padding: 0 var(--ac-space-2); border-radius: var(--ac-radius-sm); cursor: pointer; border: 1px solid transparent; }
+.ac-pagination__page:hover { background: var(--ac-fill-1); }
+.ac-pagination__page.is-active { background: var(--ac-primary-6); color: #fff; }
+
+/* ═══ AcDrawer（详情抽屉，原型常驻显示） ═══ */
+.ac-drawer-mask {
+  position: fixed; inset: 0; background: rgba(29,33,41,0.32); z-index: var(--ac-z-drawer);
+  display: flex; justify-content: flex-end;
+}
+.ac-drawer {
+  width: 720px; height: 100vh; background: var(--ac-bg-2);
+  box-shadow: var(--ac-shadow-drawer); display: flex; flex-direction: column;
+}
+.ac-drawer__head {
+  height: 56px; display: flex; align-items: center; justify-content: space-between;
+  padding: 0 var(--ac-space-5); border-bottom: 1px solid var(--ac-border-1);
+}
+.ac-drawer__title { font-size: var(--ac-fs-xl); font-weight: var(--ac-fw-medium); display: flex; align-items: center; gap: var(--ac-space-2); }
+.ac-drawer__close { width: 28px; height: 28px; display: inline-flex; align-items: center; justify-content: center; border-radius: var(--ac-radius-sm); cursor: pointer; color: var(--ac-text-3); }
+.ac-drawer__close:hover { background: var(--ac-fill-1); color: var(--ac-text-1); }
+.ac-drawer__body { flex: 1; overflow-y: auto; padding: var(--ac-space-5); display: flex; flex-direction: column; gap: var(--ac-space-5); }
+.ac-drawer__foot {
+  height: 56px; display: flex; align-items: center; justify-content: flex-end; gap: var(--ac-space-2);
+  padding: 0 var(--ac-space-5); border-top: 1px solid var(--ac-border-1);
+}
+
+/* drawer 内部小组件 */
+.detail-meta { display: grid; grid-template-columns: 120px 1fr; row-gap: var(--ac-space-2); column-gap: var(--ac-space-4); font-size: var(--ac-fs-sm); }
+.detail-meta__k { color: var(--ac-text-3); }
+.detail-meta__v { color: var(--ac-text-1); font-family: var(--ac-ff-mono); }
+.detail-section__title { font-size: var(--ac-fs-md); font-weight: var(--ac-fw-medium); color: var(--ac-text-1); margin-bottom: var(--ac-space-2); display: flex; align-items: center; gap: var(--ac-space-2); }
+.detail-section__title .badge { font-size: var(--ac-fs-xs); color: var(--ac-text-3); font-weight: var(--ac-fw-regular); }
+.trace-list { display: flex; flex-direction: column; gap: var(--ac-space-1); }
+.trace-list__item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: var(--ac-space-2) var(--ac-space-3); background: var(--ac-fill-1);
+  border-radius: var(--ac-radius-sm); font-family: var(--ac-ff-mono); font-size: var(--ac-fs-sm);
+}
+.trace-list__item .ac-button { height: 24px; padding: 0 var(--ac-space-2); font-size: var(--ac-fs-xs); }
+.code-block {
+  background: var(--ac-fill-1); border-radius: var(--ac-radius-sm);
+  padding: var(--ac-space-3) var(--ac-space-4); font-family: var(--ac-ff-mono); font-size: var(--ac-fs-sm);
+  color: var(--ac-text-1); line-height: 1.7; white-space: pre-wrap; word-break: break-all;
+  border-left: 3px solid var(--ac-danger-6); max-height: 220px; overflow-y: auto;
+}
+.code-block.is-stack { border-left-color: var(--ac-text-3); color: var(--ac-text-2); }
+
+/* ═══ AcModal（标记弹窗，浮于 drawer 之上） ═══ */
+.ac-modal-mask {
+  position: fixed; inset: 0; background: rgba(29,33,41,0.32); z-index: var(--ac-z-modal);
+  display: flex; align-items: center; justify-content: center;
+}
+.ac-modal {
+  width: 480px; background: var(--ac-bg-2); border-radius: var(--ac-radius-lg);
+  box-shadow: 0 8px 32px rgba(0,0,0,0.16); display: flex; flex-direction: column; overflow: hidden;
+}
+.ac-modal__head { padding: var(--ac-space-4) var(--ac-space-5); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--ac-border-1); }
+.ac-modal__title { font-size: var(--ac-fs-xl); font-weight: var(--ac-fw-medium); }
+.ac-modal__body  { padding: var(--ac-space-5); display: flex; flex-direction: column; gap: var(--ac-space-3); }
+.ac-modal__foot  { padding: var(--ac-space-3) var(--ac-space-5); display: flex; justify-content: flex-end; gap: var(--ac-space-2); border-top: 1px solid var(--ac-border-1); }
+.ac-textarea {
+  width: 100%; min-height: 96px; padding: var(--ac-space-3);
+  border: 1px solid var(--ac-border-3); border-radius: var(--ac-radius-sm);
+  font-family: inherit; font-size: var(--ac-fs-md); color: var(--ac-text-1); resize: vertical;
+}
+.ac-form-tip { font-size: var(--ac-fs-xs); color: var(--ac-text-3); }
+.ac-form-tip.is-required::before { content: '*'; color: var(--ac-danger-6); margin-right: var(--ac-space-1); }
+
+/* ═══ 高亮 / 数字 ═══ */
+.text-mono { font-family: var(--ac-ff-mono); }
+.text-danger { color: var(--ac-danger-6); }
+.text-muted  { color: var(--ac-text-3); }
+.tooltip-anchor { border-bottom: 1px dashed var(--ac-border-3); cursor: help; }
+
+/* ═══ 交互工具类 ═══ */
+.is-hidden { display: none !important; }
+.ac-toast {
+  position: fixed; left: 50%; top: 24px; transform: translateX(-50%) translateY(-12px);
+  padding: var(--ac-space-3) var(--ac-space-5); background: rgba(29,33,41,0.92);
+  color: #fff; border-radius: var(--ac-radius-sm); font-size: var(--ac-fs-sm);
+  z-index: 2000; box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+  opacity: 0; pointer-events: none;
+  transition: opacity .18s ease, transform .18s ease;
+}
+.ac-toast.is-show { opacity: 1; transform: translateX(-50%) translateY(0); }
+.ac-button { transition: opacity .15s, color .15s, background .15s, border-color .15s; }
+.ac-button:active { opacity: 0.85; }
+</style>
+</head>
+<body>
+
+<!-- ═══ Layout 面包屑（原型示意，业务页内不写） ═══ -->
+<nav class="tpl-breadcrumb">
+  <span>运维管理</span>
+  <span class="tpl-breadcrumb__sep">/</span>
+  <span class="tpl-breadcrumb__current">日志异常报表</span>
+</nav>
+
+<!-- ═══ 业务页 ═══ -->
+<div class="tpl-page">
+
+  <!-- KPI 卡（AcStatistic） -->
+  <div class="ac-card">
+    <div class="tpl-kpi-row">
+      <div class="ac-statistic">
+        <span class="ac-statistic__title">异常分组数</span>
+        <span class="ac-statistic__value">37<span class="ac-statistic__suffix">组</span></span>
+      </div>
+      <div class="ac-statistic">
+        <span class="ac-statistic__title">出现总次数</span>
+        <span class="ac-statistic__value">1,284<span class="ac-statistic__suffix">次</span></span>
+      </div>
+      <div class="ac-statistic is-pending">
+        <span class="ac-statistic__title">待处理</span>
+        <span class="ac-statistic__value">12<span class="ac-statistic__suffix">组</span></span>
+      </div>
+      <div class="ac-statistic is-resolved">
+        <span class="ac-statistic__title">已处理</span>
+        <span class="ac-statistic__value">21<span class="ac-statistic__suffix">组</span></span>
+      </div>
+      <div class="ac-statistic is-ignored">
+        <span class="ac-statistic__title">已忽略</span>
+        <span class="ac-statistic__value">4<span class="ac-statistic__suffix">组</span></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 筛选 + 工具栏 + 表格（同一张 Card，操作下沉） -->
+  <div class="ac-card">
+
+    <!-- 筛选区（AcFilterBar） -->
+    <div class="ac-filter-bar">
+      <div class="ac-form-item">
+        <span class="ac-form-item__label">日期</span>
+        <span class="ac-date-picker"><span>2026-05-20</span><span class="ac-icon">▾</span></span>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label">应用</span>
+        <span class="ac-select"><span>全部应用</span><span class="ac-icon">▾</span></span>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label">状态</span>
+        <span class="ac-select"><span>待处理</span><span class="ac-icon">▾</span></span>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label">出现次数 ≥</span>
+        <span class="ac-input-number"><span>10</span></span>
+      </div>
+      <div class="ac-form-item">
+        <span class="ac-form-item__label">关键字</span>
+        <span class="ac-input"><span class="text-muted">异常类 / 消息 / 指纹</span></span>
+      </div>
+      <button class="ac-button is-primary">查询</button>
+      <button class="ac-button">重置</button>
+    </div>
+
+    <!-- 工具栏（tpl-toolbar 三层结构） -->
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left">
+        <span>最近刷新：2026-05-21 09:42:03</span>
+      </div>
+      <div class="tpl-toolbar__right">
+        <button class="ac-button" data-permission="OPS_LOG_ERROR_REPORT_RERUN">⟳ 手动重跑</button>
+        <button class="ac-button" data-permission="OPS_LOG_ERROR_REPORT_EXPORT">↓ 导出</button>
+        <button class="ac-button">↻ 刷新</button>
+      </div>
+    </div>
+
+    <!-- 表格 -->
+    <table class="ac-table">
+      <thead>
+        <tr>
+          <th style="width:110px;">日期</th>
+          <th style="width:140px;">应用</th>
+          <th style="width:240px;">异常类</th>
+          <th>异常消息</th>
+          <th style="width:110px;text-align:right;">出现次数</th>
+          <th style="width:200px;">首次 / 最后</th>
+          <th style="width:96px;">状态</th>
+          <th style="width:110px;">处理人</th>
+          <th style="width:200px;">操作</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr class="is-selected">
+          <td>2026-05-20</td>
+          <td><span class="ac-tag is-app">snackingdom</span></td>
+          <td class="col-mono">NullPointerException</td>
+          <td><div class="ellipsis">订单 * 在 * 处理失败：Cannot invoke "OrderItem.getSkuCode()" because the return value of ...</div></td>
+          <td class="col-num"><span class="col-link">428</span></td>
+          <td>
+            <span class="cell-time">2026-05-20 02:13:08</span>
+            <span class="cell-time">2026-05-20 23:41:55</span>
+          </td>
+          <td><span class="ac-tag is-pending">待处理</span></td>
+          <td class="text-muted">—</td>
+          <td>
+            <div class="row-actions">
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>
+              <button class="ac-button is-text">SLS</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-20</td>
+          <td><span class="ac-tag is-app">snackingdom</span></td>
+          <td class="col-mono">DuplicateKeyException</td>
+          <td><div class="ellipsis">Duplicate key * for index 'uk_store_request_no' in 'store_request'</div></td>
+          <td class="col-num"><span class="col-link">186</span></td>
+          <td>
+            <span class="cell-time">2026-05-20 06:01:20</span>
+            <span class="cell-time">2026-05-20 22:18:09</span>
+          </td>
+          <td><span class="ac-tag is-pending">待处理</span></td>
+          <td class="text-muted">—</td>
+          <td>
+            <div class="row-actions">
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>
+              <button class="ac-button is-text">SLS</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-20</td>
+          <td><span class="ac-tag is-app">snackingdom-job</span></td>
+          <td class="col-mono">FeignException$ServiceUnavailable</td>
+          <td><div class="ellipsis">[503] during [POST] to [http://lemeng-gateway/chain.request.save] : connect timed out, *:*</div></td>
+          <td class="col-num"><span class="col-link">94</span></td>
+          <td>
+            <span class="cell-time">2026-05-20 02:00:18</span>
+            <span class="cell-time">2026-05-20 02:14:55</span>
+          </td>
+          <td><span class="ac-tag is-resolved">已处理</span></td>
+          <td>chenguojian</td>
+          <td>
+            <div class="row-actions">
+              <button class="ac-button is-text">查看</button>
+              <button class="ac-button is-text is-danger-text" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">撤销</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-20</td>
+          <td><span class="ac-tag is-app">snackingdom</span></td>
+          <td class="col-mono">SLSException</td>
+          <td><div class="ellipsis">Project [snackingdom-prod] LogStore [app-log-prod] write throttled, retry after * ms</div></td>
+          <td class="col-num"><span class="col-link">52</span></td>
+          <td>
+            <span class="cell-time">2026-05-20 14:21:30</span>
+            <span class="cell-time">2026-05-20 18:55:11</span>
+          </td>
+          <td><span class="ac-tag is-pending">待处理</span></td>
+          <td class="text-muted">—</td>
+          <td>
+            <div class="row-actions">
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>
+              <button class="ac-button is-text">SLS</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-20</td>
+          <td><span class="ac-tag is-app">snackingdom-mq</span></td>
+          <td class="col-mono">MessageNotReadyException</td>
+          <td><div class="ellipsis">Topic [SHELF_SYNC_TOPIC] consumer [shelf-sync-consumer] receive message timeout, msgId=*</div></td>
+          <td class="col-num"><span class="col-link">38</span></td>
+          <td>
+            <span class="cell-time">2026-05-20 03:15:00</span>
+            <span class="cell-time">2026-05-20 22:00:42</span>
+          </td>
+          <td><span class="ac-tag is-ignored">已忽略</span></td>
+          <td>chenguojian</td>
+          <td>
+            <div class="row-actions">
+              <button class="ac-button is-text">查看</button>
+              <button class="ac-button is-text">恢复</button>
+            </div>
+          </td>
+        </tr>
+        <tr>
+          <td>2026-05-20</td>
+          <td><span class="ac-tag is-app">snackingdom-web</span></td>
+          <td class="col-mono">IllegalStateException</td>
+          <td><div class="ellipsis">Failed to acquire lock 'inventory:adjust:store-*' within 3000ms</div></td>
+          <td class="col-num"><span class="col-link">21</span></td>
+          <td>
+            <span class="cell-time">2026-05-20 11:42:01</span>
+            <span class="cell-time">2026-05-20 17:08:39</span>
+          </td>
+          <td><span class="ac-tag is-pending">待处理</span></td>
+          <td class="text-muted">—</td>
+          <td>
+            <div class="row-actions">
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>
+              <button class="ac-button is-text" data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>
+              <button class="ac-button is-text">SLS</button>
+            </div>
+          </td>
+        </tr>
+      </tbody>
+    </table>
+
+    <!-- 分页 -->
+    <div class="ac-pagination">
+      <span class="ac-pagination__info">共 37 条 · 第 1 / 2 页</span>
+      <span class="ac-pagination__page">‹</span>
+      <span class="ac-pagination__page is-active">1</span>
+      <span class="ac-pagination__page">2</span>
+      <span class="ac-pagination__page">›</span>
+      <span class="ac-select" style="width:96px;"><span>20 条/页</span><span class="ac-icon">▾</span></span>
+    </div>
+
+  </div>
+
+</div>
+
+<!-- ═══ AcDrawer · 详情抽屉（原型常驻显示） ═══ -->
+<div class="ac-drawer-mask is-hidden" role="dialog" aria-label="日志异常详情">
+  <aside class="ac-drawer">
+    <div class="ac-drawer__head">
+      <div class="ac-drawer__title">
+        异常详情
+        <span class="ac-tag is-pending">待处理</span>
+      </div>
+      <span class="ac-drawer__close">✕</span>
+    </div>
+
+    <div class="ac-drawer__body">
+
+      <!-- 元信息 -->
+      <section>
+        <h3 class="detail-section__title">基础信息</h3>
+        <div class="detail-meta">
+          <span class="detail-meta__k">日期</span>          <span class="detail-meta__v">2026-05-20</span>
+          <span class="detail-meta__k">应用</span>          <span class="detail-meta__v">snackingdom</span>
+          <span class="detail-meta__k">LogStore</span>      <span class="detail-meta__v">app-log-prod</span>
+          <span class="detail-meta__k">异常类</span>        <span class="detail-meta__v">java.lang.NullPointerException</span>
+          <span class="detail-meta__k">指纹</span>          <span class="detail-meta__v">a3f9c8d14b29e7f6c1d8e2b4a7c6f3a9</span>
+          <span class="detail-meta__k">出现次数</span>      <span class="detail-meta__v">428 次</span>
+          <span class="detail-meta__k">首次</span>          <span class="detail-meta__v">2026-05-20 02:13:08</span>
+          <span class="detail-meta__k">最后一次</span>      <span class="detail-meta__v">2026-05-20 23:41:55</span>
+        </div>
+      </section>
+
+      <!-- TraceId 样例 -->
+      <section>
+        <h3 class="detail-section__title">TraceId 样例 <span class="badge">最多展示 5 个</span></h3>
+        <div class="trace-list">
+          <div class="trace-list__item"><span>trace-7f8d2c1a-b9e0-4f3a-8c12-9d6e0a7b3c45</span><button class="ac-button is-text">↗ 跳 SLS</button></div>
+          <div class="trace-list__item"><span>trace-9a3b6e2d-f4c1-4f5a-b8c9-7e0d2c4a6b81</span><button class="ac-button is-text">↗ 跳 SLS</button></div>
+          <div class="trace-list__item"><span>trace-4c5d8e1b-3a2f-4d8e-9c0a-1b2c3d4e5f67</span><button class="ac-button is-text">↗ 跳 SLS</button></div>
+          <div class="trace-list__item"><span>trace-1f2e3d4c-5b6a-7d8e-9f0a-1b2c3d4e5f78</span><button class="ac-button is-text">↗ 跳 SLS</button></div>
+          <div class="trace-list__item"><span>trace-8b7c6d5e-4f3a-2b1c-0d9e-8f7a6b5c4d3e</span><button class="ac-button is-text">↗ 跳 SLS</button></div>
+        </div>
+      </section>
+
+      <!-- 消息样例 -->
+      <section>
+        <h3 class="detail-section__title">消息样例 <span class="badge">截断 ≤ 2000 字符</span></h3>
+        <pre class="code-block">订单 12345678 在 2026-05-20 10:00:00 处理失败：Cannot invoke "io.busyming.basic.snackingdom.domain.OrderItem.getSkuCode()" because the return value of "io.busyming.basic.snackingdom.service.OrderService.getOrderItem(java.lang.Long)" is null</pre>
+      </section>
+
+      <!-- 堆栈样例 -->
+      <section>
+        <h3 class="detail-section__title">堆栈样例 <span class="badge">截断 ≤ 8000 字符</span></h3>
+<pre class="code-block is-stack">java.lang.NullPointerException: Cannot invoke "OrderItem.getSkuCode()" because ...
+    at io.busyming.basic.snackingdom.service.impl.OrderProcessor.process(OrderProcessor.java:128)
+    at io.busyming.basic.snackingdom.service.impl.OrderServiceImpl.confirm(OrderServiceImpl.java:213)
+    at io.busyming.basic.snackingdom.web.controller.OrderController.confirm(OrderController.java:87)
+    at jdk.internal.reflect.GeneratedMethodAccessor1023.invoke(Unknown Source)
+    at java.base/jdk.internal.reflect.DelegatingMethodAccessorImpl.invoke(...)
+    at org.springframework.web.method.support.InvocableHandlerMethod.doInvoke(...)</pre>
+      </section>
+
+    </div>
+
+    <div class="ac-drawer__foot">
+      <button class="ac-button">关闭</button>
+      <button class="ac-button" data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>
+      <button class="ac-button is-primary" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>
+    </div>
+
+  </aside>
+</div>
+
+<!-- ═══ AcModal · 标记已处理弹窗（原型常驻浮于 drawer 之上） ═══ -->
+<div class="ac-modal-mask is-hidden" role="dialog" aria-label="标记已处理">
+  <div class="ac-modal">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">标记已处理</span>
+      <span class="ac-drawer__close">✕</span>
+    </div>
+    <div class="ac-modal__body">
+      <div class="ac-form-tip">
+        将该异常分组标记为「已处理」。处理人=当前登录用户，处理时间=now。
+      </div>
+      <div>
+        <div class="ac-form-tip is-required" style="margin-bottom:var(--ac-space-2);">处理备注（≤500 字符）</div>
+        <textarea class="ac-textarea" placeholder="例：已修复 OrderProcessor#process 空指针，PR #2387，prod 已发版..."></textarea>
+      </div>
+    </div>
+    <div class="ac-modal__foot">
+      <button class="ac-button" data-act="mcancel">取消</button>
+      <button class="ac-button is-primary" data-act="mconfirm">确认</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const $  = (s, el=document) => el.querySelector(s);
+  const $$ = (s, el=document) => Array.from(el.querySelectorAll(s));
+
+  const drawerMask = $('.ac-drawer-mask');
+  const modalMask  = $('.ac-modal-mask');
+  let currentRow = null;
+
+  // ── 调度 ──
+  const showDrawer = () => drawerMask.classList.remove('is-hidden');
+  const hideDrawer = () => drawerMask.classList.add('is-hidden');
+  const showModal  = () => modalMask.classList.remove('is-hidden');
+  const hideModal  = () => modalMask.classList.add('is-hidden');
+
+  // ── toast ──
+  let toastEl, toastTimer;
+  function toast(msg){
+    if(!toastEl){
+      toastEl = document.createElement('div');
+      toastEl.className = 'ac-toast';
+      document.body.appendChild(toastEl);
+    }
+    toastEl.textContent = msg;
+    toastEl.classList.add('is-show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toastEl.classList.remove('is-show'), 1800);
+  }
+
+  // ── 遵掩 / ESC 关闭 ──
+  drawerMask.addEventListener('click', e => { if(e.target === drawerMask) hideDrawer(); });
+  modalMask.addEventListener('click',  e => { if(e.target === modalMask)  hideModal();  });
+  document.addEventListener('keydown', e => {
+    if(e.key !== 'Escape') return;
+    if(!modalMask.classList.contains('is-hidden')) return hideModal();
+    if(!drawerMask.classList.contains('is-hidden')) return hideDrawer();
+  });
+
+  // ── 状态元信息 ──
+  const STATUS = {
+    pending:  { label: '待处理', cls: 'is-pending'  },
+    resolved: { label: '已处理', cls: 'is-resolved' },
+    ignored:  { label: '已忽略', cls: 'is-ignored'  },
+  };
+  function getRowStatus(tr){
+    const tag = tr.querySelector('td:nth-child(7) .ac-tag');
+    if(!tag) return 'pending';
+    if(tag.classList.contains('is-pending'))  return 'pending';
+    if(tag.classList.contains('is-resolved')) return 'resolved';
+    return 'ignored';
+  }
+  function renderRowActions(status){
+    if(status === 'pending') return ''
+      + '<button class="ac-button is-text" data-act="resolve" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>'
+      + '<button class="ac-button is-text" data-act="ignore"  data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>'
+      + '<button class="ac-button is-text" data-act="sls">SLS</button>';
+    if(status === 'resolved') return ''
+      + '<button class="ac-button is-text" data-act="view">查看</button>'
+      + '<button class="ac-button is-text is-danger-text" data-act="revert" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">撤销</button>';
+    return ''
+      + '<button class="ac-button is-text" data-act="view">查看</button>'
+      + '<button class="ac-button is-text" data-act="restore">恢复</button>';
+  }
+  function setRowStatus(tr, status, owner){
+    const tag = tr.querySelector('td:nth-child(7) .ac-tag');
+    tag.className = 'ac-tag ' + STATUS[status].cls;
+    tag.textContent = STATUS[status].label;
+
+    const ownerCell = tr.querySelector('td:nth-child(8)');
+    if(status === 'pending'){
+      ownerCell.className = 'text-muted';
+      ownerCell.textContent = '—';
+    } else {
+      ownerCell.className = '';
+      ownerCell.textContent = owner || 'chenguojian';
+    }
+
+    const actions = tr.querySelector('.row-actions');
+    actions.innerHTML = renderRowActions(status);
+
+    recomputeKpi();
+    if(currentRow === tr && !drawerMask.classList.contains('is-hidden')){
+      syncDrawerForRow(tr);
+    }
+  }
+
+  // ── 初始化表格行操作区（统一为 data-act 按钮，供委托事件处理） ──
+  $$('table.ac-table tbody tr').forEach(tr => {
+    const actions = tr.querySelector('.row-actions');
+    actions.innerHTML = renderRowActions(getRowStatus(tr));
+  });
+
+  // ── 表格事件委托 ──
+  $('table.ac-table tbody').addEventListener('click', e => {
+    const tr = e.target.closest('tr');
+    if(!tr) return;
+    if(e.target.closest('.col-link')){
+      e.stopPropagation();
+      toast('原型：按出现次数跳 SLS 控制台 deeplink');
+      return;
+    }
+    const btn = e.target.closest('button');
+    if(btn){
+      e.stopPropagation();
+      const act = btn.dataset.act;
+      if(act === 'resolve'){
+        currentRow = tr;
+        $('.ac-modal .ac-textarea').value = '';
+        showModal();
+      } else if(act === 'ignore'){
+        setRowStatus(tr, 'ignored');
+        toast('已忽略该异常分组');
+      } else if(act === 'sls'){
+        toast('原型：跳 SLS 控制台 deeplink');
+      } else if(act === 'view'){
+        openDrawerFor(tr);
+      } else if(act === 'revert'){
+        setRowStatus(tr, 'pending');
+        toast('已撤销处理状态');
+      } else if(act === 'restore'){
+        setRowStatus(tr, 'pending');
+        toast('已恢复为待处理');
+      }
+      return;
+    }
+    openDrawerFor(tr);
+  });
+
+  // ── 打开详情抽屉 ──
+  function openDrawerFor(tr){
+    $$('table.ac-table tbody tr').forEach(r => r.classList.remove('is-selected'));
+    tr.classList.add('is-selected');
+    currentRow = tr;
+    syncDrawerForRow(tr);
+    showDrawer();
+  }
+
+  function syncDrawerForRow(tr){
+    const status = getRowStatus(tr);
+    const tag = $('.ac-drawer__head .ac-tag');
+    tag.className = 'ac-tag ' + STATUS[status].cls;
+    tag.textContent = STATUS[status].label;
+
+    const tds = tr.querySelectorAll('td');
+    const metaV = $$('.detail-meta .detail-meta__v');
+    if(metaV.length >= 8 && tds.length >= 6){
+      metaV[0].textContent = tds[0].innerText.trim();
+      metaV[1].textContent = tds[1].innerText.trim();
+      // metaV[2] LogStore 保留
+      metaV[3].textContent = 'java.lang.' + tds[2].innerText.trim();
+      // metaV[4] 指纹 mock 保留
+      metaV[5].textContent = tds[4].innerText.trim() + ' 次';
+      const times = tds[5].innerText.split('\n').map(s => s.trim()).filter(Boolean);
+      if(times[0]) metaV[6].textContent = times[0];
+      if(times[1]) metaV[7].textContent = times[1];
+    }
+
+    const foot = $('.ac-drawer__foot');
+    if(status === 'pending'){
+      foot.innerHTML = ''
+        + '<button class="ac-button" data-act="dclose">关闭</button>'
+        + '<button class="ac-button" data-act="dignore" data-permission="OPS_LOG_ERROR_REPORT_IGNORE">忽略</button>'
+        + '<button class="ac-button is-primary" data-act="dresolve" data-permission="OPS_LOG_ERROR_REPORT_RESOLVE">标记已处理</button>';
+    } else if(status === 'resolved'){
+      foot.innerHTML = ''
+        + '<button class="ac-button" data-act="dclose">关闭</button>'
+        + '<button class="ac-button is-danger-text" data-act="drevert">撤销处理</button>';
+    } else {
+      foot.innerHTML = ''
+        + '<button class="ac-button" data-act="dclose">关闭</button>'
+        + '<button class="ac-button" data-act="drestore">恢复为待处理</button>';
+    }
+  }
+
+  // ── 抽屉头部/底部事件 ──
+  $('.ac-drawer__head .ac-drawer__close').addEventListener('click', hideDrawer);
+  $('.ac-drawer__foot').addEventListener('click', e => {
+    const btn = e.target.closest('button');
+    if(!btn || !currentRow) return;
+    const act = btn.dataset.act;
+    if(act === 'dclose') hideDrawer();
+    else if(act === 'dresolve'){ $('.ac-modal .ac-textarea').value = ''; showModal(); }
+    else if(act === 'dignore'){ setRowStatus(currentRow, 'ignored');  toast('已忽略该异常分组'); }
+    else if(act === 'drevert'){ setRowStatus(currentRow, 'pending');  toast('已撤销处理状态'); }
+    else if(act === 'drestore'){ setRowStatus(currentRow, 'pending'); toast('已恢复为待处理'); }
+  });
+
+  // ── 抽屉内 trace / SLS 跳转 ──
+  $$('.trace-list__item .ac-button').forEach(btn => {
+    btn.addEventListener('click', () => toast('原型：按 traceId 跳 SLS deeplink'));
+  });
+
+  // ── 模态框事件 ──
+  $('.ac-modal__head .ac-drawer__close').addEventListener('click', hideModal);
+  $('.ac-modal__foot').addEventListener('click', e => {
+    const btn = e.target.closest('button'); if(!btn) return;
+    if(btn.dataset.act === 'mcancel'){ hideModal(); return; }
+    if(btn.dataset.act === 'mconfirm'){
+      const remark = $('.ac-modal .ac-textarea').value.trim();
+      if(!remark){ toast('处理备注为必填项'); return; }
+      if(currentRow) setRowStatus(currentRow, 'resolved');
+      hideModal();
+      toast('已标记为已处理');
+    }
+  });
+
+  // ── KPI 实时计算 ──
+  function recomputeKpi(){
+    const trs = $$('table.ac-table tbody tr');
+    let total = trs.length, occur = 0, p = 0, r = 0, i = 0;
+    trs.forEach(tr => {
+      const tds = tr.querySelectorAll('td');
+      occur += parseInt(((tds[4] && tds[4].innerText) || '0').replace(/[^\d]/g, ''), 10) || 0;
+      const s = getRowStatus(tr);
+      if(s === 'pending') p++; else if(s === 'resolved') r++; else i++;
+    });
+    const v = $$('.tpl-kpi-row .ac-statistic__value');
+    const SUFFIX = '<span class="ac-statistic__suffix">组</span>';
+    if(v[0]) v[0].innerHTML = total + SUFFIX;
+    if(v[1]) v[1].innerHTML = occur.toLocaleString() + '<span class="ac-statistic__suffix">次</span>';
+    if(v[2]) v[2].innerHTML = p + SUFFIX;
+    if(v[3]) v[3].innerHTML = r + SUFFIX;
+    if(v[4]) v[4].innerHTML = i + SUFFIX;
+  }
+  recomputeKpi();
+
+  // ── 工具栏按钮 ──
+  $$('.tpl-toolbar__right .ac-button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const t = btn.textContent.trim();
+      if(t.includes('手动重跑'))      toast('原型：弹起 T-1 / 自定义日期重跑面板');
+      else if(t.includes('导出'))     toast('原型：异步导出，跳「统一导出中心」');
+      else if(t.includes('刷新')){
+        const now = new Date();
+        const pad = n => String(n).padStart(2, '0');
+        const ts = now.getFullYear() + '-' + pad(now.getMonth()+1) + '-' + pad(now.getDate())
+          + ' ' + pad(now.getHours()) + ':' + pad(now.getMinutes()) + ':' + pad(now.getSeconds());
+        $('.tpl-toolbar__left span').textContent = '最近刷新：' + ts;
+        toast('已刷新');
+      }
+    });
+  });
+
+  // ── 筛选区按钮 ──
+  $$('.ac-filter-bar .ac-button').forEach((btn, idx) => {
+    btn.addEventListener('click', () => toast(idx === 0 ? '已应用筛选条件（原型）' : '已重置筛选条件（原型）'));
+  });
+
+  // ── 分页 ──
+  $$('.ac-pagination__page').forEach(p => {
+    p.addEventListener('click', () => {
+      $$('.ac-pagination__page').forEach(x => x.classList.remove('is-active'));
+      if(/^\d+$/.test(p.textContent.trim())) p.classList.add('is-active');
+      toast('切换到第 ' + p.textContent.trim() + ' 页（原型）');
+    });
+  });
+
+})();
+</script>
+
+</body>
+</html>

@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Qoder 用量分析 · App 端</title>
+<!--
+  qoder-usage-analysis · App 原型（2026-09-07 与 Web 端页面元素对齐重生成）
+  骨架：page-blueprint skeletons/app/dashboard-mobile.tsx.tpl 通用约定（Header → 筛选 → StatsGrid → ChartList）
+  Token 真源：page-blueprint/tokens/web.css（外链引用，禁止内联 :root）；HTML 原型根挂 .tpl-page + .tpl-panel
+  信息架构：NavBar → 公共筛选（日期预设 + 成员多选 + 查询/重置）→ KPI 5 卡 → 日消耗堆叠柱形图（按模型分类）→ 日期×成员透视表 → 成员×模型等级透视表
+  规则真源：references/business-rule.md §1-§6；页面描述：references/mobile-ui.md
+-->
+<link rel="stylesheet" href="../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  body { font-family: var(--ac-ff-sans); font-size: var(--ac-fs-md); line-height: var(--ac-lh-normal); color: var(--ac-color-text-1); background: var(--ac-color-fill-1); max-width: 430px; margin: 0 auto; min-height: 100vh; }
+
+  /* ═══ 骨架容器 ═══ */
+  .tpl-page { display: flex; flex-direction: column; gap: var(--ac-space-3); padding-bottom: var(--ac-space-4); }
+  .tpl-panel { background: var(--ac-color-bg-1); border-radius: var(--ac-radius-lg); box-shadow: var(--ac-shadow-1); padding: var(--ac-space-4); display: flex; flex-direction: column; gap: var(--ac-space-2); margin: 0 var(--ac-space-4); }
+
+  /* ═══ 顶部导航栏 ═══ */
+  .app-nav { height: var(--ac-space-12); background: var(--ac-brand-red); display: flex; align-items: center; padding: 0 var(--ac-space-4); position: sticky; top: 0; z-index: var(--ac-z-header); }
+  .app-nav__back { color: var(--ac-color-text-white); font-size: var(--ac-fs-2xl); min-width: var(--ac-hit-touch); height: var(--ac-hit-touch); display: flex; align-items: center; cursor: pointer; }
+  .app-nav__title { flex: 1; text-align: center; color: var(--ac-color-text-white); font-size: var(--ac-fs-xl); font-weight: var(--ac-fw-semibold); margin-right: var(--ac-hit-touch); }
+
+  /* ═══ 公共筛选（日期预设 + 成员多选 + 查询/重置，与 Web 筛选元素对齐） ═══ */
+  .filter-panel { gap: var(--ac-space-3); }
+  .filter-row { display: flex; gap: var(--ac-space-2); }
+  .filter-row .ac-select { flex: 1; }
+  .ac-select { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); width: 100%; height: var(--ac-hit-touch); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); padding: 0 var(--ac-space-3); font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); cursor: pointer; }
+  .ac-select__view { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ac-select__suffix { color: var(--ac-color-text-3); font-size: var(--ac-fs-xs); }
+  .filter-actions { display: flex; gap: var(--ac-space-2); }
+  .ac-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--ac-hit-touch); padding: 0 var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); color: var(--ac-color-text-1); font-family: inherit; font-size: var(--ac-fs-sm); font-weight: var(--ac-fw-medium); white-space: nowrap; cursor: pointer; }
+  .ac-btn--primary { flex: 1; background: var(--ac-color-primary-6); border-color: var(--ac-color-primary-6); color: var(--ac-color-text-white); }
+
+  /* ═══ KPI 统计卡片（5 卡，与 Web 一致；2 列网格，末卡跨满） ═══ */
+  .stats-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--ac-space-2); }
+  .stat-card { display: flex; flex-direction: column; gap: var(--ac-space-1); padding: var(--ac-space-4); border: 1px solid var(--ac-color-border-1); border-radius: var(--ac-radius-md); }
+  .stat-card.is-span { grid-column: 1 / -1; }
+  .stat-card__title { font-size: var(--ac-fs-sm); color: var(--ac-color-text-3); }
+  .stat-card__value { font-size: var(--ac-fs-2xl); font-weight: var(--ac-fw-bold); font-family: var(--ac-ff-mono); color: var(--ac-color-text-1); }
+  .stat-card__footer { display: flex; align-items: center; justify-content: space-between; }
+  .stat-card__unit { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+  .stat-card__trend { font-size: var(--ac-fs-xs); font-family: var(--ac-ff-mono); }
+  .stat-card__trend.is-up { color: var(--ac-biz-negative); }
+  .stat-card__trend.is-down { color: var(--ac-biz-positive); }
+  .stat-card__trend.is-flat { color: var(--ac-color-text-3); }
+
+  /* ═══ 图表卡 ═══ */
+  .chart-card__head { display: flex; flex-direction: column; gap: var(--ac-space-2); }
+  .chart-card__title { font-size: var(--ac-fs-md); font-weight: var(--ac-fw-semibold); color: var(--ac-color-text-1); }
+  .chart-legend { display: flex; align-items: center; flex-wrap: wrap; gap: var(--ac-space-2) var(--ac-space-3); font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+  .chart-legend__item { display: inline-flex; align-items: center; gap: var(--ac-space-1); }
+  .chart-legend__swatch { width: 8px; height: 8px; border-radius: var(--ac-radius-xs); flex-shrink: 0; }
+  .trend-svg { width: 100%; height: 100%; display: block; }
+
+  /* ═══ 透视表（横向滚动 + 首列冻结） ═══ */
+  .pivot-head { display: flex; align-items: baseline; justify-content: space-between; gap: var(--ac-space-2); }
+  .pivot-head__title { font-size: var(--ac-fs-md); font-weight: var(--ac-fw-semibold); color: var(--ac-color-text-1); }
+  .pivot-head__hint { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+  .table-wrap { overflow-x: auto; }
+  .ac-table { border-collapse: collapse; font-size: var(--ac-fs-xs); white-space: nowrap; }
+  .ac-table th, .ac-table td { padding: var(--ac-space-2) var(--ac-space-3); text-align: right; border-bottom: 1px solid var(--ac-color-border-1); font-family: var(--ac-ff-mono); color: var(--ac-color-text-1); }
+  .ac-table th { background: var(--ac-color-fill-1); color: var(--ac-color-text-2); font-weight: var(--ac-fw-medium); font-family: var(--ac-ff-sans); }
+  .ac-table th:first-child, .ac-table td:first-child { text-align: left; position: sticky; left: 0; background: var(--ac-color-bg-1); font-family: var(--ac-ff-sans); }
+  .ac-table th:first-child { background: var(--ac-color-fill-1); }
+  .ac-table tr.is-total td { font-weight: var(--ac-fw-bold); background: var(--ac-color-fill-1); border-top: 1px solid var(--ac-color-border-2); border-bottom: none; }
+</style>
+</head>
+<body>
+<section class="tpl-page">
+
+  <!-- ═══ 顶部导航栏 ═══ -->
+  <nav class="app-nav">
+    <span class="app-nav__back">&#8592;</span>
+    <span class="app-nav__title">用量分析</span>
+  </nav>
+
+  <!-- ═══ 公共筛选：日期预设 + 成员多选 + 查询/重置 ═══ -->
+  <section class="tpl-panel filter-panel">
+    <div class="filter-row">
+      <span class="ac-select"><span class="ac-select__view">前 7 天</span><span class="ac-select__suffix">&#9662;</span></span>
+      <span class="ac-select"><span class="ac-select__view">全部成员</span><span class="ac-select__suffix">&#9662;</span></span>
+    </div>
+    <div class="filter-actions">
+      <button type="button" class="ac-btn ac-btn--primary">查询</button>
+      <button type="button" class="ac-btn">重置</button>
+    </div>
+  </section>
+
+  <!-- ═══ KPI 统计卡片（5 卡，与 Web 一致） ═══ -->
+  <section class="tpl-panel">
+    <div class="stats-grid">
+      <div class="stat-card">
+        <span class="stat-card__title">总用量</span>
+        <span class="stat-card__value">4,832</span>
+        <div class="stat-card__footer"><span class="stat-card__unit">Credits</span><span class="stat-card__trend is-up">&#8593; 12.5%</span></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__title">总请求数</span>
+        <span class="stat-card__value">198</span>
+        <div class="stat-card__footer"><span class="stat-card__unit">次</span><span class="stat-card__trend is-up">&#8593; 5.6%</span></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__title">次均消耗</span>
+        <span class="stat-card__value">24.4</span>
+        <div class="stat-card__footer"><span class="stat-card__unit">Credits/次</span><span class="stat-card__trend is-up">&#8593; 6.5%</span></div>
+      </div>
+      <div class="stat-card">
+        <span class="stat-card__title">人均用量</span>
+        <span class="stat-card__value">966</span>
+        <div class="stat-card__footer"><span class="stat-card__unit">Credits</span><span class="stat-card__trend is-up">&#8593; 8.3%</span></div>
+      </div>
+      <div class="stat-card is-span">
+        <span class="stat-card__title">活跃成员</span>
+        <span class="stat-card__value">5</span>
+        <div class="stat-card__footer"><span class="stat-card__unit">人</span><span class="stat-card__trend is-flat">&#8212; 0%</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ═══ 日 Credits 消耗堆叠柱形图（按模型分类堆叠，与 Web 一致） ═══ -->
+  <section class="tpl-panel">
+    <div class="chart-card__head">
+      <span class="chart-card__title">日 Credits 消耗趋势</span>
+      <div class="chart-legend">
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-primary-4);"></span>Ultimate</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-purple-4);"></span>Kimi K3</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-info-4);"></span>GLM 5.3</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-cyan-4);"></span>DeepSeek V4 Pro</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-warning-4);"></span>Qwen3.8 Max</span>
+        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-gray-4);"></span>其他</span>
+      </div>
+    </div>
+    <div style="aspect-ratio:19/9;">
+      <svg class="trend-svg" viewBox="0 0 380 180" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg">
+        <line x1="32" y1="20"  x2="365" y2="20"  stroke="var(--ac-color-border-1)" stroke-dasharray="3 3"/>
+        <line x1="32" y1="51.25"  x2="365" y2="51.25"  stroke="var(--ac-color-border-1)" stroke-dasharray="3 3"/>
+        <line x1="32" y1="82.5"  x2="365" y2="82.5"  stroke="var(--ac-color-border-1)" stroke-dasharray="3 3"/>
+        <line x1="32" y1="113.75" x2="365" y2="113.75" stroke="var(--ac-color-border-1)" stroke-dasharray="3 3"/>
+        <line x1="32" y1="20"  x2="32"  y2="145" stroke="var(--ac-color-border-2)"/>
+        <line x1="32" y1="145" x2="365" y2="145" stroke="var(--ac-color-border-2)"/>
+        <text x="28" y="24"  text-anchor="end" font-size="10" fill="var(--ac-color-text-3)">1000</text>
+        <text x="28" y="55.25"  text-anchor="end" font-size="10" fill="var(--ac-color-text-3)">750</text>
+        <text x="28" y="86.5"  text-anchor="end" font-size="10" fill="var(--ac-color-text-3)">500</text>
+        <text x="28" y="117.75" text-anchor="end" font-size="10" fill="var(--ac-color-text-3)">250</text>
+        <text x="28" y="148" text-anchor="end" font-size="10" fill="var(--ac-color-text-3)">0</text>
+        <!-- 堆叠柱形：每日一根，自下而上 Ultimate / Kimi K3 / GLM 5.3 / DeepSeek V4 Pro / Qwen3.8 Max / 其他 -->
+        <!-- 06-25 合计 702 -->
+        <rect x="43.8" y="118.63" width="24" height="26.37" fill="var(--ac-color-primary-4)"/>
+        <rect x="43.8" y="97.63" width="24" height="21" fill="var(--ac-palette-purple-4)"/>
+        <rect x="43.8" y="81.88" width="24" height="15.75" fill="var(--ac-color-info-4)"/>
+        <rect x="43.8" y="71.38" width="24" height="10.5" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="43.8" y="62.63" width="24" height="8.75" fill="var(--ac-color-warning-4)"/>
+        <rect x="43.8" y="57.25" width="24" height="5.38" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-26 合计 713 -->
+        <rect x="91.4" y="120" width="24" height="25" fill="var(--ac-color-primary-4)"/>
+        <rect x="91.4" y="97.75" width="24" height="22.25" fill="var(--ac-palette-purple-4)"/>
+        <rect x="91.4" y="82.63" width="24" height="15.12" fill="var(--ac-color-info-4)"/>
+        <rect x="91.4" y="71" width="24" height="11.63" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="91.4" y="61.25" width="24" height="9.75" fill="var(--ac-color-warning-4)"/>
+        <rect x="91.4" y="55.88" width="24" height="5.37" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-27 合计 695 -->
+        <rect x="139" y="118.13" width="24" height="26.87" fill="var(--ac-color-primary-4)"/>
+        <rect x="139" y="98.13" width="24" height="20" fill="var(--ac-palette-purple-4)"/>
+        <rect x="139" y="83.38" width="24" height="14.75" fill="var(--ac-color-info-4)"/>
+        <rect x="139" y="72.13" width="24" height="11.25" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="139" y="63.5" width="24" height="8.63" fill="var(--ac-color-warning-4)"/>
+        <rect x="139" y="58.13" width="24" height="5.37" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-28 合计 731 -->
+        <rect x="186.6" y="121.25" width="24" height="23.75" fill="var(--ac-color-primary-4)"/>
+        <rect x="186.6" y="97.5" width="24" height="23.75" fill="var(--ac-palette-purple-4)"/>
+        <rect x="186.6" y="81" width="24" height="16.5" fill="var(--ac-color-info-4)"/>
+        <rect x="186.6" y="69.13" width="24" height="11.87" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="186.6" y="59" width="24" height="10.13" fill="var(--ac-color-warning-4)"/>
+        <rect x="186.6" y="53.63" width="24" height="5.37" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-29 合计 695 -->
+        <rect x="234.2" y="117.25" width="24" height="27.75" fill="var(--ac-color-primary-4)"/>
+        <rect x="234.2" y="98.13" width="24" height="19.12" fill="var(--ac-palette-purple-4)"/>
+        <rect x="234.2" y="83.38" width="24" height="14.75" fill="var(--ac-color-info-4)"/>
+        <rect x="234.2" y="72.13" width="24" height="11.25" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="234.2" y="63.5" width="24" height="8.63" fill="var(--ac-color-warning-4)"/>
+        <rect x="234.2" y="58.13" width="24" height="5.37" fill="var(--ac-palette-gray-4)"/>
+        <!-- 06-30 合计 708 -->
+        <rect x="281.8" y="119.38" width="24" height="25.62" fill="var(--ac-color-primary-4)"/>
+        <rect x="281.8" y="98.13" width="24" height="21.25" fill="var(--ac-palette-purple-4)"/>
+        <rect x="281.8" y="82.25" width="24" height="15.88" fill="var(--ac-color-info-4)"/>
+        <rect x="281.8" y="70.75" width="24" height="11.5" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="281.8" y="61.88" width="24" height="8.87" fill="var(--ac-color-warning-4)"/>
+        <rect x="281.8" y="56.5" width="24" height="5.38" fill="var(--ac-palette-gray-4)"/>
+        <!-- 07-01 合计 588 -->
+        <rect x="329.4" y="123" width="24" height="22" fill="var(--ac-color-primary-4)"/>
+        <rect x="329.4" y="105.38" width="24" height="17.62" fill="var(--ac-palette-purple-4)"/>
+        <rect x="329.4" y="92.88" width="24" height="12.5" fill="var(--ac-color-info-4)"/>
+        <rect x="329.4" y="83.38" width="24" height="9.5" fill="var(--ac-palette-cyan-4)"/>
+        <rect x="329.4" y="76" width="24" height="7.38" fill="var(--ac-color-warning-4)"/>
+        <rect x="329.4" y="71.5" width="24" height="4.5" fill="var(--ac-palette-gray-4)"/>
+        <text x="55.8"  y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">06-25</text>
+        <text x="103.4" y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">06-26</text>
+        <text x="151"   y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">06-27</text>
+        <text x="198.6" y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">06-28</text>
+        <text x="246.1" y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">06-29</text>
+        <text x="293.7" y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">06-30</text>
+        <text x="341.3" y="160" text-anchor="middle" font-size="10" fill="var(--ac-color-text-3)">07-01</text>
+      </svg>
+    </div>
+  </section>
+
+  <!-- ═══ Credits 用量透视表（日期 × 成员，与 Web 一致） ═══ -->
+  <section class="tpl-panel">
+    <div class="pivot-head">
+      <span class="pivot-head__title">Credits 用量透视表</span>
+      <span class="pivot-head__hint">日期 × 成员 · Credits</span>
+    </div>
+    <div class="table-wrap">
+      <table class="ac-table">
+        <thead>
+          <tr>
+            <th>日期</th>
+            <th>周义潇</th>
+            <th>苏浩宇</th>
+            <th>王芳</th>
+            <th>李明</th>
+            <th>赵敏</th>
+            <th>合计</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>2026-06-25</td><td>186</td><td>142</td><td>201</td><td>95</td><td>78</td><td>702</td></tr>
+          <tr><td>2026-06-26</td><td>210</td><td>168</td><td>89</td><td>134</td><td>112</td><td>713</td></tr>
+          <tr><td>2026-06-27</td><td>175</td><td>203</td><td>156</td><td>67</td><td>94</td><td>695</td></tr>
+          <tr><td>2026-06-28</td><td>225</td><td>119</td><td>143</td><td>178</td><td>66</td><td>731</td></tr>
+          <tr><td>2026-06-29</td><td>198</td><td>87</td><td>112</td><td>145</td><td>153</td><td>695</td></tr>
+          <tr><td>2026-06-30</td><td>156</td><td>192</td><td>167</td><td>108</td><td>85</td><td>708</td></tr>
+          <tr><td>2026-07-01</td><td>134</td><td>155</td><td>98</td><td>121</td><td>80</td><td>588</td></tr>
+          <tr class="is-total"><td>合计</td><td>1,284</td><td>1,066</td><td>966</td><td>848</td><td>668</td><td>4,832</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ═══ 成员 × 模型等级透视表 ═══ -->
+  <section class="tpl-panel">
+    <div class="pivot-head">
+      <span class="pivot-head__title">模型用量透视表</span>
+      <span class="pivot-head__hint">成员 × 模型等级 · Credits</span>
+    </div>
+    <div class="table-wrap">
+      <table class="ac-table">
+        <thead>
+          <tr>
+            <th>成员</th>
+            <th>Auto</th>
+            <th>Ultimate</th>
+            <th>Performance</th>
+            <th>Efficient</th>
+            <th>Lite</th>
+            <th>合计</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td>周义潇</td><td>320.45</td><td>512.30</td><td>268.10</td><td>142.66</td><td>40.50</td><td>1,284.01</td></tr>
+          <tr><td>苏浩宇</td><td>410.20</td><td>305.75</td><td>198.40</td><td>121.33</td><td>30.00</td><td>1,065.68</td></tr>
+          <tr><td>李明</td><td>265.50</td><td>240.00</td><td>180.25</td><td>130.45</td><td>31.80</td><td>848.00</td></tr>
+          <tr><td>王芳</td><td>300.10</td><td>285.60</td><td>210.75</td><td>140.20</td><td>29.35</td><td>966.00</td></tr>
+          <tr><td>赵敏</td><td>180.30</td><td>160.85</td><td>150.60</td><td>131.25</td><td>45.00</td><td>668.00</td></tr>
+          <tr class="is-total"><td>合计</td><td>1,476.55</td><td>1,504.50</td><td>1,008.10</td><td>665.89</td><td>176.65</td><td>4,831.69</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</section>
+</body>
+</html>

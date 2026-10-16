@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>提交需求 · 需求管理 App</title>
+<style>
+/* ══════════════════════════════════════════════════════════════════════
+   Design Tokens
+   真源：.agents/skills/page-blueprint/tokens/web.css + tokens/app.ts (light)
+   ⚠️ 仅本 :root 块允许出现原子字面值；业务样式一律通过 var(--ac-*) 消费
+   ══════════════════════════════════════════════════════════════════════ */
+:root{
+  /* ---------- palette ---------- */
+  --ac-palette-white:#FFFFFF;
+  --ac-palette-gray-1:#F7F8FA;
+  --ac-palette-gray-2:#F2F3F5;
+  --ac-palette-gray-3:#E5E6EB;
+  --ac-palette-gray-4:#C9CDD4;
+  --ac-palette-gray-6:#86909C;
+  --ac-palette-gray-8:#4E5969;
+  --ac-palette-gray-10:#1D2129;
+  --ac-palette-red-1:#FFECE8;
+  --ac-palette-red-6:#F53F3F;
+  --ac-palette-red-7:#CB272D;
+  --ac-palette-orange-1:#FFF7E8;
+  --ac-palette-orange-6:#FF7D00;
+  --ac-palette-orange-7:#D25F00;
+  --ac-palette-gold-1:#FFFCE8;
+  --ac-palette-gold-7:#CC9213;
+  --ac-palette-green-1:#E8FFEA;
+  --ac-palette-green-6:#00B42A;
+  --ac-palette-green-7:#009A29;
+  --ac-palette-blue-1:#E8F7FF;
+  --ac-palette-blue-6:#3491FA;
+  --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB;
+  --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF;
+  --ac-palette-purple-6:#722ED1;
+  /* ---------- brand ---------- */
+  --ac-brand-red:#E60013;
+  --ac-brand-red-active:#B30010;
+  /* ---------- semantic ---------- */
+  --ac-text-1:var(--ac-palette-gray-10);
+  --ac-text-2:var(--ac-palette-gray-8);
+  --ac-text-3:var(--ac-palette-gray-6);
+  --ac-text-4:var(--ac-palette-gray-4);
+  --ac-text-white:var(--ac-palette-white);
+  --ac-bg-1:var(--ac-palette-white);
+  --ac-bg-2:var(--ac-palette-gray-1);
+  --ac-bg-3:var(--ac-palette-gray-2);
+  --ac-fill-1:var(--ac-palette-gray-1);
+  --ac-fill-2:var(--ac-palette-gray-2);
+  --ac-fill-3:var(--ac-palette-gray-3);
+  --ac-border-1:var(--ac-palette-gray-2);
+  --ac-border-2:var(--ac-palette-gray-3);
+  --ac-primary-1:var(--ac-palette-red-1);
+  --ac-primary-6:var(--ac-palette-red-6);
+  --ac-primary-7:var(--ac-palette-red-7);
+  --ac-success-1:var(--ac-palette-green-1);
+  --ac-success-6:var(--ac-palette-green-6);
+  --ac-success-7:var(--ac-palette-green-7);
+  --ac-warning-1:var(--ac-palette-orange-1);
+  --ac-warning-6:var(--ac-palette-orange-6);
+  --ac-warning-7:var(--ac-palette-orange-7);
+  --ac-danger-1:var(--ac-palette-red-1);
+  --ac-danger-6:var(--ac-palette-red-6);
+  --ac-danger-7:var(--ac-palette-red-7);
+  --ac-info-1:var(--ac-palette-blue-1);
+  --ac-info-6:var(--ac-palette-blue-6);
+  --ac-info-7:var(--ac-palette-blue-7);
+  /* ---------- 业务线四色（与 Web 端映射一致）---------- */
+  --ac-bizline-ops-bg:var(--ac-palette-blue-1);
+  --ac-bizline-ops-fg:var(--ac-palette-blue-7);
+  --ac-bizline-fin-bg:var(--ac-palette-gold-1);
+  --ac-bizline-fin-fg:var(--ac-palette-gold-7);
+  --ac-bizline-scm-bg:var(--ac-palette-cyan-1);
+  --ac-bizline-scm-fg:var(--ac-palette-cyan-7);
+  --ac-bizline-digital-bg:var(--ac-palette-purple-1);
+  --ac-bizline-digital-fg:var(--ac-palette-purple-6);
+  /* ---------- space（rem·1rem = 16px @375 视口）---------- */
+  --ac-space-1:.25rem;
+  --ac-space-2:.5rem;
+  --ac-space-3:.75rem;
+  --ac-space-4:1rem;
+  --ac-space-5:1.25rem;
+  --ac-space-6:1.5rem;
+  --ac-space-8:2rem;
+  --ac-space-10:2.5rem;
+  /* ---------- radius ---------- */
+  --ac-radius-sm:.25rem;
+  --ac-radius-md:.375rem;
+  --ac-radius-lg:.5rem;
+  --ac-radius-xl:.75rem;
+  --ac-radius-2xl:1rem;
+  --ac-radius-full:9999px;
+  /* ---------- shadow / overlay ---------- */
+  --ac-shadow-1:0 .0625rem .125rem 0 rgba(0,0,0,.04);
+  --ac-shadow-2:0 .125rem .5rem 0 rgba(0,0,0,.08);
+  --ac-shadow-3:0 .25rem 1rem 0 rgba(0,0,0,.10);
+  --ac-shadow-up:0 -.125rem .5rem 0 rgba(0,0,0,.06);
+  --ac-mask-bg:rgba(29,33,41,.60);
+  --ac-toast-bg:rgba(29,33,41,.92);
+  --ac-ripple:rgba(255,255,255,.12);
+  /* ---------- typography ---------- */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:.75rem;
+  --ac-fs-sm:.8125rem;
+  --ac-fs-md:.875rem;
+  --ac-fs-lg:.9375rem;
+  --ac-fs-xl:1rem;
+  --ac-fs-2xl:1.125rem;
+  --ac-fs-3xl:1.25rem;
+  --ac-fw-regular:400;
+  --ac-fw-medium:500;
+  --ac-fw-semibold:600;
+  --ac-fw-bold:700;
+  --ac-lh-tight:1.2;
+  --ac-lh-normal:1.5;
+  --ac-lh-relaxed:1.7;
+  /* ---------- motion / z-index / hit ---------- */
+  --ac-duration-fast:.15s;
+  --ac-duration-base:.25s;
+  --ac-easing-standard:cubic-bezier(.4,0,.2,1);
+  --ac-easing-emphasized:cubic-bezier(.32,.72,.46,.97);
+  --ac-z-header:200;
+  --ac-z-actionbar:300;
+  --ac-z-mask:500;
+  --ac-z-sheet:600;
+  --ac-z-toast:800;
+  --ac-hit-touch:2.75rem;
+  /* ---------- layout ---------- */
+  --ac-device-width:23.4375rem;
+  --ac-h-protobar:2rem;
+  --ac-h-navbar:2.75rem;
+  --ac-safe-bottom:env(safe-area-inset-bottom,0px);
+}
+
+/* 375 设计稿等比：视口 < 375px 时 root 字号随 vw 缩放，其余锁定 16px */
+html{font-size:4.2667vw}
+@media (min-width:23.4375rem){html{font-size:16px}}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);
+  background:var(--ac-bg-3);line-height:var(--ac-lh-normal);
+  min-height:100vh;display:flex;justify-content:center
+}
+
+/* ══ Device Frame ══ */
+.ac-device{
+  width:100%;max-width:var(--ac-device-width);min-height:100vh;
+  background:var(--ac-bg-2);position:relative;box-shadow:var(--ac-shadow-3);
+  display:flex;flex-direction:column
+}
+
+/* ══ Proto Bar ══ */
+.ac-proto-bar{
+  height:var(--ac-h-protobar);flex-shrink:0;background:var(--ac-text-1);
+  display:flex;align-items:center;gap:var(--ac-space-2);padding:0 var(--ac-space-3);
+  position:sticky;top:0;z-index:var(--ac-z-toast);overflow-x:auto;scrollbar-width:none
+}
+.ac-proto-bar::-webkit-scrollbar{display:none}
+.ac-proto-bar a,.ac-proto-bar button{
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-text-white);
+  background:var(--ac-ripple);border:0;border-radius:var(--ac-radius-full);
+  padding:.125rem var(--ac-space-2);text-decoration:none;white-space:nowrap;flex-shrink:0
+}
+.ac-proto-bar a.is-active{background:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
+
+/* ══ Navbar ══ */
+.ac-navbar{
+  height:var(--ac-h-navbar);flex-shrink:0;background:var(--ac-brand-red);color:var(--ac-text-white);
+  display:flex;align-items:center;padding:0 var(--ac-space-1);
+  position:sticky;top:var(--ac-h-protobar);z-index:var(--ac-z-header)
+}
+.ac-navbar-back{
+  width:var(--ac-hit-touch);height:var(--ac-hit-touch);display:flex;align-items:center;
+  justify-content:center;color:var(--ac-text-white);background:transparent;border:0
+}
+.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-semibold)}
+.ac-navbar-placeholder{width:var(--ac-hit-touch)}
+
+/* ══ Scroll Container ══ */
+.ac-scroll{
+  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  padding:var(--ac-space-3) var(--ac-space-3)
+    calc(var(--ac-hit-touch) + var(--ac-space-8) + var(--ac-safe-bottom))
+}
+
+/* ══ Form Group（Cell 分组卡片）══ */
+.ac-group{
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);
+  margin-bottom:var(--ac-space-3);box-shadow:var(--ac-shadow-1);overflow:hidden
+}
+.ac-group-title{
+  padding:var(--ac-space-3) var(--ac-space-4) 0;
+  font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1)
+}
+.ac-cell{
+  display:flex;align-items:center;gap:var(--ac-space-3);
+  min-height:var(--ac-hit-touch);padding:var(--ac-space-3) var(--ac-space-4);
+  border-bottom:.0625rem solid var(--ac-border-1);
+  background:var(--ac-bg-1);width:100%;text-align:left;font-family:var(--ac-ff-sans);border-left:0;border-right:0;border-top:0
+}
+.ac-cell:last-child{border-bottom:0}
+.ac-cell--tap:active{background:var(--ac-fill-1)}
+.ac-cell--block{display:block}
+.ac-cell-label{
+  flex-shrink:0;font-size:var(--ac-fs-lg);color:var(--ac-text-1);font-weight:var(--ac-fw-regular)
+}
+.ac-cell-label .req{color:var(--ac-danger-6);margin-right:.125rem}
+.ac-cell-input{
+  flex:1;min-width:0;border:0;outline:none;background:transparent;
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);text-align:right
+}
+.ac-cell-input::placeholder{color:var(--ac-text-4)}
+.ac-cell-value{
+  flex:1;min-width:0;font-size:var(--ac-fs-lg);color:var(--ac-text-1);text-align:right;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
+}
+.ac-cell-value.is-placeholder{color:var(--ac-text-4)}
+.ac-cell-arrow{flex-shrink:0;color:var(--ac-text-4);display:flex;align-items:center}
+.ac-cell-hint{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-text-3);line-height:var(--ac-lh-normal)}
+.ac-cell-error{
+  padding:0 var(--ac-space-4) var(--ac-space-2);
+  font-size:var(--ac-fs-xs);color:var(--ac-danger-6);text-align:right
+}
+.ac-cell--block .ac-cell-error{text-align:left;padding:var(--ac-space-1) 0 0}
+.ac-cell.is-error{background:var(--ac-danger-1)}
+
+/* ══ Textarea ══ */
+.ac-textarea{
+  width:100%;min-height:6.5rem;margin-top:var(--ac-space-2);padding:var(--ac-space-3);
+  border:.0625rem solid var(--ac-border-2);border-radius:var(--ac-radius-lg);
+  background:var(--ac-fill-1);color:var(--ac-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);line-height:var(--ac-lh-normal);
+  resize:none;outline:none
+}
+.ac-textarea::placeholder{color:var(--ac-text-4)}
+.ac-textarea:focus{border-color:var(--ac-brand-red);background:var(--ac-bg-1)}
+.ac-counter{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-text-3);text-align:right}
+
+/* ══ Segment（优先级）══ */
+.ac-segment{
+  display:flex;gap:var(--ac-space-2);flex:1;justify-content:flex-end
+}
+.ac-segment-item{
+  flex:1;max-width:4rem;height:2rem;border-radius:var(--ac-radius-md);
+  border:.0625rem solid var(--ac-border-2);background:var(--ac-bg-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-sm);color:var(--ac-text-2);
+  display:flex;align-items:center;justify-content:center
+}
+.ac-segment-item.is-active{
+  border-color:var(--ac-brand-red);background:var(--ac-primary-1);
+  color:var(--ac-primary-7);font-weight:var(--ac-fw-medium)
+}
+
+/* ══ 底部固定操作栏（SafeArea 内）══ */
+.ac-actionbar{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%);
+  width:100%;max-width:var(--ac-device-width);
+  padding:var(--ac-space-2) var(--ac-space-4) calc(var(--ac-space-2) + var(--ac-safe-bottom));
+  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-up);z-index:var(--ac-z-actionbar)
+}
+.ac-btn{
+  width:100%;height:var(--ac-hit-touch);border-radius:var(--ac-radius-full);
+  border:.0625rem solid transparent;font-family:var(--ac-ff-sans);
+  font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-medium);
+  display:flex;align-items:center;justify-content:center;gap:var(--ac-space-2)
+}
+.ac-btn--primary{background:var(--ac-brand-red);color:var(--ac-text-white)}
+.ac-btn--primary:active{background:var(--ac-brand-red-active)}
+.ac-btn--ghost{background:var(--ac-bg-1);border-color:var(--ac-border-2);color:var(--ac-text-2)}
+.ac-btn:disabled{background:var(--ac-fill-3);border-color:transparent;color:var(--ac-text-4)}
+.ac-btn .spin{width:1rem;height:1rem;animation:ac-rotate .8s linear infinite}
+@keyframes ac-rotate{to{transform:rotate(360deg)}}
+
+/* ══ Mask + Sheet ══ */
+.ac-mask{
+  position:fixed;inset:0;background:var(--ac-mask-bg);z-index:var(--ac-z-mask);
+  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-base) var(--ac-easing-standard)
+}
+.ac-mask.is-show{opacity:1;pointer-events:auto}
+.ac-sheet{
+  position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);
+  width:100%;max-width:var(--ac-device-width);
+  background:var(--ac-bg-1);border-radius:var(--ac-radius-2xl) var(--ac-radius-2xl) 0 0;
+  z-index:var(--ac-z-sheet);transition:transform var(--ac-duration-base) var(--ac-easing-emphasized);
+  padding-bottom:var(--ac-safe-bottom);max-height:80vh;display:flex;flex-direction:column
+}
+.ac-sheet.is-show{transform:translateX(-50%) translateY(0)}
+.ac-sheet-bar{
+  width:2.25rem;height:.25rem;border-radius:var(--ac-radius-full);
+  background:var(--ac-fill-3);margin:var(--ac-space-2) auto 0
+}
+.ac-sheet-title{
+  padding:var(--ac-space-3) var(--ac-space-4) 0;
+  font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);text-align:center
+}
+.ac-sheet-desc{
+  padding:var(--ac-space-2) var(--ac-space-4) 0;
+  font-size:var(--ac-fs-md);color:var(--ac-text-2);text-align:center;line-height:var(--ac-lh-normal)
+}
+.ac-sheet-body{padding:var(--ac-space-3) var(--ac-space-4);overflow-y:auto;-webkit-overflow-scrolling:touch}
+.ac-sheet-foot{
+  display:flex;gap:var(--ac-space-3);padding:var(--ac-space-2) var(--ac-space-4) var(--ac-space-4);
+  border-top:.0625rem solid var(--ac-border-1)
+}
+
+/* ══ Picker Options ══ */
+.ac-option{
+  display:flex;align-items:center;width:100%;min-height:var(--ac-hit-touch);
+  padding:0 var(--ac-space-3);margin-bottom:var(--ac-space-2);
+  border:.0625rem solid var(--ac-border-2);border-radius:var(--ac-radius-lg);
+  background:var(--ac-bg-1);font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);
+  color:var(--ac-text-1);text-align:left
+}
+.ac-option:last-child{margin-bottom:0}
+.ac-option .ac-pill{margin-right:var(--ac-space-2)}
+.ac-option .check{margin-left:auto;color:var(--ac-brand-red);display:none}
+.ac-option.is-checked{border-color:var(--ac-brand-red);background:var(--ac-primary-1);color:var(--ac-primary-7)}
+.ac-option.is-checked .check{display:block}
+.ac-pill{
+  display:inline-flex;align-items:center;height:1.25rem;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);font-weight:var(--ac-fw-medium)
+}
+.ac-pill--ops{background:var(--ac-bizline-ops-bg);color:var(--ac-bizline-ops-fg)}
+.ac-pill--fin{background:var(--ac-bizline-fin-bg);color:var(--ac-bizline-fin-fg)}
+.ac-pill--scm{background:var(--ac-bizline-scm-bg);color:var(--ac-bizline-scm-fg)}
+.ac-pill--digital{background:var(--ac-bizline-digital-bg);color:var(--ac-bizline-digital-fg)}
+
+/* ══ DatePicker（三列滚轮）══ */
+.ac-datepicker{display:flex;gap:var(--ac-space-2)}
+.ac-date-col{
+  flex:1;height:9rem;overflow-y:auto;-webkit-overflow-scrolling:touch;
+  border:.0625rem solid var(--ac-border-2);border-radius:var(--ac-radius-lg);
+  background:var(--ac-fill-1);scrollbar-width:none
+}
+.ac-date-col::-webkit-scrollbar{display:none}
+.ac-date-item{
+  width:100%;height:2.25rem;border:0;background:transparent;
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-2);
+  display:flex;align-items:center;justify-content:center
+}
+.ac-date-item.is-active{
+  background:var(--ac-primary-1);color:var(--ac-primary-7);font-weight:var(--ac-fw-semibold)
+}
+.ac-date-item:disabled{color:var(--ac-text-4)}
+.ac-date-preview{
+  margin-top:var(--ac-space-3);text-align:center;
+  font-size:var(--ac-fs-md);color:var(--ac-text-3)
+}
+.ac-date-preview b{color:var(--ac-text-1);font-weight:var(--ac-fw-semibold)}
+
+/* ══ Toast ══ */
+.ac-toast{
+  position:fixed;top:5rem;left:50%;transform:translateX(-50%) translateY(-.75rem);
+  max-width:18.75rem;padding:var(--ac-space-2) var(--ac-space-4);
+  border-radius:var(--ac-radius-lg);background:var(--ac-toast-bg);color:var(--ac-text-white);
+  font-size:var(--ac-fs-md);text-align:center;z-index:var(--ac-z-toast);
+  opacity:0;pointer-events:none;transition:all var(--ac-duration-base) var(--ac-easing-standard)
+}
+.ac-toast.is-show{opacity:1;transform:translateX(-50%) translateY(0)}
+.ac-toast.is-success{background:var(--ac-success-6)}
+.ac-toast.is-error{background:var(--ac-danger-7)}
+</style>
+</head>
+<body>
+
+<div class="ac-device">
+
+  <!-- Proto Bar -->
+  <nav class="ac-proto-bar">
+    <a href="requirement-list.html">需求列表</a>
+    <a href="requirement-detail.html">需求详情</a>
+    <a class="is-active" href="requirement-submit.html">提交需求</a>
+  </nav>
+
+  <!-- Navbar -->
+  <header class="ac-navbar">
+    <button class="ac-navbar-back" type="button" id="btnBack" aria-label="返回">
+      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
+    </button>
+    <h1 class="ac-navbar-title">提交需求</h1>
+    <span class="ac-navbar-placeholder"></span>
+  </header>
+
+  <!-- Scroll Content -->
+  <form class="ac-scroll" id="form" novalidate>
+
+    <!-- 需求信息组 -->
+    <section class="ac-group">
+      <h2 class="ac-group-title">需求信息</h2>
+
+      <div class="ac-cell" id="cellTitle">
+        <span class="ac-cell-label"><i class="req">*</i>标题</span>
+        <input class="ac-cell-input" id="fTitle" type="text" maxlength="128" placeholder="一句话说明要解决什么问题">
+      </div>
+      <p class="ac-cell-error" id="eTitle"></p>
+
+      <div class="ac-cell ac-cell--block" id="cellDesc">
+        <span class="ac-cell-label"><i class="req">*</i>描述</span>
+        <textarea class="ac-textarea" id="fDesc" maxlength="2000" placeholder="请填写需求描述，不少于 10 字"></textarea>
+        <p class="ac-cell-hint">请说明业务背景、当前痛点与期望效果，描述越完整通过率越高</p>
+        <p class="ac-counter" id="cDesc">0/2000</p>
+        <p class="ac-cell-error" id="eDesc"></p>
+      </div>
+    </section>
+
+    <!-- 归属与分级组 -->
+    <section class="ac-group">
+      <h2 class="ac-group-title">归属与分级</h2>
+
+      <button class="ac-cell ac-cell--tap" type="button" id="cellPm" data-picker="pm">
+        <span class="ac-cell-label"><i class="req">*</i>提交对象</span>
+        <span class="ac-cell-value is-placeholder" id="vPm">请选择产品经理</span>
+        <span class="ac-cell-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      </button>
+      <p class="ac-cell-error" id="ePm"></p>
+      <p class="ac-cell-hint" id="chainPreview" style="padding:0 var(--ac-space-4) var(--ac-space-2)">提交给谁就由谁终审；选定后此处展示将命中的审批链</p>
+
+      <button class="ac-cell ac-cell--tap" type="button" id="cellBiz" data-picker="biz">
+        <span class="ac-cell-label"><i class="req">*</i>所属业务线</span>
+        <span class="ac-cell-value is-placeholder" id="vBiz">请选择</span>
+        <span class="ac-cell-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      </button>
+      <p class="ac-cell-error" id="eBiz"></p>
+
+      <button class="ac-cell ac-cell--tap" type="button" id="cellType" data-picker="type">
+        <span class="ac-cell-label"><i class="req">*</i>需求类型</span>
+        <span class="ac-cell-value is-placeholder" id="vType">请选择</span>
+        <span class="ac-cell-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      </button>
+      <p class="ac-cell-error" id="eType"></p>
+
+      <div class="ac-cell" id="cellPrio">
+        <span class="ac-cell-label"><i class="req">*</i>优先级</span>
+        <div class="ac-segment" id="segPrio" role="radiogroup" aria-label="优先级">
+          <button class="ac-segment-item" type="button" role="radio" data-prio="P0">P0</button>
+          <button class="ac-segment-item" type="button" role="radio" data-prio="P1">P1</button>
+          <button class="ac-segment-item is-active" type="button" role="radio" data-prio="P2" aria-checked="true">P2</button>
+          <button class="ac-segment-item" type="button" role="radio" data-prio="P3">P3</button>
+        </div>
+      </div>
+
+      <button class="ac-cell ac-cell--tap" type="button" id="cellDate" data-picker="date">
+        <span class="ac-cell-label"><i class="req">*</i>目标日期</span>
+        <span class="ac-cell-value is-placeholder" id="vDate">请选择</span>
+        <span class="ac-cell-arrow">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        </span>
+      </button>
+      <p class="ac-cell-error" id="eDate"></p>
+    </section>
+
+  </form>
+
+  <!-- 底部固定：提交 -->
+  <div class="ac-actionbar">
+    <button class="ac-btn ac-btn--primary" type="button" id="btnSubmit">提交</button>
+  </div>
+
+</div><!-- /ac-device -->
+
+<!-- Mask -->
+<div class="ac-mask" id="mask"></div>
+
+<!-- Picker：提交对象（产品经理） -->
+<div class="ac-sheet" id="sheetPm" role="dialog" aria-modal="true">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title">提交对象（产品经理）</h4>
+  <div class="ac-sheet-body" id="optPm">
+    <button class="ac-option" type="button" data-value="沈括" data-chain="dedicated">沈括<span style="margin-left:auto;font-size:var(--ac-fs-xs);color:var(--ac-text-3)">供应链域 · 已配专属链</span>
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="郑楠" data-chain="default">郑楠<span style="margin-left:auto;font-size:var(--ac-fs-xs);color:var(--ac-text-3)">报表域 · 走默认链</span>
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="许可" data-chain="default">许可<span style="margin-left:auto;font-size:var(--ac-fs-xs);color:var(--ac-text-3)">基础档案域 · 走默认链</span>
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+  </div>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>取消</button>
+  </div>
+</div>
+
+<!-- Picker：所属业务线 -->
+<div class="ac-sheet" id="sheetBiz" role="dialog" aria-modal="true">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title">所属业务线</h4>
+  <div class="ac-sheet-body" id="optBiz">
+    <button class="ac-option" type="button" data-value="运营" data-code="OPS"><span class="ac-pill ac-pill--ops">运营</span>OPS
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="财务" data-code="FIN"><span class="ac-pill ac-pill--fin">财务</span>FIN
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="供应链" data-code="SCM"><span class="ac-pill ac-pill--scm">供应链</span>SCM
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="数字化" data-code="DIGITAL"><span class="ac-pill ac-pill--digital">数字化</span>DIGITAL
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+  </div>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>取消</button>
+  </div>
+</div>
+
+<!-- Picker：需求类型 -->
+<div class="ac-sheet" id="sheetType" role="dialog" aria-modal="true">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title">需求类型</h4>
+  <div class="ac-sheet-body" id="optType">
+    <button class="ac-option" type="button" data-value="新功能">新功能
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="功能优化">功能优化
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="缺陷修复">缺陷修复
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="数据报表">数据报表
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+    <button class="ac-option" type="button" data-value="系统集成">系统集成
+      <span class="check"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></span></button>
+  </div>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>取消</button>
+  </div>
+</div>
+
+<!-- DatePicker：目标日期（最小可选 = 今天） -->
+<div class="ac-sheet" id="sheetDate" role="dialog" aria-modal="true">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title">目标日期</h4>
+  <div class="ac-sheet-body">
+    <div class="ac-datepicker">
+      <div class="ac-date-col" id="colY"></div>
+      <div class="ac-date-col" id="colM"></div>
+      <div class="ac-date-col" id="colD"></div>
+    </div>
+    <p class="ac-date-preview">已选 <b id="datePreview">—</b>（不早于今天）</p>
+  </div>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>取消</button>
+    <button class="ac-btn ac-btn--primary" type="button" id="dateConfirm">确定</button>
+  </div>
+</div>
+
+<!-- 提交二次确认 -->
+<div class="ac-sheet" id="sheetConfirm" role="dialog" aria-modal="true">
+  <span class="ac-sheet-bar"></span>
+  <h4 class="ac-sheet-title">确认提交</h4>
+  <p class="ac-sheet-desc" id="confirmDesc">提交后将按提交对象的审批链流转，业务线不可修改，确认提交？</p>
+  <div class="ac-sheet-foot">
+    <button class="ac-btn ac-btn--ghost" type="button" data-close>再改改</button>
+    <button class="ac-btn ac-btn--primary" type="button" id="confirmSubmit">确认提交</button>
+  </div>
+</div>
+
+<div class="ac-toast" id="toast"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  var elMask = document.getElementById('mask');
+  var sheets = {
+    pm:      document.getElementById('sheetPm'),
+    biz:     document.getElementById('sheetBiz'),
+    type:    document.getElementById('sheetType'),
+    date:    document.getElementById('sheetDate'),
+    confirm: document.getElementById('sheetConfirm')
+  };
+  var openKey = null;
+
+  var model = {title:'', desc:'', pm:'', pmChain:'', biz:'', bizCode:'', type:'', prio:'P2', date:''};
+  var dirty = false;
+
+  /* ── Toast ── */
+  var elToast = document.getElementById('toast'), timer = null;
+  function toast(msg, type){
+    elToast.textContent = msg;
+    elToast.className = 'ac-toast is-show' + (type ? ' is-' + type : '');
+    clearTimeout(timer);
+    timer = setTimeout(function(){ elToast.className = 'ac-toast'; }, 2400);
+  }
+
+  /* ── Sheet ── */
+  function openSheet(key){
+    openKey = key;
+    sheets[key].classList.add('is-show');
+    elMask.classList.add('is-show');
+  }
+  function closeSheet(){
+    if(!openKey) return;
+    sheets[openKey].classList.remove('is-show');
+    elMask.classList.remove('is-show');
+    openKey = null;
+  }
+  elMask.addEventListener('click', closeSheet);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-close]'), function(b){
+    b.addEventListener('click', closeSheet);
+  });
+  Array.prototype.forEach.call(document.querySelectorAll('[data-picker]'), function(cell){
+    cell.addEventListener('click', function(){ openSheet(this.dataset.picker); });
+  });
+
+  /* ── 错误提示 ── */
+  function setError(key, msg){
+    document.getElementById('e' + key).textContent = msg || '';
+    document.getElementById('cell' + key).classList.toggle('is-error', !!msg);
+  }
+
+  /* ── 标题 ── */
+  var fTitle = document.getElementById('fTitle');
+  fTitle.addEventListener('input', function(){ model.title = this.value; dirty = true; setError('Title',''); });
+  fTitle.addEventListener('blur', function(){
+    var len = this.value.trim().length;
+    setError('Title', (len < 1 || len > 128) ? '请输入需求标题（不超过 128 字）' : '');
+  });
+
+  /* ── 描述 ── */
+  var fDesc = document.getElementById('fDesc');
+  fDesc.addEventListener('input', function(){
+    model.desc = this.value; dirty = true;
+    document.getElementById('cDesc').textContent = this.value.length + '/2000';
+    setError('Desc','');
+  });
+  fDesc.addEventListener('blur', function(){
+    var len = this.value.trim().length;
+    setError('Desc', (len < 10 || len > 2000) ? '请填写需求描述，不少于 10 字' : '');
+  });
+
+  /* ── 提交对象 Picker（选定后渲染审批链预览，对应 /chain-preview 预检）── */
+  document.getElementById('optPm').addEventListener('click', function(e){
+    var opt = e.target.closest('.ac-option');
+    if(!opt) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.ac-option'), function(x){ x.classList.remove('is-checked'); });
+    opt.classList.add('is-checked');
+    model.pm = opt.dataset.value;
+    model.pmChain = opt.dataset.chain;
+    var v = document.getElementById('vPm');
+    v.textContent = model.pm;
+    v.classList.remove('is-placeholder');
+    var levels = model.pmChain === 'dedicated'
+      ? '专属链：L2 实施确认（李思远、孙浩）→ L3 产品确认（' + model.pm + ' · 提交对象）'
+      : '默认链兜底：L1 业务线审批（周文杰）→ L2 实施确认（李思远、孙浩）→ L3 产品确认（' + model.pm + ' · 提交对象）';
+    document.getElementById('chainPreview').textContent = levels;
+    dirty = true;
+    setError('Pm','');
+    closeSheet();
+  });
+
+  /* ── 业务线 Picker ── */
+  document.getElementById('optBiz').addEventListener('click', function(e){
+    var opt = e.target.closest('.ac-option');
+    if(!opt) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.ac-option'), function(x){ x.classList.remove('is-checked'); });
+    opt.classList.add('is-checked');
+    model.biz = opt.dataset.value;
+    model.bizCode = opt.dataset.code;
+    var v = document.getElementById('vBiz');
+    v.textContent = model.biz + '（' + model.bizCode + '）';
+    v.classList.remove('is-placeholder');
+    dirty = true;
+    setError('Biz','');
+    closeSheet();
+  });
+
+  /* ── 需求类型 Picker ── */
+  document.getElementById('optType').addEventListener('click', function(e){
+    var opt = e.target.closest('.ac-option');
+    if(!opt) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.ac-option'), function(x){ x.classList.remove('is-checked'); });
+    opt.classList.add('is-checked');
+    model.type = opt.dataset.value;
+    var v = document.getElementById('vType');
+    v.textContent = model.type;
+    v.classList.remove('is-placeholder');
+    dirty = true;
+    setError('Type','');
+    closeSheet();
+  });
+
+  /* ── 优先级 Segment（默认 P2）── */
+  document.getElementById('segPrio').addEventListener('click', function(e){
+    var item = e.target.closest('.ac-segment-item');
+    if(!item) return;
+    Array.prototype.forEach.call(this.querySelectorAll('.ac-segment-item'), function(x){
+      x.classList.remove('is-active'); x.setAttribute('aria-checked','false');
+    });
+    item.classList.add('is-active');
+    item.setAttribute('aria-checked','true');
+    model.prio = item.dataset.prio;
+    dirty = true;
+  });
+
+  /* ── 目标日期 DatePicker（最小可选 = 今天）── */
+  var today = new Date();
+  var pick = {y:today.getFullYear(), m:today.getMonth() + 1, d:today.getDate()};
+
+  function pad(n){ return (n < 10 ? '0' : '') + n; }
+  function daysIn(y, m){ return new Date(y, m, 0).getDate(); }
+  function isPast(y, m, d){
+    return new Date(y, m - 1, d).setHours(0,0,0,0) < new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
+  }
+
+  function renderCol(id, list, cur, fmt, disabledFn){
+    document.getElementById(id).innerHTML = list.map(function(n){
+      return '<button class="ac-date-item' + (n === cur ? ' is-active' : '') + '" type="button" data-n="' + n + '"' +
+             (disabledFn && disabledFn(n) ? ' disabled' : '') + '>' + fmt(n) + '</button>';
+    }).join('');
+  }
+
+  function renderDate(){
+    var years = [today.getFullYear(), today.getFullYear() + 1];
+    var months = [], i;
+    for(i = 1; i <= 12; i++) months.push(i);
+    var days = [];
+    for(i = 1; i <= daysIn(pick.y, pick.m); i++) days.push(i);
+    if(pick.d > days.length) pick.d = days.length;
+
+    renderCol('colY', years, pick.y, function(n){ return n + ' 年'; });
+    renderCol('colM', months, pick.m, function(n){ return pad(n) + ' 月'; }, function(n){
+      return isPast(pick.y, n, daysIn(pick.y, n));
+    });
+    renderCol('colD', days, pick.d, function(n){ return pad(n) + ' 日'; }, function(n){
+      return isPast(pick.y, pick.m, n);
+    });
+    document.getElementById('datePreview').textContent = pick.y + '-' + pad(pick.m) + '-' + pad(pick.d);
+  }
+
+  ['colY','colM','colD'].forEach(function(id){
+    document.getElementById(id).addEventListener('click', function(e){
+      var item = e.target.closest('.ac-date-item');
+      if(!item || item.disabled) return;
+      var n = parseInt(item.dataset.n, 10);
+      if(id === 'colY') pick.y = n;
+      if(id === 'colM') pick.m = n;
+      if(id === 'colD') pick.d = n;
+      if(isPast(pick.y, pick.m, pick.d)){ pick.m = today.getMonth() + 1; pick.d = today.getDate(); }
+      renderDate();
+    });
+  });
+
+  document.getElementById('dateConfirm').addEventListener('click', function(){
+    model.date = pick.y + '-' + pad(pick.m) + '-' + pad(pick.d);
+    var v = document.getElementById('vDate');
+    v.textContent = model.date;
+    v.classList.remove('is-placeholder');
+    dirty = true;
+    setError('Date','');
+    closeSheet();
+  });
+  renderDate();
+
+  /* ── 全表单校验 + 提交 ── */
+  function validate(){
+    var errs = [];
+    var tLen = model.title.trim().length;
+    var dLen = model.desc.trim().length;
+    if(tLen < 1 || tLen > 128){ setError('Title','请输入需求标题（不超过 128 字）'); errs.push('cellTitle'); } else setError('Title','');
+    if(dLen < 10 || dLen > 2000){ setError('Desc','请填写需求描述，不少于 10 字'); errs.push('cellDesc'); } else setError('Desc','');
+    if(!model.pm){ setError('Pm','请选择提交对象（产品经理）'); errs.push('cellPm'); } else setError('Pm','');
+    if(!model.biz){ setError('Biz','请选择所属业务线'); errs.push('cellBiz'); } else setError('Biz','');
+    if(!model.type){ setError('Type','请选择需求类型'); errs.push('cellType'); } else setError('Type','');
+    if(!model.date){ setError('Date','请选择目标完成日期，且不早于今天'); errs.push('cellDate'); } else setError('Date','');
+    return errs;
+  }
+
+  document.getElementById('btnSubmit').addEventListener('click', function(){
+    var errs = validate();
+    if(errs.length){
+      document.getElementById(errs[0]).scrollIntoView({behavior:'smooth', block:'center'});
+      toast('请先完成必填项', 'error');
+      return;
+    }
+    document.getElementById('confirmDesc').textContent =
+      '提交后将按提交对象的审批链流转，业务线不可修改，确认提交？（提交对象：' + model.pm + '，业务线：' + model.biz + '）';
+    openSheet('confirm');
+  });
+
+  document.getElementById('confirmSubmit').addEventListener('click', function(){
+    var btn = this;
+    btn.disabled = true;
+    btn.innerHTML = '<svg class="spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>提交中…';
+    setTimeout(function(){
+      btn.disabled = false;
+      btn.textContent = '确认提交';
+      closeSheet();
+      dirty = false;
+      var entryName = model.pmChain === 'dedicated' ? '实施负责人' : model.biz + '负责人';
+      toast('需求已提交，将由' + entryName + '审批', 'success');
+      setTimeout(function(){ location.href = 'requirement-list.html'; }, 1500);
+    }, 700);
+  });
+
+  /* ── 脏数据离开确认 ── */
+  document.getElementById('btnBack').addEventListener('click', function(){
+    if(dirty && !window.confirm('你有未提交的内容，确认离开？')) return;
+    location.href = 'requirement-list.html';
+  });
+})();
+</script>
+</body>
+</html>

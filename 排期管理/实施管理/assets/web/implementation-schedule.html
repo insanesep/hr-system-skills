@@ -1,0 +1,1692 @@
+<!doctype html>
+<!--
+  实施排期 · Web 端原型（implementation-schedule）
+  ================================================================
+  规格真源：../../SKILL.md · ../../references/business-rule.md
+  交互范本：../feature-schedule/asset/feature-schedule.html（Backup 卡片池 + 月历排期 + 抽屉）
+  Token 真源：page-blueprint/tokens/web.css（六级相对路径外链，页面样式一律 var(--ac-*)）
+  图标纪律：禁 emoji，统一内联 SVG（currentColor）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>实施排期 · 研发管理</title>
+<link rel="stylesheet" href="../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
+<style>
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
+
+/* ===== 顶部导航（页面身份由 Layout 承担，不手写面包屑） ===== */
+.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
+  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
+  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
+.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+.web-nav__spacer{flex:1}
+
+/* 禁区拓扑：.tpl-page 灰底 + gap，白卡 .tpl-panel 浮于其上 */
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  box-shadow:var(--ac-shadow-1);display:flex;flex-direction:column;gap:var(--ac-space-4)}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;white-space:nowrap;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--danger{color:var(--ac-color-danger-6);border-color:var(--ac-color-danger-3)}
+.ac-btn--danger:hover{background:var(--ac-color-danger-1)}
+.ac-btn--warn{color:var(--ac-color-warning-7);border-color:var(--ac-color-warning-3);background:var(--ac-color-warning-1)}
+.ac-btn--warn:hover{background:var(--ac-color-warning-2)}
+.ac-btn svg{width:14px;height:14px;flex-shrink:0}
+.ac-btn strong{font-family:var(--ac-ff-mono)}
+.ac-btn--text{height:auto;padding:0;border-color:transparent;background:transparent;color:var(--ac-primary-6)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+.ac-btn:disabled{cursor:not-allowed;opacity:.6}
+.ac-btn--primary:disabled,.ac-btn--primary:disabled:hover{
+  background:var(--ac-comp-button-primary-dis);border-color:var(--ac-comp-button-primary-dis);color:var(--ac-text-white)}
+
+/* ===== AcInput / AcTextarea / AcSwitch ===== */
+.ac-input{display:flex;align-items:center;height:32px;padding:0 var(--ac-space-3);
+  border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);
+  transition:border-color var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-input:focus-within{border-color:var(--ac-primary-6)}
+.ac-input__inner{flex:1;min-width:0;border:0;outline:none;background:transparent;
+  font-family:inherit;font-size:var(--ac-fs-sm);color:var(--ac-color-text-1)}
+.ac-input__inner::placeholder{color:var(--ac-color-text-4)}
+.ac-input.is-textarea{display:block;width:100%;height:auto;min-height:120px;
+  padding:var(--ac-space-2) var(--ac-space-3);font-size:var(--ac-fs-sm);
+  color:var(--ac-color-text-1);line-height:1.6;outline:none;white-space:pre-wrap;word-break:break-all}
+.ac-input.is-textarea:focus{border-color:var(--ac-primary-6)}
+.ac-input.is-textarea:empty::before{content:attr(data-placeholder);color:var(--ac-color-text-4)}
+.ac-switch{display:inline-flex;align-items:center;gap:var(--ac-space-2);cursor:pointer;user-select:none}
+.ac-switch__track{position:relative;width:32px;height:18px;background:var(--ac-fill-4);
+  border-radius:var(--ac-radius-full);transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-switch__thumb{position:absolute;top:2px;left:2px;width:14px;height:14px;background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-full);box-shadow:var(--ac-shadow-2);
+  transition:left var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-switch.is-on .ac-switch__track{background:var(--ac-primary-6)}
+.ac-switch.is-on .ac-switch__thumb{left:16px}
+.ac-switch__label{font-size:var(--ac-fs-xs);color:var(--ac-color-text-2)}
+.ac-switch.is-on .ac-switch__label{color:var(--ac-primary-6);font-weight:var(--ac-fw-semibold)}
+.mine-hint{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.ac-select{height:32px;padding:0 var(--ac-space-2);border:1px solid var(--ac-border-2);
+  border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-sm);cursor:pointer;outline:none;
+  transition:border-color var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-select:hover{border-color:var(--ac-primary-6)}
+.biz-filter{width:128px}
+.biz-filter .ac-input__inner{font-size:var(--ac-fs-xs)}
+
+/* ===== 工具栏 ===== */
+.sch-toolbar{display:flex;flex-direction:row;align-items:center;gap:var(--ac-space-3);flex-wrap:wrap;
+  padding:var(--ac-space-4) var(--ac-space-5)}
+.month-picker{position:relative}
+.month-label{height:32px;padding:0 var(--ac-space-4);border:1px solid var(--ac-border-2);
+  border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);cursor:pointer;
+  display:inline-flex;align-items:center;gap:var(--ac-space-2);min-width:132px;justify-content:center;
+  font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.month-label:hover{border-color:var(--ac-primary-6)}
+.month-dropdown{display:none;position:absolute;top:calc(100% + var(--ac-space-1));left:0;
+  width:260px;padding:var(--ac-space-3);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-lg);box-shadow:var(--ac-shadow-4);z-index:var(--ac-z-dropdown)}
+.month-picker.is-open .month-dropdown{display:block}
+.year-row{display:flex;align-items:center;justify-content:space-between;margin-bottom:var(--ac-space-2)}
+.year-row .year-val{font-weight:var(--ac-fw-semibold);font-size:var(--ac-fs-md)}
+.month-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:var(--ac-space-2)}
+.month-cell{padding:var(--ac-space-2) 0;text-align:center;border-radius:var(--ac-radius-sm);
+  cursor:pointer;font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.month-cell:hover{background:var(--ac-color-primary-1);color:var(--ac-primary-6)}
+.month-cell.is-current{background:var(--ac-primary-6);color:var(--ac-text-white);font-weight:var(--ac-fw-semibold)}
+
+.stat-chips{margin-left:auto;display:flex;align-items:center;gap:var(--ac-space-2);font-size:var(--ac-fs-xs)}
+.chip{padding:var(--ac-space-1) var(--ac-space-3);border-radius:var(--ac-radius-full);
+  background:var(--ac-fill-2);color:var(--ac-color-text-2);
+  display:inline-flex;align-items:center;gap:var(--ac-space-1)}
+.chip .dot{width:8px;height:8px;border-radius:var(--ac-radius-full)}
+.chip.pending .dot{background:var(--ac-color-text-4)}
+.chip.in-progress .dot{background:var(--ac-palette-purple-6)}
+.chip.done .dot{background:var(--ac-color-success-6)}
+.chip.backup .dot{background:var(--ac-color-primary-6)}
+.chip strong{color:var(--ac-color-text-1);font-weight:var(--ac-fw-semibold);font-family:var(--ac-ff-mono)}
+
+/* ===== 工作区：Backup + 月历 ===== */
+.sch-workspace{display:grid;grid-template-columns:300px minmax(0,1fr);gap:var(--ac-space-4);align-items:start}
+
+/* Backup 卡片池 */
+.backup-panel{max-height:calc(100vh - 200px);min-height:600px;gap:0;overflow:hidden}
+.panel-header{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
+.panel-title{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);display:flex;align-items:center;gap:var(--ac-space-2)}
+.panel-title .count{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);font-weight:var(--ac-fw-regular);
+  background:var(--ac-fill-2);padding:0 var(--ac-space-2);height:20px;display:inline-flex;align-items:center;
+  border-radius:var(--ac-radius-full);font-family:var(--ac-ff-mono)}
+.backup-search{position:relative;padding:var(--ac-space-2) var(--ac-space-3);
+  border-bottom:1px solid var(--ac-border-1)}
+.backup-search .ac-input{height:30px;padding-left:30px;padding-right:28px}
+.backup-search .ac-input__inner{font-size:var(--ac-fs-xs)}
+.backup-search svg{position:absolute;left:calc(var(--ac-space-3) + 10px);top:calc(var(--ac-space-2) + 8px);
+  width:14px;height:14px;color:var(--ac-color-text-3);pointer-events:none;z-index:var(--ac-z-base)}
+.backup-search .bs-clear{position:absolute;right:var(--ac-space-4);top:calc(var(--ac-space-2) + 6px);
+  width:18px;height:18px;min-width:0;padding:0;border:none;background:var(--ac-border-3);color:var(--ac-text-white);
+  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);line-height:18px;justify-content:center;display:none}
+.backup-search .bs-clear:hover{background:var(--ac-color-text-3);color:var(--ac-text-white);text-decoration:none}
+.backup-search .bs-clear.is-show{display:inline-flex}
+.backup-search .bs-hint{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);margin-top:var(--ac-space-1);line-height:1.4;transform:scale(.92);transform-origin:left}
+.backup-search .bs-hint .kw{color:var(--ac-primary-6);font-weight:var(--ac-fw-medium)}
+/* Backup 手动选卡入口（v1.3 通道三）：搜索框下方独占一行 */
+.backup-manual{padding:var(--ac-space-2) var(--ac-space-3);border-bottom:1px solid var(--ac-border-1)}
+.backup-manual .ac-btn{width:100%;justify-content:center}
+.backup-hint{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);padding:var(--ac-space-2) var(--ac-space-4);
+  background:var(--ac-fill-1);border-bottom:1px solid var(--ac-border-1)}
+.backup-list{flex:1;overflow-y:auto;padding:var(--ac-space-3) var(--ac-space-3);
+  display:flex;flex-direction:column;gap:var(--ac-space-2)}
+.backup-list.is-drag-over{background:var(--ac-color-primary-1)}
+.backup-empty{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);text-align:center;padding:var(--ac-space-8) 0;line-height:1.8}
+
+/* 月历 */
+.calendar-panel{overflow:hidden;gap:0}
+.week-header{display:grid;grid-template-columns:repeat(7,1fr);background:var(--ac-fill-1);
+  border-bottom:1px solid var(--ac-border-1)}
+.week-header .dow{padding:var(--ac-space-3) 0;text-align:center;font-size:var(--ac-fs-xs);
+  font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-2)}
+.week-header .dow.weekend{color:var(--ac-primary-6)}
+.calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);grid-auto-rows:minmax(120px,auto)}
+.day-cell{border-right:1px solid var(--ac-border-1);border-bottom:1px solid var(--ac-border-1);
+  padding:var(--ac-space-2);display:flex;flex-direction:column;gap:var(--ac-space-1);
+  background:var(--ac-bg-1);position:relative;min-height:120px;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.day-cell:nth-child(7n){border-right:none}
+.day-cell.is-off{background:var(--ac-fill-1)}
+.day-cell.is-off .day-num{color:var(--ac-color-text-4)}
+.day-cell.is-today{background:var(--ac-color-primary-1)}
+.day-cell.is-today .day-num{color:var(--ac-primary-6);font-weight:var(--ac-fw-bold)}
+.day-cell.is-drag-over{background:var(--ac-color-warning-1);outline:2px dashed var(--ac-primary-6);outline-offset:-2px;z-index:var(--ac-z-base)}
+.day-head{display:flex;align-items:center;justify-content:space-between;
+  font-size:var(--ac-fs-xs);color:var(--ac-color-text-2);padding:2px 2px var(--ac-space-1)}
+.day-num{font-family:var(--ac-ff-mono);font-weight:var(--ac-fw-semibold);font-size:var(--ac-fs-sm);color:var(--ac-color-text-1)}
+.day-today-tag{font-size:var(--ac-fs-xs);color:var(--ac-primary-6)}
+.day-cards{display:flex;flex-direction:column;gap:var(--ac-space-1);overflow:hidden}
+.more-btn{height:auto;padding:2px;font-size:var(--ac-fs-xs);font-weight:var(--ac-fw-medium);
+  justify-content:flex-start;border:none}
+
+/* ===== 卡片（共享） ===== */
+.card{background:var(--ac-bg-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-2) var(--ac-space-2);font-size:var(--ac-fs-xs);cursor:grab;position:relative;
+  transition:transform var(--ac-duration-fast) var(--ac-easing-standard),
+    box-shadow var(--ac-duration-fast) var(--ac-easing-standard);overflow:hidden}
+.card:hover{box-shadow:var(--ac-shadow-2);transform:translateY(-1px)}
+.card:active{cursor:grabbing}
+.card.is-dragging{opacity:.4}
+.card .c-title{font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1);line-height:1.35;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;padding-left:var(--ac-space-1)}
+.card .c-meta{display:flex;align-items:center;justify-content:space-between;margin-top:3px;
+  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);padding-left:var(--ac-space-1);gap:var(--ac-space-2)}
+.card .c-no{font-family:var(--ac-ff-mono);color:var(--ac-color-text-2);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;flex:1;min-width:0;transform:scale(.92);transform-origin:left}
+.card .c-taker{color:var(--ac-color-text-3);white-space:nowrap;flex-shrink:0}
+.card .c-time-row{display:flex;align-items:center;gap:var(--ac-space-1);margin-top:3px;
+  font-size:var(--ac-fs-xs);padding-left:var(--ac-space-1);color:var(--ac-color-text-3)}
+.card .c-time-row svg{width:12px;height:12px;flex-shrink:0}
+.card .c-gen-time{font-family:var(--ac-ff-mono);transform:scale(.92);transform-origin:left}
+.card .c-rel-time{color:var(--ac-color-primary-6);background:var(--ac-color-primary-1);
+  padding:0 var(--ac-space-1);border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);
+  line-height:1.5;transform:scale(.92);transform-origin:left;white-space:nowrap}
+.card .c-rel-time.is-stale{color:var(--ac-color-warning-7);background:var(--ac-color-warning-1)}
+.card .c-func-row{display:flex;align-items:center;flex-wrap:wrap;gap:2px var(--ac-space-1);
+  margin-top:var(--ac-space-1);padding-left:var(--ac-space-1)}
+.card .c-func{font-size:var(--ac-fs-xs);color:var(--ac-color-primary-6);background:var(--ac-color-primary-1);
+  padding:1px var(--ac-space-2);border-radius:var(--ac-radius-xs);font-weight:var(--ac-fw-medium);
+  max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;line-height:1.5;
+  transform:scale(.9);transform-origin:left}
+.card .c-module{font-size:var(--ac-fs-xs);color:var(--ac-palette-cyan-7);background:var(--ac-palette-cyan-1);
+  padding:1px var(--ac-space-2);border-radius:var(--ac-radius-xs);font-weight:var(--ac-fw-medium);
+  line-height:1.5;white-space:nowrap;flex-shrink:0;transform:scale(.9);transform-origin:left}
+.card .c-module.is-uncategorized{color:var(--ac-color-text-3);background:var(--ac-fill-2)}
+.card .c-biz{font-size:var(--ac-fs-xs);color:var(--ac-color-text-2);background:var(--ac-fill-2);
+  padding:1px var(--ac-space-2);border-radius:var(--ac-radius-xs);font-weight:var(--ac-fw-medium);
+  line-height:1.5;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:3px;
+  transform:scale(.9);transform-origin:left}
+.card .c-biz svg{width:10px;height:10px}
+.ni-badge{font-size:var(--ac-fs-xs);padding:1px var(--ac-space-2);border-radius:var(--ac-radius-xs);
+  font-weight:var(--ac-fw-medium);line-height:1.5;white-space:nowrap;flex-shrink:0;
+  transform:scale(.9);transform-origin:left}
+.ni-badge--auto{color:var(--ac-palette-blue-7);background:var(--ac-palette-blue-1)}
+.ni-badge--manual{color:var(--ac-color-warning-7);background:var(--ac-color-warning-2)}
+.card .c-taker-pill{font-size:var(--ac-fs-xs);color:var(--ac-palette-purple-7);background:var(--ac-palette-purple-1);
+  padding:1px var(--ac-space-2);border-radius:var(--ac-radius-xs);font-weight:var(--ac-fw-medium);
+  line-height:1.5;white-space:nowrap;flex-shrink:0;display:inline-flex;align-items:center;gap:3px;
+  margin-left:auto;transform:scale(.9);transform-origin:right}
+.card .c-taker-pill svg{width:10px;height:10px}
+/* 三态着色 */
+.card.status-pending{background:var(--ac-bg-1);border-color:var(--ac-border-2)}
+.card.status-in-progress{background:var(--ac-palette-purple-1);border-color:var(--ac-palette-purple-2)}
+.card.status-in-progress::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac-palette-purple-6)}
+.card.status-done{background:var(--ac-color-success-1);border-color:var(--ac-color-success-3)}
+.card.status-done::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac-color-success-6)}
+.card.status-non-impl{background:var(--ac-color-warning-1);border-color:var(--ac-color-warning-3)}
+.card.status-non-impl::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--ac-color-warning-6)}
+.card.is-locked{cursor:not-allowed}
+.card.is-locked:hover{transform:none;box-shadow:var(--ac-shadow-1)}
+.card.search-dim{opacity:.25}
+.card.search-dim:hover{opacity:.55}
+.card.search-hit{box-shadow:0 0 0 2px var(--ac-brand-yellow),var(--ac-shadow-1)}
+
+/* ===== 抽屉 ===== */
+.drawer-mask{position:fixed;inset:0;background:var(--ac-comp-mask-bg);z-index:calc(var(--ac-z-drawer) - 1);display:none}
+.drawer-mask.is-show{display:block}
+.drawer{position:fixed;top:0;right:0;bottom:0;width:460px;background:var(--ac-bg-1);
+  box-shadow:var(--ac-shadow-5);z-index:var(--ac-z-drawer);transform:translateX(100%);
+  visibility:hidden;
+  transition:transform var(--ac-duration-base) var(--ac-easing-standard),
+    visibility 0s var(--ac-duration-base);
+  display:flex;flex-direction:column}
+.drawer.is-show{transform:translateX(0);visibility:visible;transition-delay:0s}
+.drawer-header{padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1);
+  display:flex;align-items:center;justify-content:space-between}
+.drawer-title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-bold);display:flex;align-items:center;gap:var(--ac-space-3)}
+.drawer-title .tag{font-size:var(--ac-fs-xs);padding:2px var(--ac-space-2);border-radius:var(--ac-radius-full);font-weight:var(--ac-fw-medium)}
+.drawer-title .tag.pending{background:var(--ac-fill-2);color:var(--ac-color-text-2)}
+.drawer-title .tag.in-progress{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-7)}
+.drawer-title .tag.done{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
+.drawer-title .tag.non-impl{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.drawer-close{width:28px;height:28px;min-width:0;padding:0;justify-content:center;
+  font-size:var(--ac-fs-3xl);color:var(--ac-color-text-3);line-height:1}
+.drawer-close:hover{background:var(--ac-fill-2);color:var(--ac-color-text-1);text-decoration:none}
+.drawer-body{flex:1;overflow-y:auto;padding:var(--ac-space-4) var(--ac-space-5)}
+.field{margin-bottom:var(--ac-space-4)}
+.field-label{font-size:var(--ac-fs-xs);color:var(--ac-color-text-2);margin-bottom:var(--ac-space-1);
+  display:flex;align-items:center;gap:var(--ac-space-1)}
+.field-label .required{color:var(--ac-color-danger-6)}
+.field-value{font-size:var(--ac-fs-sm);color:var(--ac-color-text-1);word-break:break-all}
+.field-value.mono{font-family:var(--ac-ff-mono);color:var(--ac-color-text-2)}
+.field .hint{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);margin-top:3px}
+.char-count{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);text-align:right;margin-top:2px}
+.char-count.is-warn{color:var(--ac-color-danger-6)}
+.status-switcher{display:flex;gap:var(--ac-space-2)}
+.status-opt{flex:1;padding:var(--ac-space-2);border:1px solid var(--ac-border-2);
+  border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);font-size:var(--ac-fs-xs);cursor:pointer;
+  display:flex;flex-direction:column;align-items:center;gap:var(--ac-space-1);
+  transition:border-color var(--ac-duration-fast) var(--ac-easing-standard)}
+.status-opt:hover{border-color:var(--ac-primary-6)}
+.status-opt.is-active{border-color:var(--ac-primary-6);background:var(--ac-color-primary-1);
+  color:var(--ac-primary-6);font-weight:var(--ac-fw-semibold)}
+.status-opt .dot{width:10px;height:10px;border-radius:var(--ac-radius-full);border:1px solid var(--ac-border-2)}
+.status-opt[data-val=PENDING] .dot{background:var(--ac-bg-1)}
+.status-opt[data-val=IN_PROGRESS] .dot{background:var(--ac-palette-purple-6);border-color:var(--ac-palette-purple-6)}
+.status-opt[data-val=DONE] .dot{background:var(--ac-color-success-6);border-color:var(--ac-color-success-6)}
+.non-impl-hint{color:var(--ac-color-warning-7);background:var(--ac-color-warning-1);
+  border:1px solid var(--ac-color-warning-3);padding:var(--ac-space-2) var(--ac-space-3);
+  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-xs);line-height:1.6}
+.drawer-footer{padding:var(--ac-space-3) var(--ac-space-5);border-top:1px solid var(--ac-border-1);
+  display:flex;justify-content:space-between;gap:var(--ac-space-3);background:var(--ac-fill-1)}
+
+/* 操作记录时间线 */
+.log-section{margin-top:var(--ac-space-5);padding-top:var(--ac-space-4);border-top:1px solid var(--ac-border-1)}
+.log-title{font-size:var(--ac-fs-sm);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1);
+  margin-bottom:var(--ac-space-3);display:flex;align-items:center;gap:var(--ac-space-2)}
+.log-title .count{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);font-weight:var(--ac-fw-regular);
+  background:var(--ac-fill-2);padding:0 var(--ac-space-2);height:20px;display:inline-flex;align-items:center;
+  border-radius:var(--ac-radius-full);font-family:var(--ac-ff-mono)}
+.log-list{list-style:none;padding:0 0 0 var(--ac-space-4);margin:0;position:relative;
+  max-height:260px;overflow-y:auto}
+.log-list::before{content:"";position:absolute;left:5px;top:6px;bottom:6px;width:1px;background:var(--ac-border-1)}
+.log-item{position:relative;padding:var(--ac-space-1) 0 var(--ac-space-3);font-size:var(--ac-fs-xs)}
+.log-item::before{content:"";position:absolute;left:-14px;top:7px;width:9px;height:9px;
+  border-radius:var(--ac-radius-full);background:var(--ac-bg-1);border:2px solid var(--ac-border-3);box-sizing:border-box}
+.log-item.op-CREATED::before{border-color:var(--ac-color-primary-6)}
+.log-item.op-MARKED_DONE::before{border-color:var(--ac-color-success-6);background:var(--ac-color-success-6)}
+.log-item.op-SCHEDULED::before,.log-item.op-RESCHEDULED::before{border-color:var(--ac-primary-6)}
+.log-item.op-UNSCHEDULED::before{border-color:var(--ac-color-text-3)}
+.log-item.op-EDITED::before{border-color:var(--ac-brand-yellow)}
+.log-item.op-TAKEN::before{border-color:var(--ac-palette-purple-6);background:var(--ac-palette-purple-6)}
+.log-item.op-RELEASED::before{border-color:var(--ac-palette-purple-3)}
+.log-item.op-REVERTED::before{border-color:var(--ac-color-warning-6)}
+.log-item .log-head{display:flex;align-items:center;gap:var(--ac-space-2);color:var(--ac-color-text-2)}
+.log-item .log-op{font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.log-item .log-time{margin-left:auto;color:var(--ac-color-text-3);font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs)}
+.log-item .log-detail{margin-top:2px;color:var(--ac-color-text-2);line-height:1.5}
+
+/* ===== 弹层（+N / 非实施需求） ===== */
+.ac-modal-mask{position:fixed;inset:0;background:var(--ac-comp-mask-bg);z-index:var(--ac-z-modal);
+  display:none;align-items:center;justify-content:center}
+.ac-modal-mask.is-show{display:flex}
+.ac-modal-mask.during-drag{opacity:0;pointer-events:none;z-index:-1}
+.ac-modal{background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);width:440px;max-height:70vh;
+  box-shadow:var(--ac-shadow-5);display:flex;flex-direction:column}
+.ac-modal__head{padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1);
+  display:flex;align-items:center;justify-content:space-between}
+.ac-modal__title{font-weight:var(--ac-fw-semibold);font-size:var(--ac-fs-md)}
+.ac-modal__body{flex:1;overflow-y:auto;padding:var(--ac-space-3) var(--ac-space-4);
+  display:flex;flex-direction:column;gap:var(--ac-space-2)}
+.ac-modal__tip{padding:var(--ac-space-2) var(--ac-space-4);font-size:var(--ac-fs-xs);
+  color:var(--ac-color-warning-7);background:var(--ac-color-warning-1);border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-5);border-top:1px solid var(--ac-border-1);background:var(--ac-fill-1)}
+.ac-modal__text{padding:var(--ac-space-4) var(--ac-space-5);font-size:var(--ac-fs-sm);
+  color:var(--ac-color-text-1);line-height:1.7}
+
+/* ===== 手动选卡弹窗（v1.3 通道三：Backup 面板手动拉取） ===== */
+.ac-modal--manual{width:720px;max-height:80vh}
+.mc-list-view{display:flex;flex-direction:column;flex:1;min-height:0}
+.mc-search{padding:var(--ac-space-3) var(--ac-space-4) var(--ac-space-2)}
+.mc-grid{display:grid;grid-template-columns:20px 132px minmax(0,1.6fr) minmax(0,1fr) 64px 56px 110px;
+  gap:var(--ac-space-2);align-items:center}
+.mc-head{background:var(--ac-fill-1);border-top:1px solid var(--ac-border-1);border-bottom:1px solid var(--ac-border-1);
+  padding:var(--ac-space-2) var(--ac-space-4);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.mc-list{flex:1;min-height:0;overflow-y:auto}
+.mc-row{padding:var(--ac-space-2) var(--ac-space-4);border-bottom:1px solid var(--ac-border-1);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.mc-row:hover{background:var(--ac-fill-1)}
+.mc-row.is-selected,.mc-row.is-selected:hover{background:var(--ac-color-primary-1)}
+.mc-row.is-blocked,.mc-row.is-blocked:hover{background:var(--ac-fill-1);cursor:not-allowed}
+.mc-row.is-blocked .mc-cell{color:var(--ac-color-text-4)}
+.mc-check{width:14px;height:14px;margin:0;accent-color:var(--ac-primary-6);pointer-events:none}
+.mc-cell{font-size:var(--ac-fs-xs);color:var(--ac-color-text-1);
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.mc-cell.mc-no{font-family:var(--ac-ff-mono);color:var(--ac-color-text-2)}
+.mc-cell.mc-time{font-family:var(--ac-ff-mono);color:var(--ac-color-text-2)}
+.mc-blocked-hint{grid-column:2/-1;font-size:var(--ac-fs-xs);color:var(--ac-color-warning-7)}
+.mc-blocked-hint b{font-family:var(--ac-ff-mono)}
+.mc-result-view{display:flex;flex-direction:column;gap:var(--ac-space-2);
+  flex:1;min-height:0;overflow-y:auto;padding:var(--ac-space-3) var(--ac-space-4)}
+.mc-result-sec{display:flex;flex-direction:column;gap:var(--ac-space-2);margin-bottom:var(--ac-space-2)}
+.mc-result-title{font-size:var(--ac-fs-sm);font-weight:var(--ac-fw-semibold)}
+.mc-result-title.ok{color:var(--ac-color-success-7)}
+.mc-result-title.err{color:var(--ac-color-danger-7)}
+.mc-result-item{display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-2) var(--ac-space-3);background:var(--ac-fill-1);border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-sm);color:var(--ac-color-text-1);line-height:1.6}
+.mc-result-item .mono{font-family:var(--ac-ff-mono)}
+.mc-ico{display:inline-flex;flex-shrink:0}
+.mc-ico svg{width:14px;height:14px}
+.mc-ico--ok{color:var(--ac-color-success-6)}
+.mc-ico--err{color:var(--ac-color-danger-6)}
+.ac-modal__foot.mc-foot{justify-content:space-between;align-items:center}
+.mc-sel-info{font-size:var(--ac-fs-xs);color:var(--ac-color-text-2)}
+.mc-foot-btns{display:inline-flex;gap:var(--ac-space-2)}
+
+/* ===== Toast ===== */
+.ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
+  display:none;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-4);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);z-index:var(--ac-z-toast)}
+.ac-toast.is-show{display:flex}
+.ac-toast__icon{color:var(--ac-color-success-6);display:inline-flex}
+.ac-toast__icon svg{width:16px;height:16px}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+
+  <!-- 顶部导航：页面身份由 Layout 承担 -->
+  <nav class="web-nav">
+    <span class="web-nav__logo">零食王国</span>
+    <span class="web-nav__crumb">研发管理 / <b>实施排期</b></span>
+    <span class="web-nav__spacer"></span>
+    <span class="web-nav__crumb">李四 · 实施负责人</span>
+  </nav>
+
+  <section class="tpl-page">
+
+    <!-- 工具栏 -->
+    <div class="tpl-panel sch-toolbar">
+      <button type="button" class="ac-btn" id="btnPrev" title="上月">‹ 上月</button>
+      <div class="month-picker" id="monthPicker">
+        <div class="month-label" id="monthLabel">2026年09月</div>
+        <div class="month-dropdown">
+          <div class="year-row">
+            <button type="button" class="ac-btn" data-dir="-1">‹</button>
+            <span class="year-val" id="pickerYear">2026</span>
+            <button type="button" class="ac-btn" data-dir="1">›</button>
+          </div>
+          <div class="month-grid" id="monthGrid"></div>
+        </div>
+      </div>
+      <button type="button" class="ac-btn" id="btnNext" title="下月">下月 ›</button>
+      <button type="button" class="ac-btn" id="btnToday">今天</button>
+      <button type="button" class="ac-btn ac-btn--warn" id="btnNonImpl" title="查看非实施需求卡片">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.1-2.1 2.7-2.5z"/></svg>
+        非实施需求 <strong id="stNonImpl">0</strong>
+      </button>
+      <select class="ac-select" id="moduleFilter" title="按卡片 funcKey 首段派生模块筛选；作用于 Backup / 月历 / +N 弹层 / 状态计数（前端临时态，不落库）">
+        <option value="">全部模块</option>
+        <option value="供应链">供应链</option>
+        <option value="报表">报表</option>
+        <option value="营运">营运</option>
+        <option value="财务">财务</option>
+        <option value="研发">研发</option>
+        <option value="设置">设置</option>
+        <option value="档案">档案</option>
+        <option value="仓储管理">仓储管理</option>
+        <option value="未归类">未归类</option>
+      </select>
+      <div class="ac-input biz-filter" title="按业务对接人模糊筛选（大小写不敏感，与模块 / 只看自己 / 搜索 AND 叠加）">
+        <input class="ac-input__inner" id="bizContactInput" placeholder="业务对接人…" autocomplete="off">
+      </div>
+      <div class="stat-chips">
+        <span class="chip pending"><span class="dot"></span>待实施 <strong id="stPending">0</strong></span>
+        <span class="chip in-progress"><span class="dot"></span>实施中 <strong id="stInProgress">0</strong></span>
+        <span class="chip done"><span class="dot"></span>实施完成 <strong id="stDone">0</strong></span>
+        <span class="chip backup"><span class="dot"></span>未排期 <strong id="stBackup">0</strong></span>
+      </div>
+      <label class="ac-switch" id="onlyMineToggle" title="按领取人 = 当前登录用户过滤月历与统计；Backup 未领取卡片始终可见">
+        <span class="ac-switch__track"><span class="ac-switch__thumb"></span></span>
+        <span class="ac-switch__label">只看自己</span>
+      </label>
+      <span class="mine-hint" id="onlyMineHint">默认显示全部</span>
+    </div>
+
+    <!-- 工作区 -->
+    <div class="sch-workspace">
+
+      <!-- Backup 卡片池 -->
+      <div class="tpl-panel backup-panel">
+        <div class="panel-header">
+          <div class="panel-title">Backup 卡片池 <span class="count" id="backupCount">0</span></div>
+        </div>
+        <div class="backup-search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+          <div class="ac-input"><input class="ac-input__inner" id="cardSearchInput" placeholder="搜索当月卡片：标题 / 内容…" autocomplete="off"></div>
+          <button type="button" class="ac-btn bs-clear" id="cardSearchClear" title="清空">×</button>
+          <div class="bs-hint" id="cardSearchHint">空格 / 逗号 分隔多关键字（AND 模糊匹配），仅搜当月</div>
+        </div>
+        <div class="backup-manual">
+          <button type="button" class="ac-btn ac-btn--primary" id="btnManualCollect" title="从功能排期已完成卡片手动拉取生成实施卡">+ 手动选卡</button>
+        </div>
+        <div class="backup-hint">功能排期完成卡片按功能聚合，每 15 分钟自动生成实施卡片；也可点「+ 手动选卡」即时拉取，拖到日历即可排期</div>
+        <div class="backup-list" id="backupList"></div>
+      </div>
+
+      <!-- 月历 -->
+      <div class="tpl-panel calendar-panel">
+        <div class="week-header">
+          <div class="dow">周一</div>
+          <div class="dow">周二</div>
+          <div class="dow">周三</div>
+          <div class="dow">周四</div>
+          <div class="dow">周五</div>
+          <div class="dow weekend">周六</div>
+          <div class="dow weekend">周日</div>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<!-- 卡片抽屉 -->
+<div class="drawer-mask" id="drawerMask"></div>
+<aside class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title">
+      <span id="drawerNo">—</span>
+      <span class="tag" id="drawerTag">待实施</span>
+    </div>
+    <button type="button" class="ac-btn ac-btn--text drawer-close" id="drawerClose">×</button>
+  </div>
+  <div class="drawer-body">
+    <div class="field">
+      <div class="field-label">卡片编号</div>
+      <div class="field-value mono" id="dfCardNo">—</div>
+    </div>
+    <div class="field">
+      <div class="field-label">来源功能排期卡</div>
+      <div class="field-value mono" id="dfSource">—</div>
+      <div class="hint">由生成任务 / 手动拉取按功能聚合生成，不可编辑</div>
+    </div>
+    <div class="field">
+      <div class="field-label">所属模块</div>
+      <div class="field-value" id="dfModule">—</div>
+      <div class="hint">由 funcKey 首段派生；非 DIR: 前缀显示「未归类」</div>
+    </div>
+    <div class="field">
+      <div class="field-label">业务对接人</div>
+      <div class="field-value" id="dfBizContact">—</div>
+      <div class="hint">只读；维护入口在功能排期侧</div>
+    </div>
+    <div class="field">
+      <div class="field-label">创建日期</div>
+      <div class="field-value mono" id="dfCreatedAt">—</div>
+      <div class="hint">= 生成时间（任务 / 手动拉取），不可修改</div>
+    </div>
+    <div class="field">
+      <div class="field-label">排期日期</div>
+      <div class="field-value" id="dfDate">—</div>
+      <div class="hint">通过拖拽改变排期日</div>
+    </div>
+    <div class="field">
+      <div class="field-label">实施开始日期</div>
+      <div class="field-value mono" id="dfTakenAt">—</div>
+      <div class="hint">= 领取时间，状态切到「实施中」自动写入</div>
+    </div>
+    <div class="field">
+      <div class="field-label">实施结束日期</div>
+      <div class="field-value mono" id="dfDoneAt">—</div>
+      <div class="hint">= 点击「实施完成」的时间，自动写入</div>
+    </div>
+    <div class="field">
+      <div class="field-label">标题 <span class="required">*</span></div>
+      <div class="ac-input"><input class="ac-input__inner" id="dfTitle" maxlength="30" placeholder="不超过 30 字"></div>
+      <div class="char-count" id="dfTitleCount">0 / 30</div>
+    </div>
+    <div class="field">
+      <div class="field-label">内容（变更待测试项）</div>
+      <div class="ac-input is-textarea" id="dfContent" contenteditable="true" data-placeholder="根据需求与代码变更生成的变更待测试项"></div>
+      <div class="hint">由系统根据需求描述与代码变更自动生成，可人工补充修正</div>
+    </div>
+    <div class="field">
+      <div class="field-label">领取人</div>
+      <div class="field-value" id="dfTaker">—</div>
+      <div class="hint">状态切到「实施中」时自动填入当前操作人；回到「待实施」清空</div>
+    </div>
+    <div class="field" id="fieldStatus">
+      <div class="field-label">状态</div>
+      <div class="status-switcher">
+        <div class="status-opt" data-val="PENDING"><span class="dot"></span><span>待实施</span></div>
+        <div class="status-opt" data-val="IN_PROGRESS"><span class="dot"></span><span>实施中</span></div>
+        <div class="status-opt" data-val="DONE"><span class="dot"></span><span>实施完成</span></div>
+      </div>
+    </div>
+    <div class="field" id="fieldNonImplHint" style="display:none">
+      <div class="field-label">状态</div>
+      <div class="non-impl-hint">
+        非实施需求 <span id="dfNonImplSource"></span><br>
+        <span style="color:var(--ac-color-text-3)">无需排期与实施，不进入 Backup 和日历；如需恢复请点击下方「恢复为待实施」</span>
+      </div>
+    </div>
+    <div class="log-section">
+      <div class="log-title">操作记录 <span class="count" id="logCount">0</span></div>
+      <ul class="log-list" id="logList"></ul>
+    </div>
+  </div>
+  <div class="drawer-footer">
+    <div style="display:flex;gap:var(--ac-space-2)">
+      <button type="button" class="ac-btn ac-btn--danger" id="drawerDelete">删除卡片</button>
+      <button type="button" class="ac-btn ac-btn--warn" id="btnMoveToNi">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.1-2.1 2.7-2.5z"/></svg>
+        移入非实施需求
+      </button>
+    </div>
+    <div style="display:flex;gap:var(--ac-space-2)">
+      <button type="button" class="ac-btn" id="drawerCancel">取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" id="drawerSave">保存</button>
+    </div>
+  </div>
+</aside>
+
+<!-- 当日卡片弹层（+N） -->
+<div class="ac-modal-mask" id="dayModalMask">
+  <div class="ac-modal">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title" id="dayModalTitle">—</span>
+      <button type="button" class="ac-btn ac-btn--text drawer-close" id="dayModalClose">×</button>
+    </div>
+    <div class="ac-modal__body" id="dayModalBody"></div>
+  </div>
+</div>
+
+<!-- 非实施需求弹层 -->
+<div class="ac-modal-mask" id="nonImplMask">
+  <div class="ac-modal" style="width:520px;max-height:80vh">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title" style="color:var(--ac-color-warning-7)">非实施需求 · <span id="niListCount">0</span> 条</span>
+      <button type="button" class="ac-btn ac-btn--text drawer-close" id="nonImplClose">×</button>
+    </div>
+    <div class="ac-modal__tip">手动标记的非实施需求卡片，不占用排期也不进入 Backup</div>
+    <div class="ac-modal__body" id="nonImplBody"></div>
+  </div>
+</div>
+
+<!-- 手动选卡弹窗（v1.3 通道三：从功能排期 DONE 卡手动拉取生成实施卡） -->
+<div class="ac-modal-mask" id="manualCollectMask">
+  <div class="ac-modal ac-modal--manual">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">手动选卡 · 从功能排期拉取</span>
+      <button type="button" class="ac-btn ac-btn--text drawer-close" id="manualCollectClose">×</button>
+    </div>
+    <div class="ac-modal__tip">候选 = 功能排期「开发完成」且未被引用过的业务卡（技术类卡由任务自动划入非实施区，不在此列）；同功能多张卡将聚合为一张实施卡</div>
+    <!-- 列表视图：搜索 + 候选行 -->
+    <div class="mc-list-view" id="mcListView">
+      <div class="mc-search">
+        <div class="ac-input"><input class="ac-input__inner" id="mcSearchInput" placeholder="搜索卡号 / 标题 / 功能名" autocomplete="off"></div>
+      </div>
+      <div class="mc-grid mc-head">
+        <span></span><span>功能排期卡号</span><span>标题</span><span>功能名</span><span>模块</span><span>开发人</span><span>完成时间</span>
+      </div>
+      <div class="mc-list" id="mcList"></div>
+    </div>
+    <!-- 结果视图：生成成功 / 失败分列（提交二次校验反馈） -->
+    <div class="mc-result-view" id="mcResultView" style="display:none"></div>
+    <div class="ac-modal__foot mc-foot">
+      <span class="mc-sel-info" id="mcSelInfo">已选 0 张（将生成 0 张实施卡）</span>
+      <span class="mc-foot-btns">
+        <button type="button" class="ac-btn" id="mcCancel">取消</button>
+        <button type="button" class="ac-btn ac-btn--primary" id="mcSubmit" disabled>生成实施卡</button>
+      </span>
+    </div>
+  </div>
+</div>
+
+<!-- 通用确认弹窗（替代原生 confirm） -->
+<div class="ac-modal-mask" id="confirmMask">
+  <div class="ac-modal" style="width:380px">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title" id="confirmTitle">确认操作</span>
+    </div>
+    <div class="ac-modal__text" id="confirmBody">—</div>
+    <div class="ac-modal__foot">
+      <button type="button" class="ac-btn" id="confirmCancel">取消</button>
+      <button type="button" class="ac-btn ac-btn--primary" id="confirmOk">确定</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="ac-toast" id="acToast">
+  <span class="ac-toast__icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg></span>
+  <span id="acToastText"></span>
+</div>
+
+<script>
+/* ──────────────────────────────────────────────
+   Mock 基础
+────────────────────────────────────────────── */
+const CURRENT_USER = { id: 1004, name: '李四' };
+const SYSTEM_USER  = { id: 0,    name: '系统（实施卡生成）' };
+const OP_LABEL = {
+  CREATED:'创建', SCHEDULED:'排期', UNSCHEDULED:'移回 Backup',
+  RESCHEDULED:'改期', EDITED:'编辑', TAKEN:'领取实施', RELEASED:'取消领取',
+  MARKED_DONE:'实施完成', REVERTED:'回退', DELETED:'删除',
+  MOVED_TO_NON_IMPL:'移入非实施需求', RESTORED:'恢复为待实施'
+};
+function pad2(n){ return String(n).padStart(2,'0'); }
+function formatDateTime(d){
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+function nowStr(){ return formatDateTime(new Date()); }
+function atWith(baseDate, hour, minute){
+  const x = new Date(baseDate); x.setHours(hour, minute, 0, 0);
+  return formatDateTime(x);
+}
+function appendLog(card, type, detail, by){
+  card.logs = card.logs || [];
+  card.logs.push({ type, detail: detail||'', operatorName: (by || CURRENT_USER).name, at: nowStr() });
+}
+function escapeHtml(s){ return String(s||'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+
+/* 相对时间：输入 'YYYY-MM-DD HH:mm' */
+function relativeTimeFromNow(dateTimeStr){
+  if(!dateTimeStr) return '';
+  const normalized = dateTimeStr.replace(' ', 'T');
+  const t = new Date(normalized.length===16 ? normalized+':00' : normalized);
+  if(isNaN(t.getTime())) return '';
+  const diff = Math.max(0, (Date.now() - t.getTime())/1000);
+  if(diff < 60) return '刚刚';
+  if(diff < 3600) return `${Math.floor(diff/60)} 分钟前`;
+  if(diff < 86400) return `${Math.floor(diff/3600)} 小时前`;
+  const days = Math.floor(diff/86400);
+  if(days < 30) return `${days} 天前`;
+  if(days < 365) return `${Math.floor(days/30)} 个月前`;
+  return `${Math.floor(days/365)} 年前`;
+}
+function isStaleGen(dateTimeStr){
+  if(!dateTimeStr) return false;
+  const t = new Date(dateTimeStr.replace(' ', 'T')+':00');
+  if(isNaN(t.getTime())) return false;
+  return (Date.now() - t.getTime()) / 86400000 > 7;
+}
+
+/* ──────────────────────────────────────────────
+   Mock 数据：夜间任务按功能聚合生成的实施卡片
+   （来源 = 功能排期 feat_schedule_card 当天 DONE 卡）
+────────────────────────────────────────────── */
+const TODAY = new Date(); TODAY.setHours(0,0,0,0);
+function dateStr(d){ return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}`; }
+function ymd(d){ return dateStr(d).replace(/-/g,''); }
+function shift(base, days){ const d=new Date(base); d.setDate(d.getDate()+days); return d; }
+
+const NO_SEQ = {};
+function nextCardNo(genDate){
+  const key = ymd(genDate);
+  NO_SEQ[key] = (NO_SEQ[key]||0)+1;
+  return `IS-${key}-${String(NO_SEQ[key]).padStart(3,'0')}`;
+}
+
+/* 功能聚合源：每个功能 = 当天功能排期完成卡集合 → 一张实施卡片
+   funcKey 形如 DIR:{模块} · {子模块} · {功能}；非 DIR: 前缀（slug / FS 卡号直引）归「未归类」 */
+const MOCK_FUNCS = [
+  { funcKey:'DIR:供应链 · 配送 · 门店要货单', funcName:'门店要货', title:'要货单导出与批量作废实施',
+    bizContact:'陈静',
+    featCards:['FS-'+ymd(shift(TODAY,-6))+'-003','FS-'+ymd(shift(TODAY,-6))+'-007'],
+    genDate: shift(TODAY,-5),
+    content:'变更待测试项：\n1. 要货单列表导出 Excel（字段完整性 / 权限点 / 大数据量异步导出）\n2. 批量作废二次确认与作废后库存回滚\n3. 回归：要货单查询筛选与详情页联动',
+    preset:{ scheduled: shift(TODAY,-4), status:'DONE', taker:'张三', takenAt: atWith(shift(TODAY,-4),9,12), doneAt: atWith(shift(TODAY,-3),18,40) } },
+  { funcKey:'DIR:研发 · 研发管理 · 使用情况分析', funcName:'使用分析', title:'埋点批量上报实施验证',
+    bizContact:'刘洋',
+    featCards:['FS-'+ymd(shift(TODAY,-5))+'-002'],
+    genDate: shift(TODAY,-4),
+    content:'变更待测试项：\n1. 埋点批量上报队列（阻塞 / 重试 / 采样率动态下发）\n2. 上报失败兜底与本地缓存清理\n3. 回归：页面访问埋点完整性',
+    preset:{ scheduled: shift(TODAY,-2), status:'DONE', taker:'王五', takenAt: atWith(shift(TODAY,-2),10,5), doneAt: atWith(shift(TODAY,-1),16,22) } },
+  { funcKey:'DIR:报表 · 门店 · 人流监控报表', funcName:'人流监控', title:'客流转化率修复实施',
+    bizContact:'周涛',
+    featCards:['FS-'+ymd(shift(TODAY,-4))+'-011'],
+    genDate: shift(TODAY,-3),
+    content:'变更待测试项：\n1. 客单转化率 0 除错误修复验证\n2. 海康客流数据回传延迟场景\n3. 回归：人流监控报表趋势图',
+    preset:{ scheduled: TODAY, status:'IN_PROGRESS', taker:'赵六', takenAt: atWith(TODAY,9,30) } },
+  { funcKey:'DIR:研发 · 硬件 · IOT 管理', funcName:'硬件管理', title:'设备离线告警推送实施',
+    bizContact:'吴敏',
+    featCards:['FS-'+ymd(shift(TODAY,-3))+'-004','FS-'+ymd(shift(TODAY,-3))+'-009'],
+    genDate: shift(TODAY,-2),
+    content:'变更待测试项：\n1. 商米设备离线告警企微推送（频控 / 去重）\n2. 温湿度传感器采集上报链路\n3. 回归：设备台账在线状态刷新',
+    preset:{ scheduled: shift(TODAY,1), status:'IN_PROGRESS', taker:'李四', takenAt: atWith(shift(TODAY,-1),14,10) } },
+  { funcKey:'DIR:财务 · 凭证 · 财务凭证', funcName:'乐檬凭证', title:'凭证模板版本管理实施',
+    bizContact:'郑凯',
+    featCards:['FS-'+ymd(shift(TODAY,-2))+'-006'],
+    genDate: shift(TODAY,-1),
+    content:'变更待测试项：\n1. 凭证模板版本创建 / 回滚 / 对比\n2. NCC 推送失败重试\n3. 回归：凭证生成与分录编辑',
+    preset:{ scheduled: shift(TODAY,2), status:'PENDING' } },
+  { funcKey:'DIR:档案 · 供应商 · 供应商入驻', funcName:'供应商协同', title:'新品申请批量审核实施',
+    bizContact:'孙丽',
+    featCards:['FS-'+ymd(shift(TODAY,-1))+'-008'],
+    genDate: shift(TODAY,-1),
+    content:'变更待测试项：\n1. 新品申请批量审核（或签 / 并签）\n2. 审核通过后商品档案回写\n3. 回归：供应商平台新品申请提交',
+    preset:{ scheduled: shift(TODAY,3), status:'PENDING' } },
+  { funcKey:'DIR:档案 · 货架 · 货架库容管理', funcName:'库容管理', title:'批量库容编辑实施',
+    bizContact:'陈静',
+    featCards:['FS-'+ymd(shift(TODAY,-1))+'-012'],
+    genDate: shift(TODAY,0),
+    content:'变更待测试项：\n1. 货架库容批量编辑弹层（校验 / 动画）\n2. 库容超限告警\n3. 回归：货架绑定商品流程',
+    preset:{ scheduled: shift(TODAY,4), status:'PENDING' } },
+  { funcKey:'DIR:研发 · 研发管理 · 功能排期', funcName:'功能排期', title:'排期卡片拖拽体验实施',
+    bizContact:'',  // 对接人空值演示（卡片显示 👤—）
+    featCards:['FS-'+ymd(shift(TODAY,0))+'-001'],
+    genDate: shift(TODAY,0),
+    content:'变更待测试项：\n1. 卡片拖拽排期与改期（含 +N 弹层拖拽）\n2. 合并卡状态扩散\n3. 回归：月历切换与只看自己过滤',
+    preset:{},  // Backup
+    },
+  { funcKey:'DIR:财务 · 结算 · 三单匹配', funcName:'三单匹配', title:'红蓝票对冲边界实施',
+    bizContact:'郑凯',
+    featCards:['FS-'+ymd(shift(TODAY,0))+'-005'],
+    genDate: shift(TODAY,0),
+    content:'变更待测试项：\n1. 红蓝票对冲边界（部分核销 / 跨期）\n2. 差异处理流程\n3. 回归：三单匹配报表',
+    preset:{} },  // Backup
+  { funcKey:'DIR:营运 · 店务服务 · 访客预约', funcName:'访客预约', title:'预约码批量分享实施',
+    bizContact:'周涛',
+    featCards:['FS-'+ymd(shift(TODAY,0))+'-010'],
+    genDate: shift(TODAY,0),
+    content:'变更待测试项：\n1. 预约码批量生成与企微分享\n2. 访客签到核销\n3. 回归：访客预约审批流',
+    preset:{} },  // Backup
+  { funcKey:'DIR:仓储 · 入库管理 · 上架任务', funcName:'上架任务', title:'上架任务扫码校验实施',
+    bizContact:'吴敏',
+    featCards:['FS-'+ymd(shift(TODAY,0))+'-015'],
+    genDate: shift(TODAY,0),
+    content:'变更待测试项：\n1. App 上架扫码校验（库位 / 批次 / 效期）\n2. 上架异常回退与重做\n3. 回归：上架任务领取与完成',
+    preset:{} },  // Backup（「仓储管理」筛选项兼容首段「仓储」）
+  { funcKey:'product-query', funcName:'商品查询', title:'扫码搜索体验实施',
+    bizContact:'刘洋',
+    featCards:['FS-'+ymd(shift(TODAY,0))+'-013'],
+    genDate: shift(TODAY,0),
+    content:'变更待测试项：\n1. 扫码结果闪现问题修复验证\n2. 货架 SKU 模糊搜索排序\n3. 回归：商品详情页字段展示',
+    preset:{} },  // Backup；funcKey 非 DIR: 前缀 → 未归类
+  { funcKey:'inventory-report', funcName:'库存报表', title:'库存缓存策略实施',
+    bizContact:'孙丽',
+    featCards:['FS-'+ymd(shift(TODAY,-2))+'-014'],
+    genDate: shift(TODAY,-1),
+    content:'变更待测试项：\n1. 库存报表缓存命中率与失效策略\n2. 高峰时段查询性能回归',
+    preset:{ nonImpl:true, nonImplSource:'MANUAL', nonImplBy:'李四' } },  // 非实施需求示例（人工移入）；funcKey 非 DIR: 前缀 → 未归类
+  { funcKey:'DIR:研发 · 运维管理 · 统一操作日志', funcName:'操作日志', title:'/jvm-metrics 补参数说明',
+    bizContact:'',
+    featCards:['FS-'+ymd(shift(TODAY,-1))+'-016'],
+    genDate: shift(TODAY,-1),
+    content:'技术类需求：\n1. /jvm-metrics 接口补充 timeWindow 参数说明\n2. 统一操作日志查询示例更新',
+    preset:{ nonImpl:true, nonImplSource:'AUTO_TECH' } }  // 非实施需求示例（技术类·自动划入）
+];
+
+const CARDS = MOCK_FUNCS.map((f, i) => {
+  const p = f.preset || {};
+  const createdAt = atWith(f.genDate, 6, 30); // 夜间任务生成时间
+  const card = {
+    cardNo: nextCardNo(f.genDate),
+    title: f.title,
+    content: f.content,
+    funcKey: f.funcKey,
+    funcName: f.funcName,
+    bizContact: f.bizContact || '',
+    sourceFeatCards: f.featCards,
+    status: p.nonImpl ? 'NON_IMPL' : (p.status || 'PENDING'),
+    scheduledDate: p.scheduled ? dateStr(p.scheduled) : null,
+    taker: p.taker || null,
+    takenAt: p.takenAt || null,
+    doneAt: p.doneAt || null,
+    nonImplSource: p.nonImpl ? (p.nonImplSource || 'MANUAL') : null,
+    nonImplBy: p.nonImplBy || null,
+    createdAt: createdAt,
+    logs: []
+  };
+  card.logs.push({
+    type:'CREATED',
+    detail:`由功能排期完成卡按功能「${f.funcName}」聚合生成（来源 ${f.featCards.length} 张：${f.featCards.join(', ')}）`,
+    operatorName: SYSTEM_USER.name, at: createdAt
+  });
+  if(card.scheduledDate){
+    card.logs.push({ type:'SCHEDULED', detail:`排期到 ${card.scheduledDate}`, operatorName: CURRENT_USER.name, at: atWith(f.genDate, 9, (i*7)%60) });
+  }
+  if(card.taker){
+    card.logs.push({ type:'TAKEN', detail:`${card.taker} 领取实施`, operatorName: card.taker, at: card.takenAt });
+  }
+  if(card.status === 'DONE'){
+    card.logs.push({ type:'MARKED_DONE', detail:`${card.taker||'—'} 点击完成，实施结束`, operatorName: card.taker || CURRENT_USER.name, at: card.doneAt });
+  }
+  if(card.status === 'NON_IMPL'){
+    if(card.nonImplSource === 'AUTO_TECH'){
+      /* 技术类：来源功能排期卡 req_nature=TECH，生成即划入非实施区 */
+      card.logs[0].detail += '；技术类需求，自动划入非实施区';
+    } else {
+      card.logs.push({ type:'MOVED_TO_NON_IMPL', detail:'从「待实施」移入非实施需求；已回写功能排期卡需求性质', operatorName: card.nonImplBy || CURRENT_USER.name, at: atWith(f.genDate, 10, 15) });
+    }
+  }
+  return card;
+});
+
+/* ──────────────────────────────────────────────
+   视图状态
+────────────────────────────────────────────── */
+let viewYear = TODAY.getFullYear();
+let viewMonth = TODAY.getMonth();
+let ONLY_MINE = false;
+let SEARCH_KEYWORDS = [];
+let MODULE_FILTER = '';   // '' = 全部模块
+let BIZ_KEYWORD = '';     // 业务对接人关键字（小写）
+
+function byCardNo(no){ return CARDS.find(c=>c.cardNo===no); }
+function todayStr(){ return dateStr(TODAY); }
+function renderStatusTag(card){
+  if(card.status==='NON_IMPL') return {cls:'non-impl', text:'非实施需求'};
+  if(card.status==='DONE') return {cls:'done', text:'实施完成'};
+  if(card.status==='IN_PROGRESS') return {cls:'in-progress', text:'实施中'};
+  return {cls:'pending', text:'待实施'};
+}
+function parseSearchKeywords(raw){
+  if(!raw) return [];
+  return String(raw).split(/[\s,，、]+/).map(s=>s.trim().toLowerCase()).filter(Boolean);
+}
+function cardMatchesSearch(card){
+  if(SEARCH_KEYWORDS.length===0) return true;
+  const hay = `${card.title||''}\n${card.content||''}\n${card.funcName||''}`.toLowerCase();
+  return SEARCH_KEYWORDS.every(k=>hay.indexOf(k)!==-1);
+}
+/* 只看自己：按领取人过滤月历与统计；Backup 池卡片均未领取，不做过滤（领取入口常开） */
+function passMineFilter(c){
+  return !ONLY_MINE || c.taker === CURRENT_USER.name;
+}
+
+/* 模块派生：funcKey 形如 DIR:{模块} · {子模块} · {功能} 取首段；非 DIR: 前缀（FS 卡号直引 / 空值）归「未归类」 */
+function deriveModule(card){
+  const fk = (card.funcKey||'').trim();
+  if(!fk.startsWith('DIR:')) return '未归类';
+  const seg = fk.slice(4).split('·')[0].trim();
+  return seg || '未归类';
+}
+function passModuleFilter(c){
+  if(!MODULE_FILTER) return true;
+  const m = deriveModule(c);
+  if(MODULE_FILTER==='未归类') return m==='未归类';
+  if(MODULE_FILTER==='仓储管理') return m==='仓储' || m==='仓储管理'; // 兼容两种存量写法
+  return m===MODULE_FILTER;
+}
+function passBizFilter(c){
+  if(!BIZ_KEYWORD) return true;
+  return (c.bizContact||'').toLowerCase().indexOf(BIZ_KEYWORD)!==-1;
+}
+/* 模块 + 业务对接人：AND 叠加，作用于 Backup / 月历 / +N 弹层 / 状态计数（前端临时 UI 态，不落库） */
+function passCommonFilters(c){ return passModuleFilter(c) && passBizFilter(c); }
+
+/* ──────────────────────────────────────────────
+   渲染：Backup
+────────────────────────────────────────────── */
+const $backupList = document.getElementById('backupList');
+const $backupCount = document.getElementById('backupCount');
+const ICON_CLOCK = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>';
+const ICON_USER = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>';
+
+function renderBackup(){
+  let items = CARDS.filter(c=>!c.scheduledDate && c.status!=='NON_IMPL' && passCommonFilters(c));
+  if(SEARCH_KEYWORDS.length>0) items = items.filter(cardMatchesSearch);
+  $backupCount.textContent = items.length;
+  const emptyHint = SEARCH_KEYWORDS.length>0
+    ? `没有匹配「${escapeHtml(SEARCH_KEYWORDS.join(' '))}」的卡片<br>清空搜索或调整关键字重试`
+    : (MODULE_FILTER || BIZ_KEYWORD)
+      ? '没有符合当前筛选条件的 Backup 卡片<br>调整模块 / 业务对接人筛选后重试'
+      : 'Backup 池为空<br>功能排期完成卡片每晚自动聚合到这里';
+  $backupList.innerHTML = items.length
+    ? items.map(c=>renderCard(c,{showTime:true})).join('')
+    : `<div class="backup-empty">${emptyHint}</div>`;
+  attachCardHandlers($backupList);
+}
+
+/* ──────────────────────────────────────────────
+   渲染：月历
+────────────────────────────────────────────── */
+const $grid = document.getElementById('calendarGrid');
+const $monthLabel = document.getElementById('monthLabel');
+
+function renderCalendar(){
+  $monthLabel.textContent = `${viewYear}年${pad2(viewMonth+1)}月`;
+  const firstDay = new Date(viewYear, viewMonth, 1);
+  const lastDay  = new Date(viewYear, viewMonth+1, 0);
+  const firstDow = (firstDay.getDay()+6)%7;
+  const totalCells = Math.ceil((firstDow + lastDay.getDate())/7)*7;
+  const startDate = new Date(viewYear, viewMonth, 1-firstDow);
+  const cells = [];
+  for(let i=0;i<totalCells;i++){
+    const d = new Date(startDate); d.setDate(startDate.getDate()+i);
+    const isOff = d.getMonth()!==viewMonth;
+    const isToday = dateStr(d)===todayStr();
+    const dStr = dateStr(d);
+    const cards = CARDS.filter(c=>c.scheduledDate===dStr && c.status!=='NON_IMPL' && passMineFilter(c) && passCommonFilters(c));
+    const visible = cards.slice(0,3);
+    const rest = cards.length - visible.length;
+    cells.push(`
+      <div class="day-cell ${isOff?'is-off':''} ${isToday?'is-today':''}" data-date="${dStr}" data-off="${isOff}">
+        <div class="day-head">
+          <span class="day-num">${d.getDate()}</span>
+          ${isToday?'<span class="day-today-tag">今天</span>':''}
+        </div>
+        <div class="day-cards">
+          ${visible.map(c=>renderCard(c)).join('')}
+          ${rest>0?`<button type="button" class="ac-btn ac-btn--text more-btn" data-more="${dStr}">+${rest} 张卡片</button>`:''}
+        </div>
+      </div>`);
+  }
+  $grid.innerHTML = cells.join('');
+  attachCardHandlers($grid);
+  attachDropZones();
+  bindMoreBtns();
+  renderStats();
+}
+
+function renderCard(card, opts){
+  const isOpts = opts && typeof opts==='object';
+  const showTime = !!(isOpts && opts.showTime);
+  const tag = renderStatusTag(card);
+  const funcTag = card.funcName ? `<span class="c-func" title="${escapeHtml(card.funcName)}">${escapeHtml(card.funcName)}</span>` : '';
+  /* 模块小药丸：funcKey 首段派生，超 4 字缩略、title 悬停显全名；未归类灰色 */
+  const modName = deriveModule(card);
+  const modShort = modName.length>4 ? modName.slice(0,3)+'…' : modName;
+  const modTag = `<span class="c-module ${modName==='未归类'?'is-uncategorized':''}" title="所属模块：${escapeHtml(modName)}">${escapeHtml(modShort)}</span>`;
+  /* 业务对接人标识：沿用领取人药丸结构换中性色；空值显 👤—（图标纪律：内联 SVG 人形） */
+  const bizTag = `<span class="c-biz" title="业务对接人：${escapeHtml(card.bizContact||'—')}">${ICON_USER}${escapeHtml(card.bizContact||'—')}</span>`;
+  /* 非实施需求来源徽章：技术类·自动（蓝）/ 人工移入（橙，附操作人） */
+  const niTag = (card.status==='NON_IMPL' && card.nonImplSource)
+    ? (card.nonImplSource==='AUTO_TECH'
+        ? '<span class="ni-badge ni-badge--auto" title="技术类需求：来源功能排期卡 req_nature=TECH，聚合生成即自动划入">技术类·自动</span>'
+        : `<span class="ni-badge ni-badge--manual" title="人工移入非实施需求">人工移入${card.nonImplBy?' · '+escapeHtml(card.nonImplBy):''}</span>`)
+    : '';
+  const takerTag = card.taker ? `<span class="c-taker-pill" title="领取人：${escapeHtml(card.taker)}">${ICON_USER}${escapeHtml(card.taker)}</span>` : '';
+  const funcRow = (funcTag||modTag||bizTag||niTag||takerTag) ? `<div class="c-func-row">${funcTag}${modTag}${bizTag}${niTag}${takerTag}</div>` : '';
+  const timeRow = (showTime && card.createdAt)
+    ? `<div class="c-time-row">${ICON_CLOCK}<span class="c-gen-time" title="创建日期（生成任务 / 手动拉取时间）">${escapeHtml(card.createdAt)}</span><span class="c-rel-time ${isStaleGen(card.createdAt)?'is-stale':''}">${escapeHtml(relativeTimeFromNow(card.createdAt))}</span></div>`
+    : '';
+  const locked = card.status==='DONE';
+  let searchCls = '';
+  if(SEARCH_KEYWORDS.length>0) searchCls = cardMatchesSearch(card) ? 'search-hit' : 'search-dim';
+  return `
+    <div class="card status-${tag.cls} ${locked?'is-locked':''} ${searchCls}" draggable="${locked?'false':'true'}" data-no="${card.cardNo}" title="${escapeHtml(card.content)}">
+      <div class="c-title">${escapeHtml(card.title)}</div>
+      <div class="c-meta">
+        <span class="c-no">${card.cardNo}</span>
+        <span class="c-taker">${card.taker?escapeHtml(card.taker):'未领取'}</span>
+      </div>
+      ${timeRow}
+      ${funcRow}
+    </div>`;
+}
+
+/* ──────────────────────────────────────────────
+   统计
+────────────────────────────────────────────── */
+function renderStats(){
+  let pending=0, inProgress=0, done=0, backup=0, nonImpl=0;
+  const m = `${viewYear}-${pad2(viewMonth+1)}`;
+  CARDS.forEach(c=>{
+    if(c.status==='NON_IMPL'){ nonImpl++; return; } // 非实施按钮计数不随筛选缩减
+    if(!passCommonFilters(c)) return;              // 模块 / 业务对接人筛选同步缩减四计数
+    if(!c.scheduledDate){ backup++; return; }
+    if(!passMineFilter(c)) return;
+    if(!c.scheduledDate.startsWith(m)) return;
+    if(c.status==='DONE'){ done++; return; }
+    if(c.status==='IN_PROGRESS'){ inProgress++; return; }
+    pending++;
+  });
+  document.getElementById('stPending').textContent = pending;
+  document.getElementById('stInProgress').textContent = inProgress;
+  document.getElementById('stDone').textContent = done;
+  document.getElementById('stBackup').textContent = backup;
+  document.getElementById('stNonImpl').textContent = nonImpl;
+}
+
+/* ──────────────────────────────────────────────
+   拖拽
+────────────────────────────────────────────── */
+let dragNo = null;
+function attachCardHandlers(root){
+  root.querySelectorAll('.card').forEach(el=>{
+    el.addEventListener('dragstart', e=>{
+      const no = el.getAttribute('data-no');
+      const card = byCardNo(no);
+      if(card && card.status==='DONE'){
+        e.preventDefault();
+        acToast('实施完成的卡片不可移动；如需改期请先回退为「待实施」');
+        return;
+      }
+      dragNo = no;
+      el.classList.add('is-dragging');
+      e.dataTransfer.effectAllowed='move';
+      e.dataTransfer.setData('text/plain', dragNo);
+      if(el.closest('#dayModalBody')){
+        setTimeout(()=>document.getElementById('dayModalMask').classList.add('during-drag'), 0);
+      }
+    });
+    el.addEventListener('dragend', ()=>{
+      dragNo=null;
+      document.querySelectorAll('.card.is-dragging').forEach(c=>c.classList.remove('is-dragging'));
+      document.querySelectorAll('.is-drag-over').forEach(c=>c.classList.remove('is-drag-over'));
+      document.getElementById('dayModalMask').classList.remove('during-drag');
+    });
+    el.addEventListener('click', e=>{
+      e.stopPropagation();
+      openDrawer(el.getAttribute('data-no'));
+    });
+  });
+}
+
+function attachDropZones(){
+  $grid.querySelectorAll('.day-cell').forEach(cell=>{
+    if(cell.getAttribute('data-off')==='true') return;
+    cell.addEventListener('dragover', e=>{ e.preventDefault(); cell.classList.add('is-drag-over'); });
+    cell.addEventListener('dragleave', ()=>cell.classList.remove('is-drag-over'));
+    cell.addEventListener('drop', e=>{
+      e.preventDefault();
+      cell.classList.remove('is-drag-over');
+      const no = e.dataTransfer.getData('text/plain') || dragNo;
+      const card = byCardNo(no);
+      if(!card) return;
+      if(card.status==='DONE'){
+        acToast('实施完成的卡片不可移动；如需改期请先回退为「待实施」');
+        return;
+      }
+      const newDate = cell.getAttribute('data-date');
+      if(newDate < todayStr()){
+        acToast('不允许将卡片排到比今天更早的日期');
+        return;
+      }
+      const oldDate = card.scheduledDate;
+      if(newDate===oldDate) return;
+      card.scheduledDate = newDate;
+      appendLog(card, oldDate?'RESCHEDULED':'SCHEDULED', oldDate?`从 ${oldDate} 改到 ${newDate}`:`排期到 ${newDate}`);
+      renderAll();
+      refreshDayModalIfOpen();
+    });
+  });
+}
+$backupList.addEventListener('dragover', e=>{ e.preventDefault(); $backupList.classList.add('is-drag-over'); });
+$backupList.addEventListener('dragleave', ()=>$backupList.classList.remove('is-drag-over'));
+$backupList.addEventListener('drop', e=>{
+  e.preventDefault();
+  $backupList.classList.remove('is-drag-over');
+  const no = e.dataTransfer.getData('text/plain') || dragNo;
+  const card = byCardNo(no);
+  if(!card) return;
+  if(card.status==='DONE'){
+    acToast('实施完成的卡片不可取消排期；请先回退为「待实施」');
+    return;
+  }
+  const oldDate = card.scheduledDate;
+  if(!oldDate) return;
+  card.scheduledDate = null;
+  appendLog(card, 'UNSCHEDULED', `从 ${oldDate} 移回 Backup 卡片池`);
+  renderAll();
+  refreshDayModalIfOpen();
+});
+
+function renderAll(){ renderBackup(); renderCalendar(); }
+
+/* ──────────────────────────────────────────────
+   抽屉
+────────────────────────────────────────────── */
+const $mask = document.getElementById('drawerMask');
+const $drawer = document.getElementById('drawer');
+let editingNo = null;
+
+function openDrawer(no){
+  const card = byCardNo(no);
+  if(!card) return;
+  editingNo = no;
+  const tag = renderStatusTag(card);
+  document.getElementById('drawerNo').textContent = card.cardNo;
+  const $tag = document.getElementById('drawerTag');
+  $tag.className = 'tag '+tag.cls;
+  $tag.textContent = tag.text;
+
+  document.getElementById('dfCardNo').textContent = card.cardNo;
+  document.getElementById('dfSource').textContent = card.sourceFeatCards.join('、');
+  document.getElementById('dfModule').textContent = deriveModule(card);
+  document.getElementById('dfBizContact').textContent = card.bizContact || '—';
+  document.getElementById('dfCreatedAt').textContent = card.createdAt || '—';
+  document.getElementById('dfDate').textContent = card.scheduledDate || '未排期（Backup）';
+  document.getElementById('dfTakenAt').textContent = card.takenAt || '—';
+  document.getElementById('dfDoneAt').textContent = card.doneAt || '—';
+  document.getElementById('dfTitle').value = card.title;
+  document.getElementById('dfContent').innerText = card.content;
+  document.getElementById('dfTaker').textContent = card.taker || '未领取';
+  updateTitleCount();
+
+  const isNonImpl = card.status==='NON_IMPL';
+  document.getElementById('fieldStatus').style.display = isNonImpl ? 'none' : '';
+  document.getElementById('fieldNonImplHint').style.display = isNonImpl ? '' : 'none';
+  /* NON_IMPL 抽屉展示来源标识（技术类·自动 / 人工移入·操作人） */
+  document.getElementById('dfNonImplSource').innerHTML = isNonImpl
+    ? (card.nonImplSource==='AUTO_TECH'
+        ? '<span class="ni-badge ni-badge--auto">技术类·自动</span>'
+        : `<span class="ni-badge ni-badge--manual">人工移入${card.nonImplBy?' · '+escapeHtml(card.nonImplBy):''}</span>`)
+    : '';
+  document.querySelectorAll('.status-opt').forEach(b=>{
+    b.classList.toggle('is-active', b.getAttribute('data-val')===card.status);
+  });
+
+  const $niBtn = document.getElementById('btnMoveToNi');
+  if(isNonImpl){
+    $niBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14 4 9l5-5"/><path d="M4 9h10.5a5.5 5.5 0 0 1 5.5 5.5 5.5 5.5 0 0 1-5.5 5.5H11"/></svg> 恢复为待实施';
+    $niBtn.classList.remove('ac-btn--warn');
+  } else {
+    $niBtn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18v3h3l6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.1-2.1 2.7-2.5z"/></svg> 移入非实施需求';
+    $niBtn.classList.add('ac-btn--warn');
+  }
+
+  renderLogs(card);
+  $mask.classList.add('is-show');
+  $drawer.classList.add('is-show');
+}
+function closeDrawer(){
+  $mask.classList.remove('is-show');
+  $drawer.classList.remove('is-show');
+  editingNo = null;
+}
+
+function updateTitleCount(){
+  const el = document.getElementById('dfTitle');
+  const n = el.value.length;
+  const c = document.getElementById('dfTitleCount');
+  c.textContent = `${n} / 30`;
+  c.classList.toggle('is-warn', n>=30);
+}
+document.getElementById('dfTitle').addEventListener('input', updateTitleCount);
+
+document.querySelectorAll('.status-opt').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.status-opt').forEach(x=>x.classList.remove('is-active'));
+    b.classList.add('is-active');
+  });
+});
+
+document.getElementById('drawerClose').addEventListener('click', closeDrawer);
+document.getElementById('drawerCancel').addEventListener('click', closeDrawer);
+$mask.addEventListener('click', closeDrawer);
+
+/* 操作记录 */
+function renderLogs(card){
+  const logs = [...(card.logs||[])].reverse();
+  document.getElementById('logCount').textContent = logs.length;
+  document.getElementById('logList').innerHTML = logs.map(l=>`
+    <li class="log-item op-${l.type}">
+      <div class="log-head">
+        <span class="log-op">${OP_LABEL[l.type]||l.type}</span>
+        <span>· ${escapeHtml(l.operatorName)}</span>
+        <span class="log-time">${l.at}</span>
+      </div>
+      ${l.detail?`<div class="log-detail">${escapeHtml(l.detail)}</div>`:''}
+    </li>`).join('');
+}
+
+/* 保存 */
+document.getElementById('drawerSave').addEventListener('click', ()=>{
+  const card = byCardNo(editingNo); if(!card) return;
+  const title = document.getElementById('dfTitle').value.trim();
+  if(!title){ acToast('标题不能为空'); return; }
+  if(title.length>30){ acToast('标题不超过 30 字'); return; }
+  const newContent = document.getElementById('dfContent').innerText.replace(/\n+$/,'');
+
+  /* 非实施需求：仅允许改标题/内容 */
+  if(card.status==='NON_IMPL'){
+    const changes = [];
+    if(card.title!==title) changes.push(`标题：${card.title} → ${title}`);
+    if(card.content!==newContent) changes.push('变更待测试项已更新');
+    card.title = title; card.content = newContent;
+    if(changes.length) appendLog(card, 'EDITED', changes.join('；'));
+    closeDrawer(); renderAll(); acToast('已保存');
+    return;
+  }
+
+  const status = document.querySelector('.status-opt.is-active').getAttribute('data-val');
+  const changes = [];
+  if(card.title!==title) changes.push(`标题：${card.title} → ${title}`);
+  if(card.content!==newContent) changes.push('变更待测试项已更新');
+
+  const oldStatus = card.status;
+  card.title = title; card.content = newContent;
+
+  if(status==='DONE'){
+    if(oldStatus!=='DONE'){
+      /* 从待实施直接完成：自动回填当前用户为领取人，实施开始日期 = 完成时间 */
+      if(!card.taker){
+        card.taker = CURRENT_USER.name;
+        card.takenAt = nowStr();
+      }
+      card.doneAt = nowStr();
+      card.status = 'DONE';
+      appendLog(card, 'MARKED_DONE', `${card.taker} 点击完成，实施结束（实施开始 ${card.takenAt}）`);
+    }
+  } else if(status==='IN_PROGRESS'){
+    if(oldStatus==='PENDING'){
+      card.taker = CURRENT_USER.name;
+      card.takenAt = nowStr();
+      card.status = 'IN_PROGRESS';
+      appendLog(card, 'TAKEN', `${CURRENT_USER.name} 领取实施`);
+    } else if(oldStatus==='DONE'){
+      card.doneAt = null;
+      card.status = 'IN_PROGRESS';
+      appendLog(card, 'REVERTED', '回退到实施中，清空实施结束日期');
+    }
+  } else if(status==='PENDING'){
+    if(oldStatus==='DONE'){
+      card.doneAt = null; card.taker = null; card.takenAt = null;
+      card.status = 'PENDING';
+      appendLog(card, 'REVERTED', '回退为待实施，清空实施结束日期与领取人');
+    } else if(oldStatus==='IN_PROGRESS'){
+      const oldTaker = card.taker;
+      card.taker = null; card.takenAt = null;
+      card.status = 'PENDING';
+      appendLog(card, 'RELEASED', `${oldTaker||'—'} 取消领取实施`);
+    }
+  }
+
+  if(changes.length) appendLog(card, 'EDITED', changes.join('；'));
+  closeDrawer(); renderAll(); acToast('已保存');
+});
+
+/* 删除 */
+document.getElementById('drawerDelete').addEventListener('click', async ()=>{
+  const card = byCardNo(editingNo); if(!card) return;
+  const ok = await acConfirm({
+    title:'删除卡片',
+    body:`确认删除卡片「${escapeHtml(card.title)}」？删除后该功能当天不会再自动生成实施卡片。`,
+    okText:'删除', danger:true
+  });
+  if(!ok) return;
+  const i = CARDS.findIndex(c=>c.cardNo===editingNo);
+  if(i>=0) CARDS.splice(i,1);
+  closeDrawer(); renderAll(); acToast('卡片已删除');
+});
+
+/* 移入非实施需求 / 恢复为待实施 */
+document.getElementById('btnMoveToNi').addEventListener('click', async ()=>{
+  const card = byCardNo(editingNo); if(!card) return;
+  if(card.status==='NON_IMPL'){
+    const ok = await acConfirm({ title:'恢复为待实施', body:`确认将卡片「${escapeHtml(card.title)}」恢复为待实施？`, okText:'恢复' });
+    if(!ok) return;
+    card.status = 'PENDING';
+    card.nonImplSource = null; card.nonImplBy = null; // 恢复只回 PENDING，不回写功能排期卡需求性质
+    appendLog(card, 'RESTORED', '从非实施需求恢复为待实施');
+    closeDrawer(); renderAll(); acToast('已恢复为待实施');
+    return;
+  }
+  const ok = await acConfirm({
+    title:'移入非实施需求',
+    body:`确认将卡片「${escapeHtml(card.title)}」移入非实施需求？<br>移入后将：清空排期、领取人、实施起止日期，不进入 Backup 和日历。<br>移入后将同步回写功能排期卡需求性质为技术支持。`,
+    okText:'移入', danger:true
+  });
+  if(!ok) return;
+  const oldLabel = renderStatusTag(card).text;
+  card.status = 'NON_IMPL';
+  card.scheduledDate = null;
+  card.taker = null; card.takenAt = null; card.doneAt = null;
+  card.nonImplSource = 'MANUAL'; card.nonImplBy = CURRENT_USER.name;
+  appendLog(card, 'MOVED_TO_NON_IMPL', `从「${oldLabel}」移入非实施需求；已回写功能排期卡需求性质`);
+  closeDrawer(); renderAll(); acToast('已移入非实施需求');
+});
+
+/* ──────────────────────────────────────────────
+   +N 当日卡片弹层
+────────────────────────────────────────────── */
+const $dayMask = document.getElementById('dayModalMask');
+let currentDayModalDate = null;
+function bindMoreBtns(){
+  document.querySelectorAll('.more-btn').forEach(b=>{
+    b.addEventListener('click', e=>{
+      e.stopPropagation();
+      const d = b.getAttribute('data-more');
+      const cards = CARDS.filter(c=>c.scheduledDate===d && c.status!=='NON_IMPL' && passMineFilter(c) && passCommonFilters(c));
+      currentDayModalDate = d;
+      document.getElementById('dayModalTitle').textContent = `${d} · 共 ${cards.length} 张卡片`;
+      document.getElementById('dayModalBody').innerHTML = cards.map(c=>renderCard(c)).join('');
+      $dayMask.classList.add('is-show');
+      attachCardHandlers(document.getElementById('dayModalBody'));
+    });
+  });
+}
+function refreshDayModalIfOpen(){
+  if(!$dayMask.classList.contains('is-show') || !currentDayModalDate) return;
+  const d = currentDayModalDate;
+  const cards = CARDS.filter(c=>c.scheduledDate===d && c.status!=='NON_IMPL' && passMineFilter(c) && passCommonFilters(c));
+  if(cards.length===0){ $dayMask.classList.remove('is-show'); currentDayModalDate = null; return; }
+  document.getElementById('dayModalTitle').textContent = `${d} · 共 ${cards.length} 张卡片`;
+  document.getElementById('dayModalBody').innerHTML = cards.map(c=>renderCard(c)).join('');
+  attachCardHandlers(document.getElementById('dayModalBody'));
+}
+document.getElementById('dayModalClose').addEventListener('click', ()=>{ $dayMask.classList.remove('is-show'); currentDayModalDate = null; });
+$dayMask.addEventListener('click', e=>{ if(e.target===$dayMask){ $dayMask.classList.remove('is-show'); currentDayModalDate = null; } });
+
+/* ──────────────────────────────────────────────
+   非实施需求弹层
+────────────────────────────────────────────── */
+const $niMask = document.getElementById('nonImplMask');
+document.getElementById('btnNonImpl').addEventListener('click', ()=>{
+  const list = CARDS.filter(c=>c.status==='NON_IMPL')
+    .sort((a,b)=>(b.createdAt||'').localeCompare(a.createdAt||''));
+  document.getElementById('niListCount').textContent = list.length;
+  const $body = document.getElementById('nonImplBody');
+  $body.innerHTML = list.length
+    ? list.map(c=>renderCard(c)).join('')
+    : '<div class="backup-empty">暂无非实施需求卡片</div>';
+  $niMask.classList.add('is-show');
+  attachCardHandlers($body);
+});
+document.getElementById('nonImplClose').addEventListener('click', ()=>$niMask.classList.remove('is-show'));
+$niMask.addEventListener('click', e=>{ if(e.target===$niMask) $niMask.classList.remove('is-show'); });
+
+/* ──────────────────────────────────────────────
+   手动选卡弹窗（v1.3 通道三：Backup 面板手动拉取）
+   候选 = 功能排期 DONE + req_nature=BIZ + 未被任何实施卡引用；done_at 倒序
+   Mock 演示场景：a=同功能双卡聚合 / b=当日已生成置灰 / c=提交二次校验竞态失败
+────────────────────────────────────────────── */
+const MC_CANDIDATES = [
+  /* a. 同功能双卡（funcKey 相同）→ 勾选两张聚合生成 1 张实施卡 */
+  { cardNo:'FS-20261010-001', title:'越库中包要货自动拆单逻辑', funcKey:'DIR:供应链 · 门店要货单 · 越库中包要货', funcName:'越库中包要货', module:'供应链', devUserName:'赵一鸣', doneAt:'2026-10-10 09:42' },
+  /* b. 当日幂等置灰：该功能今日已生成实施卡 */
+  { cardNo:'FS-20261010-004', title:'进销存看板周转天数口径修正', funcKey:'DIR:报表 · 采购 · 进销存看板', funcName:'进销存看板', module:'报表', devUserName:'刘洋', doneAt:'2026-10-10 08:57', blocked:true, blockedByCardNo:'IS-20261010-002' },
+  /* c. 竞态失败演示：弹窗打开期间被生成任务拉走，提交时返回失败 */
+  { cardNo:'FS-20261010-007', title:'效期预警看板滞销箱数联调', funcKey:'DIR:报表 · 采购 · 效期预警看板', funcName:'效期预警看板', module:'报表', devUserName:'孙倩', doneAt:'2026-10-10 07:31', willFail:true },
+  /* d. 普通可选行（供应链 / a 组第二张 / 报表 / 仓储管理） */
+  { cardNo:'FS-20261009-011', title:'自用品要货分类停用开关', funcKey:'DIR:供应链 · 配送 · 自用品要货', funcName:'自用品要货', module:'供应链', devUserName:'王磊', doneAt:'2026-10-09 18:32' },
+  { cardNo:'FS-20261009-006', title:'越库中包要货分拣校验与异常提示', funcKey:'DIR:供应链 · 门店要货单 · 越库中包要货', funcName:'越库中包要货', module:'供应链', devUserName:'陈晓', doneAt:'2026-10-09 17:15' },
+  { cardNo:'FS-20261009-009', title:'商品销售排名报表分类内排名', funcKey:'DIR:报表 · 供应链 · 商品销售排名报表', funcName:'商品销售排名', module:'报表', devUserName:'周洁', doneAt:'2026-10-09 16:08' },
+  { cardNo:'FS-20261009-003', title:'App 补货任务按工作小组过滤', funcKey:'DIR:仓储管理 · 出库管理 · 补货任务', funcName:'补货任务', module:'仓储管理', devUserName:'吴敏', doneAt:'2026-10-09 14:47' }
+];
+const $mcMask = document.getElementById('manualCollectMask');
+const $mcListView = document.getElementById('mcListView');
+const $mcResultView = document.getElementById('mcResultView');
+const $mcList = document.getElementById('mcList');
+const $mcSelInfo = document.getElementById('mcSelInfo');
+const $mcCancel = document.getElementById('mcCancel');
+const $mcSubmit = document.getElementById('mcSubmit');
+const MC_ICON_OK  = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>';
+const MC_ICON_ERR = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18M6 6l12 12"/></svg>';
+let mcSelected = new Set();
+let mcKeyword = '';
+let mcMode = 'list';       // list | result
+let mcLastCreated = 0;
+
+function mcFiltered(){
+  if(!mcKeyword) return MC_CANDIDATES;
+  return MC_CANDIDATES.filter(r=>`${r.cardNo} ${r.title} ${r.funcName}`.toLowerCase().indexOf(mcKeyword)!==-1);
+}
+function mcRenderList(){
+  const rows = mcFiltered();
+  const emptyText = mcKeyword
+    ? `没有匹配「${escapeHtml(mcKeyword)}」的候选卡<br>调整关键字重试`
+    : '暂无可拉取的功能排期完成卡<br>候选卡均已被实施卡引用';
+  $mcList.innerHTML = rows.length ? rows.map(r=>{
+    const checked = mcSelected.has(r.cardNo);
+    return `
+    <div class="mc-grid mc-row ${r.blocked?'is-blocked':''} ${checked?'is-selected':''}" data-no="${r.cardNo}">
+      <input type="checkbox" class="mc-check" ${r.blocked?'disabled':''} ${checked?'checked':''}>
+      <span class="mc-cell mc-no">${escapeHtml(r.cardNo)}</span>
+      <span class="mc-cell" title="${escapeHtml(r.title)}">${escapeHtml(r.title)}</span>
+      <span class="mc-cell" title="${escapeHtml(r.funcName)}">${escapeHtml(r.funcName)}</span>
+      <span class="mc-cell">${escapeHtml(r.module)}</span>
+      <span class="mc-cell">${escapeHtml(r.devUserName)}</span>
+      <span class="mc-cell mc-time">${escapeHtml(r.doneAt)}</span>
+      ${r.blocked?`<span class="mc-blocked-hint">该功能今日已生成 <b>${escapeHtml(r.blockedByCardNo)}</b></span>`:''}
+    </div>`;
+  }).join('') : `<div class="backup-empty">${emptyText}</div>`;
+  $mcList.querySelectorAll('.mc-row').forEach(row=>{
+    row.addEventListener('click', ()=>{
+      const no = row.getAttribute('data-no');
+      const r = MC_CANDIDATES.find(x=>x.cardNo===no);
+      if(!r || r.blocked) return; // 当日已生成的功能行置灰禁选
+      if(mcSelected.has(no)) mcSelected.delete(no); else mcSelected.add(no);
+      mcRenderList(); mcRenderFoot();
+    });
+  });
+}
+function mcRenderFoot(){
+  const sel = MC_CANDIDATES.filter(r=>mcSelected.has(r.cardNo));
+  const m = new Set(sel.map(r=>r.funcKey)).size; // 将生成张数 = 所选卡片 funcKey 去重计数
+  $mcSelInfo.textContent = `已选 ${sel.length} 张（将生成 ${m} 张实施卡）`;
+  $mcSubmit.disabled = sel.length===0;
+}
+function openManualCollect(){
+  mcSelected = new Set(); mcKeyword = ''; mcMode = 'list'; mcLastCreated = 0;
+  document.getElementById('mcSearchInput').value = '';
+  $mcListView.style.display = 'flex';
+  $mcResultView.style.display = 'none';
+  $mcSelInfo.style.display = '';
+  $mcCancel.style.display = '';
+  $mcSubmit.textContent = '生成实施卡';
+  mcRenderList(); mcRenderFoot();
+  $mcMask.classList.add('is-show');
+}
+function closeManualCollect(){ $mcMask.classList.remove('is-show'); }
+document.getElementById('btnManualCollect').addEventListener('click', openManualCollect);
+document.getElementById('manualCollectClose').addEventListener('click', closeManualCollect);
+$mcCancel.addEventListener('click', closeManualCollect);
+$mcMask.addEventListener('click', e=>{ if(e.target===$mcMask) closeManualCollect(); });
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape' && $mcMask.classList.contains('is-show')) closeManualCollect();
+});
+document.getElementById('mcSearchInput').addEventListener('input', e=>{
+  mcKeyword = e.target.value.trim().toLowerCase();
+  mcRenderList();
+});
+
+/* 生成实施卡：按 funcKey 分组聚合（同功能多张合一张），提交二次校验竞态失败单列 */
+$mcSubmit.addEventListener('click', ()=>{
+  if(mcMode==='result'){
+    closeManualCollect();
+    acToast(mcLastCreated>0 ? `已生成 ${mcLastCreated} 张实施卡` : '本次未生成实施卡');
+    return;
+  }
+  const sel = MC_CANDIDATES.filter(r=>mcSelected.has(r.cardNo));
+  if(!sel.length) return;
+  const groups = {};
+  sel.forEach(r=>{ (groups[r.funcKey] = groups[r.funcKey] || []).push(r); });
+  const created = [], failed = [];
+  let seq = 0;
+  Object.keys(groups).forEach(fk=>{
+    const rows = groups[fk];
+    /* 提交二次校验：打开期间被生成任务拉走 → 失败清单（含已存在实施卡号） */
+    if(rows.some(r=>r.willFail)){
+      rows.forEach(r=>failed.push({ cardNo:r.cardNo, existingCardNo:'IS-20261010-003' }));
+      return;
+    }
+    const cardNo = `IS-${ymd(new Date())}-${String(101 + seq).padStart(3,'0')}`;
+    seq++;
+    const funcName = rows[0].funcName;
+    const srcNos = rows.map(r=>r.cardNo);
+    CARDS.unshift({
+      cardNo,
+      title: `${funcName}实施验证`,
+      content: `变更待测试项：\n1. ${funcName}相关变更点逐项验证（来源 ${srcNos.join('、')}）\n2. 关联页面 / 报表回归冒烟\n3. 权限点与数据一致性核对`,
+      funcKey: fk,
+      funcName,
+      bizContact: '',
+      sourceFeatCards: srcNos,
+      status: 'PENDING',
+      scheduledDate: null, taker: null, takenAt: null, doneAt: null,
+      nonImplSource: null, nonImplBy: null,
+      createdAt: nowStr(),
+      logs: [{ type:'CREATED',
+        detail: `由功能排期完成卡按功能「${funcName}」聚合生成（手动拉取，来源 ${rows.length} 张：${srcNos.join(', ')}）`,
+        operatorName: CURRENT_USER.name, at: nowStr() }]
+    });
+    created.push({ cardNo, sources: srcNos });
+  });
+  /* 已消费候选（成功 + 被任务拉走）移出候选池，再次打开不再出现 */
+  const consumed = new Set(sel.map(r=>r.cardNo));
+  for(let i=MC_CANDIDATES.length-1; i>=0; i--){
+    if(consumed.has(MC_CANDIDATES[i].cardNo)) MC_CANDIDATES.splice(i,1);
+  }
+  mcLastCreated = created.length;
+  renderAll(); // 新卡落 Backup 池顶部，复用既有 renderBackup / 卡片结构
+  /* 切换为结果视图：成功 / 失败分列 */
+  mcMode = 'result';
+  $mcListView.style.display = 'none';
+  $mcResultView.style.display = 'flex';
+  $mcResultView.innerHTML =
+    (created.length ? `<div class="mc-result-sec"><div class="mc-result-title ok">成功生成 ${created.length} 张实施卡</div>${
+      created.map(c=>`<div class="mc-result-item"><span class="mc-ico mc-ico--ok">${MC_ICON_OK}</span><span>已生成 <b class="mono">${c.cardNo}</b>（来源：${c.sources.join('、')}）</span></div>`).join('')
+    }</div>` : '') +
+    (failed.length ? `<div class="mc-result-sec"><div class="mc-result-title err">生成失败 ${failed.length} 张</div>${
+      failed.map(f=>`<div class="mc-result-item"><span class="mc-ico mc-ico--err">${MC_ICON_ERR}</span><span><b class="mono">${escapeHtml(f.cardNo)}</b> 生成失败：已被聚合进 ${escapeHtml(f.existingCardNo)}（打开期间被生成任务拉取）</span></div>`).join('')
+    }</div>` : '');
+  $mcSelInfo.style.display = 'none';
+  $mcCancel.style.display = 'none';
+  $mcSubmit.disabled = false;
+  $mcSubmit.textContent = '完成';
+});
+
+/* ──────────────────────────────────────────────
+   月份导航
+────────────────────────────────────────────── */
+document.getElementById('btnPrev').addEventListener('click', ()=>{
+  viewMonth--; if(viewMonth<0){ viewMonth=11; viewYear--; }
+  renderCalendar();
+});
+document.getElementById('btnNext').addEventListener('click', ()=>{
+  viewMonth++; if(viewMonth>11){ viewMonth=0; viewYear++; }
+  renderCalendar();
+});
+document.getElementById('btnToday').addEventListener('click', ()=>{
+  viewYear = TODAY.getFullYear(); viewMonth = TODAY.getMonth();
+  renderCalendar();
+});
+
+const $picker = document.getElementById('monthPicker');
+const $pickerYear = document.getElementById('pickerYear');
+const $monthGrid = document.getElementById('monthGrid');
+let pickerYearVal = viewYear;
+function renderMonthGrid(){
+  $pickerYear.textContent = pickerYearVal;
+  $monthGrid.innerHTML = Array.from({length:12},(_,i)=>{
+    const cur = (pickerYearVal===viewYear && i===viewMonth)?'is-current':'';
+    return `<div class="month-cell ${cur}" data-m="${i}">${pad2(i+1)}月</div>`;
+  }).join('');
+  $monthGrid.querySelectorAll('.month-cell').forEach(c=>{
+    c.addEventListener('click', e=>{
+      e.stopPropagation();
+      viewYear = pickerYearVal;
+      viewMonth = parseInt(c.getAttribute('data-m'),10);
+      $picker.classList.remove('is-open');
+      renderCalendar();
+    });
+  });
+}
+document.getElementById('monthLabel').addEventListener('click', e=>{
+  e.stopPropagation();
+  pickerYearVal = viewYear;
+  renderMonthGrid();
+  $picker.classList.toggle('is-open');
+});
+$picker.querySelectorAll('[data-dir]').forEach(b=>{
+  b.addEventListener('click', e=>{
+    e.stopPropagation();
+    pickerYearVal += parseInt(b.getAttribute('data-dir'),10);
+    renderMonthGrid();
+  });
+});
+document.addEventListener('click', ()=>$picker.classList.remove('is-open'));
+
+/* ──────────────────────────────────────────────
+   只看自己（AcSwitch 点击切换）
+────────────────────────────────────────────── */
+const $onlyMineToggle = document.getElementById('onlyMineToggle');
+$onlyMineToggle.addEventListener('click', ()=>{
+  ONLY_MINE = !ONLY_MINE;
+  $onlyMineToggle.classList.toggle('is-on', ONLY_MINE);
+  document.getElementById('onlyMineHint').textContent = ONLY_MINE
+    ? `月历仅显示领取人 = ${CURRENT_USER.name}；Backup 未领取卡片不受影响`
+    : '默认显示全部';
+  renderAll();
+  refreshDayModalIfOpen();
+});
+
+/* ──────────────────────────────────────────────
+   模块筛选 + 业务对接人筛选（AND 叠加，前端临时 UI 态）
+────────────────────────────────────────────── */
+document.getElementById('moduleFilter').addEventListener('change', e=>{
+  MODULE_FILTER = e.target.value;
+  renderAll();
+  refreshDayModalIfOpen();
+});
+document.getElementById('bizContactInput').addEventListener('input', e=>{
+  BIZ_KEYWORD = e.target.value.trim().toLowerCase();
+  renderAll();
+  refreshDayModalIfOpen();
+});
+
+/* ──────────────────────────────────────────────
+   搜索（标题 / 内容 / 功能名，AND 模糊）
+────────────────────────────────────────────── */
+const $cardSearchInput = document.getElementById('cardSearchInput');
+const $cardSearchClear = document.getElementById('cardSearchClear');
+const $cardSearchHint = document.getElementById('cardSearchHint');
+function applyCardSearch(raw){
+  SEARCH_KEYWORDS = parseSearchKeywords(raw);
+  $cardSearchClear.classList.toggle('is-show', !!raw);
+  if(SEARCH_KEYWORDS.length>0){
+    const tags = SEARCH_KEYWORDS.map(k=>`<span class="kw">${escapeHtml(k)}</span>`).join(' + ');
+    $cardSearchHint.innerHTML = `在当月卡片中匹配：${tags}（AND 关系）`;
+  } else {
+    $cardSearchHint.textContent = '空格 / 逗号 分隔多关键字（AND 模糊匹配），仅搜当月';
+  }
+  renderAll();
+}
+$cardSearchInput.addEventListener('input', e=>applyCardSearch(e.target.value));
+$cardSearchClear.addEventListener('click', ()=>{
+  $cardSearchInput.value = '';
+  applyCardSearch('');
+  $cardSearchInput.focus();
+});
+$cardSearchInput.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ $cardSearchInput.value=''; applyCardSearch(''); }
+});
+
+/* ──────────────────────────────────────────────
+   通用确认弹窗（AcModal 形态，替代原生 confirm）
+────────────────────────────────────────────── */
+function acConfirm(opts){
+  return new Promise(resolve=>{
+    const $m = document.getElementById('confirmMask');
+    const $ok = document.getElementById('confirmOk');
+    document.getElementById('confirmTitle').textContent = opts.title || '确认操作';
+    document.getElementById('confirmBody').innerHTML = opts.body || '';
+    $ok.textContent = opts.okText || '确定';
+    $ok.className = opts.danger ? 'ac-btn ac-btn--danger' : 'ac-btn ac-btn--primary';
+    $m.classList.add('is-show');
+    const done = val=>{
+      $m.classList.remove('is-show');
+      $ok.removeEventListener('click', onOk);
+      document.getElementById('confirmCancel').removeEventListener('click', onCancel);
+      $m.removeEventListener('click', onMask);
+      resolve(val);
+    };
+    const onOk = ()=>done(true);
+    const onCancel = ()=>done(false);
+    const onMask = e=>{ if(e.target===$m) done(false); };
+    $ok.addEventListener('click', onOk);
+    document.getElementById('confirmCancel').addEventListener('click', onCancel);
+    $m.addEventListener('click', onMask);
+  });
+}
+
+/* ──────────────────────────────────────────────
+   Toast
+────────────────────────────────────────────── */
+let acToastTimer;
+function acToast(text){
+  const box = document.getElementById('acToast');
+  document.getElementById('acToastText').textContent = text;
+  box.classList.add('is-show');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(()=>box.classList.remove('is-show'), 2400);
+}
+
+/* 首屏渲染 */
+renderAll();
+</script>
+</body>
+</html>

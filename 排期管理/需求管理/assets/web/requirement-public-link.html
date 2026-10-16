@@ -1,0 +1,829 @@
+<!doctype html>
+<!--
+  需求管理 · 外链管理页（Web 端原型）
+  ================================================================
+  规格真源：../../references/web-ui.md §外链管理页
+  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
+            拓扑 = .tpl-page > [说明 .tpl-alert] > [筛选 .tpl-panel] > [表格 .tpl-panel]
+            表格 panel 节奏 = .tpl-toolbar → 表格 → .tpl-pagination
+  Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
+            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>外链管理 · 需求管理</title>
+<style>
+/* ==========================================================================
+   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
+   ========================================================================== */
+:root{
+  /* palette */
+  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
+  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  /* semantic */
+  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
+  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
+  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
+  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
+  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
+  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+  /* alias --ac-color-* */
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
+  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
+  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
+  /* spacing */
+  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+  /* radius */
+  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
+  /* shadow */
+  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
+  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
+  /* typography */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
+  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
+  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
+  /* motion / z-index / breakpoint */
+  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+  --ac-z-dropdown:100; --ac-z-popconfirm:900; --ac-z-modal:1000; --ac-z-toast:1100;
+}
+
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-breadcrumb{display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) 0;font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
+.tpl-breadcrumb a{color:var(--ac-color-text-3);text-decoration:none}
+.tpl-breadcrumb a:hover{color:var(--ac-primary-6)}
+.tpl-breadcrumb__sep{color:var(--ac-text-4)}
+.tpl-breadcrumb__current{color:var(--ac-color-text-1)}
+
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
+  display:flex;flex-direction:column;gap:var(--ac-space-4)}
+
+/* ===== 常驻说明条（AcAlert） ===== */
+.tpl-alert{display:flex;align-items:flex-start;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);border-radius:var(--ac-radius-sm);
+  background:var(--ac-palette-blue-1);color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.tpl-alert__icon{flex-shrink:0;color:var(--ac-palette-blue-7);font-weight:var(--ac-fw-semibold)}
+.tpl-alert strong{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
+
+/* ===== 筛选区 ===== */
+.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
+.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
+.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.tpl-filter__control{flex:1;min-width:0;position:relative}
+.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
+
+/* ===== 控件 ===== */
+.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
+  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
+  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-select__trigger:hover{background:var(--ac-fill-3)}
+.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-select__trigger.is-placeholder .ac-select__value{color:var(--ac-color-text-3)}
+.ac-select__trigger.is-disabled{cursor:not-allowed;background:var(--ac-fill-1);color:var(--ac-text-4)}
+.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
+  transition:transform var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-select.is-open .ac-select__trigger{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+.ac-select.is-open .ac-select__arrow{transform:rotate(180deg)}
+.ac-select__dropdown{display:none;position:absolute;top:calc(100% + var(--ac-space-1));left:0;right:0;
+  max-height:240px;overflow:auto;padding:var(--ac-space-1);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-3);z-index:var(--ac-z-dropdown)}
+.ac-select.is-open .ac-select__dropdown{display:block}
+.ac-select__option{display:flex;align-items:center;gap:var(--ac-space-2);
+  height:32px;padding:0 var(--ac-space-3);border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
+.ac-select__option:hover{background:var(--ac-fill-1)}
+.ac-select__option.is-checked{color:var(--ac-primary-6);background:var(--ac-primary-1)}
+.ac-select__check{flex-shrink:0;width:14px;height:14px;display:inline-flex;align-items:center;
+  justify-content:center;border:1px solid var(--ac-border-3);border-radius:var(--ac-radius-xs);
+  font-size:var(--ac-fs-xs);color:transparent;background:var(--ac-bg-1)}
+.ac-select__option.is-checked .ac-select__check{background:var(--ac-primary-6);
+  border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+
+.ac-input{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-input::placeholder{color:var(--ac-color-text-3)}
+.ac-input:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+.ac-input:disabled{cursor:not-allowed;background:var(--ac-fill-1);color:var(--ac-text-4)}
+
+.ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
+  padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm)}
+.ac-range:focus-within{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+.ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--secondary{background:var(--ac-fill-2);border-color:transparent;color:var(--ac-color-text-1)}
+.ac-btn--secondary:hover{background:var(--ac-fill-3)}
+.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
+  color:var(--ac-primary-6)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+.ac-btn--text.is-danger{color:var(--ac-color-danger)}
+.ac-btn--block{width:100%;justify-content:center}
+
+/* ===== 工具栏 ===== */
+.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
+.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
+.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== 表格 ===== */
+.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
+.tpl-table{width:100%;min-width:1240px;border-collapse:separate;border-spacing:0;
+  font-size:var(--ac-fs-md)}
+.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
+  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
+.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
+.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
+  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
+.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
+.tpl-table tbody tr.is-highlight td{background:var(--ac-palette-blue-1)}
+.cell-link{color:var(--ac-primary-6);text-decoration:none;font-family:var(--ac-ff-mono);
+  font-size:var(--ac-fs-sm);cursor:pointer}
+.cell-link:hover{text-decoration:underline}
+.cell-main{display:block;max-width:240px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-sub{display:block;margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.cell-muted{color:var(--ac-color-text-3)}
+.cell-num{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
+.cell-expire{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
+.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3);position:relative}
+
+/* ===== 标签 ===== */
+.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
+.ac-tag--pill{border-radius:var(--ac-radius-full);padding:0 var(--ac-space-3)}
+.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
+.ac-tag.is-processing{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
+.ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
+.ac-tag.is-ydtj{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
+
+/* ===== 分页 ===== */
+.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.tpl-pagination__pager{display:flex;gap:var(--ac-space-1)}
+.tpl-pagination__pager button{min-width:32px;height:32px;padding:0 var(--ac-space-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);background:transparent;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
+.tpl-pagination__pager button:hover:not(:disabled){background:var(--ac-fill-2)}
+.tpl-pagination__pager button.is-active{background:var(--ac-primary-1);color:var(--ac-primary-6)}
+.tpl-pagination__pager button:disabled{color:var(--ac-text-4);cursor:not-allowed}
+.tpl-pagination__size{height:32px;padding:0 var(--ac-space-2);border:1px solid var(--ac-border-2);
+  border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);font-family:inherit;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+
+/* ===== Popconfirm / Toast ===== */
+.ac-popconfirm{display:none;position:absolute;top:calc(100% + var(--ac-space-2));right:0;
+  width:300px;padding:var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  z-index:var(--ac-z-popconfirm);text-align:left}
+.ac-popconfirm.is-open{display:block}
+.ac-popconfirm__text{font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  margin-bottom:var(--ac-space-3)}
+.ac-popconfirm__field{margin-bottom:var(--ac-space-3)}
+.ac-popconfirm__actions{display:flex;justify-content:flex-end;gap:var(--ac-space-2)}
+.ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
+  display:none;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);z-index:var(--ac-z-toast)}
+.ac-toast.is-open{display:flex}
+.ac-toast__icon{color:var(--ac-color-success)}
+
+/* ===== Modal（生成外链：表单态 / 结果态同弹窗切换） ===== */
+.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.4);
+  z-index:var(--ac-z-modal);align-items:flex-start;justify-content:center;
+  padding-top:var(--ac-space-8);overflow:auto}
+.ac-modal-mask.is-open{display:flex}
+.ac-modal{width:560px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
+  box-shadow:var(--ac-shadow-3);display:flex;flex-direction:column}
+.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
+  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
+.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.ac-modal__close{border:none;background:transparent;cursor:pointer;
+  font-size:var(--ac-fs-xl);color:var(--ac-color-text-3);line-height:var(--ac-lh-tight)}
+.ac-modal__close:hover{color:var(--ac-color-text-1)}
+.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
+
+/* 弹窗内表单 */
+.ac-form__item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
+.ac-form__label{flex-shrink:0;width:112px;padding-top:var(--ac-space-1);text-align:right;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.ac-form__label.is-required::before{content:'*';margin-right:var(--ac-space-1);color:var(--ac-color-danger)}
+.ac-form__control{flex:1;min-width:0;position:relative}
+.ac-form__extra{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.ac-form__error{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-danger)}
+.ac-form__static{height:32px;display:flex;align-items:center;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+
+/* 弹窗结果态 */
+.tpl-result{display:flex;flex-direction:column;gap:var(--ac-space-4);align-items:center}
+.tpl-result__icon{width:48px;height:48px;display:flex;align-items:center;justify-content:center;
+  border-radius:var(--ac-radius-full);background:var(--ac-color-success-1);
+  color:var(--ac-color-success-7);font-size:var(--ac-fs-3xl)}
+.tpl-result__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-result__link{width:100%;display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-3);background:var(--ac-fill-1);border-radius:var(--ac-radius-sm)}
+.tpl-result__link code{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;
+  font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);color:var(--ac-color-text-2)}
+.tpl-result__qr{width:160px;height:160px;display:flex;align-items:center;justify-content:center;
+  border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-fill-1);color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);text-align:center}
+.tpl-result__hint{width:100%;padding:var(--ac-space-3);border-radius:var(--ac-radius-sm);
+  background:var(--ac-color-warning-1);color:var(--ac-color-warning-7);font-size:var(--ac-fs-xs)}
+
+.is-hidden{display:none !important}
+
+/* ===== 响应式 ===== */
+@media (max-width:1280px){
+  .tpl-filter{grid-template-columns:repeat(auto-fill,minmax(280px,1fr))}
+}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+
+  <!-- 面包屑：页面身份由 Layout 承担，页面内不再加大标题 -->
+  <nav class="tpl-breadcrumb">
+    <a href="#">首页</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="#">研发</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="#">需求管理</a><span class="tpl-breadcrumb__sep">/</span>
+    <span class="tpl-breadcrumb__current">外链管理</span>
+  </nav>
+
+  <section class="tpl-page">
+
+    <!-- ⓪ 常驻说明条：单向收口口径前置告知 -->
+    <div class="tpl-alert">
+      <span class="tpl-alert__icon">i</span>
+      <span>
+        外链仅用于采集<strong>有点推荐</strong>需求，请<strong>逐个定向发放</strong>，不要公开张贴或群发。
+        外部人提交后<strong>不会收到任何进度通知</strong>，审批结果需由你线下告知对方。
+      </span>
+    </div>
+
+    <!-- ① 筛选 panel -->
+    <div class="tpl-panel">
+      <form class="tpl-filter" onsubmit="return false">
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">链接状态</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-select="multi">
+              <div class="ac-select__trigger" data-placeholder="全部">
+                <span class="ac-select__value">待使用</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+              <div class="ac-select__dropdown">
+                <div class="ac-select__option is-checked"><span class="ac-select__check">✓</span>待使用</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>已提交</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>已过期</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>已撤销</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">邀约对象</span>
+          <div class="tpl-filter__control">
+            <input class="ac-input" placeholder="按邀约对象备注模糊搜索" />
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">生成人</span>
+          <div class="tpl-filter__control">
+            <input class="ac-input" placeholder="按生成人姓名搜索（仅管理员可跨人查询）" />
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">生成时间</span>
+          <div class="tpl-filter__control">
+            <div class="ac-range">
+              <input value="2026-07-08" />
+              <span class="ac-range__sep">~</span>
+              <input value="2026-08-06" />
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__item tpl-filter__actions">
+          <button class="ac-btn ac-btn--primary" data-toast="查询完成，共 18 条外链记录">查询</button>
+          <button class="ac-btn ac-btn--secondary" data-toast="筛选条件已重置为默认（近 30 天）">重置</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ② 表格 panel -->
+    <div class="tpl-panel">
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left">
+          <span class="tpl-toolbar__title">外链台账</span>
+          <span class="tpl-toolbar__meta">共 18 条 · 已提交 7 条 · 转化率 38.9%</span>
+        </div>
+        <div class="tpl-toolbar__right">
+          <button class="ac-btn ac-btn--primary" id="btnCreate">生成外链</button>
+        </div>
+      </div>
+
+      <div class="tpl-table-wrap">
+        <table class="tpl-table">
+          <thead>
+            <tr>
+              <th>邀约对象</th>
+              <th>链接状态</th>
+              <th>提交进度</th>
+              <th>访问情况</th>
+              <th>产生需求</th>
+              <th>有效期至</th>
+              <th>生成人</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <!-- 待使用 · 即将过期：可复制 / 可二维码 / 可撤销 -->
+            <tr>
+              <td>
+                <span class="cell-main">杭州蜜集商贸 · 王琳</span>
+                <span class="cell-sub">默认需求类型：新功能</span>
+              </td>
+              <td><span class="ac-tag is-processing">待使用</span></td>
+              <td><span class="cell-num">0 / 1</span></td>
+              <td><span class="cell-num">3 次</span><span class="cell-sub">最近 08-05 14:22</span></td>
+              <td><span class="cell-muted">—</span></td>
+              <td>
+                <span class="cell-expire">
+                  <span class="cell-num">2026-08-08</span>
+                  <span class="ac-tag is-warning">即将过期</span>
+                </span>
+              </td>
+              <td>李昂</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button class="ac-btn ac-btn--text" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制链接</button>
+                  <button class="ac-btn ac-btn--text" data-qr="杭州蜜集商贸 · 王琳">二维码</button>
+                  <button class="ac-btn ac-btn--text is-danger" data-popconfirm>撤销</button>
+                  <div class="ac-popconfirm">
+                    <div class="ac-popconfirm__text">撤销后该链接立即失效，外部人再次打开将看到「链接已失效」。</div>
+                    <div class="ac-popconfirm__field">
+                      <input class="ac-input" placeholder="请填写撤销原因（10–256 字）" />
+                    </div>
+                    <div class="ac-popconfirm__actions">
+                      <button class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
+                      <button class="ac-btn ac-btn--primary" data-pop-ok
+                        data-msg="链接已撤销，外部人将无法再提交">确认撤销</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 已提交：仅查看已产生的需求，不再提供复制/二维码/撤销 -->
+            <tr>
+              <td>
+                <span class="cell-main">上海甜坊食品 · 陈默</span>
+                <span class="cell-sub">默认需求类型：功能优化</span>
+              </td>
+              <td><span class="ac-tag is-success">已提交</span></td>
+              <td><span class="cell-num">1 / 1</span></td>
+              <td><span class="cell-num">5 次</span><span class="cell-sub">最近 08-04 09:37</span></td>
+              <td><a class="cell-link" data-toast="跳转需求详情：REQ-20260804-006">REQ-20260804-006</a></td>
+              <td><span class="cell-num">2026-08-20</span></td>
+              <td>李昂</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button class="ac-btn ac-btn--text" data-toast="跳转需求详情：REQ-20260804-006">查看需求</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 已提交（多次上限）：进度展示 2/3，仍为已提交终态 -->
+            <tr>
+              <td>
+                <span class="cell-main">兼职推荐官 · 周雨</span>
+                <span class="cell-sub">默认需求类型：缺陷修复</span>
+              </td>
+              <td><span class="ac-tag is-success">已提交</span></td>
+              <td><span class="cell-num">3 / 3</span></td>
+              <td><span class="cell-num">9 次</span><span class="cell-sub">最近 08-02 21:05</span></td>
+              <td>
+                <a class="cell-link" data-toast="跳转需求详情：REQ-20260801-003">REQ-20260801-003</a>
+                <span class="cell-sub">等 3 条需求</span>
+              </td>
+              <td><span class="cell-num">2026-08-15</span></td>
+              <td>吴晴</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button class="ac-btn ac-btn--text" data-toast="跳转需求列表并按本外链过滤，共 3 条">查看需求</button>
+                </div>
+              </td>
+            </tr>
+
+            <!-- 已过期：无任何可执行操作 -->
+            <tr>
+              <td>
+                <span class="cell-main">广州零点供应链 · 赵铭</span>
+                <span class="cell-sub">默认需求类型：数据报表</span>
+              </td>
+              <td><span class="ac-tag is-default">已过期</span></td>
+              <td><span class="cell-num">0 / 1</span></td>
+              <td><span class="cell-num">1 次</span><span class="cell-sub">最近 07-12 10:18</span></td>
+              <td><span class="cell-muted">—</span></td>
+              <td><span class="cell-num">2026-08-01</span></td>
+              <td>李昂</td>
+              <td><span class="cell-muted">—</span></td>
+            </tr>
+
+            <!-- 已撤销：台账保留作为溯源证据，不提供删除 -->
+            <tr>
+              <td>
+                <span class="cell-main">成都果集选品 · 孙悦</span>
+                <span class="cell-sub">默认需求类型：系统集成</span>
+              </td>
+              <td><span class="ac-tag is-error">已撤销</span></td>
+              <td><span class="cell-num">0 / 1</span></td>
+              <td><span class="cell-num">0 次</span><span class="cell-sub">未访问</span></td>
+              <td><span class="cell-muted">—</span></td>
+              <td><span class="cell-num">2026-09-02</span></td>
+              <td>吴晴</td>
+              <td><span class="cell-muted">—</span></td>
+            </tr>
+
+            <!-- 待使用 · 未访问 -->
+            <tr>
+              <td>
+                <span class="cell-main">南京巷口便利 · 何舟</span>
+                <span class="cell-sub">默认需求类型：新功能</span>
+              </td>
+              <td><span class="ac-tag is-processing">待使用</span></td>
+              <td><span class="cell-num">0 / 1</span></td>
+              <td><span class="cell-num">0 次</span><span class="cell-sub">未访问</span></td>
+              <td><span class="cell-muted">—</span></td>
+              <td><span class="cell-num">2026-09-05</span></td>
+              <td>李昂</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <button class="ac-btn ac-btn--text" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制链接</button>
+                  <button class="ac-btn ac-btn--text" data-qr="南京巷口便利 · 何舟">二维码</button>
+                  <button class="ac-btn ac-btn--text is-danger" data-popconfirm>撤销</button>
+                  <div class="ac-popconfirm">
+                    <div class="ac-popconfirm__text">撤销后该链接立即失效，外部人再次打开将看到「链接已失效」。</div>
+                    <div class="ac-popconfirm__field">
+                      <input class="ac-input" placeholder="请填写撤销原因（10–256 字）" />
+                    </div>
+                    <div class="ac-popconfirm__actions">
+                      <button class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
+                      <button class="ac-btn ac-btn--primary" data-pop-ok
+                        data-msg="链接已撤销，外部人将无法再提交">确认撤销</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tpl-pagination">
+        <span>共 18 条</span>
+        <select class="tpl-pagination__size">
+          <option>20 条/页</option><option>50 条/页</option><option>100 条/页</option>
+        </select>
+        <div class="tpl-pagination__pager">
+          <button disabled>‹</button>
+          <button class="is-active">1</button>
+          <button disabled>›</button>
+        </div>
+      </div>
+    </div>
+
+  </section>
+</div>
+
+<!-- ===== 生成外链弹窗：表单态 → 结果态（同弹窗内切换，不自动关闭） ===== -->
+<div class="ac-modal-mask" id="createMask">
+  <div class="ac-modal">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title" id="createTitle">生成需求外链</span>
+      <button class="ac-modal__close" data-modal-close>×</button>
+    </div>
+
+    <!-- 表单态 -->
+    <div class="ac-modal__body" id="createForm">
+      <div class="ac-form__item">
+        <span class="ac-form__label">产品线</span>
+        <div class="ac-form__control">
+          <div class="ac-form__static">有点推荐</div>
+          <div class="ac-form__extra">外链仅对有点推荐开放，不可切换；业务线由系统固定，无需选择</div>
+        </div>
+      </div>
+
+      <div class="ac-form__item">
+        <span class="ac-form__label is-required">邀约对象备注</span>
+        <div class="ac-form__control">
+          <input class="ac-input" id="fieldInvitee" placeholder="建议填「公司 + 联系人」，如：杭州蜜集商贸 · 王琳" />
+          <div class="ac-form__extra">2–128 字，仅内部可见，用于台账识别与溯源</div>
+          <div class="ac-form__error is-hidden" id="errInvitee">请填写邀约对象备注（2–128 字）</div>
+        </div>
+      </div>
+
+      <div class="ac-form__item">
+        <span class="ac-form__label is-required">需求类型默认值</span>
+        <div class="ac-form__control">
+          <div class="ac-select" data-select="single">
+            <div class="ac-select__trigger">
+              <span class="ac-select__value">新功能</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+            <div class="ac-select__dropdown">
+              <div class="ac-select__option is-checked">新功能</div>
+              <div class="ac-select__option">功能优化</div>
+              <div class="ac-select__option">缺陷修复</div>
+              <div class="ac-select__option">数据报表</div>
+              <div class="ac-select__option">系统集成</div>
+            </div>
+          </div>
+          <div class="ac-form__extra">外部人打开页面时预选该类型，允许其自行修改</div>
+        </div>
+      </div>
+
+      <div class="ac-form__item">
+        <span class="ac-form__label is-required">有效期</span>
+        <div class="ac-form__control">
+          <div class="ac-select" data-select="single">
+            <div class="ac-select__trigger">
+              <span class="ac-select__value">30 天</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+            <div class="ac-select__dropdown">
+              <div class="ac-select__option">7 天</div>
+              <div class="ac-select__option">15 天</div>
+              <div class="ac-select__option is-checked">30 天</div>
+              <div class="ac-select__option">60 天</div>
+              <div class="ac-select__option">90 天</div>
+            </div>
+          </div>
+          <div class="ac-form__extra">到期后无论是否提交过，链接一律失效</div>
+        </div>
+      </div>
+
+      <div class="ac-form__item">
+        <span class="ac-form__label is-required">提交次数上限</span>
+        <div class="ac-form__control">
+          <input class="ac-input" id="fieldLimit" value="1" />
+          <div class="ac-form__extra">1–10 次，默认 1 次；链接可重复打开，但提交达上限后不再展示表单</div>
+          <div class="ac-form__error is-hidden" id="errLimit">提交次数上限须为 1–10 的整数</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 结果态：链接只完整展示一次，关闭后可从台账重新复制，token 不重新生成 -->
+    <div class="ac-modal__body is-hidden" id="createResult">
+      <div class="tpl-result">
+        <div class="tpl-result__icon">✓</div>
+        <div class="tpl-result__title">外链已生成</div>
+        <div class="tpl-result__link">
+          <code id="resultUrl">https://ydtj.example.com/public/requirement?token=7f1c9ae2b45d48c6</code>
+          <button class="ac-btn ac-btn--secondary" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制</button>
+        </div>
+        <div class="tpl-result__qr">二维码<br />（内容即完整链接，可直接微信扫码打开）</div>
+        <div class="tpl-result__hint">
+          请先复制链接或保存二维码再关闭本窗口。关闭后仍可在台账行「复制链接」重新取得，token 不会重新生成。
+        </div>
+      </div>
+    </div>
+
+    <div class="ac-modal__foot" id="createFoot">
+      <button class="ac-btn ac-btn--secondary" data-modal-close>取消</button>
+      <button class="ac-btn ac-btn--primary" id="btnCreateSubmit">生成并获取链接</button>
+    </div>
+    <div class="ac-modal__foot is-hidden" id="resultFoot">
+      <button class="ac-btn ac-btn--primary" data-modal-close>我已复制，关闭</button>
+    </div>
+  </div>
+</div>
+
+<!-- ===== 二维码弹窗：token 明文只在此处与复制动作中出现 ===== -->
+<div class="ac-modal-mask" id="qrMask">
+  <div class="ac-modal">
+    <div class="ac-modal__head">
+      <span class="ac-modal__title">外链二维码</span>
+      <button class="ac-modal__close" data-modal-close>×</button>
+    </div>
+    <div class="ac-modal__body">
+      <div class="tpl-result">
+        <div class="ac-form__static" id="qrInvitee">邀约对象：—</div>
+        <div class="tpl-result__qr">二维码<br />（内容即完整链接，可直接微信扫码打开）</div>
+        <div class="tpl-result__link">
+          <code>https://ydtj.example.com/public/requirement?token=7f1c9ae2b45d48c6</code>
+          <button class="ac-btn ac-btn--secondary" data-copy="链接已复制，请通过企微或微信发给邀约对象">复制</button>
+        </div>
+        <div class="tpl-result__hint">台账列表不展示完整 token，请勿截屏外传本弹窗内容。</div>
+      </div>
+    </div>
+    <div class="ac-modal__foot">
+      <button class="ac-btn ac-btn--secondary" data-modal-close>关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="ac-toast" id="acToast">
+  <span class="ac-toast__icon">✓</span><span id="acToastText"></span>
+</div>
+
+<script>
+(function () {
+  /* ── Select 交互（单选/多选） ── */
+  function closeAllSelects() {
+    document.querySelectorAll('.ac-select.is-open').forEach(function (s) { s.classList.remove('is-open'); });
+  }
+  document.querySelectorAll('.ac-select').forEach(function (sel) {
+    var trigger = sel.querySelector('.ac-select__trigger');
+    var valueEl = sel.querySelector('.ac-select__value');
+    var multi = sel.getAttribute('data-select') === 'multi';
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      if (trigger.classList.contains('is-disabled')) return;
+      var open = sel.classList.contains('is-open');
+      closeAllSelects();
+      if (!open) sel.classList.add('is-open');
+    });
+    sel.querySelectorAll('.ac-select__option').forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (multi) {
+          opt.classList.toggle('is-checked');
+          var picked = [].map.call(sel.querySelectorAll('.ac-select__option.is-checked'), function (o) {
+            return o.textContent.trim().replace(/^✓/, '');
+          });
+          valueEl.textContent = picked.length ? picked.join('、') : trigger.getAttribute('data-placeholder');
+          trigger.classList.toggle('is-placeholder', picked.length === 0);
+        } else {
+          sel.querySelectorAll('.ac-select__option').forEach(function (o) { o.classList.remove('is-checked'); });
+          opt.classList.add('is-checked');
+          valueEl.textContent = opt.textContent.trim();
+          trigger.classList.remove('is-placeholder');
+          sel.classList.remove('is-open');
+        }
+      });
+    });
+  });
+
+  /* ── 通用 Toast 触发 ── */
+  document.querySelectorAll('[data-toast]').forEach(function (el) {
+    el.addEventListener('click', function () { acToast(el.getAttribute('data-toast')); });
+  });
+  document.querySelectorAll('[data-copy]').forEach(function (el) {
+    el.addEventListener('click', function (e) {
+      e.stopPropagation();
+      acToast(el.getAttribute('data-copy'));
+    });
+  });
+
+  /* ── 撤销二次确认（Popconfirm，必填撤销原因） ── */
+  function closeAllPops() {
+    document.querySelectorAll('.ac-popconfirm.is-open').forEach(function (p) { p.classList.remove('is-open'); });
+  }
+  document.querySelectorAll('[data-popconfirm]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var pop = btn.parentNode.querySelector('.ac-popconfirm');
+      var open = pop.classList.contains('is-open');
+      closeAllPops();
+      if (!open) pop.classList.add('is-open');
+    });
+  });
+  document.querySelectorAll('[data-pop-cancel]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); closeAllPops(); });
+  });
+  document.querySelectorAll('[data-pop-ok]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var input = b.closest('.ac-popconfirm').querySelector('.ac-input');
+      if (input.value.trim().length < 10) {
+        acToast('撤销原因不少于 10 字');
+        input.focus();
+        return;
+      }
+      closeAllPops();
+      input.value = '';
+      acToast(b.getAttribute('data-msg'));
+    });
+  });
+
+  /* ── 生成外链弹窗：表单态 → 结果态，就地切换不自动关闭 ── */
+  var createMask = document.getElementById('createMask');
+  var createForm = document.getElementById('createForm');
+  var createResult = document.getElementById('createResult');
+  var createFoot = document.getElementById('createFoot');
+  var resultFoot = document.getElementById('resultFoot');
+  var createTitle = document.getElementById('createTitle');
+
+  function resetCreateModal() {
+    createForm.classList.remove('is-hidden');
+    createResult.classList.add('is-hidden');
+    createFoot.classList.remove('is-hidden');
+    resultFoot.classList.add('is-hidden');
+    createTitle.textContent = '生成需求外链';
+    document.getElementById('errInvitee').classList.add('is-hidden');
+    document.getElementById('errLimit').classList.add('is-hidden');
+  }
+
+  document.getElementById('btnCreate').addEventListener('click', function () {
+    resetCreateModal();
+    createMask.classList.add('is-open');
+  });
+
+  document.getElementById('btnCreateSubmit').addEventListener('click', function () {
+    var invitee = document.getElementById('fieldInvitee').value.trim();
+    var limit = parseInt(document.getElementById('fieldLimit').value, 10);
+    var ok = true;
+    document.getElementById('errInvitee').classList.toggle('is-hidden', invitee.length >= 2 && invitee.length <= 128);
+    if (invitee.length < 2 || invitee.length > 128) ok = false;
+    document.getElementById('errLimit').classList.toggle('is-hidden', limit >= 1 && limit <= 10);
+    if (!(limit >= 1 && limit <= 10)) ok = false;
+    if (!ok) return;
+
+    createForm.classList.add('is-hidden');
+    createResult.classList.remove('is-hidden');
+    createFoot.classList.add('is-hidden');
+    resultFoot.classList.remove('is-hidden');
+    createTitle.textContent = '外链已生成';
+    acToast('外链已生成，请复制链接或保存二维码后发给邀约对象');
+  });
+
+  /* ── 二维码弹窗 ── */
+  var qrMask = document.getElementById('qrMask');
+  document.querySelectorAll('[data-qr]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      document.getElementById('qrInvitee').textContent = '邀约对象：' + btn.getAttribute('data-qr');
+      qrMask.classList.add('is-open');
+    });
+  });
+
+  /* ── 弹窗关闭 ── */
+  document.querySelectorAll('[data-modal-close]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      createMask.classList.remove('is-open');
+      qrMask.classList.remove('is-open');
+    });
+  });
+
+  document.addEventListener('click', function () { closeAllSelects(); closeAllPops(); });
+})();
+
+/* ── Toast ── */
+var acToastTimer;
+function acToast(text) {
+  var box = document.getElementById('acToast');
+  document.getElementById('acToastText').textContent = text;
+  box.classList.add('is-open');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2200);
+}
+</script>
+</body>
+</html>

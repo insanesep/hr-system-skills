@@ -1,0 +1,701 @@
+<!doctype html>
+<!--
+  需求管理 · 需求列表页（Web 端原型）
+  ================================================================
+  规格真源：../../references/web-ui.md §需求列表页
+  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
+            拓扑 = .tpl-page > [筛选 .tpl-panel] > .tpl-kpi-grid > [表格 .tpl-panel]
+            表格 panel 节奏 = .tpl-tabs → .tpl-divider → .tpl-toolbar → 表格 → .tpl-pagination
+  Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
+            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
+-->
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>需求列表 · 需求管理</title>
+<style>
+/* ==========================================================================
+   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
+   ========================================================================== */
+:root{
+  /* palette */
+  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
+  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
+  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
+  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
+  /* semantic */
+  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
+  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
+  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
+  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
+  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
+  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
+  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
+  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
+  /* alias --ac-color-* */
+  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
+  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
+  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
+  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
+  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
+  /* spacing */
+  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
+  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
+  /* radius */
+  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
+  /* shadow */
+  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
+  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
+  /* typography */
+  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
+  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
+  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
+  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
+  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
+  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
+  /* motion / z-index / breakpoint */
+  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
+  --ac-z-dropdown:100; --ac-z-popconfirm:900; --ac-z-toast:800;
+}
+
+/* ==========================================================================
+   基础版式
+   ========================================================================== */
+*{box-sizing:border-box}
+body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
+  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
+.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
+.tpl-breadcrumb{display:flex;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-4) 0;font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
+.tpl-breadcrumb a{color:var(--ac-color-text-3);text-decoration:none}
+.tpl-breadcrumb a:hover{color:var(--ac-primary-6)}
+.tpl-breadcrumb__sep{color:var(--ac-text-4)}
+.tpl-breadcrumb__current{color:var(--ac-color-text-1)}
+
+/* 禁区拓扑：.tpl-page 灰底 + gap，白卡 .tpl-panel 浮于其上 */
+.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
+.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
+  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
+  display:flex;flex-direction:column;gap:var(--ac-space-4)}
+
+/* ===== 筛选区（CSS Grid 自适应等宽，查询/重置紧贴最后一项） ===== */
+.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
+  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
+.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
+.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
+  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
+.tpl-filter__control{flex:1;min-width:0;position:relative}
+.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
+
+/* ===== 控件：Select / Input / RangePicker ===== */
+.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
+  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
+  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-select__trigger:hover{background:var(--ac-fill-3)}
+.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.ac-select__trigger.is-placeholder .ac-select__value{color:var(--ac-color-text-3)}
+.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
+  transition:transform var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-select.is-open .ac-select__trigger{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+.ac-select.is-open .ac-select__arrow{transform:rotate(180deg)}
+.ac-select__dropdown{display:none;position:absolute;top:calc(100% + var(--ac-space-1));left:0;right:0;
+  max-height:240px;overflow:auto;padding:var(--ac-space-1);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-3);z-index:var(--ac-z-dropdown)}
+.ac-select.is-open .ac-select__dropdown{display:block}
+.ac-select__option{display:flex;align-items:center;gap:var(--ac-space-2);
+  height:32px;padding:0 var(--ac-space-3);border-radius:var(--ac-radius-sm);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
+.ac-select__option:hover{background:var(--ac-fill-1)}
+.ac-select__option.is-checked{color:var(--ac-primary-6);background:var(--ac-primary-1)}
+.ac-select__check{flex-shrink:0;width:14px;height:14px;display:inline-flex;align-items:center;
+  justify-content:center;border:1px solid var(--ac-border-3);border-radius:var(--ac-radius-xs);
+  font-size:var(--ac-fs-xs);color:transparent;background:var(--ac-bg-1)}
+.ac-select__option.is-checked .ac-select__check{background:var(--ac-primary-6);
+  border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+
+.ac-input{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-input::placeholder{color:var(--ac-color-text-3)}
+.ac-input:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+
+.ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
+  padding:0 var(--ac-space-3);background:var(--ac-fill-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm)}
+.ac-range:focus-within{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
+.ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+.ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
+
+/* ===== 按钮 ===== */
+.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
+  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
+  background:var(--ac-bg-1);color:var(--ac-color-text-1);
+  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
+  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
+.ac-btn:hover{background:var(--ac-fill-1)}
+.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
+.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
+.ac-btn--secondary{background:var(--ac-fill-2);border-color:transparent;color:var(--ac-color-text-1)}
+.ac-btn--secondary:hover{background:var(--ac-fill-3)}
+.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
+  color:var(--ac-primary-6)}
+.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
+.ac-btn--text.is-danger{color:var(--ac-color-danger)}
+
+/* ===== KPI 统计卡（筛选 panel 之后 · 表格 panel 之前） ===== */
+.tpl-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--ac-space-4)}
+.tpl-kpi{background:var(--ac-bg-1);border:1px solid var(--ac-border-1);
+  border-radius:var(--ac-radius-sm);padding:var(--ac-space-4) var(--ac-space-5);
+  display:flex;flex-direction:column;gap:var(--ac-space-2);cursor:pointer;
+  transition:box-shadow var(--ac-duration-fast) var(--ac-easing-standard)}
+.tpl-kpi:hover{box-shadow:var(--ac-shadow-2)}
+.tpl-kpi.is-active{border-color:var(--ac-primary-6);background:var(--ac-primary-1)}
+.tpl-kpi__head{display:flex;align-items:center;gap:var(--ac-space-2)}
+.tpl-kpi__dot{width:6px;height:6px;border-radius:var(--ac-radius-full);background:var(--ac-color-text-3)}
+.tpl-kpi__dot.is-primary{background:var(--ac-palette-blue-6)}
+.tpl-kpi__dot.is-success{background:var(--ac-color-success)}
+.tpl-kpi__dot.is-warning{background:var(--ac-color-warning)}
+.tpl-kpi__dot.is-danger{background:var(--ac-color-danger)}
+.tpl-kpi__label{font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.tpl-kpi__hint{width:14px;height:14px;display:inline-flex;align-items:center;justify-content:center;
+  border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-full);
+  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);cursor:help}
+.tpl-kpi__value-row{display:flex;align-items:baseline;gap:var(--ac-space-1)}
+.tpl-kpi__value{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-5xl);
+  font-weight:var(--ac-fw-semibold);line-height:var(--ac-lh-tight);color:var(--ac-color-text-1)}
+.tpl-kpi__suffix{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+.tpl-kpi__foot{min-height:20px;display:flex;align-items:center;gap:var(--ac-space-1);
+  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== Tab / 分隔线 / 操作栏 ===== */
+.tpl-tabs{display:flex;align-items:center;gap:var(--ac-space-6);
+  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-tabs__tab{padding:var(--ac-space-3) 0;margin-bottom:-1px;cursor:pointer;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-2);border-bottom:2px solid transparent}
+.tpl-tabs__tab:hover{color:var(--ac-color-text-1)}
+.tpl-tabs__tab.is-active{color:var(--ac-primary-6);font-weight:var(--ac-fw-medium);
+  border-bottom-color:var(--ac-primary-6)}
+.tpl-divider{height:1px;background:var(--ac-border-2);margin:0 calc(-1 * var(--ac-space-5))}
+.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
+.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
+.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
+.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
+.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
+
+/* ===== 表格 ===== */
+.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
+.tpl-table{width:100%;min-width:1160px;border-collapse:separate;border-spacing:0;
+  font-size:var(--ac-fs-md)}
+.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
+  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
+  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
+  border-bottom:1px solid var(--ac-border-2)}
+.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
+.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
+.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
+  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
+.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
+.cell-link{color:var(--ac-primary-6);text-decoration:none;font-family:var(--ac-ff-mono);
+  font-size:var(--ac-fs-sm);cursor:pointer}
+.cell-link:hover{text-decoration:underline}
+.cell-title{display:block;max-width:280px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.cell-muted{color:var(--ac-color-text-3)}
+.cell-card{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
+.cell-card__invalid{padding:0 var(--ac-space-1);border-radius:var(--ac-radius-xs);
+  font-size:var(--ac-fs-xs);color:var(--ac-color-danger);background:var(--ac-color-danger-1)}
+.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3);position:relative}
+
+/* ===== 标签（状态 / 业务线 / 优先级） ===== */
+.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
+  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
+.ac-tag--pill{border-radius:var(--ac-radius-full);padding:0 var(--ac-space-3)}
+.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
+.ac-tag.is-processing{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
+.ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
+.ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
+.ac-tag.is-ops{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-fin{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
+.ac-tag.is-scm{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
+.ac-tag.is-digital{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
+
+/* ===== 分页 ===== */
+.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
+  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
+.tpl-pagination__pager{display:flex;gap:var(--ac-space-1)}
+.tpl-pagination__pager button{min-width:32px;height:32px;padding:0 var(--ac-space-2);
+  border:1px solid transparent;border-radius:var(--ac-radius-sm);background:transparent;
+  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
+.tpl-pagination__pager button:hover:not(:disabled){background:var(--ac-fill-2)}
+.tpl-pagination__pager button.is-active{background:var(--ac-primary-1);color:var(--ac-primary-6)}
+.tpl-pagination__pager button:disabled{color:var(--ac-text-4);cursor:not-allowed}
+.tpl-pagination__size{height:32px;padding:0 var(--ac-space-2);border:1px solid var(--ac-border-2);
+  border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);font-family:inherit;
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
+
+/* ===== Popconfirm / Toast ===== */
+.ac-popconfirm{display:none;position:absolute;top:calc(100% + var(--ac-space-2));right:0;
+  width:280px;padding:var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  z-index:var(--ac-z-popconfirm);text-align:left}
+.ac-popconfirm.is-open{display:block}
+.ac-popconfirm__text{font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
+  margin-bottom:var(--ac-space-3)}
+.ac-popconfirm__actions{display:flex;justify-content:flex-end;gap:var(--ac-space-2)}
+.ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
+  display:none;align-items:center;gap:var(--ac-space-2);
+  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
+  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
+  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);z-index:var(--ac-z-toast)}
+.ac-toast.is-open{display:flex}
+.ac-toast__icon{color:var(--ac-color-success)}
+
+/* ===== 响应式（主战场 min-width:1200px，窄屏降列） ===== */
+@media (max-width:1280px){
+  .tpl-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+}
+</style>
+</head>
+<body>
+<div class="tpl-layout">
+
+  <!-- 面包屑：页面身份由 Layout 承担，页面内不再加大标题 -->
+  <nav class="tpl-breadcrumb">
+    <a href="#">首页</a><span class="tpl-breadcrumb__sep">/</span>
+    <a href="#">研发</a><span class="tpl-breadcrumb__sep">/</span>
+    <span class="tpl-breadcrumb__current">需求管理</span>
+  </nav>
+
+  <section class="tpl-page">
+
+    <!-- ① 筛选 panel -->
+    <div class="tpl-panel">
+      <form class="tpl-filter" onsubmit="return false">
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">状态</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-select="multi">
+              <div class="ac-select__trigger" data-placeholder="全部">
+                <span class="ac-select__value">业务线审批中、实施确认中</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+              <div class="ac-select__dropdown">
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>草稿</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>已提交</div>
+                <div class="ac-select__option is-checked"><span class="ac-select__check">✓</span>业务线审批中</div>
+                <div class="ac-select__option is-checked"><span class="ac-select__check">✓</span>实施确认中</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>产品确认中</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>待关联排期</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>已关联排期</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>已驳回</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">所属业务线</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-select="single">
+              <div class="ac-select__trigger is-placeholder" data-placeholder="全部">
+                <span class="ac-select__value">全部</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+              <div class="ac-select__dropdown">
+                <div class="ac-select__option">运营</div>
+                <div class="ac-select__option">财务</div>
+                <div class="ac-select__option">供应链</div>
+                <div class="ac-select__option">数字化</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">优先级</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-select="multi">
+              <div class="ac-select__trigger is-placeholder" data-placeholder="全部">
+                <span class="ac-select__value">全部</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+              <div class="ac-select__dropdown">
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>P0 紧急</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>P1 高</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>P2 中</div>
+                <div class="ac-select__option"><span class="ac-select__check">✓</span>P3 低</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">需求类型</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select" data-select="single">
+              <div class="ac-select__trigger is-placeholder" data-placeholder="全部">
+                <span class="ac-select__value">全部</span>
+                <span class="ac-select__arrow">▾</span>
+              </div>
+              <div class="ac-select__dropdown">
+                <div class="ac-select__option">新功能</div>
+                <div class="ac-select__option">功能优化</div>
+                <div class="ac-select__option">缺陷修复</div>
+                <div class="ac-select__option">数据报表</div>
+                <div class="ac-select__option">系统集成</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">提交人</span>
+          <div class="tpl-filter__control">
+            <input class="ac-input" placeholder="请输入提交人姓名" />
+          </div>
+        </div>
+
+        <!-- 日期范围：单一 RangePicker 控件，禁止两个日期框拼装 -->
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">提交时间</span>
+          <div class="tpl-filter__control">
+            <div class="ac-range">
+              <input value="2026-07-02" aria-label="开始日期" />
+              <span class="ac-range__sep">至</span>
+              <input value="2026-08-01" aria-label="结束日期" />
+            </div>
+          </div>
+        </div>
+
+        <div class="tpl-filter__actions">
+          <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按当前条件查询，共 42 条')">查询</button>
+          <button type="button" class="ac-btn" onclick="acToast('已恢复默认筛选（近 30 天）')">重置</button>
+        </div>
+      </form>
+    </div>
+
+    <!-- ② KPI 统计卡区（点击可下钻筛选） -->
+    <div class="tpl-kpi-grid">
+      <div class="tpl-kpi" data-kpi="draft">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot"></span>
+          <span class="tpl-kpi__label">待提交</span>
+          <span class="tpl-kpi__hint" title="本人草稿状态需求数，点击下钻 status=DRAFT">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">3</span><span class="tpl-kpi__suffix">条</span></div>
+        <div class="tpl-kpi__foot">本人草稿</div>
+      </div>
+      <div class="tpl-kpi is-active" data-kpi="mine">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot is-primary"></span>
+          <span class="tpl-kpi__label">待我审批</span>
+          <span class="tpl-kpi__hint" title="我在审批链快照当前级次的待审数，点击切至「待我审批」Tab">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">5</span><span class="tpl-kpi__suffix">条</span></div>
+        <div class="tpl-kpi__foot">当前节点待我处理</div>
+      </div>
+      <div class="tpl-kpi" data-kpi="passed">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot is-success"></span>
+          <span class="tpl-kpi__label">已通过</span>
+          <span class="tpl-kpi__hint" title="待关联排期 + 已关联排期 合计">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">24</span><span class="tpl-kpi__suffix">条</span></div>
+        <div class="tpl-kpi__foot">含待关联排期 6 条</div>
+      </div>
+      <div class="tpl-kpi" data-kpi="rejected">
+        <div class="tpl-kpi__head">
+          <span class="tpl-kpi__dot is-danger"></span>
+          <span class="tpl-kpi__label">已驳回</span>
+          <span class="tpl-kpi__hint" title="已驳回状态需求数，点击下钻 status=REJECTED">?</span>
+        </div>
+        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">2</span><span class="tpl-kpi__suffix">条</span></div>
+        <div class="tpl-kpi__foot">需修改后重新提交</div>
+      </div>
+    </div>
+
+    <!-- ③ 表格 panel：Tab → 分隔线 → 操作栏 → 表格 → 分页 -->
+    <div class="tpl-panel">
+      <div class="tpl-tabs">
+        <div class="tpl-tabs__tab" data-tab>我提交的</div>
+        <div class="tpl-tabs__tab is-active" data-tab>待我审批</div>
+        <div class="tpl-tabs__tab" data-tab>全部</div>
+      </div>
+
+      <div class="tpl-divider"></div>
+
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left">
+          <span class="tpl-toolbar__title">需求清单</span>
+          <span class="tpl-toolbar__meta">数据范围跟随当前角色可见范围</span>
+        </div>
+        <div class="tpl-toolbar__right">
+          <button type="button" class="ac-btn ac-btn--primary"
+            onclick="location.href='./requirement-submit.html'">+ 新增需求</button>
+          <button type="button" class="ac-btn" onclick="acToast('导出任务已提交，请在下载中心查看')">导出</button>
+        </div>
+      </div>
+
+      <div class="tpl-table-wrap">
+        <table class="tpl-table">
+          <thead>
+            <tr>
+              <th>需求编号</th>
+              <th>标题</th>
+              <th>所属业务线</th>
+              <th>当前状态</th>
+              <th>当前审批人</th>
+              <th>优先级</th>
+              <th>关联排期卡片</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260801-003</a></td>
+              <td><span class="cell-title" title="门店补货分析报表新增拣货人数指标">门店补货分析报表新增拣货人数指标</span></td>
+              <td><span class="ac-tag ac-tag--pill is-scm">供应链</span></td>
+              <td><span class="ac-tag is-processing">业务线审批中</span></td>
+              <td>王志远</td>
+              <td><span class="ac-tag is-warning">P1 高</span></td>
+              <td class="cell-muted">—</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-popconfirm>撤回</button>
+                  <div class="ac-popconfirm">
+                    <div class="ac-popconfirm__text">撤回后需求回到草稿、审批链作废，确认撤回？</div>
+                    <div class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
+                        data-msg="需求 REQ-20260801-003 已撤回至草稿">确认撤回</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260801-002</a></td>
+              <td><span class="cell-title" title="供应商入驻资质到期自动校验">供应商入驻资质到期自动校验</span></td>
+              <td><span class="ac-tag ac-tag--pill is-digital">数字化</span></td>
+              <td><span class="ac-tag is-processing">已提交</span></td>
+              <td>赵敏 等 2 人</td>
+              <td><span class="ac-tag is-processing">P2 中</span></td>
+              <td class="cell-muted">—</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-popconfirm>撤回</button>
+                  <div class="ac-popconfirm">
+                    <div class="ac-popconfirm__text">撤回后需求回到草稿、审批链作废，确认撤回？</div>
+                    <div class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
+                        data-msg="需求 REQ-20260801-002 已撤回至草稿">确认撤回</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260731-012</a></td>
+              <td><span class="cell-title" title="会员储值到期提醒规则调整">会员储值到期提醒规则调整</span></td>
+              <td><span class="ac-tag ac-tag--pill is-ops">运营</span></td>
+              <td><span class="ac-tag is-processing">实施确认中</span></td>
+              <td>李思远</td>
+              <td><span class="ac-tag is-processing">P2 中</span></td>
+              <td class="cell-muted">—</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260730-008</a></td>
+              <td><span class="cell-title" title="财务凭证批量冲销支持导出明细">财务凭证批量冲销支持导出明细</span></td>
+              <td><span class="ac-tag ac-tag--pill is-fin">财务</span></td>
+              <td><span class="ac-tag is-success">已关联排期</span></td>
+              <td class="cell-muted">—</td>
+              <td><span class="ac-tag is-processing">P2 中</span></td>
+              <td><span class="cell-card"><a class="cell-link" href="#" target="_blank">FS-20260805-014</a><span class="cell-card__invalid">已失效</span></span></td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260729-021</a></td>
+              <td><span class="cell-title" title="门店巡检任务全流程数字化改造">门店巡检任务全流程数字化改造</span></td>
+              <td><span class="ac-tag ac-tag--pill is-digital">数字化</span></td>
+              <td><span class="ac-tag is-warning">待关联排期</span></td>
+              <td class="cell-muted">—</td>
+              <td><span class="ac-tag is-error">P0 紧急</span></td>
+              <td class="cell-muted">—</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260728-005</a></td>
+              <td><span class="cell-title" title="采购在途库存口径与报表统一">采购在途库存口径与报表统一</span></td>
+              <td><span class="ac-tag ac-tag--pill is-scm">供应链</span></td>
+              <td><span class="ac-tag is-error">已驳回</span></td>
+              <td class="cell-muted">—</td>
+              <td><span class="ac-tag is-warning">P1 高</span></td>
+              <td class="cell-muted">—</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                </div>
+              </td>
+            </tr>
+            <tr>
+              <td><a class="cell-link" href="./requirement-detail.html">REQ-20260801-001</a></td>
+              <td><span class="cell-title" title="夜市销售报表增加毛利列">夜市销售报表增加毛利列</span></td>
+              <td><span class="ac-tag ac-tag--pill is-ops">运营</span></td>
+              <td><span class="ac-tag is-default">草稿</span></td>
+              <td class="cell-muted">—</td>
+              <td><span class="ac-tag is-default">P3 低</span></td>
+              <td class="cell-muted">—</td>
+              <td>
+                <div class="tpl-row-actions">
+                  <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
+                  <a class="ac-btn ac-btn--text" href="./requirement-submit.html">编辑</a>
+                  <button type="button" class="ac-btn ac-btn--text is-danger" data-popconfirm>删除</button>
+                  <div class="ac-popconfirm">
+                    <div class="ac-popconfirm__text">删除后该草稿不可恢复，确认删除？</div>
+                    <div class="ac-popconfirm__actions">
+                      <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
+                      <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
+                        data-msg="草稿已删除">确认删除</button>
+                    </div>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="tpl-pagination">
+        <span>共 42 条</span>
+        <select class="tpl-pagination__size">
+          <option>20 条/页</option><option>50 条/页</option><option>100 条/页</option>
+        </select>
+        <div class="tpl-pagination__pager">
+          <button type="button" disabled>‹</button>
+          <button type="button" class="is-active">1</button>
+          <button type="button">2</button>
+          <button type="button">3</button>
+          <button type="button">›</button>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="ac-toast" id="acToast"><span class="ac-toast__icon">✓</span><span id="acToastText"></span></div>
+
+<script>
+(function () {
+  /* ── Select：单选替换值 / 多选切换勾选 ── */
+  function closeAllSelects(except) {
+    document.querySelectorAll('.ac-select.is-open').forEach(function (el) {
+      if (el !== except) el.classList.remove('is-open');
+    });
+  }
+  document.querySelectorAll('.ac-select').forEach(function (sel) {
+    var trigger = sel.querySelector('.ac-select__trigger');
+    var valueEl = sel.querySelector('.ac-select__value');
+    var multi = sel.getAttribute('data-select') === 'multi';
+    trigger.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var open = sel.classList.contains('is-open');
+      closeAllSelects();
+      if (!open) sel.classList.add('is-open');
+    });
+    sel.querySelectorAll('.ac-select__option').forEach(function (opt) {
+      opt.addEventListener('click', function (e) {
+        e.stopPropagation();
+        if (multi) {
+          opt.classList.toggle('is-checked');
+          var picked = [].map.call(sel.querySelectorAll('.ac-select__option.is-checked'), function (o) {
+            return o.textContent.trim().replace(/^✓/, '');
+          });
+          valueEl.textContent = picked.length ? picked.join('、') : trigger.getAttribute('data-placeholder');
+          trigger.classList.toggle('is-placeholder', picked.length === 0);
+        } else {
+          sel.querySelectorAll('.ac-select__option').forEach(function (o) { o.classList.remove('is-checked'); });
+          opt.classList.add('is-checked');
+          valueEl.textContent = opt.textContent.trim();
+          trigger.classList.remove('is-placeholder');
+          sel.classList.remove('is-open');
+        }
+      });
+    });
+  });
+
+  /* ── 视角 Tab 切换 ── */
+  document.querySelectorAll('[data-tab]').forEach(function (tab) {
+    tab.addEventListener('click', function () {
+      document.querySelectorAll('[data-tab]').forEach(function (t) { t.classList.remove('is-active'); });
+      tab.classList.add('is-active');
+      acToast('已切换视角：' + tab.textContent.trim() + '，页码重置为 1');
+    });
+  });
+
+  /* ── KPI 下钻：被选卡片高亮 ── */
+  document.querySelectorAll('.tpl-kpi').forEach(function (card) {
+    card.addEventListener('click', function () {
+      document.querySelectorAll('.tpl-kpi').forEach(function (c) { c.classList.remove('is-active'); });
+      card.classList.add('is-active');
+      acToast('筛选条件已回填：' + card.querySelector('.tpl-kpi__label').textContent);
+    });
+  });
+
+  /* ── 撤回二次确认（Popconfirm） ── */
+  function closeAllPops() {
+    document.querySelectorAll('.ac-popconfirm.is-open').forEach(function (p) { p.classList.remove('is-open'); });
+  }
+  document.querySelectorAll('[data-popconfirm]').forEach(function (btn) {
+    btn.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var pop = btn.parentNode.querySelector('.ac-popconfirm');
+      var open = pop.classList.contains('is-open');
+      closeAllPops();
+      if (!open) pop.classList.add('is-open');
+    });
+  });
+  document.querySelectorAll('[data-pop-cancel]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); closeAllPops(); });
+  });
+  document.querySelectorAll('[data-pop-ok]').forEach(function (b) {
+    b.addEventListener('click', function (e) {
+      e.stopPropagation(); closeAllPops(); acToast(b.getAttribute('data-msg'));
+    });
+  });
+
+  document.addEventListener('click', function () { closeAllSelects(); closeAllPops(); });
+})();
+
+/* ── Toast ── */
+var acToastTimer;
+function acToast(text) {
+  var box = document.getElementById('acToast');
+  document.getElementById('acToastText').textContent = text;
+  box.classList.add('is-open');
+  clearTimeout(acToastTimer);
+  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2200);
+}
+</script>
+</body>
+</html>

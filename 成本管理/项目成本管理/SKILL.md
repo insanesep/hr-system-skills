@@ -1,0 +1,60 @@
+---
+name: dev-cost-statistics
+description: Use when 需要录入研发费用并按品牌分摊、审核/作废研发费用单、或按品牌×科目×年月透视统计多品牌研发成本。覆盖费用列表、费用明细（品牌分摊比例合计=100%、同品牌唯一、末行倒算防尾差）、品牌成本透视报表三页，仅 Web 端。
+metadata:
+  domain: 研发
+  clients: web
+---
+
+# 多品牌研发成本统计（dev-cost-statistics）
+
+## 模块概述
+
+研发费用单据化管理：按「费用科目 + 费用开始/结束年月」录入费用单，单据内维护品牌分摊比例明细（比例合计 = 100%），单据审核后按覆盖月份**逐月均摊**计入「品牌 × 年月（可叠加科目）」成本透视报表，支撑零食王国 / 有点推荐 / 满气食品 / 数字化中心四个主体的研发成本归集、分摊与月度复盘。
+
+## 端
+
+| 端 | 场景 | 目标用户 |
+|---|---|---|
+| Web | 费用制单、审核、作废、成本透视报表 | 研发财务接口人（制单）、研发主管（审核）、管理层（报表） |
+
+## When to Use
+
+- 需要登记一笔研发费用（人员 / Token / 系统采购 / 弱电 / 硬件 / 差旅 / 福利）并按品牌拆分分摊比例
+- 需要对费用单执行审核 / 作废（制单与审核职责分离，无反审核，详见权限矩阵与状态机）
+- 需要按品牌 × 年月透视查看研发成本，或叠加费用科目做二级行维度分析
+- 需要追溯某张费用单的品牌分摊金额构成
+
+## Prerequisites
+
+| 依赖 | 路径 | 用途 |
+|------|------|------|
+| 前端页面规范 | [../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md](../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md) | Web 页面与原型硬约束 |
+| 数据库 DDL | [../../../依赖文档/数据库/DDL_mall_common.sql](../../../依赖文档/数据库/DDL_mall_common.sql) | 费用单与品牌分摊明细表归属 snackingdom 业务库（dev: mall_dev / prod: mall_common），新增表 DDL 登记于此 |
+
+## 页面功能概览
+
+| 页面 | 说明 | 原型 |
+|------|------|------|
+| 费用列表 | 费用单分页查询与多维筛选（年月范围 / 科目 / 状态 / 制单人 / 流水号），行内按状态与权限提供查看 / 编辑 / 审核 / 作废 / 删除，顶部「新增费用」 | [cost-list.html](assets/web/cost-list.html) |
+| 费用明细 | 新增 / 编辑 / 查看三态合一：单据头（科目单选、金额、费用开始/结束年月）+ 品牌分摊明细子表（品牌互斥多行、比例合计 = 100%、末行倒算防尾差、实时显示分摊金额） | [cost-detail.html](assets/web/cost-detail.html) |
+| 品牌成本报表 | 行 = 品牌（可勾选叠加科目作二级行维度），列 = 费用年月横向展开，值 = 已审核费用分摊金额合计，含行 / 列合计 | [cost-report.html](assets/web/cost-report.html) |
+
+状态机、分摊与尾差规则、权限矩阵、报表统计口径详见 [references/business-rule.md](references/business-rule.md)；实体与枚举定义详见 [references/data-model.md](references/data-model.md)；页面区块与交互清单详见 [references/web-ui.md](references/web-ui.md)。
+
+## Tips
+
+- 报表仅统计「已审核」单据，按费用开始~结束年月覆盖的每个月逐月均摊计入（尾差末月倒算兜底），详见 [references/business-rule.md §5](references/business-rule.md#5-报表统计口径)
+- 分摊比例尾差由末行倒算兜底，前端展示与后端落库口径必须相同，详见 [references/business-rule.md §3](references/business-rule.md#3-品牌分摊规则)
+- 制单人不可审核本人单据（职责分离），详见 [references/business-rule.md §4](references/business-rule.md#4-权限与操作矩阵)
+- 原型生成与验收走 requirement-add 流程，页面硬约束以 page-blueprint 为准
+
+## 变更记录
+
+| 日期 | 变更 | 说明 |
+|------|------|------|
+| 2026-09-11 | v1.0 新增 | 基线版本：费用列表 + 费用明细（品牌分摊比例明细）+ 品牌 × 科目 × 年月透视报表，仅 Web 端 |
+| 2026-09-11 | v1.1 状态机放开 | 已审核单据允许直接作废（无需先反审核），作废后不再计入报表；详见 [references/business-rule.md §1](references/business-rule.md#1-单据状态机) |
+| 2026-09-11 | v1.2 费用期间化 | 「费用年月」拆为费用开始年月 + 费用结束年月（开始 ≤ 结束，相等即单月）；报表按覆盖月份逐月均摊，尾差末月倒算兜底；详见 [references/business-rule.md §2.5](references/business-rule.md#25-费用开始年月--费用结束年月)、[§5](references/business-rule.md#5-报表统计口径) |
+| 2026-09-11 | v1.3 状态机收敛 | 移除反审核：已审核仅允许作废（不可编辑/退回），作废后不再计入报表；待审核允许删除、不允许作废；详见 [references/business-rule.md §1](references/business-rule.md#1-单据状态机) |
+| 2026-09-15 | v1.4 研发落地口径 | 编码前评审（commit-sync）确认：① 建表归属由「平台主库 user_center_lshm」修正为 snackingdom 业务库 mall_common（devops 数据源矩阵仅 pos+snackingdom，与 feat_schedule_card / impl_schedule_card 同域同库），Prerequisites 链接同步修正；② 菜单权限码因 sys_permission.perm_code 唯一约束落地为「组码 MENU:RND:DEV_COST + 叶子码 MENU:RND:DEV_COST:LIST / MENU:RND:DEV_COST:REPORT」，明细三态页为隐藏路由随 LIST；③ 品牌 / 科目落库存代码值（SNACK/YDTJ/MQ/DC 等），中文名由常量映射；④ 费用列表年月筛选与报表同口径（覆盖区间相交）；⑤ 制单人不可审本人单据由后端强制校验（前端禁用仅为体验层）。落地清单见 devops 仓库 docs/20260915/liucao/dev-cost-statistics/README.md |
