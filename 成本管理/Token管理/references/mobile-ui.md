@@ -1,4 +1,4 @@
-# App 端 UI 描述（qoder-usage）
+# App 端 UI 描述（Token管理）
 
 > 页面通用硬约束（含触控尺寸）以 SKILL.md Prerequisites 中「前端页面规范」为准，此处仅描述产品侧元信息。
 

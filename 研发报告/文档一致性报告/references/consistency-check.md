@@ -1,6 +1,6 @@
 # 一致性检查规范
 
-检查 SKILL/reference/asset 三件套一致性，并分析代码实现是否完整覆盖 SKILL 需求。
+检查 SKILL/references/assets 三件套一致性，并分析代码实现是否完整覆盖 SKILL 需求。
 **每个项目（业务线）单独一份报告**，跨项目混比会产生假缺失。
 
 ## 多项目作用域
@@ -17,12 +17,12 @@
 
 | lookback_days | 含义 |
 |---------------|------|
-| `> 0`（默认 7） | 仅检查最近 N 天内 SKILL 仓库发生变更的模块（变更过的 SKILL.md / reference(s)/ / asset(s)/ 所属模块目录） |
+| `> 0`（默认 7） | 仅检查最近 N 天内 SKILL 仓库发生变更的模块（变更过的 SKILL.md / references/ / assets/ 所属模块目录） |
 | `0` / 负数 | 全量扫描所有 SKILL 模块 |
 
 关键澄清：
 
-1. 被圈定的模块，其 SKILL.md、reference(s)/、asset(s)/、对应代码都按**当前最新状态全量对比**，不只看近 N 天 diff
+1. 被圈定的模块，其 SKILL.md、references/、assets/、对应代码都按**当前最新状态全量对比**，不只看近 N 天 diff
 2. 变更识别以 SKILL 仓库 `git log` 为准
 3. 报告头部须呈现本次「划定范围」来源，列出入选模块名及触发其入选的变更文件
 
@@ -44,15 +44,13 @@
 
 **1. 文档三件套对齐（结构检查）**
 
-> ⚠️ 命名兼容：`reference/`（单数，旧存量）与 `references/`（复数，新模块）并存，`asset/` 与 `assets/` 同理。任一存在即视为「存在」，同时存在则两者都检。
-
 | 检查项 | 规则 |
 |--------|------|
 | SKILL.md 存在 | 必须存在，是检查入口 |
-| reference(s)/ 目录 | 必须存在，包含技术实现文档 |
-| asset(s)/ 目录 | 可选；SKILL 引用了原型/截图则必须存在 |
-| reference 文档命名 | 应含 data-model.md / implementation-steps.md 等标准文档 |
-| 交叉引用 | SKILL.md 中引用的 reference 文件必须存在 |
+| references/ 目录 | 必须存在，包含技术实现文档 |
+| assets/ 目录 | 可选；SKILL 引用了原型/截图则必须存在 |
+| references 文档命名 | 应含 data-model.md / implementation-steps.md 等标准文档 |
+| 交叉引用 | SKILL.md 中引用的 references 文件必须存在 |
 
 **2. 代码实现完整性（逻辑判定）**
 
@@ -62,26 +60,26 @@
 - **部分**：有相关实现但不完整
 - **缺失**：完全未找到对应代码实现
 
-**3. SKILL.md 与 reference(s) 重复/冗余检查**
+**3. SKILL.md 与 references 重复/冗余检查**
 
-识别重复模式：完整 DDL 与字段说明、Java/Vue 代码片段、详细 Request/Response 表、与 business-rules.md 同粒度的计算公式/枚举。
+识别重复模式：完整 DDL 与字段说明、Java/Vue 代码片段、详细 Request/Response 表、与 business-rule.md 同粒度的计算公式/枚举。
 区分「合理摘要+相对路径链接」（合理）与「同等粒度技术细节拷贝」（冗余，风险项中给出重复块行号区间）。
 
 **4. SKILL.md 长度检查**
 
-`wc -l` 统计实际行数：≤100 行正常；101-150 行「建议关注」；>150 行风险项强提示并给出拆分方向（数据模型→data-model.md、实现步骤→implementation-steps.md、业务规则→business-rules.md）。
+`wc -l` 统计实际行数：≤100 行正常；101-150 行「建议关注」；>150 行风险项强提示并给出拆分方向（数据模型→data-model.md、实现步骤→implementation-steps.md、业务规则→business-rule.md）。
 
 **5. 代码 → 文档反向偏差检查（最关键）**
 
-正常链路是 SKILL → asset → reference → 代码 单向生成；本维度反向比对，从代码出发逐层回看：
+正常链路是 SKILL → assets → references → 代码 单向生成；本维度反向比对，从代码出发逐层回看：
 
 | 比对 | 要点 |
 |------|------|
-| 代码 vs reference/data-model.md | 实体字段、列名、类型、长度、索引、唯一键（重点关注 `deleted_flag` 红线） |
-| 代码 vs reference/implementation-steps.md | Controller/Service 方法签名、包路径、类名、依赖（Job/MQ/缓存/外部 API） |
-| 代码 vs reference/api-spec.md | URL、HTTP Method、Request/Response DTO 字段、必填/可选、错误码 |
-| 代码 vs reference/business-rules.md | 计算公式、枚举值、阈值常量、代码有而文档无的分支逻辑 |
-| 代码 vs asset(s)/ | 前端 .vue 页面字段、按钮、表格列、交互流程 vs 原型截图/HTML Demo |
+| 代码 vs references/data-model.md | 实体字段、列名、类型、长度、索引、唯一键（重点关注 `deleted_flag` 红线） |
+| 代码 vs references/implementation-steps.md | Controller/Service 方法签名、包路径、类名、依赖（Job/MQ/缓存/外部 API） |
+| 代码 vs references/api-spec.md | URL、HTTP Method、Request/Response DTO 字段、必填/可选、错误码 |
+| 代码 vs references/business-rule.md | 计算公式、枚举值、阈值常量、代码有而文档无的分支逻辑 |
+| 代码 vs assets/ | 前端 .vue 页面字段、按钮、表格列、交互流程 vs 原型截图/HTML Demo |
 | 代码 vs SKILL.md | 代码已实现但 SKILL 未提及 / SKILL 已描述但代码走样 / 业务规则被静默修改 |
 
 偏差分级：
@@ -120,13 +118,13 @@
 
 - 项目: {项目名}（SKILL 仓库 / 扫描根目录）
 - 扫描 SKILL 总数: N
-- 已有 reference 文档: N
-- 缺失 reference 文档: N
+- 已有 references 文档: N
+- 缺失 references 文档: N
 - 覆盖率: XX.X%
 
 ## 文档三件套对齐表
 
-| 模块 | SKILL.md | reference/ | asset/ | 功能点数 | 行数 | 重复风险 | 反向偏差 | 缺失文档 |
+| 模块 | SKILL.md | references/ | assets/ | 功能点数 | 行数 | 重复风险 | 反向偏差 | 缺失文档 |
 |------|----------|-----------|--------|----------|------|----------|----------|----------|
 | xxx | OK | OK | - | 5 | 280 | 无 | 🟡 2 项 | - |
 
@@ -136,8 +134,8 @@
 
 #### 文档对齐
 - SKILL.md: OK (280 行)
-- reference/: OK (3 files)
-- asset/: MISSING
+- references/: OK (3 files)
+- assets/: MISSING
 
 #### 功能覆盖度
 
@@ -147,18 +145,18 @@
 | 数据导出 | 部分 | ExportService 存在但缺少 Excel 格式支持 |
 | 权限校验 | 缺失 | 未找到相关拦截器或注解 |
 
-#### SKILL 与 reference 重复检查
+#### SKILL 与 references 重复检查
 - 数据模型重复：无
-- 实现步骤重复：SKILL.md 第 120-180 行包含完整 Service 代码片段，建议迁移至 reference/implementation-steps.md
+- 实现步骤重复：SKILL.md 第 120-180 行包含完整 Service 代码片段，建议迁移至 references/implementation-steps.md
 
 #### 代码 → 文档反向偏差
 
 | # | 等级 | 偏差类型 | 偏差位置 | 当前实现 | 文档期望 | 修复方向 |
 |---|------|----------|----------|----------|----------|----------|
-| 1 | 🔴 严重 | 字段类型不一致 | `XxxEntity.java:42` vs `reference/data-model.md` §字段定义 | `amount BigDecimal(18,4)` | DDL 中为 `DECIMAL(12,2)` | 改 DDL 升级精度，更新 reference/data-model.md |
+| 1 | 🔴 严重 | 字段类型不一致 | `XxxEntity.java:42` vs `references/data-model.md` §字段定义 | `amount BigDecimal(18,4)` | DDL 中为 `DECIMAL(12,2)` | 改 DDL 升级精度，更新 references/data-model.md |
 
 #### 风险项
-- [ ] asset/ 目录缺失，SKILL 中引用的原型图无法访问
+- [ ] assets/ 目录缺失，SKILL 中引用的原型图无法访问
 - [ ] 存在 1 项🔴严重反向偏差（字段类型不一致），需立即对齐
 
 ## 总体摘要

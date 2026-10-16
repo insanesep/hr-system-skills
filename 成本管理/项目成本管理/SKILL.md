@@ -1,12 +1,12 @@
 ---
-name: dev-cost-statistics
+name: 项目成本管理
 description: Use when 需要录入研发费用并按品牌分摊、审核/作废研发费用单、或按品牌×科目×年月透视统计多品牌研发成本。覆盖费用列表、费用明细（品牌分摊比例合计=100%、同品牌唯一、末行倒算防尾差）、品牌成本透视报表三页，仅 Web 端。
 metadata:
   domain: 研发
   clients: web
 ---
 
-# 多品牌研发成本统计（dev-cost-statistics）
+# 项目成本管理
 
 ## 模块概述
 

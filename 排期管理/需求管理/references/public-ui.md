@@ -1,5 +1,5 @@
 ---
-name: requirement-management-public-ui
+name: 需求管理-public-ui
 description: 需求管理 - 公开 H5 页面描述：免登录需求提交、提交成功、链接失效三页的区块职责、表单校验、受限图片上传、失效文案差异化与安全约束
 type: reference
 ---

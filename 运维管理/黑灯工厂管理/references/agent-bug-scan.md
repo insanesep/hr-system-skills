@@ -1,6 +1,6 @@
 # 服务端bug扫描 — agent 手册
 
-> 黑灯工厂来源 agent 之三（来源标识 `bugscan`）。本文件为该 agent 的功能实现真源：错误提取、项目定位、harness/代码对照评估与建单上报。产出收口与工单闭环见 [黑灯工厂工单](../SKILL.md) 与 [business-rule](business-rule.md)（三态结论落分类口径见其 §10）。
+> 黑灯工厂来源 agent 之三（来源标识 `bugscan`）。本文件为该 agent 的功能实现真源：错误提取、项目定位、harness/代码对照评估与建单上报。产出收口与工单闭环见 [黑灯工厂管理](../SKILL.md) 与 [business-rule](business-rule.md)（三态结论落分类口径见其 §10）。
 
 ## 1. 定位
 

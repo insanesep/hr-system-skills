@@ -1,5 +1,5 @@
 ---
-name: requirement-management-mobile-ui
+name: 需求管理-mobile-ui
 description: 需求管理 - App 端页面描述：我的需求列表、需求详情、需求提交三页的区块职责、导航关系、操作反馈、表单校验、图片附件即时上传能力与外部提交单只读边界
 type: reference
 ---

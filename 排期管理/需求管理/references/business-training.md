@@ -1,5 +1,5 @@
 ---
-name: requirement-management-business-training
+name: 需求管理-business-training
 description: 需求管理 - 业务操作培训手册：面向全公司业务线员工的 Web/App 双端操作指南、角色权限、状态流转、通知规则与常见问题
 type: reference
 ---

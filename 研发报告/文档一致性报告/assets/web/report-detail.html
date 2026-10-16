@@ -231,7 +231,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 
           <h2 id="h-4">文档三件套对齐表</h2>
           <table>
-            <thead><tr><th>模块</th><th>SKILL.md</th><th>reference/</th><th>asset/</th><th>功能点数</th><th>行数</th><th>重复风险</th><th>反向偏差</th><th>缺失文档</th></tr></thead>
+            <thead><tr><th>模块</th><th>SKILL.md</th><th>references/</th><th>assets/</th><th>功能点数</th><th>行数</th><th>重复风险</th><th>反向偏差</th><th>缺失文档</th></tr></thead>
             <tbody>
               <tr><td>排期管理/功能排期</td><td>OK</td><td>OK</td><td>OK</td><td>6</td><td>92</td><td>无</td><td>🟢 1 项</td><td>-</td></tr>
               <tr><td>研发报告/文档一致性报告</td><td>OK</td><td>OK</td><td>OK</td><td>4</td><td>78</td><td>无</td><td>🟡 1 项</td><td>-</td></tr>
@@ -244,8 +244,8 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
           <p><strong>文档对齐</strong></p>
           <ul>
             <li>SKILL.md: OK（164 行，超阈值建议拆分）</li>
-            <li>reference/: MISSING（缺 data-model.md）</li>
-            <li>asset/: OK（2 个原型文件）</li>
+            <li>references/: MISSING（缺 data-model.md）</li>
+            <li>assets/: OK（2 个原型文件）</li>
           </ul>
           <p><strong>功能覆盖度</strong></p>
           <table>
@@ -260,7 +260,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
           <table>
             <thead><tr><th>#</th><th>等级</th><th>偏差类型</th><th>偏差位置</th><th>当前实现</th><th>文档期望</th><th>修复方向</th></tr></thead>
             <tbody>
-              <tr><td>1</td><td>🔴 严重</td><td>字段类型不一致</td><td>TokenUsageEntity.java:42 vs reference/data-model.md §字段定义</td><td>amount BigDecimal(18,4)</td><td>DDL 中为 DECIMAL(12,2)</td><td>改 DDL 升级精度，回写 data-model.md</td></tr>
+              <tr><td>1</td><td>🔴 严重</td><td>字段类型不一致</td><td>TokenUsageEntity.java:42 vs references/data-model.md §字段定义</td><td>amount BigDecimal(18,4)</td><td>DDL 中为 DECIMAL(12,2)</td><td>改 DDL 升级精度，回写 data-model.md</td></tr>
             </tbody>
           </table>
 

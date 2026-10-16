@@ -1,5 +1,5 @@
 ---
-name: server-monitor-snapshot
+name: 服务器监控
 description: 服务器监控（异常现场快照）。Use when 事故发生、告警命中、节假日值守巡检，或错误日志与黑灯工厂产出需要关联取证时，自动留存阿里云核心依赖组件（RocketMQ、Redis、RDS、ACK Pod）的运行现场快照并落库，Web 端查阅、溯源与导出。端型：仅 Web 端。
 ---
 

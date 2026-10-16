@@ -1,5 +1,5 @@
 ---
-name: project-progress-report
+name: 项目进度报告
 description: 项目进度报告。Use when 需要按项目维度周期性生成进度报告——项目与 harness 工程/代码仓的映射在 Web 端可维护配置，触发方式（定时/手动）在 Web 端统一配置，触发后服务端生成会话产出报告并直接落库归档，支持项目×周期双维索引查阅与版本回溯。端型：Web 管理端 + App 查阅端。
 ---
 

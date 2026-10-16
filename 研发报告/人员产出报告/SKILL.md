@@ -1,5 +1,5 @@
 ---
-name: member-output-report
+name: 人员产出报告
 description: 人员产出报告。Use when 需要按人员维度周期性产出研发报告（提交量、卡片完成、时效、延期）——触发方式（定时/手动）在 Web 端统一配置，触发后服务端生成会话挂载 dev-report skill 产出并直接落库归档，支持按周索引查阅与版本回溯。端型：Web 管理端 + App 查阅端。
 ---
 

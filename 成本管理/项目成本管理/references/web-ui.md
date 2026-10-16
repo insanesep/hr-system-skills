@@ -1,4 +1,4 @@
-# Web 端 UI 描述（dev-cost-statistics）
+# Web 端 UI 描述（项目成本管理）
 
 > 页面通用硬约束以 SKILL.md Prerequisites 中「前端页面规范」为准，此处仅描述产品侧元信息。
 

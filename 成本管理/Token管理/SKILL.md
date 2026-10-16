@@ -1,12 +1,12 @@
 ---
-name: qoder-usage
+name: Token管理
 description: Use when 需要查询研发团队 Qoder Credits 用量总额与周环比、按成员或模型等级分析消耗结构、查看日消耗趋势对比上周同期、或查看日期×成员 / 成员×模型等级透视表做成本复盘。数据来源为 Qoder Teams OpenAPI，按组织→成员维度聚合 Credits 用量，Web+App 双端只读仪表盘。
 metadata:
   domain: 研发
   clients: web,app
 ---
 
-# Qoder 用量查询（qoder-usage）
+# Token管理
 
 > App 功能图标：qoder-usage.html（App 工作台「Qoder 用量查询」入口动效图标，自包含 HTML）
 

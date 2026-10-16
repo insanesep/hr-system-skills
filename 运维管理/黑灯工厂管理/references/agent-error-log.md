@@ -1,6 +1,6 @@
 # 错误日志黑灯工厂 — agent 手册
 
-> 黑灯工厂来源 agent 之一（来源标识 `blacklight`）。本文件为该 agent 的功能实现真源：巡检流程、分诊分级口径、自动修复边界、负责人判定与建单上报。产出收口与工单闭环见 [黑灯工厂工单](../SKILL.md) 与 [business-rule](business-rule.md)。
+> 黑灯工厂来源 agent 之一（来源标识 `blacklight`）。本文件为该 agent 的功能实现真源：巡检流程、分诊分级口径、自动修复边界、负责人判定与建单上报。产出收口与工单闭环见 [黑灯工厂管理](../SKILL.md) 与 [business-rule](business-rule.md)。
 
 ## 1. 定位
 
