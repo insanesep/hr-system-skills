@@ -4,7 +4,7 @@
 
 黑灯工厂工单是** agent 巡检产出与缺陷分流的流程闭环层**,不是通用工单系统:
 
-- 建单方四类:错误日志黑灯工厂(来源 `blacklight`)、大SQL结果集修复(来源 `bigsqlfix`)、服务端bug扫描(来源 `bugscan`,见 §10)三个 agent + 需求管理缺陷分流(来源 `reqdefect`,需求类型=缺陷修复审批通过后自动建单)
+- 建单方四类:[错误日志黑灯工厂](agent-error-log.md)(来源 `blacklight`)、[大SQL结果集修复](agent-bigsql-fix.md)(来源 `bigsqlfix`)、[服务端bug扫描](agent-bug-scan.md)(来源 `bugscan`,见 §10)三个 agent + 需求管理缺陷分流(来源 `reqdefect`,需求类型=缺陷修复审批通过后自动建单)
 - Web 端不提供手工新建;**人工报 bug 走「排期管理/需求管理」**提交缺陷修复单据,审批通过后自动分流本模块(见 §4/§8)
 - P3/噪声不建单(agent 侧仅计数);只有 P1/P2 进工单
 - 错误日志管理(日志异常报表)承担每日全量指纹趋势分析,工单不替代它
