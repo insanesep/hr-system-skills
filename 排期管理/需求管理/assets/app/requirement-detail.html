@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>需求详情 · 需求管理 · App 原型</title>
+<!--
+  需求管理 · 需求详情（App 员工端原型）
+  页面描述真源：../../references/app-ui.md#需求详情 ｜ 页面类型 detail
+  整页范例：busyming-skills-design/mobile/templates/detail.html ｜ DOM 依据：skeletons/app/detail-page.tsx.tpl
+  区块（自上而下）：需求信息卡 → 外部提交卡（仅外部单）→ 附件卡（只读）→ 审批时间线 → AI 方案确认卡（仅当前级次审批人与管理员）
+    → 排期关联卡（只读；缺陷修复单替换为黑灯工厂工单区）→ 吸底操作栏（安全区内，无可执行操作时不渲染并回收底部内边距）
+  半屏 ×4：通过确认 / 驳回意见 / 确认并通过 / 请求补充材料（均含键盘避让与脏关闭确认）。
+  演示形态切换（proto-bar 区「形态演示」链接组，仅原型用途；真实页面由服务端数据与可执行操作驱动）：
+    ① 内部单·审批人（陈默）·产品确认中（默认，AI 待确认 + 通过/驳回）
+    ② 内部单·提交人（张三）·已驳回（驳回提示条 + 重新提交）
+    ③ 外部提交单·审批人（陈默）（外部提交卡 + 单向收口；非审批人进入时不渲染操作栏）
+    ④ 缺陷修复单·已转黑灯工厂（工单区只读回传）
+  附件：图片缩略图网格（每行 3 张，超 9 张末位 +N）、点击全屏浏览（左右切图 / M/N 计数 / 点击空白关闭）、长按出操作面板；
+    文档与视频只读 + 下载。App 端不提供上传 / 追加 / 删除附件。
+  演示基准日 2026-10-18，数据为虚构样例。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css" />
+</head>
+<body>
+<section class="tpl-page">
+<div class="tpl-panel">
+<div class="app-phone">
+  <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
+  <div class="app-screen">
+    <header class="ac-nav-bar">
+      <span class="ac-nav-bar__side" role="button" tabindex="0" id="navBack" aria-label="返回"><span class="ac-icon" data-icon="back"></span></span>
+      <strong class="ac-nav-bar__title">需求详情</strong>
+      <span class="ac-nav-bar__side"></span>
+    </header>
+    <div class="app-screen__content" id="mainView">
+      <!-- 已驳回提示条（模式②；外部单追加终态说明） -->
+      <div class="ac-alert ac-alert--danger" role="alert" id="rejectBanner" hidden>
+        <div class="ac-alert__body">
+          <div>周文杰 于 10-17 10:06 驳回：周转天数口径请先在数据报表需求中明确分母口径，建议补充口径说明后重新提交。</div>
+          <div class="u-muted" id="rejectExtNote" hidden>外部提交单驳回即终态，不可重新提交。</div>
+        </div>
+      </div>
+
+      <!-- 需求信息卡 -->
+      <section class="ac-section app-stack">
+        <div class="ac-section__head"><strong class="ac-section__title" id="reqTitle">门店要货单支持按周转天数智能建议补货量</strong></div>
+        <div class="ac-descriptions">
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">需求编号</span><span class="mono" id="reqNo">REQ-20261016-012</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">当前状态</span><span id="reqStatus"><span class="ac-status ac-status--processing">产品确认中</span></span> <span class="ac-tag ac-tag--warning" id="extTag" hidden>外部提交</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">需求描述</span><span id="descText">门店要货目前按安全库存人工估算补货量，畅销品经常断货、滞销品积压。期望系统按近 30 天周转天数自动建议补货量，并展示建议值与实际值的偏差原因。（超 5 行折叠「展开全部」）</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">提交对象</span><span id="pmCell">陈默</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">产品线</span><span id="productCell"><span class="ac-tag ac-tag--primary">鸣鸣很忙</span></span></div>
+          <div class="ac-descriptions__row" id="lineRow"><span class="ac-descriptions__label">所属业务线</span><span><span class="ac-tag ac-tag--primary">运营</span></span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">优先级</span><span><span class="ac-tag ac-tag--warning">P1 高</span></span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">需求类型</span><span id="typeCell">功能优化</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">目标完成日期</span><span class="mono">2026-10-25</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">提交人</span><span id="submitterCell">张三</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">提交时间</span><span class="mono">2026-10-16 08:30</span></div>
+        </div>
+      </section>
+
+      <!-- 外部提交卡（仅外部单） -->
+      <section class="ac-section app-stack" id="extCard" hidden>
+        <div class="ac-section__head"><strong class="ac-section__title">外部提交信息</strong><span class="ac-tag ac-tag--warning">外部提交</span></div>
+        <div class="ac-descriptions">
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">提交人姓名</span><span>刘洋</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">所属部门</span><span>长沙优选便利店 <span class="u-muted">手填，未关联组织架构</span></span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">手机号</span><span><a class="ac-link mono" href="tel:13800006021">138****6021</a> <span class="u-muted">长按复制 / 点击拨号，仅供内部人工回访</span></span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">提交时间</span><span class="mono">2026-10-17 11:58</span></div>
+          <div class="ac-descriptions__row"><span class="ac-descriptions__label">邀约人</span><span>陈默</span></div>
+        </div>
+        <div class="u-muted">不提供外链台账跳转、转内部单、代撤回入口。</div>
+      </section>
+
+      <!-- 附件卡（只读） -->
+      <section class="ac-section app-stack" id="attachCard">
+        <div class="ac-section__head"><strong class="ac-section__title">附件（4）</strong></div>
+        <div data-ac="AcUploader" class="ac-uploader" data-accept="image" data-columns="3" data-gutter="8">
+          <div class="ac-uploader__grid" id="imgGrid">
+            <div class="ac-uploader__slot" data-img="0" role="button" tabindex="0"></div>
+            <div class="ac-uploader__slot" data-img="1" role="button" tabindex="0"></div>
+            <div class="ac-uploader__slot" data-img="2" role="button" tabindex="0" id="extImgSlot" hidden></div>
+          </div>
+        </div>
+        <div class="u-muted" id="extImgNote" hidden>第 3 张为外部单图片，打「外部上传」角标（原型以插槽占位缩略图）。</div>
+        <div class="ac-cell" role="button" tabindex="0" data-down><div class="ac-cell__body"><span class="ac-cell__title">周转天数口径说明_v2.docx</span><span class="ac-cell__label">356 KB · 张三上传</span></div><span class="ac-cell__value">下载</span></div>
+        <div class="ac-cell" role="button" tabindex="0" data-down><div class="ac-cell__body"><span class="ac-cell__title">门店要货操作录屏.mp4</span><span class="ac-cell__label">48 MB · 张三上传</span></div><span class="ac-cell__value">下载</span></div>
+        <div class="u-muted">文档与视频仅提供下载（调起系统能力打开）；附件卡不渲染上传 / 追加 / 删除按钮。</div>
+      </section>
+
+      <!-- 审批时间线 -->
+      <section class="ac-section app-stack">
+        <div class="ac-section__head"><strong class="ac-section__title">审批进度</strong></div>
+        <div class="tpl-timeline">
+          <div class="tpl-timeline__item is-done"><span class="tpl-timeline__dot"></span><div><div class="tpl-timeline__title">提交申请</div><div class="tpl-timeline__meta" id="tlSubmitMeta">张三 · 10-16 08:30</div></div></div>
+          <div class="tpl-timeline__item is-done"><span class="tpl-timeline__dot"></span><div><div class="tpl-timeline__title">L1 业务线审批 · 已通过</div><div class="tpl-timeline__meta">周文杰 · 10-16 18:42 · 补货智能化方向认可，同意进入实施评估。</div></div></div>
+          <div class="tpl-timeline__item is-done"><span class="tpl-timeline__dot"></span><div><div class="tpl-timeline__title">L2 实施确认 · 已通过（或签：李思远、孙浩）</div><div class="tpl-timeline__meta">李思远 · 10-17 15:20 · 门店侧培训成本可控，建议先灰度 50 家。</div></div></div>
+          <div class="tpl-timeline__item is-current" id="tlCurrent"><span class="tpl-timeline__dot"></span><div><div class="tpl-timeline__title">L3 产品确认 · 审批中</div><div class="tpl-timeline__meta">陈默（提交对象） · 已等待 26 小时</div></div></div>
+        </div>
+        <div class="ac-cell" role="button" tabindex="0" id="roundToggle" hidden><div class="ac-cell__body"><span class="ac-cell__title">查看第 1 轮审批记录</span></div><span class="ac-cell__value"><span class="ac-icon" data-icon="down"></span></span></div>
+        <div class="tpl-timeline" id="roundBody" hidden>
+          <div class="tpl-timeline__item is-done"><span class="tpl-timeline__dot"></span><div><div class="tpl-timeline__title">L1 业务线审批 · 已驳回（第 1 轮）</div><div class="tpl-timeline__meta">周文杰 · 10-17 10:06 · 周转天数口径请先明确分母口径。</div></div></div>
+        </div>
+      </section>
+
+      <!-- AI 方案确认卡（仅当前级次审批人与管理员渲染） -->
+      <section class="ac-section app-stack" id="aiCard">
+        <div class="ac-section__head"><strong class="ac-section__title">AI 方案确认</strong><span class="ac-status ac-status--pending" id="aiStatus">待确认</span><span class="ac-tag ac-tag--outline" id="aiVer">V2</span></div>
+        <div id="aiPending">
+          <div class="ac-descriptions">
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">① 业务诉求</span><span>要货补货量依赖人工经验，期望按周转天数自动给出建议补货量。</span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">② 方案完成内容</span><span>要货明细新增「建议补货量」列，支持门店覆盖与批量应用，偏差 ±20% 行内提示原因。</span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">③ 信息缺口</span><span>1. 周转天数分母口径未确认；2. 新品与季节品是否参与；3. 是否允许门店下调建议值。</span></div>
+          </div>
+          <div class="ac-cell" role="button" tabindex="0" id="aiFullLink"><div class="ac-cell__body"><span class="ac-cell__title">方案全文（七步分析）</span></div><span class="ac-cell__value"><span class="ac-icon" data-icon="right"></span></span></div>
+          <div class="app-stack">
+            <button class="ac-btn ac-button ac-button--primary ac-button--block" type="button" id="aiConfirmBtn">确认并通过</button>
+            <button class="ac-btn ac-button ac-button--outline ac-button--block" type="button" id="aiSuppBtn">请求补充材料</button>
+            <button class="ac-btn ac-button ac-button--text ac-button--block" type="button" id="aiRegenBtn">重新生成</button>
+          </div>
+        </div>
+        <div id="aiLoading" hidden>
+          <div class="ac-skeleton"><div class="ac-skeleton--line ac-skeleton--line-sm"></div><div class="ac-skeleton--line"></div><div class="ac-skeleton--line ac-skeleton--line-sm"></div></div>
+          <div class="u-muted">AI 方案生成中，通常 1–3 分钟；您也可以直接人工审批。</div>
+        </div>
+        <div id="aiDone" hidden>
+          <div class="u-muted">陈默 已于 2026-10-18 09:58 确认方案并通过（V2）。</div>
+        </div>
+      </section>
+
+      <!-- 排期关联卡（只读） -->
+      <section class="ac-section app-stack" id="schCard">
+        <div class="ac-section__head"><strong class="ac-section__title">排期关联</strong></div>
+        <div id="schIdle"><span class="u-muted">待关联排期（关联与解除请到 Web 端操作）</span></div>
+        <div id="schLinked" hidden>
+          <div class="ac-descriptions">
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">排期卡片</span><span class="mono">SCH-202610-023</span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">开发状态</span><span><span class="ac-status ac-status--processing">开发中</span></span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">排期日期</span><span class="mono">2026-10-20 ~ 2026-10-24</span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">开发人</span><span>李工</span></div>
+          </div>
+        </div>
+        <div id="schTicket" hidden>
+          <div class="u-muted">已转黑灯工厂自动化修复</div>
+          <div class="ac-descriptions">
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">工单号</span><span class="mono">BL-20261016-045</span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">工单状态</span><span><span class="ac-status ac-status--processing">修复中</span></span></div>
+            <div class="ac-descriptions__row"><span class="ac-descriptions__label">负责人</span><span>黑灯工厂 · 自动修复Agent</span></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 吸底操作栏（安全区内） -->
+    <div class="tpl-bottom-bar" id="actionBar">
+      <button class="ac-btn ac-button ac-button--outline ac-button--danger" type="button" id="rejectBtn" data-act="approver">驳回</button>
+      <button class="ac-btn ac-button ac-button--primary" type="button" id="approveBtn" data-act="approver">通过</button>
+      <button class="ac-btn ac-button ac-button--primary ac-button--block" type="button" id="resubmitBtn" data-act="resubmit" hidden>重新提交</button>
+      <button class="ac-btn ac-button ac-button--outline ac-button--block" type="button" id="withdrawBtn" data-act="withdraw" hidden>撤回</button>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- 原型页间互联与形态演示（非 App 真实 UI） -->
+<nav class="proto-bar">
+  <a class="ac-link" href="requirement-list.html">我的需求</a> ·
+  <b>需求详情</b> ·
+  <a class="ac-link" href="requirement-submit.html">需求提交</a> ·
+  <a class="ac-link" href="requirement-public-submit.html">H5 提交</a> ·
+  <a class="ac-link" href="requirement-public-result.html">H5 结果</a>
+  ｜形态演示：
+  <a class="ac-link" href="#" data-mode="a" onclick="return false">①审批人</a> ·
+  <a class="ac-link" href="#" data-mode="b" onclick="return false">②提交人已驳回</a> ·
+  <a class="ac-link" href="#" data-mode="d" onclick="return false">③外部单</a> ·
+  <a class="ac-link" href="#" data-mode="e" onclick="return false">④缺陷单</a>
+</nav>
+</section>
+
+<!-- 通过确认半屏（审批意见选填 ≤200 字；优先级预填当前值可调整） -->
+<div class="ac-popup-overlay" data-ac="AcPopup" data-position="bottom" id="approveSheet" hidden>
+  <section class="ac-popup__panel">
+    <div class="ac-picker__header"><button class="ac-btn ac-picker__action ac-picker__cancel" type="button" data-sheet-cancel="approveSheet">取消</button><strong class="ac-picker__title">确认通过该需求？</strong><span class="ac-picker__action"></span></div>
+    <div class="app-stack" style="padding:var(--ac-space-3)">
+      <div class="u-muted">通过后流转至下一节点。</div>
+      <div class="ac-field">
+        <label class="ac-field__label">审批意见（选填）</label>
+        <span class="ac-textarea"><textarea class="ac-input__textarea" id="approveNote" rows="3" maxlength="200" placeholder="不超过 200 字"></textarea></span>
+        <span class="ac-field__hint"><span class="mono" id="approveCount">0/200</span></span>
+      </div>
+      <div class="ac-field">
+        <label class="ac-field__label">优先级（可调整）</label>
+        <div class="ac-radio-group" id="approvePriority">
+          <span class="ac-radio" role="radio" data-value="P0" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__dot"></span></span><span class="ac-radio__label">P0 紧急</span></span>
+          <span class="ac-radio is-checked" role="radio" aria-checked="true" data-value="P1" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__dot"></span></span><span class="ac-radio__label">P1 高</span></span>
+          <span class="ac-radio" role="radio" data-value="P2" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__dot"></span></span><span class="ac-radio__label">P2 中</span></span>
+          <span class="ac-radio" role="radio" data-value="P3" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__dot"></span></span><span class="ac-radio__label">P3 低</span></span>
+        </div>
+      </div>
+      <button class="ac-btn ac-button ac-button--primary ac-button--block" type="button" id="approveOk">确认通过</button>
+    </div>
+  </section>
+</div>
+
+<!-- 驳回意见半屏（必填 10–200 字，不满足置灰；脏关闭确认） -->
+<div class="ac-popup-overlay" data-ac="AcPopup" data-position="bottom" id="rejectSheet" hidden>
+  <section class="ac-popup__panel">
+    <div class="ac-picker__header"><button class="ac-btn ac-picker__action ac-picker__cancel" type="button" data-sheet-cancel="rejectSheet">取消</button><strong class="ac-picker__title">填写驳回意见</strong><span class="ac-picker__action"></span></div>
+    <div class="app-stack" style="padding:var(--ac-space-3)">
+      <div class="ac-field">
+        <span class="ac-textarea"><textarea class="ac-input__textarea" id="rejectNote" rows="5" maxlength="200" placeholder="必填，10–200 字"></textarea></span>
+        <span class="ac-field__hint"><span class="mono" id="rejectCount">0/200</span></span>
+        <span class="ac-field__hint u-danger" id="rejectErr"></span>
+      </div>
+      <button class="ac-btn ac-button ac-button--danger ac-button--block" type="button" id="rejectOk" disabled>确认驳回</button>
+    </div>
+  </section>
+</div>
+
+<!-- 确认并通过半屏（AI 预填可编辑；顶部提示带【AI方案确认】前缀） -->
+<div class="ac-popup-overlay" data-ac="AcPopup" data-position="bottom" id="aiConfirmSheet" hidden>
+  <section class="ac-popup__panel">
+    <div class="ac-picker__header"><button class="ac-btn ac-picker__action ac-picker__cancel" type="button" data-sheet-cancel="aiConfirmSheet">取消</button><strong class="ac-picker__title">确认方案并通过</strong><span class="ac-picker__action"></span></div>
+    <div class="app-stack" style="padding:var(--ac-space-3)">
+      <div class="u-muted">通过意见将带【AI方案确认】前缀</div>
+      <div class="ac-field">
+        <span class="ac-textarea"><textarea class="ac-input__textarea" id="aiNote" rows="4" maxlength="200"></textarea></span>
+        <span class="ac-field__hint"><span class="mono" id="aiNoteCount">0/200</span></span>
+        <span class="ac-field__hint u-danger" id="aiNoteErr"></span>
+      </div>
+      <button class="ac-btn ac-button ac-button--primary ac-button--block" type="button" id="aiConfirmOk">确认通过</button>
+    </div>
+  </section>
+</div>
+
+<!-- 请求补充材料半屏（信息缺口预填；标题提示将发送给提交人） -->
+<div class="ac-popup-overlay" data-ac="AcPopup" data-position="bottom" id="suppSheet" hidden>
+  <section class="ac-popup__panel">
+    <div class="ac-picker__header"><button class="ac-btn ac-picker__action ac-picker__cancel" type="button" data-sheet-cancel="suppSheet">取消</button><strong class="ac-picker__title">请求补充材料</strong><span class="ac-picker__action"></span></div>
+    <div class="app-stack" style="padding:var(--ac-space-3)">
+      <div class="u-muted">以下内容将发送给提交人</div>
+      <div class="ac-field">
+        <span class="ac-textarea"><textarea class="ac-input__textarea" id="suppNote" rows="5" maxlength="500"></textarea></span>
+        <span class="ac-field__hint"><span class="mono" id="suppCount">0/500</span></span>
+        <span class="ac-field__hint u-danger" id="suppErr"></span>
+      </div>
+      <button class="ac-btn ac-button ac-button--primary ac-button--block" type="button" id="suppOk">发送给提交人</button>
+    </div>
+  </section>
+</div>
+
+<!-- 通用确认面板（重新生成 / 撤回 / 脏关闭 / 长按图片操作前的确认） -->
+<div class="ac-confirm-sheet-overlay" data-ac="AcConfirmSheet" id="confirmSheet" hidden>
+  <section class="ac-confirm-sheet" role="alertdialog" aria-modal="true">
+    <div class="ac-confirm-sheet__body"><h2 class="ac-confirm-sheet__title" id="csTitle"></h2><p class="ac-confirm-sheet__description" id="csDesc"></p></div>
+    <button class="ac-btn ac-button ac-confirm-sheet__button ac-confirm-sheet__ok" type="button" id="csOk" data-ok-type="primary">确认</button>
+    <button class="ac-btn ac-button ac-confirm-sheet__button ac-confirm-sheet__cancel is-cancel" type="button" id="csCancel">取消</button>
+  </section>
+</div>
+
+<!-- 长按图片操作面板 -->
+<div class="ac-action-sheet-overlay" data-ac="AcActionSheet" id="imgActionSheet" hidden>
+  <section class="ac-confirm-sheet">
+    <div class="ac-confirm-sheet__body"><h2 class="ac-confirm-sheet__title">图片操作</h2></div>
+    <button class="ac-btn ac-button ac-confirm-sheet__button" type="button" id="imgSaveBtn">保存到相册</button>
+    <button class="ac-btn ac-button ac-confirm-sheet__button" type="button" id="imgViewBtn">查看大图</button>
+    <button class="ac-btn ac-button ac-confirm-sheet__button ac-confirm-sheet__cancel is-cancel" type="button" id="imgSheetCancel">取消</button>
+  </section>
+</div>
+
+<!-- 全屏图片浏览器（左右滑动切图、双指缩放、顶部 M/N 计数、点击空白或下滑关闭） -->
+<div class="ac-popup-overlay" data-ac="AcImagePreview" id="imgViewer" hidden>
+  <section class="ac-popup__panel" style="text-align:center">
+    <div class="u-muted mono" id="imgViewerIdx">1/3</div>
+    <div class="ac-result__icon"><span class="ac-icon" data-icon="picture" data-size="lg"></span></div>
+    <div class="u-muted" id="imgViewerName">要货页现状截图.png</div>
+    <div class="u-muted">原型以图标占位图片内容；真实浏览器支持双指缩放，点击空白或下滑关闭</div>
+    <div class="app-row" style="justify-content:space-between"><button class="ac-btn ac-button ac-button--text" type="button" id="imgPrev">上一张</button><button class="ac-btn ac-button ac-button--text" type="button" id="imgClose">关闭</button><button class="ac-btn ac-button ac-button--text" type="button" id="imgNext">下一张</button></div>
+  </section>
+</div>
+
+<!-- 方案全文只读子页（页内整屏切换演示，真实为 Push 子页） -->
+<div class="app-screen" id="aiFullView" hidden>
+  <header class="ac-nav-bar">
+    <span class="ac-nav-bar__side" role="button" tabindex="0" id="aiFullBack" aria-label="返回"><span class="ac-icon" data-icon="back"></span></span>
+    <strong class="ac-nav-bar__title">方案全文（七步分析）</strong>
+    <span class="ac-nav-bar__side"></span>
+  </header>
+  <div class="app-screen__content">
+    <section class="ac-section app-stack">
+      <strong class="ac-section__title">AI 方案 · V2</strong>
+      <p>一、业务背景：要货补货依赖店长经验，断货率与滞销率双高。</p>
+      <p>二、目标量化：断货率 -2pp，滞销库存金额 -5%。</p>
+      <p>三、现状诊断：安全库存法未区分周转快慢，建议量无解释。</p>
+      <p>四、方案概述：周转天数法建议补货 + 偏差解释 + 门店微调。</p>
+      <p>五、数据依赖：近 30 天销售流水、在途要货、库存快照。</p>
+      <p>六、边界与异常：新品 7 天内不建议；停售品不建议；数据缺失回退安全库存法。</p>
+      <p>七、验收口径：灰度 50 家门店 2 周，建议采纳率 ≥ 70%。</p>
+      <div class="u-muted">只读子页，返回详情。</div>
+    </section>
+  </div>
+</div>
+
+<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
+<script>
+/* ==================== 基础工具 ==================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms || 400));
+function toast(text, type) {
+  const layer = document.createElement('div');
+  layer.className = 'ac-toast-layer';
+  layer.innerHTML = `<div class="ac-toast" data-ac="AcToast" data-type="${type || 'success'}" role="status"><span class="ac-toast__text">${esc(text)}</span></div>`;
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2600);
+}
+function showLayer(id) { const el = $('#' + id); el.hidden = false; void el.offsetWidth; el.classList.add('is-open'); }
+function hideLayer(id) { const el = $('#' + id); el.classList.remove('is-open'); setTimeout(() => { el.hidden = true; }, 220); }
+function busy(btn, on) {
+  btn.disabled = !!on;
+  btn.classList.toggle('is-loading', !!on);
+  const sp = btn.querySelector('.ac-btn-spin');
+  if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+  if (!on && sp) sp.remove();
+}
+let confirmResolve = null;
+function askConfirm(title, desc, okText, okType) {
+  $('#csTitle').textContent = title;
+  $('#csDesc').textContent = desc || '';
+  const ok = $('#csOk');
+  ok.textContent = okText || '确认';
+  ok.setAttribute('data-ok-type', okType || 'primary');
+  showLayer('confirmSheet');
+  return new Promise((r) => { confirmResolve = r; });
+}
+$('#csOk').addEventListener('click', () => { const r = confirmResolve; confirmResolve = null; hideLayer('confirmSheet'); r && r(true); });
+$('#csCancel').addEventListener('click', () => { const r = confirmResolve; confirmResolve = null; hideLayer('confirmSheet'); r && r(false); });
+
+/* ==================== 演示形态切换 ==================== */
+let mode = 'a';
+function applyMode(m) {
+  mode = m;
+  const isExt = m === 'd';
+  const isBug = m === 'e';
+  const isRejected = m === 'b';
+  $('#rejectBanner').hidden = !isRejected;
+  $('#extCard').hidden = !isExt;
+  $('#extTag').hidden = !isExt;
+  $('#reqNo').textContent = isExt ? 'REQ-20261017-002' : isBug ? 'REQ-20261015-019' : 'REQ-20261016-012';
+  $('#reqTitle').textContent = isExt ? '希望有点推荐支持按小区筛选商品' : isBug ? '盘点单拍照上传失败' : '门店要货单支持按周转天数智能建议补货量';
+  $('#reqStatus').innerHTML = isRejected ? '<span class="ac-status ac-status--negative">已驳回</span>' : isBug ? '<span class="ac-status ac-status--completed">已转黑灯工厂</span>' : '<span class="ac-status ac-status--processing">产品确认中</span>';
+  $('#productCell').innerHTML = isExt ? '<span class="ac-tag ac-tag--outline">有点推荐</span>' : '<span class="ac-tag ac-tag--primary">鸣鸣很忙</span>';
+  $('#lineRow').hidden = isExt;   /* 有点推荐不渲染业务线行 */
+  $('#typeCell').textContent = isBug ? '缺陷修复' : '功能优化';
+  $('#submitterCell').textContent = isExt ? '刘洋' : '张三';
+  $('#pmCell').innerHTML = isExt ? '<span class="u-muted">待产品确认通过后归集</span>' : '陈默';
+  $('#tlSubmitMeta').textContent = isExt ? '刘洋（外部提交） · 10-17 11:58' : '张三 · 10-16 08:30';
+  $('#roundToggle').hidden = !isRejected;
+  $('#extImgSlot').hidden = !isExt;
+  $('#extImgNote').hidden = !isExt;
+  $('#aiCard').hidden = isRejected;   /* 已驳回无在途方案 */
+  $('#aiPending').hidden = !(m === 'a' || m === 'd');
+  $('#aiDone').hidden = !isBug;
+  $('#schIdle').hidden = !(m === 'a' || m === 'd' || isRejected);
+  $('#schLinked').hidden = true;
+  $('#schTicket').hidden = !isBug;
+  /* 操作栏：审批人（a/d）通过+驳回；提交人已驳回（b）重新提交；缺陷单（e）无操作栏 */
+  $$('#actionBar [data-act]').forEach((b) => { b.hidden = true; });
+  if (m === 'a' || m === 'd') $$('#actionBar [data-act="approver"]').forEach((b) => { b.hidden = false; });
+  else if (isRejected) $$('#actionBar [data-act="resubmit"]').forEach((b) => { b.hidden = false; });
+  $('#actionBar').hidden = isBug;
+}
+document.querySelector('.proto-bar').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-mode]');
+  if (a) applyMode(a.getAttribute('data-mode'));
+});
+
+/* ==================== 审批操作（半屏） ==================== */
+$$('[data-sheet-cancel]').forEach((b) => b.addEventListener('click', () => hideLayer(b.getAttribute('data-sheet-cancel'))));
+$('#approveBtn').addEventListener('click', () => { $('#approveNote').value = ''; $('#approveCount').textContent = '0/200'; showLayer('approveSheet'); });
+$('#approveNote').addEventListener('input', (e) => { $('#approveCount').textContent = `${e.target.value.length}/200`; });
+$('#approvePriority').addEventListener('click', (e) => {
+  const r = e.target.closest('.ac-radio');
+  if (!r) return;
+  $$('#approvePriority .ac-radio').forEach((x) => x.classList.remove('is-checked'));
+  r.classList.add('is-checked');
+});
+$('#approveOk').addEventListener('click', async (e) => {
+  busy(e.currentTarget, true);
+  await wait(700);
+  busy(e.currentTarget, false);
+  hideLayer('approveSheet');
+  toast('已通过，需求流转至待关联排期');
+});
+$('#rejectBtn').addEventListener('click', () => {
+  $('#rejectNote').value = '';
+  $('#rejectCount').textContent = '0/200';
+  $('#rejectErr').textContent = '';
+  $('#rejectOk').disabled = true;
+  showLayer('rejectSheet');
+});
+$('#rejectNote').addEventListener('input', (e) => {
+  const n = e.target.value.trim().length;
+  $('#rejectCount').textContent = `${e.target.value.length}/200`;
+  $('#rejectOk').disabled = n < 10 || n > 200;
+  $('#rejectErr').textContent = n > 0 && n < 10 ? '驳回意见不少于 10 字' : '';
+});
+$('#rejectOk').addEventListener('click', async (e) => {
+  busy(e.currentTarget, true);
+  await wait(700);
+  busy(e.currentTarget, false);
+  hideLayer('rejectSheet');
+  toast(mode === 'd' ? '已驳回，外部提交单为终态，已通知邀约人' : '已驳回，需求已退回提交人');
+});
+/* 重新提交：跳转提交页预填 */
+$('#resubmitBtn').addEventListener('click', () => { location.href = 'requirement-submit.html'; });
+/* 撤回（提交人本人在途态演示走 confirm；本页默认形态不展示撤回，保留实现） */
+$('#withdrawBtn').addEventListener('click', async () => {
+  const ok = await askConfirm('撤回需求', '撤回后需求回到草稿、审批链作废，确认撤回？', '确认撤回', 'danger');
+  if (!ok) return;
+  toast('需求 REQ-20261016-012 已撤回至草稿');
+  setTimeout(() => { location.href = 'requirement-list.html'; }, 1500);
+});
+
+/* ==================== AI 方案卡 ==================== */
+$('#aiConfirmBtn').addEventListener('click', () => {
+  $('#aiNote').value = '方案与诉求一致，信息缺口请门店运营在排期前补充；同意进入待关联排期。';
+  $('#aiNoteCount').textContent = `${$('#aiNote').value.length}/200`;
+  $('#aiNoteErr').textContent = '';
+  showLayer('aiConfirmSheet');
+});
+$('#aiNote').addEventListener('input', (e) => { $('#aiNoteCount').textContent = `${e.target.value.length}/200`; });
+$('#aiConfirmOk').addEventListener('click', async (e) => {
+  const n = $('#aiNote').value.trim().length;
+  if (n < 10 || n > 200) { $('#aiNoteErr').textContent = '审批意见需为 10–200 字'; return; }
+  busy(e.currentTarget, true);
+  await wait(700);
+  busy(e.currentTarget, false);
+  hideLayer('aiConfirmSheet');
+  toast('已确认方案并通过，需求进入待关联排期');
+  $('#aiPending').hidden = true;
+  $('#aiDone').hidden = false;
+  $('#aiStatus').textContent = '已确认';
+  $('#aiStatus').className = 'ac-status ac-status--completed';
+});
+$('#aiSuppBtn').addEventListener('click', () => {
+  $('#suppNote').value = '请补充：1. 周转天数分母口径（含税销售额 / 销售数量）；2. 新品与季节品是否参与建议；3. 是否允许门店下调建议值。';
+  $('#suppCount').textContent = `${$('#suppNote').value.length}/500`;
+  $('#suppErr').textContent = '';
+  showLayer('suppSheet');
+});
+$('#suppNote').addEventListener('input', (e) => { $('#suppCount').textContent = `${e.target.value.length}/500`; });
+$('#suppOk').addEventListener('click', async (e) => {
+  const n = $('#suppNote').value.trim().length;
+  if (n < 10 || n > 500) { $('#suppErr').textContent = '补材内容需为 10–500 字'; return; }
+  busy(e.currentTarget, true);
+  await wait(700);
+  busy(e.currentTarget, false);
+  hideLayer('suppSheet');
+  toast('补材请求已发送给提交人');
+});
+$('#aiRegenBtn').addEventListener('click', async () => {
+  const ok = await askConfirm('重新生成方案', '将重新分析并生成新版本方案，确认？', '确认', 'primary');
+  if (!ok) return;
+  $('#aiPending').hidden = true;
+  $('#aiLoading').hidden = false;
+  setTimeout(() => { $('#aiLoading').hidden = true; $('#aiPending').hidden = false; $('#aiVer').textContent = 'V3'; }, 3000);
+});
+/* 方案全文只读子页（页内切换演示） */
+$('#aiFullLink').addEventListener('click', () => { $('#aiFullView').hidden = false; });
+$('#aiFullBack').addEventListener('click', () => { $('#aiFullView').hidden = true; });
+
+/* ==================== 附件 ==================== */
+const IMGS = ['要货页现状截图.png', '期望效果示意图.png', '门店现场照片.jpg'];
+let imgIdx = 0;
+function renderViewer() { $('#imgViewerIdx').textContent = `${imgIdx + 1}/${IMGS.length}`; $('#imgViewerName').textContent = IMGS[imgIdx]; }
+$('#imgGrid').addEventListener('click', (e) => {
+  const slot = e.target.closest('[data-img]');
+  if (!slot) return;
+  imgIdx = Number(slot.getAttribute('data-img'));
+  renderViewer();
+  showLayer('imgViewer');
+});
+let pressTimer = null;
+$('#imgGrid').addEventListener('touchstart mousedown', (e) => {
+  const slot = e.target.closest('[data-img]');
+  if (!slot) return;
+  pressTimer = setTimeout(() => { imgIdx = Number(slot.getAttribute('data-img')); showLayer('imgActionSheet'); }, 600);
+});
+['touchend', 'touchcancel', 'mouseup'].forEach((t) => $('#imgGrid').addEventListener(t, () => clearTimeout(pressTimer)));
+$('#imgPrev').addEventListener('click', () => { imgIdx = (imgIdx + IMGS.length - 1) % IMGS.length; renderViewer(); });
+$('#imgNext').addEventListener('click', () => { imgIdx = (imgIdx + 1) % IMGS.length; renderViewer(); });
+$('#imgClose').addEventListener('click', () => hideLayer('imgViewer'));
+$('#imgViewer').addEventListener('click', (e) => { if (e.target.id === 'imgViewer') hideLayer('imgViewer'); });
+$('#imgSheetCancel').addEventListener('click', () => hideLayer('imgActionSheet'));
+$('#imgViewBtn').addEventListener('click', () => { hideLayer('imgActionSheet'); renderViewer(); showLayer('imgViewer'); });
+$('#imgSaveBtn').addEventListener('click', async () => {
+  hideLayer('imgActionSheet');
+  await wait(500);
+  toast('已保存到相册');   /* 无权限时提示「请在系统设置中开启相册权限」（原型演示成功路径） */
+});
+$$('[data-down]').forEach((c) => c.addEventListener('click', async () => {
+  toast('下载中…', 'loading');
+  await wait(800);
+  toast('下载完成，已调起系统能力打开', 'success');
+}));
+
+/* ==================== 其他 ==================== */
+$('#roundToggle').addEventListener('click', () => { const b = $('#roundBody'); b.hidden = !b.hidden; });
+$('#navBack').addEventListener('click', () => { location.href = 'requirement-list.html'; });
+
+/* 初始化 */
+applyMode('a');
+</script>
