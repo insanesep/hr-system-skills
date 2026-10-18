@@ -98,8 +98,7 @@ function pill(r) {
 function cardHtml(r) {
   const ext = r.source === 'out';
   const row1 = `<div class="tpl-doc-card__head"><span class="tpl-doc-card__no">${ext ? '<span class="ac-tag ac-tag--warning">外部提交</span> ' : ''}${esc(r.title)}</span>${pill(r)}</div>`;
-  const row2 = `<div class="tpl-doc-card__body" style="display:none"></div>
-    <div class="tpl-doc-card__tags">${productTag(r)}${lineTag(r)}${priTag(r)}</div>`;
+  const row2 = `<div class="tpl-doc-card__tags">${productTag(r)}${lineTag(r)}${priTag(r)}</div>`;
   const row3 = `<div class="tpl-doc-card__foot"><span class="mono">${r.no || '未提交'}</span><span>${r.time ? esc(r.time) + ' 提交' : ''}</span></div>`;
   const extra = view === 'todo' ? `<div class="tpl-doc-card__meta"><span>${esc(r.submitter)}${ext ? ` <span class="u-muted">${esc(r.dept)}</span>` : ''}</span><span class="u-muted">${esc(r.wait || '')}</span></div>` : '';
   return `<div class="tpl-doc-card" role="button" tabindex="0" data-go="requirement-detail.html">${row1}${row2}${row3}${extra}</div>`;
