@@ -1,283 +1,540 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Qoder 用量分析 · Web 管理后台</title>
-<!--
-  qoder-usage-analysis · Web 原型（requirement-add Step 5 重生成）
-  骨架：page-blueprint skeletons/web/dashboard-multi.vue.tpl 通用约定（.tpl-page 根 + .tpl-panel 卡片）
-  Token 真源：page-blueprint/tokens/web.css（外链引用，禁止内联 :root）
-  信息架构：公共筛选 → KPI 5 卡 → 日消耗堆叠柱形图（按接口返回的模型分类分段堆叠，图例为示例数据）→ 日期×成员透视表 → 成员×模型等级透视表
-  规则真源：references/business-rule.md §1-§6；页面描述：references/web-ui.md
--->
-<link rel="stylesheet" href="../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: var(--ac-ff-sans); font-size: var(--ac-fs-md); line-height: var(--ac-lh-normal); color: var(--ac-color-text-1); background: var(--ac-color-fill-2); min-height: 100vh; }
-
-  /* ═══ 骨架容器 ═══ */
-  .tpl-page { width: 100%; max-width: 1400px; margin: 0 auto; padding: var(--ac-space-6); display: flex; flex-direction: column; gap: var(--ac-space-4); }
-  .tpl-panel { background: var(--ac-color-bg-1); border-radius: var(--ac-radius-lg); box-shadow: var(--ac-shadow-1); padding: var(--ac-space-5); display: flex; flex-direction: column; gap: var(--ac-space-4); }
-  .tpl-panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-4); }
-  .tpl-panel__title { font-size: var(--ac-fs-xl); font-weight: var(--ac-fw-medium); color: var(--ac-color-text-1); }
-  .tpl-panel__hint { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
-
-  /* ═══ 筛选区（AcForm 渲染输出） ═══ */
-  .ac-form.tpl-filter { display: flex; align-items: flex-end; gap: var(--ac-space-4); flex-wrap: wrap; }
-  .tpl-filter__item { display: flex; flex-direction: column; gap: var(--ac-space-1); min-width: 0; }
-  .ac-form-item__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-2); }
-  .ac-form-item__control { display: flex; }
-  .tpl-filter__actions { display: flex; gap: var(--ac-space-2); }
-  .ac-date-picker, .ac-select { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); height: var(--ac-hit-click); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); padding: 0 var(--ac-space-3); font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); cursor: pointer; }
-  .ac-date-picker { width: 280px; font-family: var(--ac-ff-mono); }
-  .ac-select { width: 240px; }
-  .ac-date-picker:hover, .ac-select:hover { border-color: var(--ac-color-primary-6); }
-  .ac-date-picker__view, .ac-select__view { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .ac-date-picker__suffix, .ac-select__suffix { color: var(--ac-color-text-3); font-size: var(--ac-fs-xs); }
-  .ac-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--ac-hit-click); padding: 0 var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); color: var(--ac-color-text-1); font-family: inherit; font-size: var(--ac-fs-sm); font-weight: var(--ac-fw-medium); white-space: nowrap; cursor: pointer; }
-  .ac-btn:hover { border-color: var(--ac-color-primary-6); color: var(--ac-color-primary-6); }
-  .ac-btn--primary { background: var(--ac-color-primary-6); border-color: var(--ac-color-primary-6); color: var(--ac-color-text-white); }
-  .ac-btn--primary:hover { background: var(--ac-color-primary-5); border-color: var(--ac-color-primary-5); color: var(--ac-color-text-white); }
-
-  /* ═══ KPI 卡片 ═══ */
-  .kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--ac-space-4); }
-  .kpi-card { display: flex; flex-direction: column; gap: var(--ac-space-2); padding: var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-md); min-height: 96px; }
-  .kpi-card__title { font-size: var(--ac-fs-md); color: var(--ac-color-text-3); }
-  .kpi-card__number { display: flex; align-items: baseline; gap: var(--ac-space-1); }
-  .kpi-card__value { font-size: var(--ac-fs-3xl); font-weight: var(--ac-fw-medium); color: var(--ac-color-text-1); font-family: var(--ac-ff-mono); }
-  .kpi-card__unit { font-size: var(--ac-fs-md); color: var(--ac-color-text-3); }
-  .kpi-card__trend { display: flex; align-items: center; gap: var(--ac-space-1); font-size: var(--ac-fs-xs); }
-  .kpi-card__trend-label { color: var(--ac-color-text-3); }
-  .kpi-card__trend-tag { display: inline-flex; align-items: center; padding: 0 var(--ac-space-1); border-radius: var(--ac-radius-xs); font-weight: var(--ac-fw-medium); }
-  .kpi-card__trend-tag.is-up { color: var(--ac-color-success-6); background: var(--ac-color-success-1); }
-  .kpi-card__trend-tag.is-down { color: var(--ac-color-danger-6); background: var(--ac-color-danger-1); }
-  .kpi-card__trend-tag.is-flat { color: var(--ac-color-text-3); background: var(--ac-color-fill-2); }
-
-  /* ═══ 柱状图图例 ═══ */
-  .chart-legend { display: flex; align-items: center; gap: var(--ac-space-4); font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
-  .chart-legend__item { display: inline-flex; align-items: center; gap: var(--ac-space-1); }
-  .chart-legend__swatch { width: 10px; height: 10px; border-radius: var(--ac-radius-xs); flex-shrink: 0; }
-  .chart-body { width: 100%; border-radius: var(--ac-radius-md); overflow: hidden; }
-
-  /* ═══ 表格（AcTable 渲染输出） ═══ */
-  .table-wrap { overflow-x: auto; }
-  .ac-table { width: 100%; border-collapse: collapse; font-size: var(--ac-fs-sm); }
-  .ac-table th, .ac-table td { text-align: left; padding: var(--ac-space-3) var(--ac-space-4); border-bottom: 1px solid var(--ac-color-border-1); color: var(--ac-color-text-1); vertical-align: middle; white-space: nowrap; }
-  .ac-table th { background: var(--ac-color-fill-1); color: var(--ac-color-text-2); font-weight: var(--ac-fw-medium); }
-  .ac-table th.is-right, .ac-table td.is-right { text-align: right; }
-  .ac-table td.is-num { text-align: right; font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; }
-  .ac-table tbody tr:hover td { background: var(--ac-color-fill-1); }
-  .ac-table tr.is-total td { font-weight: var(--ac-fw-bold); background: var(--ac-color-fill-1); border-top: 1px solid var(--ac-color-border-2); border-bottom: none; }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Qoder 用量分析 · Token管理 · 鸣鸣很忙</title>
+  <!-- 规格真源 ../../references/web-ui.md#qoder-用量分析｜页面类型 report｜整页范例 busyming-skills-design/web/templates/report.html｜DOM 依据 busyming-skills-design/.skills/page-blueprint/skeletons/web/dashboard-multi.vue.tpl（指标卡按 web/components/kpi.html，图表按 web/components/chart.html 静态投影） -->
+  <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
 <body>
-<section class="tpl-page">
+  <nav class="web-nav">
+    <span class="web-nav__logo">鸣鸣很忙</span>
+    <span class="web-nav__crumb">首页 / 研发管理 / <b>Qoder 用量分析</b></span>
+    <span class="web-nav__spacer"></span>
+    <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" data-placement="bottom-end" data-offset="4" data-hide-on-click="true" data-close-outside="true">
+      <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+      <div class="ac-dropdown__menu" role="menu" hidden>
+        <div class="ac-dropdown-group-title">Web</div>
+        <a class="ac-dropdown-item is-active" href="qoder-usage-analysis.html" data-act="proto">Qoder 用量分析</a>
+        <div class="ac-dropdown-divider"></div>
+        <div class="ac-dropdown-group-title">App</div>
+        <a class="ac-dropdown-item" href="../app/qoder-usage-analysis.html" data-act="proto">Qoder 用量分析（App）</a>
+        <div class="ac-dropdown-divider"></div>
+        <div class="ac-dropdown-group-title">演示场景</div>
+        <a class="ac-dropdown-item" href="#scene=default" data-act="proto" data-scene="default">默认（前 7 天 · 全部成员）</a>
+        <a class="ac-dropdown-item" href="#scene=member" data-act="proto" data-scene="member">成员筛选（张悦 + 李思远）</a>
+        <a class="ac-dropdown-item" href="#scene=empty" data-act="proto" data-scene="empty">空态</a>
+        <a class="ac-dropdown-item" href="#scene=loading" data-act="proto" data-scene="loading">加载态</a>
+        <a class="ac-dropdown-item" href="#scene=error" data-act="proto" data-scene="error">错误态（各区块独立）</a>
+        <a class="ac-dropdown-item" href="#scene=op-fail" data-act="proto" data-scene="op-fail">查询失败演示</a>
+        <a class="ac-dropdown-item" href="#scene=over-range" data-act="proto" data-scene="over-range">超 31 天拦截演示</a>
+      </div>
+    </div>
+    <span class="web-nav__crumb">张悦</span>
+  </nav>
 
-  <!-- ═══ 公共筛选区 ═══ -->
-  <section class="tpl-panel">
-    <form class="ac-form tpl-filter" onsubmit="return false">
-      <div class="tpl-filter__item">
-        <label class="ac-form-item__label">日期范围</label>
-        <div class="ac-form-item__control">
-          <span class="ac-date-picker"><span class="ac-date-picker__view">2026-06-25 ~ 2026-07-01（前7天）</span><span class="ac-date-picker__suffix">&#9662;</span></span>
+  <section class="tpl-page">
+    <!-- 公共筛选：日期范围 + 成员多选 + 查询/重置，驱动全部视图（约束见 business-rule.md §1） -->
+    <div class="tpl-panel">
+      <form class="ac-form ac-form--inline tpl-filter" data-ac="AcForm" id="filterForm" novalidate>
+        <div class="ac-form-item ac-form-item--vertical tpl-filter__item" data-ac="AcFormItem">
+          <label class="ac-form-item__label">日期范围</label>
+          <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+            <div class="ac-date-picker has-value" data-ac="AcDatePicker" data-size="medium" data-mode="date" data-type="range" data-start="2026-10-11" data-end="2026-10-17" id="fRange">
+              <div class="ac-date-picker__trigger" role="button" tabindex="0"><span class="ac-date-picker__text">2026-10-11</span><span class="ac-date-picker__sep">至</span><span class="ac-date-picker__text">2026-10-17</span><span class="ac-date-picker__suffix"><span class="ac-icon ac-date-picker__icon" data-ac="AcIcon" data-name="calendar" data-size="sm"></span></span></div>
+            </div>
+          </div></div>
+        </div>
+        <div class="ac-form-item ac-form-item--vertical tpl-filter__item" data-ac="AcFormItem">
+          <label class="ac-form-item__label">成员</label>
+          <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+            <div class="ac-select ac-select--medium is-multiple" data-ac="AcSelect" data-max-tag-count="2" data-placeholder="全部成员" id="fMember">
+              <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部成员</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+              <div class="ac-select__popup" hidden><ul class="ac-select__list" id="fMemberList"></ul></div>
+            </div>
+          </div></div>
+        </div>
+        <div class="tpl-filter__actions">
+          <button class="ac-btn" type="button" data-ac="AcButton" data-type="primary" data-status="normal" data-size="medium" data-act="query" id="queryBtn"><span class="ac-btn__label">查询</span></button>
+          <button class="ac-btn" type="button" data-ac="AcButton" data-status="normal" data-size="medium" data-act="reset"><span class="ac-btn__label">重置</span></button>
+        </div>
+      </form>
+      <div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert" id="filterError" hidden>
+        <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="close-one"></span></div>
+        <div class="ac-alert__body"><div class="ac-alert__content">查询失败，请重试</div></div>
+        <span class="ac-alert__action" role="button" tabindex="0" data-act="retry" data-block="all">点击重试</span>
+      </div>
+    </div>
+
+    <!-- KPI 卡片行（5 列，含周环比；口径见 business-rule.md §2） -->
+    <div class="tpl-kpi-grid" id="kpiGrid">
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">总用量</span><span class="ac-tooltip" data-ac="AcTooltip" data-trigger="hover" data-placement="top" data-visible="false"><span class="ac-tooltip__trigger" tabindex="0" aria-label="口径说明"><span class="ac-icon" data-ac="AcIcon" data-name="help" data-size="sm"></span></span><span class="ac-tooltip__pop" role="tooltip" hidden><span class="ac-tooltip__content">筛选范围内全部用量事件的 Credits 之和，整数展示</span><span class="ac-tooltip__arrow ac-tooltip__arrow--top"></span></span></span></div>
+        <div class="tpl-kpi__number"><div data-ac="AcStatistic" class="ac-statistic ac-statistic--large" id="kTotal"><div class="ac-statistic__content"><span class="ac-statistic__value">0</span><span class="ac-statistic__suffix">Credits</span></div></div></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">较上周同期</span><span class="tpl-kpi__delta" id="dTotal">—</span></div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">总请求数</span></div>
+        <div class="tpl-kpi__number"><div data-ac="AcStatistic" class="ac-statistic ac-statistic--large" id="kReq"><div class="ac-statistic__content"><span class="ac-statistic__value">0</span><span class="ac-statistic__suffix">次</span></div></div></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">较上周同期</span><span class="tpl-kpi__delta" id="dReq">—</span></div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">次均消耗</span></div>
+        <div class="tpl-kpi__number"><div data-ac="AcStatistic" class="ac-statistic ac-statistic--large" id="kAvg"><div class="ac-statistic__content"><span class="ac-statistic__value">0.0</span><span class="ac-statistic__suffix">Credits/次</span></div></div></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">较上周同期</span><span class="tpl-kpi__delta" id="dAvg">—</span></div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">人均用量</span></div>
+        <div class="tpl-kpi__number"><div data-ac="AcStatistic" class="ac-statistic ac-statistic--large" id="kPer"><div class="ac-statistic__content"><span class="ac-statistic__value">0</span><span class="ac-statistic__suffix">Credits</span></div></div></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">较上周同期</span><span class="tpl-kpi__delta" id="dPer">—</span></div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">活跃成员</span></div>
+        <div class="tpl-kpi__number"><div data-ac="AcStatistic" class="ac-statistic ac-statistic--large" id="kActive"><div class="ac-statistic__content"><span class="ac-statistic__value">0</span><span class="ac-statistic__suffix">人</span></div></div></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">较上周同期</span><span class="tpl-kpi__delta" id="dActive">—</span></div>
+      </div>
+    </div>
+    <div class="ac-skeleton ac-skeleton--animated" data-ac="AcSkeleton" aria-busy="true" id="kpiSkeleton" hidden>
+      <div class="sk-grid" data-columns="5"><div class="sk-kpi"></div><div class="sk-kpi"></div><div class="sk-kpi"></div><div class="sk-kpi"></div><div class="sk-kpi"></div></div>
+    </div>
+    <div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert" id="kpiError" hidden>
+      <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="close-one"></span></div>
+      <div class="ac-alert__body"><div class="ac-alert__content">加载失败，</div></div>
+      <span class="ac-alert__action" role="button" tabindex="0" data-act="retry" data-block="kpi">点击重试</span>
+    </div>
+
+    <!-- 日 Credits 消耗堆叠柱形图（按模型分类分段堆叠，规则见 business-rule.md §6） -->
+    <div class="tpl-panel">
+      <div class="tpl-chart-panel">
+        <div class="tpl-chart-panel__head"><span class="tpl-toolbar__title">日 Credits 消耗趋势</span><span class="ac-chart-demo__legend" id="trendLegend"></span></div>
+        <div class="ac-chart" data-ac="AcChart" data-type="bar" id="trendChart">
+          <div class="ac-chart__canvas">
+            <div class="ac-chart-demo">
+              <div class="ac-chart-demo__plot">
+                <div class="ac-barchart__y"><span>1000</span><span>750</span><span>500</span><span>250</span><span>0</span></div>
+                <div class="ac-chart-demo__line"><svg viewBox="0 0 600 200" preserveAspectRatio="none" role="img" aria-label="日 Credits 消耗堆叠柱形图" id="trendSvg"></svg></div>
+              </div>
+              <div class="ac-barchart__x" id="trendX"></div>
+            </div>
+          </div>
+          <div class="ac-chart__state" role="status" id="trendLoading" hidden><div class="ac-chart__shimmer"></div></div>
+          <div class="ac-chart__state" id="trendEmpty" hidden>
+            <div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__image" data-image-size="80"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div><div class="ac-empty__description">暂无用量数据</div></div>
+          </div>
+        </div>
+        <div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert" id="trendError" hidden>
+          <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="close-one"></span></div>
+          <div class="ac-alert__body"><div class="ac-alert__content">加载失败，</div></div>
+          <span class="ac-alert__action" role="button" tabindex="0" data-act="retry" data-block="trend">点击重试</span>
         </div>
       </div>
-      <div class="tpl-filter__item">
-        <label class="ac-form-item__label">成员</label>
-        <div class="ac-form-item__control">
-          <span class="ac-select"><span class="ac-select__view">全部成员</span><span class="ac-select__suffix">&#9662;</span></span>
-        </div>
-      </div>
-      <div class="tpl-filter__actions">
-        <button type="button" class="ac-btn ac-btn--primary">查询</button>
-        <button type="button" class="ac-btn">重置</button>
-      </div>
-    </form>
-  </section>
+    </div>
 
-  <!-- ═══ KPI 卡片行 ═══ -->
-  <section class="tpl-panel">
-    <div class="kpi-grid">
-      <div class="kpi-card">
-        <span class="kpi-card__title">总用量</span>
-        <div class="kpi-card__number"><span class="kpi-card__value">4,832</span><span class="kpi-card__unit">Credits</span></div>
-        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 12.5%</span></div>
+    <!-- Credits 用量透视表（日期 × 成员，排序规则见 business-rule.md §3） -->
+    <div class="tpl-panel">
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">Credits 用量透视表</span></div>
+        <div class="tpl-toolbar__right"><span class="u-secondary u-sm">日期 × 成员 · 单位 Credits · 复用顶部公共筛选</span></div>
       </div>
-      <div class="kpi-card">
-        <span class="kpi-card__title">总请求数</span>
-        <div class="kpi-card__number"><span class="kpi-card__value">198</span><span class="kpi-card__unit">次</span></div>
-        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 5.6%</span></div>
+      <div class="ac-table-wrap" id="pivotDateWrap">
+        <table class="ac-table" data-ac="AcTable" id="pivotDate">
+          <thead id="pivotDateHead"></thead>
+          <tbody id="pivotDateBody"></tbody>
+          <tfoot id="pivotDateFoot"></tfoot>
+        </table>
       </div>
-      <div class="kpi-card">
-        <span class="kpi-card__title">次均消耗</span>
-        <div class="kpi-card__number"><span class="kpi-card__value">24.4</span><span class="kpi-card__unit">Credits/次</span></div>
-        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 6.5%</span></div>
+      <div class="ac-skeleton ac-skeleton--animated" data-ac="AcSkeleton" aria-busy="true" id="pivotDateSkeleton" hidden>
+        <span class="ac-skeleton-block is-title"></span><span class="ac-skeleton-block is-mid"></span><span class="ac-skeleton-block is-mid"></span><span class="ac-skeleton-block is-short"></span>
       </div>
-      <div class="kpi-card">
-        <span class="kpi-card__title">人均用量</span>
-        <div class="kpi-card__number"><span class="kpi-card__value">966</span><span class="kpi-card__unit">Credits</span></div>
-        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-up">&#8593; 8.3%</span></div>
+      <div class="ac-empty" data-ac="AcEmpty" role="status" id="pivotDateEmpty" hidden>
+        <div class="ac-empty__image" data-image-size="80"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div>
+        <div class="ac-empty__description">暂无用量数据</div>
       </div>
-      <div class="kpi-card">
-        <span class="kpi-card__title">活跃成员</span>
-        <div class="kpi-card__number"><span class="kpi-card__value">5</span><span class="kpi-card__unit">人</span></div>
-        <div class="kpi-card__trend"><span class="kpi-card__trend-label">周环比</span><span class="kpi-card__trend-tag is-flat">&#8212; 0%</span></div>
+      <div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert" id="pivotDateError" hidden>
+        <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="close-one"></span></div>
+        <div class="ac-alert__body"><div class="ac-alert__content">加载失败，</div></div>
+        <span class="ac-alert__action" role="button" tabindex="0" data-act="retry" data-block="pivotDate">点击重试</span>
       </div>
     </div>
-  </section>
 
-  <!-- ═══ 日 Credits 消耗堆叠柱形图（按模型分类堆叠） ═══ -->
-  <section class="tpl-panel">
-    <div class="tpl-panel__head">
-      <span class="tpl-panel__title">日 Credits 消耗趋势</span>
-      <div class="chart-legend">
-        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-primary-4);"></span>Ultimate</span>
-        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-purple-4);"></span>Kimi K3</span>
-        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-info-4);"></span>GLM 5.3</span>
-        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-cyan-4);"></span>DeepSeek V4 Pro</span>
-        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-color-warning-4);"></span>Qwen3.8 Max</span>
-        <span class="chart-legend__item"><span class="chart-legend__swatch" style="background:var(--ac-palette-gray-4);"></span>其他</span>
+    <!-- 模型用量透视表（成员 × 模型等级，空值与排序规则见 business-rule.md §4） -->
+    <div class="tpl-panel">
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">模型用量透视表</span></div>
+        <div class="tpl-toolbar__right"><span class="u-secondary u-sm">成员 × 模型等级 · 单位 Credits（保留两位小数） · 复用顶部公共筛选</span></div>
       </div>
-    </div>
-    <div class="chart-body">
-      <svg viewBox="0 0 800 250" preserveAspectRatio="xMidYMid meet" width="100%" height="250" xmlns="http://www.w3.org/2000/svg">
-        <line x1="60" y1="220" x2="780" y2="220" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
-        <line x1="60" y1="180" x2="780" y2="180" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
-        <line x1="60" y1="140" x2="780" y2="140" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
-        <line x1="60" y1="100" x2="780" y2="100" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
-        <line x1="60" y1="60" x2="780" y2="60" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
-        <line x1="60" y1="20" x2="780" y2="20" stroke="var(--ac-color-border-1)" stroke-dasharray="4 3"/>
-        <text x="50" y="224" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">0</text>
-        <text x="50" y="184" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">200</text>
-        <text x="50" y="144" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">400</text>
-        <text x="50" y="104" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">600</text>
-        <text x="50" y="64" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">800</text>
-        <text x="50" y="24" text-anchor="end" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">1000</text>
-        <!-- 堆叠柱形：每日一根，自下而上 Ultimate / Kimi K3 / GLM 5.3 / DeepSeek V4 Pro / Qwen3.8 Max / 其他 -->
-        <!-- 06-25 合计 702 -->
-        <rect x="89.4" y="177.8" width="44" height="42.2" fill="var(--ac-color-primary-4)"/>
-        <rect x="89.4" y="144.2" width="44" height="33.6" fill="var(--ac-palette-purple-4)"/>
-        <rect x="89.4" y="119" width="44" height="25.2" fill="var(--ac-color-info-4)"/>
-        <rect x="89.4" y="102.2" width="44" height="16.8" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="89.4" y="88.2" width="44" height="14" fill="var(--ac-color-warning-4)"/>
-        <rect x="89.4" y="79.6" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
-        <!-- 06-26 合计 713 -->
-        <rect x="192.3" y="180" width="44" height="40" fill="var(--ac-color-primary-4)"/>
-        <rect x="192.3" y="144.4" width="44" height="35.6" fill="var(--ac-palette-purple-4)"/>
-        <rect x="192.3" y="120.2" width="44" height="24.2" fill="var(--ac-color-info-4)"/>
-        <rect x="192.3" y="101.6" width="44" height="18.6" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="192.3" y="86" width="44" height="15.6" fill="var(--ac-color-warning-4)"/>
-        <rect x="192.3" y="77.4" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
-        <!-- 06-27 合计 695 -->
-        <rect x="295.1" y="177" width="44" height="43" fill="var(--ac-color-primary-4)"/>
-        <rect x="295.1" y="145" width="44" height="32" fill="var(--ac-palette-purple-4)"/>
-        <rect x="295.1" y="121.4" width="44" height="23.6" fill="var(--ac-color-info-4)"/>
-        <rect x="295.1" y="103.4" width="44" height="18" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="295.1" y="89.6" width="44" height="13.8" fill="var(--ac-color-warning-4)"/>
-        <rect x="295.1" y="81" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
-        <!-- 06-28 合计 731 -->
-        <rect x="398" y="182" width="44" height="38" fill="var(--ac-color-primary-4)"/>
-        <rect x="398" y="144" width="44" height="38" fill="var(--ac-palette-purple-4)"/>
-        <rect x="398" y="117.6" width="44" height="26.4" fill="var(--ac-color-info-4)"/>
-        <rect x="398" y="98.6" width="44" height="19" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="398" y="82.4" width="44" height="16.2" fill="var(--ac-color-warning-4)"/>
-        <rect x="398" y="73.8" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
-        <!-- 06-29 合计 695 -->
-        <rect x="500.9" y="175.6" width="44" height="44.4" fill="var(--ac-color-primary-4)"/>
-        <rect x="500.9" y="145" width="44" height="30.6" fill="var(--ac-palette-purple-4)"/>
-        <rect x="500.9" y="121.4" width="44" height="23.6" fill="var(--ac-color-info-4)"/>
-        <rect x="500.9" y="103.4" width="44" height="18" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="500.9" y="89.6" width="44" height="13.8" fill="var(--ac-color-warning-4)"/>
-        <rect x="500.9" y="81" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
-        <!-- 06-30 合计 708 -->
-        <rect x="603.7" y="179" width="44" height="41" fill="var(--ac-color-primary-4)"/>
-        <rect x="603.7" y="145" width="44" height="34" fill="var(--ac-palette-purple-4)"/>
-        <rect x="603.7" y="119.6" width="44" height="25.4" fill="var(--ac-color-info-4)"/>
-        <rect x="603.7" y="101.2" width="44" height="18.4" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="603.7" y="87" width="44" height="14.2" fill="var(--ac-color-warning-4)"/>
-        <rect x="603.7" y="78.4" width="44" height="8.6" fill="var(--ac-palette-gray-4)"/>
-        <!-- 07-01 合计 588 -->
-        <rect x="706.6" y="184.8" width="44" height="35.2" fill="var(--ac-color-primary-4)"/>
-        <rect x="706.6" y="156.6" width="44" height="28.2" fill="var(--ac-palette-purple-4)"/>
-        <rect x="706.6" y="136.6" width="44" height="20" fill="var(--ac-color-info-4)"/>
-        <rect x="706.6" y="121.4" width="44" height="15.2" fill="var(--ac-palette-cyan-4)"/>
-        <rect x="706.6" y="109.6" width="44" height="11.8" fill="var(--ac-color-warning-4)"/>
-        <rect x="706.6" y="102.4" width="44" height="7.2" fill="var(--ac-palette-gray-4)"/>
-        <text x="111.4" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-25</text>
-        <text x="214.3" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-26</text>
-        <text x="317.1" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-27</text>
-        <text x="420" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-28</text>
-        <text x="522.9" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-29</text>
-        <text x="625.7" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">06-30</text>
-        <text x="728.6" y="240" text-anchor="middle" font-size="11" fill="var(--ac-color-text-3)" font-family="var(--ac-ff-mono)">07-01</text>
-      </svg>
+      <div class="ac-table-wrap" id="pivotModelWrap">
+        <table class="ac-table" data-ac="AcTable" id="pivotModel">
+          <thead id="pivotModelHead"></thead>
+          <tbody id="pivotModelBody"></tbody>
+          <tfoot id="pivotModelFoot"></tfoot>
+        </table>
+      </div>
+      <div class="ac-skeleton ac-skeleton--animated" data-ac="AcSkeleton" aria-busy="true" id="pivotModelSkeleton" hidden>
+        <span class="ac-skeleton-block is-title"></span><span class="ac-skeleton-block is-mid"></span><span class="ac-skeleton-block is-mid"></span><span class="ac-skeleton-block is-short"></span>
+      </div>
+      <div class="ac-empty" data-ac="AcEmpty" role="status" id="pivotModelEmpty" hidden>
+        <div class="ac-empty__image" data-image-size="80"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div>
+        <div class="ac-empty__description">暂无用量数据</div>
+      </div>
+      <div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert" id="pivotModelError" hidden>
+        <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="close-one"></span></div>
+        <div class="ac-alert__body"><div class="ac-alert__content">加载失败，</div></div>
+        <span class="ac-alert__action" role="button" tabindex="0" data-act="retry" data-block="pivotModel">点击重试</span>
+      </div>
     </div>
   </section>
 
-  <!-- ═══ 日期 × 成员透视表（成员列按合计降序） ═══ -->
-  <section class="tpl-panel">
-    <div class="tpl-panel__head">
-      <span class="tpl-panel__title">Credits 用量透视表</span>
-    </div>
-    <div class="table-wrap">
-      <table class="ac-table">
-        <thead>
-          <tr>
-            <th>日期</th>
-            <th class="is-right">周义潇</th>
-            <th class="is-right">苏浩宇</th>
-            <th class="is-right">王芳</th>
-            <th class="is-right">李明</th>
-            <th class="is-right">赵敏</th>
-            <th class="is-right">合计</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>2026-06-25</td><td class="is-num">186</td><td class="is-num">142</td><td class="is-num">201</td><td class="is-num">95</td><td class="is-num">78</td><td class="is-num">702</td></tr>
-          <tr><td>2026-06-26</td><td class="is-num">210</td><td class="is-num">168</td><td class="is-num">89</td><td class="is-num">134</td><td class="is-num">112</td><td class="is-num">713</td></tr>
-          <tr><td>2026-06-27</td><td class="is-num">175</td><td class="is-num">203</td><td class="is-num">156</td><td class="is-num">67</td><td class="is-num">94</td><td class="is-num">695</td></tr>
-          <tr><td>2026-06-28</td><td class="is-num">225</td><td class="is-num">119</td><td class="is-num">143</td><td class="is-num">178</td><td class="is-num">66</td><td class="is-num">731</td></tr>
-          <tr><td>2026-06-29</td><td class="is-num">198</td><td class="is-num">87</td><td class="is-num">112</td><td class="is-num">145</td><td class="is-num">153</td><td class="is-num">695</td></tr>
-          <tr><td>2026-06-30</td><td class="is-num">156</td><td class="is-num">192</td><td class="is-num">167</td><td class="is-num">108</td><td class="is-num">85</td><td class="is-num">708</td></tr>
-          <tr><td>2026-07-01</td><td class="is-num">134</td><td class="is-num">155</td><td class="is-num">98</td><td class="is-num">121</td><td class="is-num">80</td><td class="is-num">588</td></tr>
-          <tr class="is-total"><td>合计</td><td class="is-num">1,284</td><td class="is-num">1,066</td><td class="is-num">966</td><td class="is-num">848</td><td class="is-num">668</td><td class="is-num">4,832</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+  <script src="../../../../../busyming-skills-design/web/styles/manifest.js"></script>
+  <script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
+  <script>
+(function () {
+  'use strict';
+  function $(id) { return document.getElementById(id); }
+  function qa(sel, root) { return Array.prototype.slice.call((root || document).querySelectorAll(sel)); }
+  function toast(msg, type) { window.DS.toast(msg, type || 'success', 2600); }
 
-  <!-- ═══ 成员 × 模型等级透视表 ═══ -->
-  <section class="tpl-panel">
-    <div class="tpl-panel__head">
-      <span class="tpl-panel__title">模型用量透视表</span>
-      <span class="tpl-panel__hint">成员 × 模型等级 · 单位 Credits（保留两位小数） · 复用顶部公共筛选</span>
-    </div>
-    <div class="table-wrap">
-      <table class="ac-table">
-        <thead>
-          <tr>
-            <th>成员</th>
-            <th class="is-right">Auto</th>
-            <th class="is-right">Ultimate</th>
-            <th class="is-right">Performance</th>
-            <th class="is-right">Efficient</th>
-            <th class="is-right">Lite</th>
-            <th class="is-right">合计</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr><td>周义潇</td><td class="is-num">320.45</td><td class="is-num">512.30</td><td class="is-num">268.10</td><td class="is-num">142.66</td><td class="is-num">40.50</td><td class="is-num">1,284.01</td></tr>
-          <tr><td>苏浩宇</td><td class="is-num">410.20</td><td class="is-num">305.75</td><td class="is-num">198.40</td><td class="is-num">121.33</td><td class="is-num">30.00</td><td class="is-num">1,065.68</td></tr>
-          <tr><td>李明</td><td class="is-num">265.50</td><td class="is-num">240.00</td><td class="is-num">180.25</td><td class="is-num">130.45</td><td class="is-num">31.80</td><td class="is-num">848.00</td></tr>
-          <tr><td>王芳</td><td class="is-num">300.10</td><td class="is-num">285.60</td><td class="is-num">210.75</td><td class="is-num">140.20</td><td class="is-num">29.35</td><td class="is-num">966.00</td></tr>
-          <tr><td>赵敏</td><td class="is-num">180.30</td><td class="is-num">160.85</td><td class="is-num">150.60</td><td class="is-num">131.25</td><td class="is-num">45.00</td><td class="is-num">668.00</td></tr>
-          <tr class="is-total"><td>合计</td><td class="is-num">1,476.55</td><td class="is-num">1,504.50</td><td class="is-num">1,008.10</td><td class="is-num">665.89</td><td class="is-num">176.65</td><td class="is-num">4,831.69</td></tr>
-        </tbody>
-      </table>
-    </div>
-  </section>
+  /* ============ 演示数据（虚构；聚合口径见 references/business-rule.md §2-§6） ============ */
+  var MEMBERS = ['张悦', '李思远', '黄磊', '王倩', '孙浩'];
+  var BASE = { '张悦': 210, '李思远': 170, '黄磊': 120, '王倩': 85, '孙浩': 55 };
+  var TIERS = ['旗舰 MAX', '高级', '基础', '其他'];          /* 堆叠图系列（其他 = 未识别/空标识，固定最顶层灰色） */
+  var TIER_LABEL = ['旗舰 MAX', '高级', '基础', '未标注'];     /* 模型等级列名（空值归「未标注」，排最后） */
+  var TIER_COLOR = ['var(--ac-primary-5)', 'var(--ac-warning-5)', 'var(--ac-success-5)', 'var(--ac-fill-4)'];
+  var SHARE = [0.55, 0.30, 0.12, 0.03];
+  var TODAY = '2026-10-18';
+  var DEFAULT_RANGE = ['2026-10-11', '2026-10-17'];           /* 前 7 天（T-7 ~ T-1，不含今天） */
+  var MAX_SPAN = 31;
 
-</section>
+  function h(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) % 9973; return x; }
+  function r2(n) { return Math.round(n * 100) / 100; }
+  function dAdd(ds, n) { var d = new Date(ds + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+  function dList(a, b) { var out = []; var d = a; while (d <= b) { out.push(d); d = dAdd(d, 1); } return out; }
+  function dDiff(a, b) { return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000); }
+  /* 成员 × 日期 × 模型等级 Credits（两位小数；负向冲正照常参与求和：王倩 10-14 有一笔冲正） */
+  function tierVal(m, d, t) {
+    var v = BASE[m] * SHARE[t] * (0.72 + (h(m + d + t) % 56) / 100);
+    if (m === '王倩' && d === '2026-10-14' && t === 3) v = -6.5;
+    return r2(v);
+  }
+  function daySum(m, d) { var s = 0; for (var t = 0; t < 4; t++) s += tierVal(m, d, t); return r2(s); }
+  function cellInt(m, d) { return Math.round(daySum(m, d)); }   /* 日期×成员单元格：当日合计取整 */
+  function reqSum(m, a, b) { var s = 0; dList(a, b).forEach(function (d) { s += Math.round(daySum(m, d) / 13) + h(m + d) % 4; }); return s; }
+  function creditSum(m, a, b) { var s = 0; dList(a, b).forEach(function (d) { s += cellInt(m, d); }); return s; }
+
+  var SCENES = { 'default': {}, 'member': { members: ['张悦', '李思远'] }, 'empty': { empty: true }, 'loading': { loading: true }, 'error': { err: true }, 'op-fail': { fail: true }, 'over-range': { over: true } };
+  var S = null;
+  var MODE = {};
+
+  function selMembers() { return S.members.length ? S.members.slice() : MEMBERS.slice(); }
+  function hasData() { return !S.empty; }
+  function wow(a, b) { return [dAdd(a, -7), dAdd(b, -7)]; }     /* 上周同期：起止各前移 7 天 */
+  function delta(cur, prev) {
+    if (prev === 0) return { t: '—', c: '' };
+    var v = (cur - prev) / Math.abs(prev) * 100;
+    if (Math.abs(v) < 0.05) return { t: '—', c: '' };
+    return v > 0 ? { t: '↑ ' + v.toFixed(1) + '%', c: 'is-up' } : { t: '↓ ' + Math.abs(v).toFixed(1) + '%', c: 'is-down' };
+  }
+  function setDelta(id, d) { var el = $(id); el.textContent = d.t; el.className = 'tpl-kpi__delta' + (d.c ? ' ' + d.c : ''); }
+  function setStat(id, v) { var el = $(id); el.querySelector('.ac-statistic__value').textContent = v; }
+
+  /* ============ KPI（business-rule.md §2） ============ */
+  function kpiData(a, b) {
+    var ms = selMembers(), total = 0, req = 0, active = 0;
+    ms.forEach(function (m) { var c = creditSum(m, a, b); total += c; req += reqSum(m, a, b); if (c > 0) active++; });
+    return { total: total, req: req, avg: req ? total / req : 0, per: active ? Math.round(total / active) : 0, active: active };
+  }
+  function renderKpi(mode) {
+    MODE.kpi = mode;
+    $('kpiGrid').hidden = mode === 'loading' || mode === 'error';
+    $('kpiSkeleton').hidden = mode !== 'loading';
+    $('kpiError').hidden = mode !== 'error';
+    if (mode !== 'data' && mode !== 'empty') return;
+    if (mode === 'empty') {
+      ['kTotal', 'kReq', 'kPer', 'kActive'].forEach(function (id) { setStat(id, '0'); });
+      setStat('kAvg', '0.0');
+      ['dTotal', 'dReq', 'dAvg', 'dPer', 'dActive'].forEach(function (id) { setDelta(id, { t: '—', c: '' }); });
+      return;
+    }
+    var cur = kpiData(S.range[0], S.range[1]); var p = wow(S.range[0], S.range[1]); var prev = kpiData(p[0], p[1]);
+    setStat('kTotal', cur.total.toLocaleString('zh-CN'));
+    setStat('kReq', cur.req.toLocaleString('zh-CN'));
+    setStat('kAvg', cur.avg.toFixed(1));
+    setStat('kPer', cur.per.toLocaleString('zh-CN'));
+    setStat('kActive', String(cur.active));
+    setDelta('dTotal', delta(cur.total, prev.total));
+    setDelta('dReq', delta(cur.req, prev.req));
+    setDelta('dAvg', delta(cur.avg, prev.avg));
+    setDelta('dPer', delta(cur.per, prev.per));
+    setDelta('dActive', delta(cur.active, prev.active));
+  }
+
+  /* ============ 日消耗堆叠柱形图（business-rule.md §6：固定顺序自下而上，其他最顶层） ============ */
+  function blockMode(prefix, mode) {
+    MODE[prefix] = mode;
+    $(prefix + 'Chart').hidden = mode === 'error';
+    $(prefix + 'Error').hidden = mode !== 'error';
+    $(prefix + 'Loading').hidden = mode !== 'loading';
+    $(prefix + 'Empty').hidden = mode !== 'empty';
+  }
+  function renderTrend(mode) {
+    blockMode('trend', mode);
+    $('trendLegend').innerHTML = TIERS.map(function (t, i) {
+      return '<span class="tpl-cell-status' + (i === 3 ? '' : [' is-processing', ' is-warning', ' is-success'][i]) + '">' + t + '</span>';
+    }).join('');
+    if (mode !== 'data') return;
+    var days = dList(S.range[0], S.range[1]); var ms = selMembers();
+    var n = days.length; var pad = 40; var cw = (600 - pad * 2) / n; var w = Math.min(cw * 0.56, 56);
+    var yBase = 176; var scale = (yBase - 8) / 1000;             /* Y 轴 0-1000 固定刻度 */
+    var out = '';
+    days.forEach(function (d, i) {
+      var x = pad + cw * (i + 0.5) - w / 2; var yCur = yBase;
+      TIERS.forEach(function (t, ti) {
+        var v = 0; ms.forEach(function (m) { v += tierVal(m, d, ti); }); v = r2(v);
+        if (v === 0) return;
+        var neg = v < 0; var hgt = Math.abs(v) * scale;
+        if (!neg) yCur -= hgt;
+        var y = neg ? yCur : yCur;
+        var tip = d + ' · ' + t + '：' + v.toFixed(2) + ' Credits';
+        out += '<rect x="' + x.toFixed(1) + '" y="' + y.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + hgt.toFixed(1) + '" fill="' + TIER_COLOR[ti] + '" data-chart-point="' + tip + '"><title>' + tip + '</title></rect>';
+        if (neg) yCur += hgt;
+      });
+    });
+    $('trendSvg').innerHTML = out;
+    $('trendX').innerHTML = days.map(function (d) { return '<span>' + d.slice(5) + '</span>'; }).join('');
+  }
+
+  /* ============ 透视表 ============ */
+  function pivotMode(prefix, mode) {
+    MODE[prefix] = mode;
+    $(prefix + 'Wrap').hidden = mode !== 'data';
+    $(prefix + 'Skeleton').hidden = mode !== 'loading';
+    $(prefix + 'Empty').hidden = mode !== 'empty';
+    $(prefix + 'Error').hidden = mode !== 'error';
+  }
+  function memberCols() {
+    var ms = selMembers();
+    return ms.sort(function (x, y) { return creditSum(y, S.range[0], S.range[1]) - creditSum(x, S.range[0], S.range[1]); });
+  }
+  /* 日期 × 成员（§3：行=日期升序，列=成员按期间合计降序，末行末列总计） */
+  function renderPivotDate(mode) {
+    pivotMode('pivotDate', mode);
+    if (mode !== 'data') return;
+    var days = dList(S.range[0], S.range[1]); var ms = memberCols();
+    $('pivotDateHead').innerHTML = '<tr><th>日期</th>' + ms.map(function (m) { return '<th class="u-right">' + m + '</th>'; }).join('') + '<th class="u-right">合计</th></tr>';
+    var colTot = ms.map(function () { return 0; }); var grand = 0;
+    $('pivotDateBody').innerHTML = days.map(function (d) {
+      var row = 0;
+      var tds = ms.map(function (m, i) { var v = cellInt(m, d); colTot[i] += v; row += v; return '<td class="u-right mono">' + v.toLocaleString('zh-CN') + '</td>'; }).join('');
+      grand += row;
+      return '<tr><td>' + d + '</td>' + tds + '<td class="u-right mono"><strong>' + row.toLocaleString('zh-CN') + '</strong></td></tr>';
+    }).join('');
+    $('pivotDateFoot').innerHTML = '<tr><td><span class="ac-table__summary-label">合计</span></td>' + colTot.map(function (v) { return '<td class="u-right mono"><strong>' + v.toLocaleString('zh-CN') + '</strong></td>'; }).join('') + '<td class="u-right mono"><strong>' + grand.toLocaleString('zh-CN') + '</strong></td></tr>';
+  }
+  /* 成员 × 模型等级（§4：列按合计降序，未标注最后，两位小数） */
+  function renderPivotModel(mode) {
+    pivotMode('pivotModel', mode);
+    if (mode !== 'data') return;
+    var ms = memberCols();
+    var colSum = TIERS.map(function (t, ti) { var s = 0; ms.forEach(function (m) { dList(S.range[0], S.range[1]).forEach(function (d) { s += tierVal(m, d, ti); }); }); return r2(s); });
+    var order = [0, 1, 2].sort(function (a, b) { return colSum[b] - colSum[a]; }); order.push(3); /* 未标注固定最后 */
+    $('pivotModelHead').innerHTML = '<tr><th>成员</th>' + order.map(function (ti) { return '<th class="u-right">' + TIER_LABEL[ti] + '</th>'; }).join('') + '<th class="u-right">合计</th></tr>';
+    var colTot = order.map(function () { return 0; }); var grand = 0;
+    $('pivotModelBody').innerHTML = ms.map(function (m) {
+      var row = 0;
+      var tds = order.map(function (ti, ci) {
+        var s = 0; dList(S.range[0], S.range[1]).forEach(function (d) { s += tierVal(m, d, ti); }); s = r2(s);
+        colTot[ci] = r2(colTot[ci] + s); row = r2(row + s);
+        return '<td class="u-right mono">' + s.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</td>';
+      }).join('');
+      grand = r2(grand + row);
+      return '<tr><td>' + m + '</td>' + tds + '<td class="u-right mono"><strong>' + row.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong></td></tr>';
+    }).join('');
+    $('pivotModelFoot').innerHTML = '<tr><td><span class="ac-table__summary-label">合计</span></td>' + colTot.map(function (v) { return '<td class="u-right mono"><strong>' + v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong></td>'; }).join('') + '<td class="u-right mono"><strong>' + grand.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong></td></tr>';
+  }
+
+  var RENDER = { kpi: renderKpi, trend: renderTrend, pivotDate: renderPivotDate, pivotModel: renderPivotModel };
+  var TIMERS = {};
+  function loadBlock(name) {
+    RENDER[name]('loading');
+    clearTimeout(TIMERS[name]);
+    TIMERS[name] = setTimeout(function () { RENDER[name](S.err[name] ? 'error' : (hasData() ? 'data' : 'empty')); }, 600);
+  }
+  function refreshAll() { ['kpi', 'trend', 'pivotDate', 'pivotModel'].forEach(loadBlock); }
+
+  /* ============ 成员多选 ============ */
+  function syncMember() {
+    var root = $('fMember'); var trig = root.querySelector('.ac-select__trigger');
+    qa('.ac-select__option', root).forEach(function (o) { o.classList.toggle('is-selected', S.members.indexOf(o.getAttribute('data-value')) >= 0); });
+    var tags = S.members.slice(0, 2).map(function (m) {
+      return '<span class="ac-select__tag" data-value="' + m + '"><span class="ac-select__tag-label">' + m + '</span><span class="ac-select__tag-close" role="button" tabindex="0">×</span></span>';
+    }).join('');
+    if (S.members.length > 2) tags += '<span class="ac-select__tag ac-select__tag--more">+' + (S.members.length - 2) + '</span>';
+    trig.innerHTML = (S.members.length ? tags : '<span class="ac-select__single is-placeholder">全部成员</span>') +
+      '<span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span>';
+  }
+  $('fMemberList').innerHTML = MEMBERS.map(function (m) {
+    return '<li class="ac-select__option" data-value="' + m + '"><span class="ac-select__option-label">' + m + '</span><span class="ac-select__option-check">✓</span></li>';
+  }).join('');
+
+  /* ============ 日期范围（上限 31 天，超范围拦截，business-rule.md §1） ============ */
+  var pickStart = null; var viewMonth = '2026-10';
+  function closePopups() {
+    [['fMember'], ['fRange']].forEach(function (p) {
+      var root = $(p[0]); root.classList.remove('is-open');
+      var pop = root.querySelector('.ac-select__popup, .ac-date-picker__panel'); if (pop) pop.hidden = true;
+    });
+  }
+  function syncRange() {
+    var root = $('fRange'); var tx = qa('.ac-date-picker__text', root);
+    tx[0].textContent = S.range[0]; tx[1].textContent = S.range[1];
+    root.setAttribute('data-start', S.range[0]); root.setAttribute('data-end', S.range[1]);
+  }
+  function openRangePanel() {
+    var root = $('fRange');
+    var old = root.querySelector('.ac-date-picker__panel'); if (old) old.parentNode.removeChild(old);
+    var panel = document.createElement('div');
+    panel.className = 'ac-date-picker__panel';
+    panel.innerHTML = '<div class="ac-date-picker__header"><button class="ac-btn ac-date-picker__nav" type="button" data-act="month" data-dir="-1">‹</button><span class="ac-date-picker__title" id="dpMonth"></span><button class="ac-btn ac-date-picker__nav" type="button" data-act="month" data-dir="1">›</button></div><div class="ac-date-picker__weeks">' + ['一', '二', '三', '四', '五', '六', '日'].map(function (w) { return '<span class="ac-date-picker__week">' + w + '</span>'; }).join('') + '</div><div class="ac-date-picker__grid" id="dpGrid"></div><div class="u-xs u-secondary" style="padding-top:var(--ac-space-2)">最多可选 31 天，超出将被拦截</div>';
+    root.appendChild(panel);
+    renderGrid();
+    panel.hidden = false;
+    root.classList.add('is-open');
+  }
+  function renderGrid() {
+    $('dpMonth').textContent = viewMonth;
+    var first = viewMonth + '-01';
+    var weekday = (new Date(first + 'T00:00:00').getDay() + 6) % 7;
+    var base = new Date(first + 'T00:00:00');
+    var total = new Date(base.getFullYear(), base.getMonth() + 1, 0).getDate();
+    var cells = '';
+    for (var i = 0; i < weekday; i++) cells += '<span class="ac-date-picker__day is-offset"></span>';
+    for (var d = 1; d <= total; d++) {
+      var ds = viewMonth + '-' + String(d).padStart(2, '0');
+      var cls = '';
+      var off = ds > TODAY;
+      if (ds === pickStart) cls += ' is-range-start';
+      if (S.range && ds === S.range[0]) cls += ' is-range-start';
+      if (S.range && ds === S.range[1]) cls += ' is-range-end';
+      if (S.range && ds > S.range[0] && ds < S.range[1]) cls += ' is-in-range';
+      cells += '<button class="ac-btn ac-date-picker__day' + cls + '" type="button" data-date="' + ds + '"' + (off ? ' disabled' : '') + '>' + d + '</button>';
+    }
+    $('dpGrid').innerHTML = cells;
+  }
+  function pickDay(el) {
+    var d = el.getAttribute('data-date');
+    if (el.disabled || d > TODAY) return;
+    if (!pickStart) {
+      pickStart = d;
+      renderGrid();
+      return;
+    }
+    var a = pickStart, b = d; pickStart = null;
+    if (b < a) { var tmp = a; a = b; b = tmp; }
+    if (dDiff(a, b) + 1 > MAX_SPAN) { toast('日期范围不能超过 31 天', 'error'); renderGrid(); return; }
+    S.range = [a, b]; syncRange(); closePopups();
+  }
+
+  /* ============ 动作表 ============ */
+  var ACT = {
+    proto: function (el) {
+      var dd = el.closest('.ac-dropdown'); dd.classList.remove('is-open'); dd.querySelector('.ac-dropdown__menu').hidden = true;
+      if (el.hasAttribute('data-scene') && el.getAttribute('href') === location.hash) applyScene();
+    },
+    query: function () {
+      if (S.over) { toast('日期范围不能超过 31 天', 'error'); return; }
+      closePopups();
+      if (S.fail && !S.failed) {
+        S.failed = true;
+        $('filterError').hidden = false;
+        return;
+      }
+      $('filterError').hidden = true;
+      refreshAll();
+    },
+    reset: function () {
+      S.range = DEFAULT_RANGE.slice(); S.members = []; pickStart = null;
+      syncRange(); syncMember();
+      toast('已恢复默认筛选');
+      ACT.query();
+    },
+    retry: function (el) {
+      var b = el.getAttribute('data-block');
+      if (b === 'all') { $('filterError').hidden = true; refreshAll(); return; }
+      S.err[b] = false; loadBlock(b);
+    },
+    month: function (el) {
+      var dir = +el.getAttribute('data-dir');
+      var d0 = new Date(viewMonth + '-01T00:00:00');
+      d0.setMonth(d0.getMonth() + dir);
+      viewMonth = d0.getFullYear() + '-' + String(d0.getMonth() + 1).padStart(2, '0');
+      renderGrid();
+    }
+  };
+
+  /* ============ 事件：捕获阶段分发 data-act；Esc 先关浮层（避免透明拦截层） ============ */
+  document.addEventListener('keydown', function (e) {
+    if (e.key !== 'Escape') return;
+    e.stopPropagation();
+    closePopups();
+  }, true);
+  document.addEventListener('click', function (e) {
+    var t = e.target; if (!t || !t.closest) return;
+    var day = t.closest('#fRange [data-date]');
+    if (day) { e.stopPropagation(); e.preventDefault(); pickDay(day); return; }
+    if (t.closest('#fRange .ac-date-picker__panel')) { e.stopPropagation(); }
+    var trig = t.closest('#fRange .ac-date-picker__trigger');
+    if (trig) { e.stopPropagation(); e.preventDefault(); var root = $('fRange'); var open = root.classList.contains('is-open'); closePopups(); if (!open) openRangePanel(); return; }
+    var mTrig = t.closest('#fMember .ac-select__trigger');
+    if (mTrig && !t.closest('.ac-select__tag-close')) {
+      e.stopPropagation(); e.preventDefault();
+      var mr = $('fMember'); var mOpen = mr.classList.contains('is-open');
+      closePopups();
+      if (!mOpen) { mr.classList.add('is-open'); mr.querySelector('.ac-select__popup').hidden = false; }
+      return;
+    }
+    var tagClose = t.closest('#fMember .ac-select__tag-close');
+    if (tagClose) {
+      e.stopPropagation(); e.preventDefault();
+      var v = tagClose.closest('.ac-select__tag').getAttribute('data-value');
+      S.members = S.members.filter(function (m) { return m !== v; });
+      syncMember(); return;
+    }
+    var opt = t.closest('#fMember .ac-select__option');
+    if (opt) {
+      e.stopPropagation(); e.preventDefault();
+      var mv = opt.getAttribute('data-value');
+      if (S.members.indexOf(mv) >= 0) S.members = S.members.filter(function (m) { return m !== mv; });
+      else S.members = S.members.concat([mv]);
+      syncMember(); return;
+    }
+    var el = t.closest('[data-act]');
+    if (el) {
+      if (el.tagName !== 'A') e.preventDefault();
+      e.stopPropagation();
+      if (el.disabled || el.classList.contains('is-disabled')) return;
+      var fn = ACT[el.getAttribute('data-act')]; if (fn) fn(el, e);
+      return;
+    }
+    if (!t.closest('#fMember') && !t.closest('#fRange')) closePopups();
+  }, true);
+  document.addEventListener('submit', function (e) { e.preventDefault(); e.stopPropagation(); }, true);
+
+  /* ============ 场景装载（#scene=xxx） ============ */
+  function sceneKey() { var m = /scene=([\w-]+)/.exec(location.hash); return m && SCENES[m[1]] ? m[1] : 'default'; }
+  function applyScene() {
+    var key = sceneKey(); var sc = SCENES[key];
+    S = { scene: key, range: DEFAULT_RANGE.slice(), members: (sc.members || []).slice(), empty: !!sc.empty, fail: !!sc.fail, over: !!sc.over, failed: false, err: { kpi: !!sc.err, trend: !!sc.err, pivotDate: !!sc.err, pivotModel: !!sc.err } };
+    Object.keys(TIMERS).forEach(function (k) { clearTimeout(TIMERS[k]); });
+    pickStart = null; viewMonth = '2026-10';
+    syncRange(); syncMember(); closePopups();
+    $('filterError').hidden = true;
+    ['kpi', 'trend', 'pivotDate', 'pivotModel'].forEach(function (b) { RENDER[b](sc.loading ? 'loading' : S.err[b] ? 'error' : (hasData() ? 'data' : 'empty')); });
+    qa('[data-scene]').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-scene') === key); });
+  }
+  window.addEventListener('hashchange', applyScene);
+  applyScene();
+})();
+  </script>
 </body>
 </html>

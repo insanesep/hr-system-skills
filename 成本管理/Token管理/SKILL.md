@@ -8,8 +8,6 @@ metadata:
 
 # Token管理
 
-> App 功能图标：qoder-usage.html（App 工作台「Qoder 用量查询」入口动效图标，自包含 HTML）
-
 ## 模块概述
 
 数据来源为 Qoder Teams OpenAPI，按组织 → 成员维度展示团队 Credits 用量：KPI 汇总、日消耗堆叠柱形图（按接口返回的模型分类分段堆叠，未识别的归入其他）、日期×成员透视表、成员×模型等级透视表。纯只读分析页，无单据与写操作。
@@ -30,10 +28,14 @@ metadata:
 
 ## Prerequisites
 
-| 依赖 | 路径 | 用途 |
-|------|------|------|
-| Qoder Teams OpenAPI | ../../../依赖文档/API/qoder-api.md | 用量数据来源说明 |
-| 前端页面规范 | ../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md | 双端页面与原型硬约束 |
+| 引用资源 | 路径 | 用途 | 所属仓库 |
+|---------|------|------|---------|
+| 业务规则 | [references/business-rule.md](references/business-rule.md) | 筛选与日期约束、KPI 口径、透视表规则、堆叠图规则、三态 | 本模块 |
+| Web 页面 | [references/web-ui.md](references/web-ui.md) | Web 端页面元信息、导航、操作反馈、三态 | 本模块 |
+| App 页面 | [references/app-ui.md](references/app-ui.md) | App 端页面元信息、导航、操作反馈、三态 | 本模块 |
+| 页面模板 | [web/templates](../../../busyming-skills-design/web/templates/) · [mobile/templates](../../../busyming-skills-design/mobile/templates/) | 页面类型取值与整页范例 | busyming-skills-design |
+| 原型样式入口 | [web](../../../busyming-skills-design/web/styles/design-system.css) · [mobile](../../../busyming-skills-design/mobile/styles/design-system.css) 的 design-system.css | 原型唯一样式入口与组件类 | busyming-skills-design |
+| Qoder Teams OpenAPI | 公共仓未迁入真源（busyming-skills-common 的 api 目录仅有占位） | 用量数据来源与时间范围硬约束 | busyming-skills-common |
 
 ## 页面功能概览
 
@@ -47,9 +49,9 @@ metadata:
 
 App 端页面元素与 Web 保持一致，仅做移动端布局适配（KPI 2 列网格、透视表横向滚动 + 首列冻结）。
 
-聚合口径、排序、精度与空值规则详见 [references/business-rule.md §2-§5](references/business-rule.md#2-kpi-计算口径)；页面区块与交互清单详见 [references/web-ui.md §Qoder 用量分析](references/web-ui.md#qoder-用量分析) 与 [references/mobile-ui.md §Qoder 用量分析](references/mobile-ui.md#qoder-用量分析)。
+聚合口径、排序、精度与空值规则详见 [references/business-rule.md §2-§5](references/business-rule.md#2-kpi-计算口径)；页面区块与交互清单详见 [references/web-ui.md §Qoder 用量分析](references/web-ui.md#qoder-用量分析) 与 [references/app-ui.md §Qoder 用量分析](references/app-ui.md#qoder-用量分析)。
 
 ## Tips
 
 - 口径与规则唯一真源为 references/business-rule.md，页面与其余文档不复述
-- 上游数据来源说明见 Prerequisites 中 qoder-api.md，模块内不复制
+- 上游数据来源（Qoder Teams OpenAPI）真源未迁入公共仓，模块内仅保留一句话指针，不复制接口细节

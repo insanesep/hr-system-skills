@@ -1,6 +1,6 @@
 # Web 端 UI 描述（Token管理）
 
-> 页面通用硬约束以 SKILL.md Prerequisites 中「前端页面规范」为准，此处仅描述产品侧元信息。
+> 页面通用硬约束以 busyming-skills-design 的 page-blueprint 页面生成提示词【2. 硬约束】为准，此处仅描述产品侧元信息。
 
 ## 页面清单
 
@@ -8,15 +8,15 @@
 
 - **页面路径**：`/rnd/qoder-usage`
 - **权限编码**：
-  - 路由：`MENU:RND:MANAGE:QODER_USAGE`
-- **页面类型**：看板页
+  - 路由：`MENU:RND:QODER_USAGE`
+- **页面类型**：`report`
 - **区块职责**：
   - 筛选区（公共筛选，驱动全部视图）：日期范围选择器（单个范围控件，默认前 7 天，不含今天，跨度上限见 business-rule.md §1）、成员多选下拉（默认「全部成员」）、查询按钮（主色）、重置按钮
-  - KPI 卡片行（5 列）：总用量（Credits + 周环比）、总请求数（次 + 周环比）、次均消耗（Credits/次 + 周环比）、人均用量（Credits + 周环比）、活跃成员（人 + 周环比）
+  - KPI 卡片行（5 列）：总用量（Credits + 周环比，含口径悬浮说明）、总请求数（次 + 周环比）、次均消耗（Credits/次 + 周环比）、人均用量（Credits + 周环比）、活跃成员（人 + 周环比）
   - 日 Credits 消耗堆叠柱形图：面板标题「日 Credits 消耗趋势」，头部右侧图例为各模型分类；每日一根堆叠柱、按模型分段堆叠（分类归并与配色规则见 business-rule.md §6），Y 轴刻度 0-1000，X 轴为筛选期内每日日期
   - Credits 用量透视表：列 = 日期 | 成员列（排序规则见 business-rule.md §3）| 合计；每日期一行 + 合计行
   - 模型用量透视表：面板标题「模型用量透视表」，头部 hint「成员 × 模型等级 · 单位 Credits（保留两位小数） · 复用顶部公共筛选」；列 = 成员 | 模型等级列（排序与空值规则见 business-rule.md §4）| 合计；每成员一行 + 合计行；数值两位小数
-- **布局引用**：参见原型 `assets/web/qoder-usage-analysis.html`（信息架构以本模块功能视图为准）
+- **布局引用**：参见原型 `assets/web/qoder-usage-analysis.html`（页面类型 `report`：整页范例 busyming-skills-design/web/templates/report.html，DOM 依据 skeletons/web/dashboard-multi.vue.tpl）
 
 #### 导航关系
 

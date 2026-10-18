@@ -1,6 +1,6 @@
 # App 端 UI 描述（Token管理）
 
-> 页面通用硬约束（含触控尺寸）以 SKILL.md Prerequisites 中「前端页面规范」为准，此处仅描述产品侧元信息。
+> 页面通用硬约束（含触控尺寸）以 busyming-skills-design 的 page-blueprint 页面生成提示词【2. 硬约束】为准，此处仅描述产品侧元信息。
 
 ## 页面清单
 
@@ -8,9 +8,10 @@
 
 - **页面路径**：`/rnd/qoder-usage`
 - **权限编码**：
-  - 菜单：`MENU:RND:MANAGE:QODER_USAGE_M`
+  - 菜单：`M:RND:QODER_USAGE`
+  - 独占：`M:RND:QODER_USAGE_M`
 - **导航方式**：Push（首页工作台图标进入）
-- **页面类型**：看板页
+- **页面类型**：`dashboard`
 - **页面元素与 Web 端保持一致**（区块集合同 web-ui.md，移动端仅做布局适配）：
   - 顶部导航栏：标题「用量分析」+ 左侧返回按钮
   - 公共筛选（驱动全部视图）：日期预设选择器（今日 / 昨日 / 前 7 天 / 近 30 天 / 自定义，默认「前 7 天」）+ 成员多选（默认「全部成员」）+ 查询（主色）/ 重置按钮；筛选元素与 Web 对齐，日期控件为预设形态（约束见 business-rule.md §1）
@@ -18,7 +19,7 @@
   - 日 Credits 消耗堆叠柱形图卡片：标题「日 Credits 消耗趋势」+ 各模型分类图例（换行排列）；每日一根堆叠柱按模型分段堆叠（分类归并与配色规则见 business-rule.md §6），Y 轴 0-1000 刻度，X 轴每日日期
   - Credits 用量透视表卡片：标题「Credits 用量透视表」+ hint「日期 × 成员 · Credits」；横向滚动表格、首列冻结，列 = 日期 | 成员列（排序规则见 business-rule.md §3）| 合计；每日期一行 + 合计行
   - 模型用量透视表卡片：标题「模型用量透视表」+ hint「成员 × 模型等级 · Credits」；横向滚动表格，首列成员冻结，列 = 成员 | 模型等级列（排序与空值规则见 business-rule.md §4）| 合计；每成员一行 + 合计行；数值两位小数
-- **布局引用**：参见原型 `assets/app/qoder-usage-analysis.html`（区块顺序：导航栏 → 筛选 → 统计卡片 → 图表与透视表卡片）
+- **布局引用**：参见原型 `assets/app/qoder-usage-analysis.html`（页面类型 `dashboard`：整页范例 busyming-skills-design/mobile/templates/dashboard.html，DOM 依据 skeletons/app/dashboard-mobile.tsx.tpl；区块顺序：导航栏 → 筛选 → 统计卡片 → 图表与透视表卡片）
 
 #### 导航关系
 
@@ -38,5 +39,5 @@
 #### 三态
 
 - 加载态：品牌 Loading 动效（内嵌）
-- 空态：筛选范围内无事件 → 空结果页「当日暂无数据」
+- 空态：筛选范围内无事件 → 图表与表格区「暂无用量数据」（文案口径见 business-rule.md §7）
 - 错误态：错误结果页 + 重试按钮
