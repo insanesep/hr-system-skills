@@ -1,550 +1,622 @@
-<!doctype html>
-<!--
-  故障报告 · 故障列表页（Web 端原型）
-  ================================================================
-  规格真源：../../references/web-ui.md §故障列表
-  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
-            拓扑 = .tpl-page > [筛选 .tpl-panel] > .tpl-kpi-grid > [表格 .tpl-panel]
-            表格 panel 节奏 = .tpl-toolbar → 内容 → .tpl-pagination
-  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>故障报告 · 故障列表</title>
-<style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
-   ========================================================================== */
-:root{
-  /* palette */
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  /* semantic */
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
-  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
-  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
-  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
-  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
-  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
-  /* spacing */
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
-  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
-  /* radius */
-  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  /* shadow */
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
-  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  /* typography */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
-  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
-  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index */
-  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
-}
-
-/* ==========================================================================
-   基础版式
-   ========================================================================== */
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
-.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
-.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
-.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
-.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
-.web-nav__spacer{flex:1}
-
-.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
-  display:flex;flex-direction:column;gap:var(--ac-space-4)}
-
-/* ===== 筛选区 ===== */
-.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
-.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
-.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.tpl-filter__control{flex:1;min-width:0;position:relative}
-.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
-
-/* ===== 控件 ===== */
-.ac-input__inner{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-input__inner::placeholder{color:var(--ac-color-text-3)}
-.ac-input__inner:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-.ac-textarea{width:100%;min-height:72px;padding:var(--ac-space-2) var(--ac-space-3);
-  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);resize:vertical}
-.ac-textarea::placeholder{color:var(--ac-color-text-3)}
-.ac-textarea:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-.ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
-  padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm)}
-.ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
-  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
-  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-select__trigger:hover{background:var(--ac-fill-3)}
-.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-select__value.is-placeholder{color:var(--ac-color-text-3)}
-.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-
-/* ===== 按钮 ===== */
-.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
-  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
-  background:var(--ac-bg-1);color:var(--ac-color-text-1);
-  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-btn:hover{background:var(--ac-fill-1)}
-.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
-.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
-  color:var(--ac-primary-6)}
-.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
-.ac-btn--text.is-plain{color:var(--ac-color-text-2)}
-
-/* ===== KPI 统计卡 ===== */
-.tpl-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--ac-space-4)}
-.tpl-kpi{background:var(--ac-bg-1);border:1px solid var(--ac-border-1);
-  border-radius:var(--ac-radius-sm);padding:var(--ac-space-4) var(--ac-space-5);
-  display:flex;flex-direction:column;gap:var(--ac-space-2)}
-.tpl-kpi__head{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-kpi__dot{width:6px;height:6px;border-radius:var(--ac-radius-full);background:var(--ac-color-text-3)}
-.tpl-kpi__dot.is-primary{background:var(--ac-palette-blue-6)}
-.tpl-kpi__dot.is-success{background:var(--ac-color-success)}
-.tpl-kpi__dot.is-warning{background:var(--ac-color-warning)}
-.tpl-kpi__label{font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.tpl-kpi__hint{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);cursor:help}
-.tpl-kpi__value-row{display:flex;align-items:baseline;gap:var(--ac-space-1)}
-.tpl-kpi__value{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-5xl);
-  font-weight:var(--ac-fw-semibold);line-height:var(--ac-lh-tight);color:var(--ac-color-text-1)}
-.tpl-kpi.is-warning .tpl-kpi__value{color:var(--ac-color-warning-7)}
-.tpl-kpi__suffix{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.tpl-kpi__foot{min-height:20px;display:flex;align-items:center;gap:var(--ac-space-1);
-  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== 工具栏 ===== */
-.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
-.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
-.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
-.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== 标签 ===== */
-.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
-/* 定级：P1 红 / P2 橙 / P3 蓝 / P4 灰 */
-.ac-tag.is-p1{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
-.ac-tag.is-p2{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
-.ac-tag.is-p3{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
-.ac-tag.is-p4{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
-/* 状态：处理中 蓝 / 待复盘 橙 / 复盘中 紫 / 已闭环 绿 */
-.ac-tag.is-processing{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
-.ac-tag.is-pending{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
-.ac-tag.is-reviewing{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
-.ac-tag.is-closed{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
-/* 逾期标记 */
-.ac-tag.is-overdue{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6);
-  font-weight:var(--ac-fw-medium)}
-
-/* ===== 故障表格 ===== */
-.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
-.tpl-table{width:100%;min-width:1160px;border-collapse:separate;border-spacing:0;
-  font-size:var(--ac-fs-md)}
-.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
-  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
-  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
-  border-bottom:1px solid var(--ac-border-2)}
-.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
-.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
-.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
-  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
-.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
-.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
-.cell-muted{color:var(--ac-color-text-3)}
-.cell-title{display:inline-flex;align-items:center;gap:var(--ac-space-2);max-width:320px}
-.cell-title__text{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3)}
-tr.is-overdue td{background:var(--ac-color-danger-1)}
-tr.is-overdue:hover td{background:var(--ac-color-danger-1)}
-
-/* ===== 分页 ===== */
-.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
-  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-
-/* ===== 弹窗（故障登记 / 编辑） ===== */
-.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);
-  z-index:var(--ac-z-modal);align-items:center;justify-content:center}
-.ac-modal-mask.is-open{display:flex}
-.ac-modal{width:560px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  box-shadow:var(--ac-shadow-3)}
-.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
-  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
-.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold)}
-.ac-modal__close{border:none;background:transparent;font-size:var(--ac-fs-lg);
-  color:var(--ac-color-text-3);cursor:pointer}
-.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4);
-  max-height:70vh;overflow:auto}
-.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
-  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
-.ac-form-item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
-.ac-form-item__label{flex-shrink:0;width:76px;text-align:right;line-height:32px;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.ac-form-item__label .req{color:var(--ac-color-danger)}
-.ac-form-item__control{flex:1;min-width:0}
-.ac-form-item__tip{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.ac-radios{display:flex;gap:var(--ac-space-4);line-height:32px;flex-wrap:wrap}
-.ac-radios label{display:inline-flex;align-items:center;gap:var(--ac-space-1);cursor:pointer}
-
-/* ===== toast ===== */
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-fast);z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
-
-@media (max-width:1280px){
-  .tpl-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>故障列表 · 故障报告 · 鸣鸣很忙</title>
+<!--
+  故障报告 · 故障列表页（Web 原型）
+  页面描述真源：../../references/web-ui.md#故障列表 ｜ 页面类型 order-list
+  整页范例：busyming-skills-design/web/templates/order-list.html ｜ DOM 依据：skeletons/web/list-page.vue.tpl
+  区块：筛选 panel（状态 / 定级 / 发生日期 / 负责人 / 关键词 + 查询 / 重置）→ KPI 区 ×4（处理中 / 待复盘 / 逾期未复盘 / 本月新增）
+       → 表格 panel（故障标题 / 定级 / 状态 / 负责人 / 发生 / 恢复 / 改进措施进度 / 操作）→ 分页；登记 / 编辑弹窗两态。
+  样式只引用 design-system.css，控件取 busyming-skills-design/web/components 的组件 DOM；交互由页内脚本承接，
+  runtime.js 只负责图标注入。导航栏「原型页面」切换页面与空态演示。演示基准日 2026-10-18，数据为虚构样例。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
 <body>
-<div class="tpl-layout">
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb">研发 / 研发报告 / <b>故障报告</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
+      <div class="ac-dropdown-group-title">故障报告 · Web 2 页</div>
+      <a class="ac-dropdown-item is-active" role="menuitem" href="fault-list.html">故障列表</a>
+      <a class="ac-dropdown-item" role="menuitem" href="fault-detail.html">故障详情</a>
+      <div class="ac-dropdown-divider"></div>
+      <div class="ac-dropdown-group-title">演示状态</div>
+      <div class="ac-dropdown-item" role="menuitem" tabindex="0" id="demoEmpty">空态（无匹配故障）</div>
+      <div class="ac-dropdown-item" role="menuitem" tabindex="0" id="demoReset">恢复演示数据</div>
+    </div>
+  </div>
+  <span class="web-nav__crumb">刘操</span>
+</nav>
 
-  <!-- 顶部导航：页面身份由 Layout 承担 -->
-  <nav class="web-nav">
-    <span class="web-nav__logo">鸣鸣很忙</span>
-    <span class="web-nav__crumb">研发 / 研发报告 / <b>故障报告</b></span>
-    <span class="web-nav__spacer"></span>
-    <span class="web-nav__crumb">管理员</span>
-  </nav>
+<section class="tpl-page" id="listPage">
 
-  <section class="tpl-page">
+  <!-- ① 筛选 panel：状态 / 定级 / 发生日期范围 / 负责人 / 关键词 + 查询 / 重置 -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">状态</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" data-field="status">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value=""><span class="ac-select__option-label">全部</span></li>
+            <li class="ac-select__option" data-value="处理中"><span class="ac-select__option-label">处理中</span></li>
+            <li class="ac-select__option" data-value="待复盘"><span class="ac-select__option-label">待复盘</span></li>
+            <li class="ac-select__option" data-value="复盘中"><span class="ac-select__option-label">复盘中</span></li>
+            <li class="ac-select__option" data-value="已闭环"><span class="ac-select__option-label">已闭环</span></li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">定级</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" data-field="level">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value=""><span class="ac-select__option-label">全部</span></li>
+            <li class="ac-select__option" data-value="P1"><span class="ac-select__option-label">P1 重大</span></li>
+            <li class="ac-select__option" data-value="P2"><span class="ac-select__option-label">P2 严重</span></li>
+            <li class="ac-select__option" data-value="P3"><span class="ac-select__option-label">P3 一般</span></li>
+            <li class="ac-select__option" data-value="P4"><span class="ac-select__option-label">P4 轻微</span></li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="ac-form-item ac-form-item--wide">
+        <label class="ac-form-item__label">发生日期</label>
+        <span class="ac-input ac-range-picker" data-ac="AcDatePicker" data-type="range"><input class="ac-input__inner" id="fRange" value="2026-10-01 ~ 2026-10-18" readonly /></span>
+      </div>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">负责人</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" data-field="owner">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value=""><span class="ac-select__option-label">全部</span></li>
+            <li class="ac-select__option" data-value="刘操"><span class="ac-select__option-label">刘操</span></li>
+            <li class="ac-select__option" data-value="王五"><span class="ac-select__option-label">王五</span></li>
+            <li class="ac-select__option" data-value="赵六"><span class="ac-select__option-label">赵六</span></li>
+            <li class="ac-select__option" data-value="李四"><span class="ac-select__option-label">李四</span></li>
+            <li class="ac-select__option" data-value="张三"><span class="ac-select__option-label">张三</span></li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">关键词</label>
+        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fKeyword" placeholder="按故障标题模糊搜索" autocomplete="off" /></span>
+      </div>
+      <div class="tpl-filter__actions">
+        <button class="ac-btn ac-btn--primary" type="button" id="btnQuery"><span class="ac-btn__label">查询</span></button>
+        <button class="ac-btn" type="button" id="btnReset"><span class="ac-btn__label">重置</span></button>
+      </div>
+    </div>
+  </div>
 
-    <!-- ① 筛选 panel -->
-    <div class="tpl-panel">
-      <form class="tpl-filter ac-form" onsubmit="return false">
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">状态</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部（处理中 / 待复盘 / 复盘中 / 已闭环）</span>
-              <span class="ac-select__arrow">▾</span>
+  <!-- ② KPI 区（筛选后 / 表格前） -->
+  <div class="tpl-kpi-grid" id="kpiGrid">
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">处理中</span><span class="tpl-kpi__hint" title="已登记、尚未标记恢复的故障单数">?</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiDoing">1</span><span class="tpl-kpi__unit">项</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">含 P1 1 项，处置推进中</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">待复盘</span><span class="tpl-kpi__hint" title="已恢复、尚未提交复盘的故障单数">?</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiTodo">1</span><span class="tpl-kpi__unit">项</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">其中 1 项已逾期</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">逾期未复盘</span><span class="tpl-kpi__hint" title="P1 / P2 故障恢复超 3 个工作日仍未完成复盘">?</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiOverdue">1</span><span class="tpl-kpi__unit">项</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">P2 · 恢复已超 3 个工作日</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">本月新增</span><span class="tpl-kpi__hint" title="当前自然月新登记的故障单数">?</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiMonth">5</span><span class="tpl-kpi__unit">项</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">2026-10 自然月登记</span></div>
+    </div>
+  </div>
+
+  <!-- ③ 表格 panel -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">故障列表</span><span class="u-sub">P1 / P2 恢复后 3 个工作日内须完成复盘；故障单不允许删除</span></div>
+      <div class="tpl-toolbar__right">
+        <button class="ac-btn ac-btn--primary" type="button" id="btnCreate"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span><span class="ac-btn__label">故障登记</span></button>
+      </div>
+    </div>
+    <div class="ac-table-wrap">
+      <table class="ac-table" id="listTable">
+        <thead>
+          <tr>
+            <th>故障标题</th>
+            <th>定级</th>
+            <th>状态</th>
+            <th>负责人</th>
+            <th>发生时间</th>
+            <th>恢复时间</th>
+            <th>改进措施</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="listTbody"></tbody>
+      </table>
+      <div class="ac-table__loading" aria-live="polite" id="tableLoading" hidden><span class="ac-table__spinner" aria-label="加载中"></span></div>
+    </div>
+    <div class="tpl-pagination">
+      <span class="tpl-pagination__info" id="pageInfo">共 5 条 · 第 1 / 1 页</span>
+      <div class="tpl-pagination__pages">
+        <a class="tpl-pagination__page">‹</a>
+        <a class="tpl-pagination__page is-active">1</a>
+        <a class="tpl-pagination__page">›</a>
+      </div>
+      <span class="tpl-pagination__size">20 条/页 <span class="ac-select__arrow"><span class="ac-icon" data-ac="AcIcon" data-name="down"></span></span></span>
+    </div>
+  </div>
+</section>
+
+<!-- 故障登记 / 编辑弹窗（登记态「故障登记」，编辑态「编辑故障」并预填） -->
+<div class="ac-modal" data-ac="AcModal" id="faultModal" hidden>
+  <div class="ac-modal__mask" data-close="faultModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="640">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="faultModalTitle">故障登记</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="faultModal">×</button></div>
+      <div class="ac-modal__body">
+        <div class="ac-form ac-form--vertical" data-ac="AcForm">
+          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem" id="fiTitle">
+            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>标题</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-input" data-ac="AcInput" data-size="medium"><input class="ac-input__inner" data-field="title" maxlength="50" placeholder="简要描述故障现象，不超过 50 字" /><span class="ac-input__suffix" data-count="title">0/50</span></div>
+              </div>
+              <div class="ac-form-item__help" id="helpTitle"></div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem" id="fiPhen">
+            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>现象描述</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="phen" rows="3" placeholder="故障表现、报错信息、受影响的功能链路"></textarea></div>
+              </div>
+              <div class="ac-form-item__help" id="helpPhen"></div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
+            <label class="ac-form-item__label">影响范围</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="scope" rows="2" placeholder="受影响的业务 / 门店 / 用户范围（可空）"></textarea></div>
+              </div>
+              <div class="ac-form-item__help"></div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem" id="fiLevel">
+            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>定级</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-radio-group" role="radiogroup" data-ac="AcRadioGroup" id="levelGroup">
+                  <span class="ac-radio ac-radio--dot" role="radio" tabindex="0" aria-checked="false" data-ac="AcRadio" data-level="P1" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P1 重大</span></span>
+                  <span class="ac-radio ac-radio--dot" role="radio" tabindex="0" aria-checked="false" data-ac="AcRadio" data-level="P2" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P2 严重</span></span>
+                  <span class="ac-radio ac-radio--dot is-checked" role="radio" tabindex="0" aria-checked="true" data-ac="AcRadio" data-level="P3" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P3 一般</span></span>
+                  <span class="ac-radio ac-radio--dot" role="radio" tabindex="0" aria-checked="false" data-ac="AcRadio" data-level="P4" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P4 轻微</span></span>
+                </div>
+              </div>
+              <div class="ac-form-item__help">P1 核心链路不可用或资损；P2 主要功能受损；P3 局部影响；P4 无实质影响但需复盘</div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem" id="fiOccur">
+            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>发生时间</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix"><span class="ac-icon" data-ac="AcIcon" data-name="calendar" data-size="sm"></span></span><input class="ac-input__inner mono" data-field="occur" placeholder="yyyy-MM-dd HH:mm" /></div>
+              </div>
+              <div class="ac-form-item__help" id="helpOccur">DateTimePicker，不可晚于当前时间</div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem" id="fiFound">
+            <label class="ac-form-item__label">发现时间</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix"><span class="ac-icon" data-ac="AcIcon" data-name="calendar" data-size="sm"></span></span><input class="ac-input__inner mono" data-field="found" placeholder="可空，不早于发生时间" /></div>
+              </div>
+              <div class="ac-form-item__help" id="helpFound"></div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
+            <label class="ac-form-item__label">负责人</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="人员选择，可空" data-field="mOwner">
+                  <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">人员选择，可空</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+                  <div class="ac-select__popup" hidden><ul class="ac-select__list">
+                    <li class="ac-select__option" data-value=""><span class="ac-select__option-label">暂不指定</span></li>
+                    <li class="ac-select__option" data-value="刘操"><span class="ac-select__option-label">刘操</span></li>
+                    <li class="ac-select__option" data-value="王五"><span class="ac-select__option-label">王五</span></li>
+                    <li class="ac-select__option" data-value="赵六"><span class="ac-select__option-label">赵六</span></li>
+                    <li class="ac-select__option" data-value="李四"><span class="ac-select__option-label">李四</span></li>
+                    <li class="ac-select__option" data-value="张三"><span class="ac-select__option-label">张三</span></li>
+                  </ul></div>
+                </div>
+              </div>
+              <div class="ac-form-item__help"></div>
+            </div>
+          </div>
+          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
+            <label class="ac-form-item__label">关联项目</label>
+            <div class="ac-form-item__wrapper">
+              <div class="ac-form-item__control">
+                <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="单选，可空" data-field="mProject">
+                  <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">单选，可空</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+                  <div class="ac-select__popup" hidden><ul class="ac-select__list">
+                    <li class="ac-select__option" data-value=""><span class="ac-select__option-label">不关联</span></li>
+                    <li class="ac-select__option" data-value="主站改版"><span class="ac-select__option-label">主站改版</span></li>
+                    <li class="ac-select__option" data-value="门店系统"><span class="ac-select__option-label">门店系统</span></li>
+                    <li class="ac-select__option" data-value="供应链中台"><span class="ac-select__option-label">供应链中台</span></li>
+                  </ul></div>
+                </div>
+              </div>
+              <div class="ac-form-item__help"></div>
             </div>
           </div>
         </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">定级</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部（P1 / P2 / P3 / P4）</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
-          </div>
-        </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">发生日期</span>
-          <div class="tpl-filter__control">
-            <div class="ac-range">
-              <input class="ac-input__inner" value="2026-10-01" aria-label="开始日期" />
-              <span class="ac-range__sep">至</span>
-              <input class="ac-input__inner" value="2026-10-16" aria-label="结束日期" />
-            </div>
-          </div>
-        </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">负责人</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
-          </div>
-        </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">关键词</span>
-          <div class="tpl-filter__control">
-            <input class="ac-input__inner" placeholder="按故障标题模糊搜索" />
-          </div>
-        </div>
-        <div class="tpl-filter__actions">
-          <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按当前条件查询')">查询</button>
-          <button type="button" class="ac-btn" onclick="acToast('已恢复默认筛选')">重置</button>
-        </div>
-      </form>
-    </div>
-
-    <!-- ② KPI 统计卡区 -->
-    <div class="tpl-kpi-grid">
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-primary"></span>
-          <span class="tpl-kpi__label">处理中</span>
-          <span class="tpl-kpi__hint" title="已登记、尚未标记恢复的故障单数">?</span>
-        </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">2</span><span class="tpl-kpi__suffix">项</span></div>
-        <div class="tpl-kpi__foot">含 P1 1 项，处置推进中</div>
       </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot"></span>
-          <span class="tpl-kpi__label">待复盘</span>
-          <span class="tpl-kpi__hint" title="已恢复、尚未提交复盘的故障单数">?</span>
-        </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">1</span><span class="tpl-kpi__suffix">项</span></div>
-        <div class="tpl-kpi__foot">其中 1 项已逾期</div>
+      <div class="ac-modal__footer">
+        <button class="ac-btn" type="button" data-close="faultModal"><span class="ac-btn__label">取消</span></button>
+        <button class="ac-btn ac-btn--primary" type="button" id="faultModalOk"><span class="ac-btn__label">确认登记</span></button>
       </div>
-      <div class="tpl-kpi is-warning">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-warning"></span>
-          <span class="tpl-kpi__label">逾期未复盘</span>
-          <span class="tpl-kpi__hint" title="P1 / P2 故障恢复超 3 个工作日仍未完成复盘">?</span>
-        </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">1</span><span class="tpl-kpi__suffix">项</span></div>
-        <div class="tpl-kpi__foot">P2 · 恢复已超 3 个工作日</div>
-      </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-success"></span>
-          <span class="tpl-kpi__label">本月新增</span>
-          <span class="tpl-kpi__hint" title="当前自然月新登记的故障单数">?</span>
-        </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">5</span><span class="tpl-kpi__suffix">项</span></div>
-        <div class="tpl-kpi__foot">2026-10 自然月登记</div>
-      </div>
-    </div>
-
-    <!-- ③ 表格 panel -->
-    <div class="tpl-panel">
-      <div class="tpl-toolbar">
-        <div class="tpl-toolbar__left">
-          <span class="tpl-toolbar__title">故障列表</span>
-          <span class="tpl-toolbar__meta">P1 / P2 恢复后 3 个工作日内须完成复盘；故障单不允许删除</span>
-        </div>
-        <div class="tpl-toolbar__right">
-          <button type="button" class="ac-btn ac-btn--primary" data-fault-open>+ 故障登记</button>
-        </div>
-      </div>
-
-      <div class="tpl-table-wrap">
-        <table class="tpl-table ac-table">
-          <thead>
-            <tr>
-              <th>故障标题</th>
-              <th>定级</th>
-              <th>状态</th>
-              <th>负责人</th>
-              <th>发生时间</th>
-              <th>恢复时间</th>
-              <th>改进措施</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="cell-title"><span class="cell-title__text" title="支付链路超时">支付链路超时</span></span></td>
-              <td><span class="ac-tag is-p1">P1</span></td>
-              <td><span class="ac-tag is-processing">处理中</span></td>
-              <td>刘操</td>
-              <td class="cell-mono">10-15 14:20</td>
-              <td class="cell-muted">—</td>
-              <td class="cell-muted">—</td>
-              <td><span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./fault-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" data-fault-open data-mode="edit">编辑</button>
-              </span></td>
-            </tr>
-            <tr class="is-overdue">
-              <td><span class="cell-title">
-                <span class="ac-tag is-overdue">逾期未复盘</span>
-                <span class="cell-title__text" title="库存报表口径错误">库存报表口径错误</span>
-              </span></td>
-              <td><span class="ac-tag is-p2">P2</span></td>
-              <td><span class="ac-tag is-pending">待复盘</span></td>
-              <td>王五</td>
-              <td class="cell-mono">10-08 09:15</td>
-              <td class="cell-mono">10-09 11:20</td>
-              <td class="cell-muted">—</td>
-              <td><span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./fault-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" data-fault-open data-mode="edit">编辑</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="cell-title"><span class="cell-title__text" title="排期页拖拽偶发失效">排期页拖拽偶发失效</span></span></td>
-              <td><span class="ac-tag is-p3">P3</span></td>
-              <td><span class="ac-tag is-reviewing">复盘中</span></td>
-              <td>赵六</td>
-              <td class="cell-mono">10-12 09:40</td>
-              <td class="cell-mono">10-12 11:30</td>
-              <td class="cell-mono">1/3</td>
-              <td><span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./fault-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" data-fault-open data-mode="edit">编辑</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="cell-title"><span class="cell-title__text" title="要货单导出乱码">要货单导出乱码</span></span></td>
-              <td><span class="ac-tag is-p3">P3</span></td>
-              <td><span class="ac-tag is-closed">已闭环</span></td>
-              <td>张三</td>
-              <td class="cell-mono">10-05 16:10</td>
-              <td class="cell-mono">10-05 17:02</td>
-              <td class="cell-mono">2/2</td>
-              <td><span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./fault-detail.html">查看</a>
-              </span></td>
-            </tr>
-          </tbody>
-        </table>
-      </div>
-
-      <div class="tpl-pagination">
-        <span>共 4 条</span>
-      </div>
-    </div>
-  </section>
-</div>
-
-<!-- 故障登记 / 编辑弹窗 -->
-<div class="ac-modal-mask" id="faultModal">
-  <div class="ac-modal">
-    <div class="ac-modal__head">
-      <span class="ac-modal__title" id="faultModalTitle">故障登记</span>
-      <button type="button" class="ac-btn ac-btn--text ac-modal__close" data-fault-close>✕</button>
-    </div>
-    <div class="ac-modal__body">
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>标题</span>
-        <div class="ac-form-item__control">
-          <input class="ac-input__inner" placeholder="简要描述故障现象，不超过 50 字" aria-label="故障标题" />
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>现象描述</span>
-        <div class="ac-form-item__control">
-          <textarea class="ac-textarea" placeholder="故障表现、报错信息、受影响的功能链路" aria-label="现象描述"></textarea>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label">影响范围</span>
-        <div class="ac-form-item__control">
-          <textarea class="ac-textarea" placeholder="受影响的业务 / 门店 / 用户范围（可空）" aria-label="影响范围"></textarea>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>定级</span>
-        <div class="ac-form-item__control">
-          <div class="ac-radios">
-            <label><input type="radio" name="level" /> P1 重大</label>
-            <label><input type="radio" name="level" /> P2 严重</label>
-            <label><input type="radio" name="level" checked /> P3 一般</label>
-            <label><input type="radio" name="level" /> P4 轻微</label>
-          </div>
-          <div class="ac-form-item__tip">P1 核心链路不可用或资损；P2 主要功能受损；P3 局部影响；P4 无实质影响但需复盘</div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>发生时间</span>
-        <div class="ac-form-item__control">
-          <input class="ac-input__inner" value="2026-10-16 09:30" aria-label="发生时间" />
-          <div class="ac-form-item__tip">DateTimePicker，不可晚于当前时间</div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label">发现时间</span>
-        <div class="ac-form-item__control">
-          <input class="ac-input__inner" placeholder="可空，不早于发生时间" aria-label="发现时间" />
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label">负责人</span>
-        <div class="ac-form-item__control">
-          <div class="ac-select__trigger">
-            <span class="ac-select__value is-placeholder">人员选择，可空</span>
-            <span class="ac-select__arrow">▾</span>
-          </div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label">关联项目</span>
-        <div class="ac-form-item__control">
-          <div class="ac-select__trigger">
-            <span class="ac-select__value is-placeholder">单选，可空</span>
-            <span class="ac-select__arrow">▾</span>
-          </div>
-        </div>
-      </div>
-    </div>
-    <div class="ac-modal__foot">
-      <button type="button" class="ac-btn" data-fault-close>取消</button>
-      <button type="button" class="ac-btn ac-btn--primary" id="faultModalSubmit">确认登记</button>
     </div>
   </div>
 </div>
 
-<div class="ac-toast" id="acToast"></div>
+<!-- 脏数据离开确认 -->
+<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
+  <div class="ac-modal__mask"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="440">
+      <div class="ac-modal__header"><div class="ac-modal__title">放弃修改</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="confirmCloseBtn">×</button></div>
+      <div class="ac-modal__body ac-modal__body--semantic"><span class="ac-modal__sem-icon ac-modal__sem-icon--warning">!</span><div>有未保存的修改，确认放弃？</div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" id="confirmCancelBtn"><span class="ac-btn__label">继续编辑</span></button><button class="ac-btn ac-btn--danger" type="button" id="confirmOkBtn"><span class="ac-btn__label">放弃修改</span></button></div>
+    </div>
+  </div>
+</div>
 
+<!-- 全局提示宿主 -->
+<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
+
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
 <script>
-(function () {
-  /* ── 故障登记 / 编辑弹窗 ── */
-  var modal = document.getElementById('faultModal');
-  var modalTitle = document.getElementById('faultModalTitle');
-  var modalSubmit = document.getElementById('faultModalSubmit');
-  var isEdit = false;
-  document.querySelectorAll('[data-fault-open]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      isEdit = btn.getAttribute('data-mode') === 'edit';
-      modalTitle.textContent = isEdit ? '编辑故障' : '故障登记';
-      modalSubmit.textContent = isEdit ? '保存' : '确认登记';
-      modal.classList.add('is-open');
-    });
-  });
-  document.querySelectorAll('[data-fault-close]').forEach(function (btn) {
-    btn.addEventListener('click', function () { modal.classList.remove('is-open'); });
-  });
-  modalSubmit.addEventListener('click', function () {
-    modal.classList.remove('is-open');
-    acToast(isEdit ? '已保存修订' : '登记成功');
-  });
+/* ==================== 基础工具（页面自管交互：body 委托 + stopPropagation） ==================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms || 400));
 
-  /* ── toast ── */
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
+function toast(msg, type) {
+  const t = type || 'success';
+  const el = document.createElement('div');
+  el.className = 'ac-message__item is-' + t;
+  el.innerHTML = '<span class="ac-message__icon is-' + t + '">' + ({ success: '✓', error: '!', warning: '!', info: 'i' })[t] + '</span><span class="ac-message__text">' + esc(msg) + '</span>';
+  $('#toastList').appendChild(el);
+  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 240); }, 2600);
+}
+function busy(btn, on) {
+  if (!btn) return;
+  btn.disabled = !!on;
+  btn.classList.toggle('is-loading', !!on);
+  const sp = btn.querySelector('.ac-btn-spin');
+  if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+  if (!on && sp) sp.remove();
+}
+
+/* ---------- 浮层 ---------- */
+const OPEN = new Set();
+function showLayer(id) {
+  const el = $('#' + id);
+  clearTimeout(el.leaveTimer);
+  el.inert = false; el.hidden = false; void el.offsetWidth;
+  el.classList.add('is-open'); OPEN.add(id);
+}
+function hideLayer(id) {
+  const el = $('#' + id);
+  if (el.hidden || !el.classList.contains('is-open')) return;
+  OPEN.delete(id); el.classList.remove('is-open'); el.inert = true;
+  el.leaveTimer = setTimeout(() => { el.hidden = true; el.inert = false; }, Number(el.getAttribute('data-ds-leave')) || 320);
+}
+
+/* ---------- AcSelect 页面自管 ---------- */
+function closeSelect(root) { root.classList.remove('is-open'); const p = $('.ac-select__popup', root); if (p) p.hidden = true; }
+function closeAllSelects(keep) { $$('.ac-select.is-open').forEach((s) => { if (s !== keep) closeSelect(s); }); }
+function selectVal(root) { return root.getAttribute('data-value') || ''; }
+function setSelect(root, v) {
+  root.setAttribute('data-value', v);
+  const single = $('.ac-select__single', root);
+  const opt = $(`.ac-select__option[data-value="${CSS.escape(v)}"]`, root);
+  single.textContent = opt ? $('.ac-select__option-label', opt).textContent.trim() : (root.getAttribute('data-placeholder') || '请选择');
+  single.classList.toggle('is-placeholder', !opt || !v);
+  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', o.getAttribute('data-value') === v));
+}
+function resetSelect(root) {
+  root.removeAttribute('data-value');
+  const single = $('.ac-select__single', root);
+  single.textContent = root.getAttribute('data-placeholder') || '全部';
+  single.classList.add('is-placeholder');
+  $$('.ac-select__option', root).forEach((o) => o.classList.remove('is-selected'));
+}
+
+/* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
+const LEVEL_TAG = { P1: ['red', 'P1'], P2: ['orange', 'P2'], P3: ['blue', 'P3'], P4: ['gray', 'P4'] };
+const STATUS_TAG = { 处理中: 'blue', 待复盘: 'orange', 复盘中: 'purple', 已闭环: 'green' };
+const ROWS = [
+  { id: 'GZ-20261015-01', title: '支付链路超时', level: 'P1', status: '处理中', owner: '刘操', occur: '2026-10-15 14:20', found: '2026-10-15 14:31', recover: '', measures: null, measureOverdue: false, overdueReview: false,
+    phen: '门店收银支付请求大面积超时，回调延迟超过 30s', scope: '全部门店收银台', project: '主站改版' },
+  { id: 'GZ-20261008-02', title: '库存报表口径错误', level: 'P2', status: '待复盘', owner: '王五', occur: '2026-10-08 09:15', found: '2026-10-08 10:02', recover: '2026-10-09 11:20', measures: null, measureOverdue: false, overdueReview: true,
+    phen: '库存日报在库数量与库存快照不一致，差异集中在调拨在途部分', scope: '供应链报表组 / 采购', project: '供应链中台' },
+  { id: 'GZ-20261012-03', title: '排期页拖拽偶发失效', level: 'P3', status: '复盘中', owner: '赵六', occur: '2026-10-12 09:40', found: '2026-10-12 10:05', recover: '2026-10-12 11:30', measures: '1/3', measureOverdue: false, overdueReview: false,
+    phen: '排期页看板拖拽任务卡片时偶发无响应，控制台报 TypeError，刷新后恢复', scope: '使用排期页的研发与 PM', project: '主站改版' },
+  { id: 'GZ-20261006-04', title: '小票打印偶发乱码', level: 'P2', status: '复盘中', owner: '李四', occur: '2026-10-06 10:05', found: '2026-10-06 10:40', recover: '2026-10-06 15:40', measures: '0/2', measureOverdue: true, overdueReview: false,
+    phen: '部分门店商米打印机小票出现乱码，重打恢复正常', scope: '华东区域 12 家门店', project: '门店系统' },
+  { id: 'GZ-20261005-05', title: '要货单导出乱码', level: 'P3', status: '已闭环', owner: '张三', occur: '2026-10-05 16:10', found: '2026-10-05 16:22', recover: '2026-10-05 17:02', measures: '2/2', measureOverdue: false, overdueReview: false,
+    phen: '要货单导出 Excel 在 WPS 打开中文列头乱码', scope: '使用要货导出的门店', project: '' },
+];
+
+/* ==================== 列表渲染与筛选 ==================== */
+const Q = { status: '', level: '', owner: '', keyword: '', emptyDemo: false };
+
+function filtered() {
+  if (Q.emptyDemo) return [];
+  const kw = Q.keyword.trim();
+  return ROWS.filter((r) =>
+    (!Q.status || r.status === Q.status) &&
+    (!Q.level || r.level === Q.level) &&
+    (!Q.owner || r.owner === Q.owner) &&
+    (!kw || r.title.includes(kw)));
+}
+function rowHtml(r) {
+  const lv = LEVEL_TAG[r.level];
+  const titleCell = (r.overdueReview ? '<span class="ac-tag ac-tag--red">逾期未复盘</span> ' : '') + '<a class="ac-link" href="fault-detail.html">' + esc(r.title) + '</a>';
+  const measureCell = r.measures == null
+    ? '<span class="u-sub">—</span>'
+    : '<span class="mono">' + r.measures + '</span>' + (r.measureOverdue ? ' <span class="ac-tag ac-tag--red">含逾期</span>' : '');
+  const acts = '<div class="tpl-row-actions">'
+    + '<a class="ac-btn ac-btn--text" data-ac="AcButton" href="fault-detail.html"><span class="ac-btn__label">查看</span></a>'
+    + (r.status === '已闭环' ? '' : '<button class="ac-btn ac-btn--text" type="button" data-ac="AcButton" data-edit="' + r.id + '"><span class="ac-btn__label">编辑</span></button>')
+    + '</div>';
+  return '<tr>'
+    + '<td>' + titleCell + '</td>'
+    + '<td><span class="ac-tag ac-tag--' + lv[0] + '">' + lv[1] + '</span></td>'
+    + '<td><span class="ac-tag ac-tag--' + STATUS_TAG[r.status] + '">' + r.status + '</span></td>'
+    + '<td>' + esc(r.owner) + '</td>'
+    + '<td class="mono">' + esc(r.occur) + '</td>'
+    + '<td class="mono">' + (r.recover ? esc(r.recover) : '<span class="u-sub">—</span>') + '</td>'
+    + '<td>' + measureCell + '</td>'
+    + '<td>' + acts + '</td>'
+    + '</tr>';
+}
+function renderTable() {
+  const rows = filtered();
+  const tbody = $('#listTbody');
+  if (!rows.length) {
+    tbody.innerHTML = '<tr><td colspan="8"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">该条件下暂无故障</div><div class="ac-empty__desc">调整筛选条件后重新查询</div></div></td></tr>';
+  } else {
+    tbody.innerHTML = rows.map(rowHtml).join('');
+  }
+  $('#pageInfo').textContent = '共 ' + rows.length + ' 条 · 第 1 / 1 页';
+}
+
+/* ==================== 登记 / 编辑弹窗 ==================== */
+const FM = { mode: 'create', id: null, orig: '' };
+function formData() {
+  return {
+    title: $('[data-field="title"]').value,
+    phen: $('[data-field="phen"]').value,
+    scope: $('[data-field="scope"]').value,
+    level: ($('#levelGroup .ac-radio.is-checked') || {}).dataset ? $('#levelGroup .ac-radio.is-checked').dataset.level : '',
+    occur: $('[data-field="occur"]').value,
+    found: $('[data-field="found"]').value,
+    owner: selectVal($('[data-field="mOwner"]')),
+    project: selectVal($('[data-field="mProject"]')),
   };
-})();
+}
+function fillForm(d) {
+  $('[data-field="title"]').value = d.title || '';
+  $('[data-field="phen"]').value = d.phen || '';
+  $('[data-field="scope"]').value = d.scope || '';
+  $('[data-field="occur"]').value = d.occur || '';
+  $('[data-field="found"]').value = d.found || '';
+  $$('#levelGroup .ac-radio').forEach((r) => {
+    const on = r.dataset.level === (d.level || 'P3');
+    r.classList.toggle('is-checked', on);
+    r.setAttribute('aria-checked', String(on));
+  });
+  setSelect($('[data-field="mOwner"]'), d.owner || '');
+  setSelect($('[data-field="mProject"]'), d.project || '');
+  $('[data-count="title"]').textContent = String((d.title || '').length) + '/50';
+  ['helpTitle', 'helpPhen', 'helpOccur', 'helpFound'].forEach((id) => setFieldError(id, ''));
+}
+function setFieldError(helpId, msg) {
+  const help = $('#' + helpId);
+  if (!help) return;
+  const item = help.closest('.ac-form-item');
+  if (msg) {
+    help.dataset.ori = help.dataset.ori || help.textContent;
+    help.textContent = msg;
+    item.classList.add('is-error');
+  } else {
+    if (help.dataset.ori) help.textContent = help.dataset.ori;
+    if (helpId === 'helpOccur' && !help.dataset.ori) help.textContent = 'DateTimePicker，不可晚于当前时间';
+    item.classList.remove('is-error');
+  }
+}
+function openModal(mode, row) {
+  FM.mode = mode;
+  FM.id = row ? row.id : null;
+  $('#faultModalTitle').textContent = mode === 'edit' ? '编辑故障' : '故障登记';
+  $('#faultModalOk').querySelector('.ac-btn__label').textContent = mode === 'edit' ? '保存' : '确认登记';
+  fillForm(mode === 'edit' && row ? row : { level: 'P3' });
+  FM.orig = JSON.stringify(formData());
+  showLayer('faultModal');
+  setTimeout(() => { const el = $('[data-field="title"]'); if (el) el.focus(); }, 60);
+}
+const fmDirty = () => JSON.stringify(formData()) !== FM.orig;
+
+async function requestCloseModal() {
+  if (fmDirty()) { showLayer('confirmModal'); return; }
+  hideLayer('faultModal');
+}
+function validate() {
+  const d = formData();
+  let firstBad = null;
+  const bad = (helpId, msg, anchor) => { setFieldError(helpId, msg); if (!firstBad) firstBad = anchor; };
+  if (!d.title.trim()) bad('helpTitle', '请输入故障标题（不超过 50 字）', 'fiTitle');
+  if (!d.phen.trim()) bad('helpPhen', '请填写现象描述', 'fiPhen');
+  if (!d.occur.trim()) bad('helpOccur', '请选择发生时间', 'fiOccur');
+  else if (d.occur.trim() > '2026-10-18 23:59') bad('helpOccur', '发生时间不可晚于当前时间', 'fiOccur');
+  if (d.found.trim() && d.occur.trim() && d.found.trim() < d.occur.trim()) bad('helpFound', '发现时间不可早于发生时间', 'fiFound');
+  if (firstBad) { $('#' + firstBad).scrollIntoView({ block: 'center', behavior: 'smooth' }); }
+  return !firstBad;
+}
+async function submitModal(el) {
+  if (!validate()) { toast('必填项缺失或时间校验未通过，请检查标红字段', 'error'); return; }
+  busy(el, true);
+  await wait();
+  busy(el, false);
+  hideLayer('faultModal');
+  toast(FM.mode === 'edit' ? '已保存修订' : '登记成功');
+  renderTable();
+}
+
+/* ==================== 事件委托 ==================== */
+const HANDLERS = {};
+const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
+['click', 'input', 'keydown', 'mousedown'].forEach((type) => {
+  document.body.addEventListener(type, (e) => {
+    const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
+    for (const [sel, fn] of HANDLERS[type] || []) {
+      const el = sel ? t && t.closest(sel) : t;
+      if (el && fn(e, el) === true) break;
+    }
+    e.stopPropagation();
+  });
+});
+
+on('click', '.ac-select .ac-select__trigger', (e, el) => {
+  const root = el.closest('.ac-select');
+  if (root.classList.contains('is-disabled')) return true;
+  const willOpen = !root.classList.contains('is-open');
+  closeAllSelects(root);
+  root.classList.toggle('is-open', willOpen);
+  $('.ac-select__popup', root).hidden = !willOpen;
+  return true;
+});
+on('click', '.ac-select .ac-select__option', (e, el) => {
+  const root = el.closest('.ac-select');
+  setSelect(root, el.getAttribute('data-value'));
+  closeSelect(root);
+  return true;
+});
+on('mousedown', null, (e, t) => {
+  $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
+  const menu = $('#protoMenu');
+  if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
+  return false;
+});
+on('keydown', null, (e) => {
+  if (e.key !== 'Escape') return false;
+  if ($$('.ac-select.is-open').length) { closeAllSelects(); return true; }
+  if (OPEN.has('confirmModal')) { hideLayer('confirmModal'); return true; }
+  if (OPEN.has('faultModal')) { requestCloseModal(); return true; }
+  const menu = $('#protoMenu');
+  if (!menu.hidden) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); return true; }
+  return false;
+});
+on('keydown', '.ac-radio, .ac-select__trigger', (e, el) => {
+  if (e.key !== 'Enter' && e.key !== ' ') return false;
+  e.preventDefault(); el.click(); return true;
+});
+
+/* proto-bar */
+on('click', '#protoBtn', () => {
+  const menu = $('#protoMenu');
+  const willOpen = menu.hidden;
+  menu.hidden = !willOpen;
+  $('#protoDd').classList.toggle('is-open', willOpen);
+  return true;
+});
+on('click', '#demoEmpty', () => {
+  $('#protoMenu').hidden = true; $('#protoDd').classList.remove('is-open');
+  Q.emptyDemo = true; renderTable();
+  toast('演示：当前筛选下无匹配故障', 'info');
+  return true;
+});
+on('click', '#demoReset', () => {
+  $('#protoMenu').hidden = true; $('#protoDd').classList.remove('is-open');
+  Q.emptyDemo = false; Q.status = ''; Q.level = ''; Q.owner = ''; Q.keyword = '';
+  ['status', 'level', 'owner'].forEach((f) => resetSelect($('[data-field="' + f + '"]')));
+  $('#fKeyword').value = '';
+  renderTable();
+  toast('已恢复演示数据', 'info');
+  return true;
+});
+
+/* 筛选与查询 */
+async function doQuery(el) {
+  Q.status = selectVal($('[data-field="status"]'));
+  Q.level = selectVal($('[data-field="level"]'));
+  Q.owner = selectVal($('[data-field="owner"]'));
+  Q.keyword = $('#fKeyword').value;
+  Q.emptyDemo = false;
+  busy(el, true);
+  $('#tableLoading').hidden = false;
+  await wait(360);
+  busy(el, false);
+  $('#tableLoading').hidden = true;
+  renderTable();
+  toast('已按当前条件查询');
+}
+on('click', '#btnQuery', (e, el) => { doQuery(el); return true; });
+on('click', '#btnReset', () => {
+  ['status', 'level', 'owner'].forEach((f) => resetSelect($('[data-field="' + f + '"]')));
+  $('#fKeyword').value = '';
+  doQuery(null);
+  toast('已恢复默认筛选');
+  return true;
+});
+
+/* 登记 / 编辑 */
+on('click', '#btnCreate', () => { openModal('create'); return true; });
+on('click', '[data-edit]', (e, el) => {
+  const row = ROWS.find((r) => r.id === el.dataset.edit);
+  if (row) openModal('edit', row);
+  return true;
+});
+on('click', '[data-close="faultModal"]', () => { requestCloseModal(); return true; });
+on('click', '#faultModalOk', (e, el) => { submitModal(el); return true; });
+
+/* 脏数据确认 */
+on('click', '#confirmOkBtn', () => { hideLayer('confirmModal'); hideLayer('faultModal'); toast('已放弃修改', 'info'); return true; });
+on('click', '#confirmCancelBtn', () => { hideLayer('confirmModal'); return true; });
+on('click', '#confirmCloseBtn', () => { hideLayer('confirmModal'); return true; });
+
+/* 弹窗内表单交互 */
+on('click', '#levelGroup .ac-radio', (e, el) => {
+  $$('#levelGroup .ac-radio').forEach((r) => { r.classList.remove('is-checked'); r.setAttribute('aria-checked', 'false'); });
+  el.classList.add('is-checked'); el.setAttribute('aria-checked', 'true');
+  return true;
+});
+on('input', '[data-field="title"]', (e, el) => {
+  $('[data-count="title"]').textContent = el.value.length + '/50';
+  if (el.value.trim()) setFieldError('helpTitle', '');
+  return true;
+});
+on('input', '[data-field="phen"]', (e, el) => { if (el.value.trim()) setFieldError('helpPhen', ''); return true; });
+on('input', '[data-field="occur"]', (e, el) => { if (el.value.trim()) setFieldError('helpOccur', ''); return true; });
+on('input', '[data-field="found"]', (e, el) => { setFieldError('helpFound', ''); return true; });
+on('focusin', '.ac-input__inner, .ac-input__textarea', (e, el) => { const b = el.closest('.ac-input'); if (b) b.classList.add('is-focused'); return true; });
+on('focusout', '.ac-input__inner, .ac-input__textarea', (e, el) => { const b = el.closest('.ac-input'); if (b) b.classList.remove('is-focused'); return true; });
+
+renderTable();
 </script>
 </body>
 </html>
