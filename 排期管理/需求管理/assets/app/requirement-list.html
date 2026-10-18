@@ -1,557 +1,171 @@
-<!DOCTYPE html>
-<html lang="zh-CN">
+<!doctype html>
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=375, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-<title>我的需求列表 · 需求管理 App</title>
-<style>
-/* ══════════════════════════════════════════════════════════════════════
-   Design Tokens
-   真源：.agents/skills/page-blueprint/tokens/web.css + tokens/app.ts (light)
-   ⚠️ 仅本 :root 块允许出现原子字面值；业务样式一律通过 var(--ac-*) 消费
-   ══════════════════════════════════════════════════════════════════════ */
-:root{
-  /* ---------- palette ---------- */
-  --ac-palette-white:#FFFFFF;
-  --ac-palette-gray-1:#F7F8FA;
-  --ac-palette-gray-2:#F2F3F5;
-  --ac-palette-gray-3:#E5E6EB;
-  --ac-palette-gray-4:#C9CDD4;
-  --ac-palette-gray-6:#86909C;
-  --ac-palette-gray-8:#4E5969;
-  --ac-palette-gray-10:#1D2129;
-  --ac-palette-red-1:#FFECE8;
-  --ac-palette-red-6:#F53F3F;
-  --ac-palette-red-7:#CB272D;
-  --ac-palette-orange-1:#FFF7E8;
-  --ac-palette-orange-6:#FF7D00;
-  --ac-palette-orange-7:#D25F00;
-  --ac-palette-gold-1:#FFFCE8;
-  --ac-palette-gold-7:#CC9213;
-  --ac-palette-green-1:#E8FFEA;
-  --ac-palette-green-6:#00B42A;
-  --ac-palette-green-7:#009A29;
-  --ac-palette-blue-1:#E8F7FF;
-  --ac-palette-blue-6:#3491FA;
-  --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB;
-  --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF;
-  --ac-palette-purple-6:#722ED1;
-  /* ---------- brand ---------- */
-  --ac-brand-red:#E60013;
-  --ac-brand-red-active:#B30010;
-  /* ---------- semantic ---------- */
-  --ac-text-1:var(--ac-palette-gray-10);
-  --ac-text-2:var(--ac-palette-gray-8);
-  --ac-text-3:var(--ac-palette-gray-6);
-  --ac-text-4:var(--ac-palette-gray-4);
-  --ac-text-white:var(--ac-palette-white);
-  --ac-bg-1:var(--ac-palette-white);
-  --ac-bg-2:var(--ac-palette-gray-1);
-  --ac-bg-3:var(--ac-palette-gray-2);
-  --ac-fill-1:var(--ac-palette-gray-1);
-  --ac-fill-2:var(--ac-palette-gray-2);
-  --ac-fill-3:var(--ac-palette-gray-3);
-  --ac-border-1:var(--ac-palette-gray-2);
-  --ac-border-2:var(--ac-palette-gray-3);
-  --ac-primary-1:var(--ac-palette-red-1);
-  --ac-primary-6:var(--ac-palette-red-6);
-  --ac-primary-7:var(--ac-palette-red-7);
-  --ac-success-1:var(--ac-palette-green-1);
-  --ac-success-6:var(--ac-palette-green-6);
-  --ac-success-7:var(--ac-palette-green-7);
-  --ac-warning-1:var(--ac-palette-orange-1);
-  --ac-warning-6:var(--ac-palette-orange-6);
-  --ac-warning-7:var(--ac-palette-orange-7);
-  --ac-danger-1:var(--ac-palette-red-1);
-  --ac-danger-6:var(--ac-palette-red-6);
-  --ac-danger-7:var(--ac-palette-red-7);
-  --ac-info-1:var(--ac-palette-blue-1);
-  --ac-info-6:var(--ac-palette-blue-6);
-  --ac-info-7:var(--ac-palette-blue-7);
-  /* ---------- 业务线四色（与 Web 端映射一致：运营蓝 / 财务金 / 供应链青 / 数字化紫）---------- */
-  --ac-bizline-ops-bg:var(--ac-palette-blue-1);
-  --ac-bizline-ops-fg:var(--ac-palette-blue-7);
-  --ac-bizline-fin-bg:var(--ac-palette-gold-1);
-  --ac-bizline-fin-fg:var(--ac-palette-gold-7);
-  --ac-bizline-scm-bg:var(--ac-palette-cyan-1);
-  --ac-bizline-scm-fg:var(--ac-palette-cyan-7);
-  --ac-bizline-digital-bg:var(--ac-palette-purple-1);
-  --ac-bizline-digital-fg:var(--ac-palette-purple-6);
-  /* ---------- space（rem·1rem = 16px @375 视口）---------- */
-  --ac-space-1:.25rem;
-  --ac-space-2:.5rem;
-  --ac-space-3:.75rem;
-  --ac-space-4:1rem;
-  --ac-space-5:1.25rem;
-  --ac-space-6:1.5rem;
-  --ac-space-8:2rem;
-  --ac-space-10:2.5rem;
-  /* ---------- radius ---------- */
-  --ac-radius-sm:.25rem;
-  --ac-radius-md:.375rem;
-  --ac-radius-lg:.5rem;
-  --ac-radius-xl:.75rem;
-  --ac-radius-2xl:1rem;
-  --ac-radius-full:9999px;
-  /* ---------- shadow / overlay ---------- */
-  --ac-shadow-1:0 .0625rem .125rem 0 rgba(0,0,0,.04);
-  --ac-shadow-2:0 .125rem .5rem 0 rgba(0,0,0,.08);
-  --ac-shadow-3:0 .25rem 1rem 0 rgba(0,0,0,.10);
-  --ac-shadow-fab:0 .25rem 1rem 0 rgba(230,0,19,.30);
-  --ac-mask-bg:rgba(29,33,41,.60);
-  --ac-toast-bg:rgba(29,33,41,.92);
-  --ac-ripple:rgba(255,255,255,.12);
-  /* ---------- typography ---------- */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:.75rem;
-  --ac-fs-sm:.8125rem;
-  --ac-fs-md:.875rem;
-  --ac-fs-lg:.9375rem;
-  --ac-fs-xl:1rem;
-  --ac-fs-2xl:1.125rem;
-  --ac-fs-3xl:1.25rem;
-  --ac-fw-regular:400;
-  --ac-fw-medium:500;
-  --ac-fw-semibold:600;
-  --ac-fw-bold:700;
-  --ac-lh-tight:1.2;
-  --ac-lh-normal:1.5;
-  /* ---------- motion / z-index / hit ---------- */
-  --ac-duration-fast:.15s;
-  --ac-duration-base:.25s;
-  --ac-easing-standard:cubic-bezier(.4,0,.2,1);
-  --ac-z-header:200;
-  --ac-z-fab:300;
-  --ac-z-sheet:600;
-  --ac-z-toast:800;
-  --ac-hit-touch:2.75rem;
-  /* ---------- layout ---------- */
-  --ac-device-width:23.4375rem;      /* 375px */
-  --ac-h-protobar:2rem;
-  --ac-h-navbar:2.75rem;
-  --ac-h-tabs:2.75rem;
-  --ac-safe-bottom:env(safe-area-inset-bottom,0px);
-}
-
-/* 375 设计稿等比：视口 < 375px 时 root 字号随 vw 缩放，其余锁定 16px */
-html{font-size:4.2667vw}
-@media (min-width:23.4375rem){html{font-size:16px}}
-
-*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
-body{
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-1);
-  background:var(--ac-bg-3);line-height:var(--ac-lh-normal);
-  min-height:100vh;display:flex;justify-content:center
-}
-
-/* ══ Device Frame ══ */
-.ac-device{
-  width:100%;max-width:var(--ac-device-width);min-height:100vh;
-  background:var(--ac-bg-2);position:relative;box-shadow:var(--ac-shadow-3);
-  display:flex;flex-direction:column
-}
-
-/* ══ Proto Bar（原型互跳，非业务 UI）══ */
-.ac-proto-bar{
-  height:var(--ac-h-protobar);flex-shrink:0;background:var(--ac-text-1);
-  display:flex;align-items:center;gap:var(--ac-space-2);padding:0 var(--ac-space-3);
-  position:sticky;top:0;z-index:var(--ac-z-toast);overflow-x:auto;scrollbar-width:none
-}
-.ac-proto-bar::-webkit-scrollbar{display:none}
-.ac-proto-bar a,.ac-proto-bar button{
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-text-white);
-  background:var(--ac-ripple);border:0;border-radius:var(--ac-radius-full);
-  padding:.125rem var(--ac-space-2);text-decoration:none;white-space:nowrap;flex-shrink:0
-}
-.ac-proto-bar a.is-active{background:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
-
-/* ══ Navbar ══ */
-.ac-navbar{
-  height:var(--ac-h-navbar);flex-shrink:0;background:var(--ac-brand-red);color:var(--ac-text-white);
-  display:flex;align-items:center;padding:0 var(--ac-space-1);
-  position:sticky;top:var(--ac-h-protobar);z-index:var(--ac-z-header)
-}
-.ac-navbar-back{
-  width:var(--ac-hit-touch);height:var(--ac-hit-touch);
-  display:flex;align-items:center;justify-content:center;color:var(--ac-text-white);
-  background:transparent;border:0
-}
-.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-semibold)}
-.ac-navbar-action{
-  min-width:var(--ac-hit-touch);height:var(--ac-hit-touch);padding:0 var(--ac-space-2);
-  display:flex;align-items:center;justify-content:center;
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-lg);color:var(--ac-text-white);
-  background:transparent;border:0
-}
-.ac-navbar-action:active{opacity:.6}
-
-/* ══ Tabs（吸顶 · underline）══ */
-.ac-tabs{
-  height:var(--ac-h-tabs);flex-shrink:0;background:var(--ac-bg-1);display:flex;
-  position:sticky;top:calc(var(--ac-h-protobar) + var(--ac-h-navbar));z-index:var(--ac-z-header);
-  box-shadow:inset 0 -.0625rem 0 var(--ac-border-1)
-}
-.ac-tab{
-  flex:1;position:relative;display:flex;align-items:center;justify-content:center;
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);color:var(--ac-text-2);
-  background:transparent;border:0
-}
-.ac-tab.is-active{color:var(--ac-brand-red);font-weight:var(--ac-fw-semibold)}
-.ac-tab.is-active::after{
-  content:'';position:absolute;left:30%;right:30%;bottom:0;height:.125rem;
-  background:var(--ac-brand-red);border-radius:var(--ac-radius-full)
-}
-.ac-tab-badge{
-  position:absolute;top:.375rem;left:60%;min-width:1.125rem;height:1.125rem;padding:0 .25rem;
-  border-radius:var(--ac-radius-full);background:var(--ac-danger-6);color:var(--ac-text-white);
-  font-size:var(--ac-fs-xs);line-height:1.125rem;text-align:center;font-weight:var(--ac-fw-medium)
-}
-
-/* ══ Scroll Container ══ */
-.ac-scroll{
-  flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;
-  padding-bottom:calc(var(--ac-space-10) + var(--ac-safe-bottom))
-}
-
-/* ══ 下拉刷新提示 ══ */
-.ac-refresh{
-  height:2.25rem;display:flex;align-items:center;justify-content:center;gap:var(--ac-space-1);
-  font-size:var(--ac-fs-xs);color:var(--ac-text-3);background:transparent
-}
-.ac-refresh.is-loading{color:var(--ac-brand-red)}
-.ac-refresh .spin{width:.75rem;height:.75rem;display:none}
-.ac-refresh.is-loading .spin{display:block;animation:ac-rotate .8s linear infinite}
-.ac-refresh.is-loading .arrow{display:none}
-@keyframes ac-rotate{to{transform:rotate(360deg)}}
-
-/* ══ Card List ══ */
-.ac-list{padding:0 var(--ac-space-3)}
-.ac-card{
-  background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);padding:var(--ac-space-3);
-  margin-bottom:var(--ac-space-3);box-shadow:var(--ac-shadow-1);
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)
-}
-.ac-card:active{background:var(--ac-fill-1)}
-.ac-card-title{
-  font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-text-1);
-  line-height:var(--ac-lh-normal);
-  overflow:hidden;text-overflow:ellipsis;white-space:nowrap
-}
-.ac-card-tags{display:flex;flex-wrap:wrap;gap:var(--ac-space-1);margin-top:var(--ac-space-2)}
-.ac-card-meta{
-  display:flex;justify-content:space-between;align-items:center;gap:var(--ac-space-2);
-  margin-top:var(--ac-space-2);font-size:var(--ac-fs-xs);color:var(--ac-text-3)
-}
-.ac-card-meta .code{font-family:var(--ac-ff-mono)}
-.ac-card-extra{
-  margin-top:var(--ac-space-2);padding-top:var(--ac-space-2);
-  border-top:.0625rem dashed var(--ac-border-1);
-  display:flex;justify-content:space-between;align-items:center;
-  font-size:var(--ac-fs-xs);color:var(--ac-text-2)
-}
-.ac-card-extra .wait{color:var(--ac-warning-7)}
-
-/* ══ Pill / Tag ══ */
-.ac-pill,.ac-tag{
-  display:inline-flex;align-items:center;height:1.25rem;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);
-  font-weight:var(--ac-fw-medium);white-space:nowrap
-}
-.ac-pill--ops{background:var(--ac-bizline-ops-bg);color:var(--ac-bizline-ops-fg)}
-.ac-pill--fin{background:var(--ac-bizline-fin-bg);color:var(--ac-bizline-fin-fg)}
-.ac-pill--scm{background:var(--ac-bizline-scm-bg);color:var(--ac-bizline-scm-fg)}
-.ac-pill--digital{background:var(--ac-bizline-digital-bg);color:var(--ac-bizline-digital-fg)}
-.ac-tag--gray{background:var(--ac-fill-2);color:var(--ac-text-3)}
-.ac-tag--blue{background:var(--ac-info-1);color:var(--ac-info-7)}
-.ac-tag--orange{background:var(--ac-warning-1);color:var(--ac-warning-7)}
-.ac-tag--green{background:var(--ac-success-1);color:var(--ac-success-7)}
-.ac-tag--red{background:var(--ac-danger-1);color:var(--ac-danger-7)}
-
-/* ══ Skeleton（首屏 / Tab 切换）══ */
-.ac-skeleton{padding:0 var(--ac-space-3)}
-.ac-sk-card{
-  background:var(--ac-bg-1);border-radius:var(--ac-radius-xl);padding:var(--ac-space-3);
-  margin-bottom:var(--ac-space-3)
-}
-.ac-sk-line{
-  height:.875rem;border-radius:var(--ac-radius-sm);background:var(--ac-fill-2);
-  animation:ac-shimmer 1.5s ease-in-out infinite
-}
-.ac-sk-line + .ac-sk-line{margin-top:var(--ac-space-2)}
-@keyframes ac-shimmer{0%,100%{opacity:1}50%{opacity:.45}}
-
-/* ══ Load More ══ */
-.ac-loadmore{
-  padding:var(--ac-space-4) 0 var(--ac-space-2);text-align:center;
-  font-size:var(--ac-fs-xs);color:var(--ac-text-3)
-}
-.ac-loadmore button{
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-xs);color:var(--ac-info-7);
-  background:transparent;border:0
-}
-
-/* ══ Empty ══ */
-.ac-empty{padding:var(--ac-space-10) var(--ac-space-5);text-align:center}
-.ac-empty-title{margin-top:var(--ac-space-3);font-size:var(--ac-fs-md);color:var(--ac-text-3)}
-.ac-empty-btn{
-  margin-top:var(--ac-space-4);height:var(--ac-hit-touch);padding:0 var(--ac-space-6);
-  border-radius:var(--ac-radius-full);border:0;background:var(--ac-brand-red);
-  color:var(--ac-text-white);font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);
-  font-weight:var(--ac-fw-medium)
-}
-.ac-empty-btn:active{background:var(--ac-brand-red-active)}
-
-/* ══ FAB ══ */
-.ac-fab{
-  position:fixed;bottom:calc(var(--ac-space-6) + var(--ac-safe-bottom));
-  right:calc(50vw - var(--ac-device-width)/2 + var(--ac-space-4));
-  width:3.25rem;height:3.25rem;border-radius:var(--ac-radius-full);border:0;
-  background:var(--ac-brand-red);color:var(--ac-text-white);
-  display:flex;align-items:center;justify-content:center;
-  box-shadow:var(--ac-shadow-fab);z-index:var(--ac-z-fab)
-}
-.ac-fab:active{background:var(--ac-brand-red-active)}
-@media (max-width:23.4375rem){.ac-fab{right:var(--ac-space-4)}}
-
-/* ══ Toast ══ */
-.ac-toast{
-  position:fixed;top:5rem;left:50%;transform:translateX(-50%) translateY(-.75rem);
-  max-width:17.5rem;padding:var(--ac-space-2) var(--ac-space-4);
-  border-radius:var(--ac-radius-lg);background:var(--ac-toast-bg);color:var(--ac-text-white);
-  font-size:var(--ac-fs-md);text-align:center;z-index:var(--ac-z-toast);
-  opacity:0;pointer-events:none;transition:all var(--ac-duration-base) var(--ac-easing-standard)
-}
-.ac-toast.is-show{opacity:1;transform:translateX(-50%) translateY(0)}
-.ac-toast.is-success{background:var(--ac-success-6)}
-.ac-toast.is-error{background:var(--ac-danger-7)}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>需求管理 · 我的需求 · App 原型</title>
+<!--
+  需求管理 · 我的需求列表（App 员工端原型）
+  页面描述真源：../../references/app-ui.md#我的需求列表 ｜ 页面类型 list
+  整页范例：busyming-skills-design/mobile/templates/list.html ｜ DOM 依据：skeletons/app/list-page.tsx.tpl
+  结构：ac-nav-bar（返回 + 需求管理 + 提交）→ 顶部 Tab ×3（我提交的 / 待我审批·角标 / 已完成，吸顶）→ 卡片列表（整卡可点击）→ 加载更多
+  App 端能力边界：不提供产品线 / 提交来源筛选器与「外部提交」视角；草稿仅查看（编辑须到 Web 端）；外部单不进「我提交的」。
+  下拉刷新 / 上滑加载更多：手势在原型中以说明与「加载更多」按钮承载；每页 20 条。
+  proto-bar 与「三态演示」仅为原型页间互联与状态演示，不属于 App 真实 UI。
+  演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为「陈默」（产品经理）。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css" />
 </head>
 <body>
-
-<div class="ac-device">
-
-  <!-- Proto Bar：原型页面互跳 + 三态演示 -->
-  <nav class="ac-proto-bar">
-    <a class="is-active" href="requirement-list.html">需求列表</a>
-    <a href="requirement-detail.html">需求详情</a>
-    <a href="requirement-submit.html">提交需求</a>
-    <button type="button" id="demoEmpty">空态演示</button>
-  </nav>
-
-  <!-- Navbar -->
-  <header class="ac-navbar">
-    <button class="ac-navbar-back" type="button" onclick="acToast('返回工作台')" aria-label="返回">
-      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><polyline points="15 18 9 12 15 6"/></svg>
-    </button>
-    <h1 class="ac-navbar-title">需求管理</h1>
-    <button class="ac-navbar-action" type="button" onclick="location.href='requirement-submit.html'">提交</button>
-  </header>
-
-  <!-- Tabs：我提交的 / 待我审批（角标）/ 已完成 -->
-  <div class="ac-tabs" id="tabs" role="tablist">
-    <button class="ac-tab is-active" type="button" role="tab" data-tab="mine">我提交的</button>
-    <button class="ac-tab" type="button" role="tab" data-tab="todo">待我审批<span class="ac-tab-badge" id="tabBadge">5</span></button>
-    <button class="ac-tab" type="button" role="tab" data-tab="done">已完成</button>
-  </div>
-
-  <!-- Scroll Content -->
-  <div class="ac-scroll" id="scroll">
-    <!-- 下拉刷新提示区 -->
-    <div class="ac-refresh" id="refresh">
-      <svg class="arrow" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="19 12 12 19 5 12"/></svg>
-      <svg class="spin" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M21 12a9 9 0 1 1-6.2-8.56"/></svg>
-      <span class="txt">下拉刷新</span>
+<div class="app-phone">
+  <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
+  <div class="app-screen">
+    <header class="ac-nav-bar">
+      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="返回工作台"><span class="ac-icon" data-icon="back"></span></span>
+      <strong class="ac-nav-bar__title">需求管理</strong>
+      <span class="ac-nav-bar__side"><a class="ac-link" href="requirement-submit.html">提交</a></span>
+    </header>
+    <div class="app-screen__content app-screen__content--flush">
+      <div class="ac-tabs ac-tabs--underline" id="viewTabs">
+        <button class="ac-btn ac-tab" type="button" data-view="mine">我提交的</button>
+        <button class="ac-btn ac-tab" type="button" data-view="todo">待我审批<span class="ac-tab__badge">3</span></button>
+        <button class="ac-btn ac-tab" type="button" data-view="done">已完成</button>
+      </div>
+      <div class="app-stack" id="cardHost" style="padding:var(--ac-space-3)"></div>
+      <div class="ac-load-more" id="loadMore">加载更多</div>
     </div>
-
-    <!-- 卡片列表 / 骨架 / 空态 -->
-    <div id="body"></div>
   </div>
+</div>
 
-  <!-- FAB：新增需求 -->
-  <button class="ac-fab" type="button" onclick="location.href='requirement-submit.html'" aria-label="新增需求">
-    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
-  </button>
+<!-- 原型页间互联与三态演示（非 App 真实 UI） -->
+<nav class="proto-bar">
+  <b>我的需求</b> ·
+  <a class="ac-link" href="requirement-detail.html">需求详情</a> ·
+  <a class="ac-link" href="requirement-submit.html">需求提交</a> ·
+  <a class="ac-link" href="requirement-public-submit.html">H5 提交</a> ·
+  <a class="ac-link" href="requirement-public-result.html">H5 结果</a>
+  ｜三态演示：
+  <a class="ac-link" href="#" data-demo="normal" onclick="return false">正常</a> ·
+  <a class="ac-link" href="#" data-demo="skeleton" onclick="return false">骨架</a> ·
+  <a class="ac-link" href="#" data-demo="empty" onclick="return false">空态</a> ·
+  <a class="ac-link" href="#" data-demo="error" onclick="return false">错误</a>
+</nav>
 
-</div><!-- /ac-device -->
-
-<div class="ac-toast" id="toast"></div>
-
+<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
 <script>
-(function(){
-  'use strict';
+/* ==================== 基础工具 ==================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function toast(text, type) {
+  const layer = document.createElement('div');
+  layer.className = 'ac-toast-layer';
+  layer.innerHTML = `<div class="ac-toast" data-ac="AcToast" data-type="${type || 'success'}" role="status"><span class="ac-toast__text">${esc(text)}</span></div>`;
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2600);
+}
 
-  /* ── 枚举映射（真源：references/data-model.md、mobile-ui.md §全局约定）── */
-  var BIZ = {
-    OPS:     {label:'运营',   cls:'ac-pill--ops'},
-    FIN:     {label:'财务',   cls:'ac-pill--fin'},
-    SCM:     {label:'供应链', cls:'ac-pill--scm'},
-    DIGITAL: {label:'数字化', cls:'ac-pill--digital'}
+/* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
+/* 当前登录人：陈默（产品经理）。状态药丸：草稿/待关联=pending，审批中=processing，已关联=completed，已驳回=negative。
+   Tag 近似（mobile ac-tag 仅 5 色）：有点推荐=outline（洋红近似）、P2=outline（蓝近似）、业务线=primary/success/warning/outline 轮转近似。 */
+const ME = '陈默';
+const PILL = { DRAFT: ['pending', '草稿'], SUBMITTED: ['processing', '已提交'], BU_REVIEWING: ['processing', '业务线审批中'], IMPL_REVIEWING: ['processing', '实施确认中'], PM_REVIEWING: ['processing', '产品确认中'], PM_SUBMITTED: ['pending', '待关联排期'], LINKED: ['completed', '已关联排期'], REJECTED: ['negative', '已驳回'] };
+const PRI_TAG = { P0: ['danger', 'P0 紧急'], P1: ['warning', 'P1 高'], P2: ['outline', 'P2 中'], P3: ['', 'P3 低'] };
+const LINE_TAG = { 运营: 'primary', 财务: 'warning', 供应链: 'success', 数字化: 'outline' };
+const ROWS = [
+  { no: null, title: '门店夜间补货流程优化（草稿）', product: 'mm', line: '供应链', source: 'in', submitter: '陈默', status: 'DRAFT', priority: 'P2', time: null, view: ['mine'] },
+  { no: 'REQ-20261017-004', title: '会员积分兑换页面加载优化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'SUBMITTED', priority: 'P2', time: '2026-10-17 15:22', view: ['mine'] },
+  { no: 'REQ-20261016-009', title: '要货审批增加批量通过', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'BU_REVIEWING', priority: 'P1', time: '2026-10-16 09:12', view: ['mine'] },
+  { no: 'REQ-20261015-006', title: '门店报损流程线上化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'IMPL_REVIEWING', priority: 'P2', time: '2026-10-15 11:05', view: ['mine'] },
+  { no: 'REQ-20261014-002', title: '要货历史数据看板', product: 'mm', line: '数字化', source: 'in', submitter: '陈默', status: 'PM_SUBMITTED', priority: 'P2', time: '2026-10-14 14:47', view: ['mine'] },
+  { no: 'REQ-20261013-011', title: '要货单导出增加成本列', product: 'mm', line: '财务', source: 'in', submitter: '陈默', status: 'LINKED', priority: 'P3', time: '2026-10-13 10:18', view: ['mine', 'done'] },
+  { no: 'REQ-20261016-003', title: '要货单自动合并相同商品', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'REJECTED', priority: 'P3', time: '2026-10-16 10:41', view: ['mine', 'done'] },
+  { no: 'REQ-20261016-012', title: '门店要货单支持按周转天数智能建议补货量', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'PM_REVIEWING', priority: 'P1', time: '2026-10-16 08:30', view: ['todo'], wait: '已等待 2 天' },
+  { no: 'REQ-20261017-001', title: '要货提交偶发重复扣减库存', product: 'mm', line: '供应链', source: 'in', submitter: '张三', status: 'PM_REVIEWING', priority: 'P0', time: '2026-10-17 09:14', view: ['todo'], wait: '已等待 1 天' },
+  { no: 'REQ-20261016-014', title: '有点推荐小程序首页加载白屏', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'PM_REVIEWING', priority: 'P1', time: '2026-10-16 15:03', view: ['todo'], wait: '已等待 2 天' },
+  { no: 'REQ-20261010-003', title: '要货审批超时自动提醒', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'LINKED', priority: 'P1', time: '2026-10-10 09:26', view: ['done'] },
+];
+let view = 'mine';
+
+function productTag(r) { return r.product === 'mm' ? '<span class="ac-tag ac-tag--primary">鸣鸣很忙</span>' : '<span class="ac-tag ac-tag--outline">有点推荐</span>'; }
+function lineTag(r) { return r.line ? `<span class="ac-tag ac-tag--${LINE_TAG[r.line]}">${r.line}</span>` : ''; }
+function priTag(r) { const p = PRI_TAG[r.priority]; return `<span class="ac-tag${p[0] ? ' ac-tag--' + p[0] : ''}">${p[1]}</span>`; }
+function pill(r) {
+  const p = PILL[r.status];
+  const label = r.status === 'PM_SUBMITTED' && r.type === '缺陷修复' ? '待转黑灯工厂' : r.status === 'LINKED' && r.type === '缺陷修复' ? '已转黑灯工厂' : p[1];
+  return `<span class="ac-status ac-status--${p[0]}">${label}</span>`;
+}
+function cardHtml(r) {
+  const ext = r.source === 'out';
+  const row1 = `<div class="tpl-doc-card__head"><span class="tpl-doc-card__no">${ext ? '<span class="ac-tag ac-tag--warning">外部提交</span> ' : ''}${esc(r.title)}</span>${pill(r)}</div>`;
+  const row2 = `<div class="tpl-doc-card__body" style="display:none"></div>
+    <div class="tpl-doc-card__tags">${productTag(r)}${lineTag(r)}${priTag(r)}</div>`;
+  const row3 = `<div class="tpl-doc-card__foot"><span class="mono">${r.no || '未提交'}</span><span>${r.time ? esc(r.time) + ' 提交' : ''}</span></div>`;
+  const extra = view === 'todo' ? `<div class="tpl-doc-card__meta"><span>${esc(r.submitter)}${ext ? ` <span class="u-muted">${esc(r.dept)}</span>` : ''}</span><span class="u-muted">${esc(r.wait || '')}</span></div>` : '';
+  return `<div class="tpl-doc-card" role="button" tabindex="0" data-go="requirement-detail.html">${row1}${row2}${row3}${extra}</div>`;
+}
+function emptyHtml() {
+  const map = {
+    mine: ['你还没有提交过需求', '<a class="ac-btn ac-button ac-button--primary ac-button--sm" href="requirement-submit.html">立即提交</a>'],
+    todo: ['暂无待你审批的需求', ''],
+    done: ['暂无已完成的需求', ''],
   };
-  var PRIO = {
-    P0:{label:'P0 紧急', cls:'ac-tag--red'},
-    P1:{label:'P1 高',   cls:'ac-tag--orange'},
-    P2:{label:'P2 中',   cls:'ac-tag--blue'},
-    P3:{label:'P3 低',   cls:'ac-tag--gray'}
-  };
-  var STATUS = {
-    DRAFT:           {label:'草稿',       cls:'ac-tag--gray'},
-    SUBMITTED:       {label:'已提交',     cls:'ac-tag--blue'},
-    BU_REVIEWING:    {label:'业务线审批中', cls:'ac-tag--blue'},
-    IMPL_REVIEWING:  {label:'实施确认中',  cls:'ac-tag--blue'},
-    PM_REVIEWING:    {label:'产品确认中',  cls:'ac-tag--blue'},
-    PM_SUBMITTED:    {label:'待关联排期',  cls:'ac-tag--orange'},
-    LINKED:          {label:'已关联排期',  cls:'ac-tag--green'},
-    REJECTED:        {label:'已驳回',     cls:'ac-tag--red'}
-  };
+  const m = map[view];
+  return `<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">${m[0]}</div><div class="ac-empty__description">${m[1]}</div></div>`;
+}
+function skeletonHtml() {
+  return Array.from({ length: 3 }).map(() => `<div class="tpl-doc-card"><div class="ac-skeleton"><div class="ac-skeleton--line ac-skeleton--line-sm"></div><div class="ac-skeleton--line"></div><div class="ac-skeleton--line ac-skeleton--line-sm"></div></div></div>`).join('');
+}
+function render() {
+  const host = $('#cardHost');
+  const rows = ROWS.filter((r) => r.view.includes(view));
+  host.innerHTML = rows.length ? rows.map(cardHtml).join('') : emptyHtml();
+  $('#loadMore').textContent = rows.length ? '加载更多' : '';
+  /* 待我审批角标（>99 显示 99+，为 0 不展示） */
+  const badge = $('.ac-tab__badge', $('#viewTabs'));
+  const n = ROWS.filter((r) => r.view.includes('todo')).length;
+  if (badge) badge.textContent = n > 99 ? '99+' : String(n);
+}
 
-  /* ── 示例数据（9 条，覆盖 4 条业务线 / 8 种状态 / 4 档优先级）── */
-  var DATA = [
-    {tab:'mine', code:'REQ20260728001', title:'门店补货分析报表新增拣货人数与人均拣货量指标', biz:'SCM',     prio:'P1', status:'IMPL_REVIEWING', time:'2026-07-28 10:24'},
-    {tab:'mine', code:'REQ20260727006', title:'夜市销售报表支持按门店维度导出明细', biz:'OPS',     prio:'P2', status:'BU_REVIEWING',   time:'2026-07-27 16:02'},
-    {tab:'mine', code:'REQ20260726003', title:'财务凭证批量冲销失败需返回失败明细清单', biz:'FIN',     prio:'P0', status:'REJECTED',       time:'2026-07-26 09:15'},
-    {tab:'mine', code:'REQ20260725011', title:'临期预警推送增加企微群机器人通道', biz:'DIGITAL', prio:'P2', status:'DRAFT',          time:''},
-    {tab:'mine', code:'REQ20260724002', title:'价签申请单支持按货架批量生成', biz:'OPS',     prio:'P3', status:'PM_SUBMITTED',   time:'2026-07-24 14:40'},
+/* ==================== 事件 ==================== */
+$('#viewTabs').addEventListener('click', (e) => {
+  const tab = e.target.closest('.ac-tab');
+  if (!tab) return;
+  $$('#viewTabs .ac-tab').forEach((t) => t.classList.remove('is-active'));
+  tab.classList.add('is-active');
+  view = tab.getAttribute('data-view');
+  /* 切换视角：骨架屏后刷新，页码重置为 1 */
+  $('#cardHost').innerHTML = skeletonHtml();
+  $('#loadMore').textContent = '';
+  setTimeout(render, 300);
+});
+$('#cardHost').addEventListener('click', (e) => {
+  const card = e.target.closest('[data-go]');
+  if (card) location.href = card.getAttribute('data-go');
+});
+$('#loadMore').addEventListener('click', () => {
+  $('#loadMore').textContent = '没有更多了';   /* 每页 20 条，到底展示 */
+});
+/* 三态演示（原型专用） */
+document.querySelector('.proto-bar').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-demo]');
+  if (!a) return;
+  const d = a.getAttribute('data-demo');
+  const host = $('#cardHost');
+  if (d === 'skeleton') { host.innerHTML = skeletonHtml(); $('#loadMore').textContent = ''; }
+  else if (d === 'empty') { host.innerHTML = emptyHtml(); $('#loadMore').textContent = ''; }
+  else if (d === 'error') {
+    host.innerHTML = `<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">加载失败</div><div class="ac-empty__description"><a class="ac-link" href="#" onclick="return false" data-retry>点击重试</a></div></div>`;
+    $('#loadMore').textContent = '';
+  } else render();
+});
+$('#cardHost').addEventListener('click', (e) => {
+  if (e.target.closest('[data-retry]')) { render(); toast('已重新加载', 'success'); }
+});
 
-    {tab:'todo', code:'REQ20260728007', title:'店仓盘点差异表增加负库存兜底校验规则', biz:'SCM',     prio:'P0', status:'IMPL_REVIEWING', time:'2026-07-28 08:30', by:'李静',  wait:'已等待 2 天'},
-    {tab:'todo', code:'REQ20260727009', title:'供应商入驻资质到期前 30 天自动提醒', biz:'FIN',     prio:'P1', status:'BU_REVIEWING',   time:'2026-07-27 11:05', by:'王锐',  wait:'已等待 1 天'},
-    {tab:'todo', code:'REQ20260726015', title:'任务中心支持 ALL_CONFIRM 全员确认模式统计看板', biz:'DIGITAL', prio:'P2', status:'PM_REVIEWING',   time:'2026-07-26 17:22', by:'陈曦',  wait:'已等待 3 天'},
-    {tab:'todo', code:'REQ20260726004', title:'商品审批节点或签人员支持临时代理', biz:'OPS',     prio:'P2', status:'BU_REVIEWING',   time:'2026-07-26 10:48', by:'赵敏',  wait:'已等待 3 天'},
-    {tab:'todo', code:'REQ20260725008', title:'库存查询新增中心仓在途口径切换', biz:'SCM',     prio:'P3', status:'IMPL_REVIEWING', time:'2026-07-25 15:10', by:'孙浩',  wait:'已等待 4 天'},
-
-    {tab:'done', code:'REQ20260718005', title:'销售趋势图多日区间 X 轴按周聚合', biz:'OPS',     prio:'P1', status:'LINKED',   time:'2026-07-18 09:52'},
-    {tab:'done', code:'REQ20260715012', title:'进货价精度扩展至 4 位小数', biz:'FIN',     prio:'P2', status:'LINKED',   time:'2026-07-15 13:36'},
-    {tab:'done', code:'REQ20260712001', title:'门店退中心仓单据增加物流跟踪号', biz:'SCM',     prio:'P2', status:'REJECTED', time:'2026-07-12 10:08'},
-    {tab:'done', code:'REQ20260709003', title:'扫码查询信息分级展示策略灰度开关', biz:'DIGITAL', prio:'P3', status:'LINKED',   time:'2026-07-09 16:20'}
-  ];
-
-  var PAGE_SIZE = 4;
-  var state = {tab:'mine', page:1, empty:false, loading:false};
-
-  var elBody    = document.getElementById('body');
-  var elRefresh = document.getElementById('refresh');
-  var elBadge   = document.getElementById('tabBadge');
-
-  function tagsOf(item){
-    return '<span class="ac-pill ' + BIZ[item.biz].cls + '">' + BIZ[item.biz].label + '</span>' +
-           '<span class="ac-tag ' + PRIO[item.prio].cls + '">' + PRIO[item.prio].label + '</span>' +
-           '<span class="ac-tag ' + STATUS[item.status].cls + '">' + STATUS[item.status].label + '</span>';
-  }
-
-  function cardOf(item){
-    var extra = state.tab === 'todo'
-      ? '<div class="ac-card-extra"><span>提交人 ' + item.by + '</span><span class="wait">' + item.wait + '</span></div>'
-      : '';
-    return '<article class="ac-card" role="button" tabindex="0" data-code="' + item.code + '">' +
-             '<h2 class="ac-card-title">' + item.title + '</h2>' +
-             '<div class="ac-card-tags">' + tagsOf(item) + '</div>' +
-             '<div class="ac-card-meta"><span class="code">' + item.code + '</span>' +
-               '<span>' + (item.time || '未提交') + '</span></div>' +
-             extra +
-           '</article>';
-  }
-
-  function skeleton(){
-    var one = '<div class="ac-sk-card">' +
-                '<div class="ac-sk-line" style="width:80%"></div>' +
-                '<div class="ac-sk-line" style="width:52%"></div>' +
-                '<div class="ac-sk-line" style="width:64%"></div>' +
-              '</div>';
-    return '<div class="ac-skeleton">' + one + one + one + '</div>';
-  }
-
-  function emptyOf(){
-    var copy = {
-      mine:{title:'你还没有提交过需求', btn:'立即提交'},
-      todo:{title:'暂无待你审批的需求', btn:''},
-      done:{title:'暂无已完成的需求',   btn:''}
-    }[state.tab];
-    return '<div class="ac-empty">' +
-             '<svg width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="var(--ac-text-4)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-               '<rect x="12" y="10" width="40" height="44" rx="4"/><line x1="22" y1="24" x2="42" y2="24"/>' +
-               '<line x1="22" y1="34" x2="42" y2="34"/><line x1="22" y1="44" x2="34" y2="44"/></svg>' +
-             '<p class="ac-empty-title">' + copy.title + '</p>' +
-             (copy.btn ? '<button class="ac-empty-btn" type="button" onclick="location.href=\'requirement-submit.html\'">' + copy.btn + '</button>' : '') +
-           '</div>';
-  }
-
-  function render(){
-    if(state.loading){ elBody.innerHTML = skeleton(); return; }
-    if(state.empty){ elBody.innerHTML = emptyOf(); return; }
-
-    var all = DATA.filter(function(x){ return x.tab === state.tab; });
-    if(!all.length){ elBody.innerHTML = emptyOf(); return; }
-
-    var shown = all.slice(0, state.page * PAGE_SIZE);
-    var hasMore = shown.length < all.length;
-    var footer = hasMore
-      ? '<div class="ac-loadmore"><button type="button" id="more">上滑加载更多（' + shown.length + '/' + all.length + '）</button></div>'
-      : '<div class="ac-loadmore">— 没有更多了 —</div>';
-
-    elBody.innerHTML = '<div class="ac-list">' + shown.map(cardOf).join('') + '</div>' + footer;
-
-    var more = document.getElementById('more');
-    if(more) more.addEventListener('click', function(){ state.page++; render(); });
-  }
-
-  /* Tab 切换：骨架屏 → 数据，页码重置 */
-  document.getElementById('tabs').addEventListener('click', function(e){
-    var tab = e.target.closest('.ac-tab');
-    if(!tab || tab.classList.contains('is-active')) return;
-    Array.prototype.forEach.call(this.querySelectorAll('.ac-tab'), function(x){ x.classList.remove('is-active'); });
-    tab.classList.add('is-active');
-    state.tab = tab.dataset.tab;
-    state.page = 1;
-    state.loading = true;
-    render();
-    setTimeout(function(){ state.loading = false; render(); }, 420);
-  });
-
-  /* 整卡点击 → Push 详情 */
-  elBody.addEventListener('click', function(e){
-    var card = e.target.closest('.ac-card');
-    if(!card) return;
-    location.href = 'requirement-detail.html';
-  });
-
-  /* 下拉刷新（点击提示区模拟手势）*/
-  elRefresh.addEventListener('click', function(){
-    if(elRefresh.classList.contains('is-loading')) return;
-    elRefresh.classList.add('is-loading');
-    elRefresh.querySelector('.txt').textContent = '刷新中…';
-    setTimeout(function(){
-      elRefresh.classList.remove('is-loading');
-      elRefresh.querySelector('.txt').textContent = '下拉刷新';
-      elBadge.textContent = '5';
-      state.page = 1;
-      render();
-      acToast('已刷新', 'success');
-    }, 800);
-  });
-
-  /* 空态演示开关 */
-  document.getElementById('demoEmpty').addEventListener('click', function(){
-    state.empty = !state.empty;
-    this.textContent = state.empty ? '恢复数据' : '空态演示';
-    render();
-  });
-
-  /* Toast */
-  var elToast = document.getElementById('toast'), timer = null;
-  window.acToast = function(msg, type){
-    elToast.textContent = msg;
-    elToast.className = 'ac-toast is-show' + (type ? ' is-' + type : '');
-    clearTimeout(timer);
-    timer = setTimeout(function(){ elToast.className = 'ac-toast'; }, 1800);
-  };
-
-  /* 首屏：骨架 → 数据 */
-  state.loading = true;
-  render();
-  setTimeout(function(){ state.loading = false; render(); }, 500);
-})();
+/* 初始化：默认 Tab 激活态 */
+$$('#viewTabs .ac-tab').forEach((t) => t.classList.toggle('is-active', t.getAttribute('data-view') === view));
+render();
 </script>
 </body>
 </html>

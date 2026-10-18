@@ -1,968 +1,663 @@
-<!doctype html>
-<!--
-  需求管理 · 需求列表页（Web 端原型）
-  ================================================================
-  规格真源：../../references/web-ui.md §需求列表页
-  实现对齐：busyming-snackingdom-web/src/views/requirement/RequirementList.vue（2026-10 重画）
-  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
-            拓扑 = .tpl-page > [筛选 .tpl-panel] > .tpl-kpi-grid > [表格 .tpl-panel]
-  本版要点（相对旧版差异）：
-    - 筛选区新增「产品线」（置于业务线之前）与「提交来源」（仅可见外部单角色展示）
-    - 视角 Tab 扩为 5 个：我提交的 / 待我审批 / 外部提交 / 滞留需求 / 全部
-    - 常规视角表格 11 列：新增产品线、提交人（外部单副行手填部门）、附件列
-    - 滞留需求 Tab 独立表结构：停留时长（默认倒序，三档色按行阈值）+ 滞留级次 + 行内手动催办
-    - 外部单：编号后跟橙色「外部提交」标签，操作列仅「查看详情」
-  Token   ：.agents/skills/page-blueprint/tokens/web.css（下方 :root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>需求列表 · 需求管理</title>
-<style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
-   ========================================================================== */
-:root{
-  /* palette */
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  --ac-palette-magenta-1:#FFE8F1; --ac-palette-magenta-6:#F5319D;
-  --ac-palette-orangered-1:#FFF3E8; --ac-palette-orangered-6:#F77234;
-  /* semantic */
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
-  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
-  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
-  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
-  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
-  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
-  /* spacing */
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
-  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
-  /* radius */
-  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  /* shadow */
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
-  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  /* typography */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
-  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
-  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index */
-  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-popconfirm:900; --ac-z-toast:800;
-}
-
-/* ==========================================================================
-   基础版式
-   ========================================================================== */
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
-.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
-.tpl-breadcrumb{display:flex;align-items:center;gap:var(--ac-space-2);
-  padding:var(--ac-space-4) 0;font-size:var(--ac-fs-md);color:var(--ac-color-text-3)}
-.tpl-breadcrumb a{color:var(--ac-color-text-3);text-decoration:none}
-.tpl-breadcrumb a:hover{color:var(--ac-primary-6)}
-.tpl-breadcrumb__sep{color:var(--ac-text-4)}
-.tpl-breadcrumb__current{color:var(--ac-color-text-1)}
-
-/* 拓扑：.tpl-page 灰底 + gap，白卡 .tpl-panel 浮于其上 */
-.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
-  display:flex;flex-direction:column;gap:var(--ac-space-4)}
-
-/* ===== 筛选区（CSS Grid 自适应等宽，查询/重置紧贴最后一项） ===== */
-.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
-.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
-.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.tpl-filter__control{flex:1;min-width:0;position:relative}
-.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
-
-/* ===== 控件：Select / Input / RangePicker ===== */
-.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
-  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
-  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-select__trigger:hover{background:var(--ac-fill-3)}
-.ac-select.is-disabled .ac-select__trigger{cursor:not-allowed;color:var(--ac-text-4);background:var(--ac-fill-1)}
-.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-select__trigger.is-placeholder .ac-select__value{color:var(--ac-color-text-3)}
-.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
-  transition:transform var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-select.is-open .ac-select__trigger{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-.ac-select.is-open .ac-select__arrow{transform:rotate(180deg)}
-.ac-select__dropdown{display:none;position:absolute;top:calc(100% + var(--ac-space-1));left:0;right:0;
-  max-height:240px;overflow:auto;padding:var(--ac-space-1);background:var(--ac-bg-1);
-  border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-3);z-index:var(--ac-z-dropdown)}
-.ac-select.is-open .ac-select__dropdown{display:block}
-.ac-select__option{display:flex;align-items:center;gap:var(--ac-space-2);
-  height:32px;padding:0 var(--ac-space-3);border-radius:var(--ac-radius-sm);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
-.ac-select__option:hover{background:var(--ac-fill-1)}
-.ac-select__option.is-checked{color:var(--ac-primary-6);background:var(--ac-primary-1)}
-.ac-select__check{flex-shrink:0;width:14px;height:14px;display:inline-flex;align-items:center;
-  justify-content:center;border:1px solid var(--ac-border-3);border-radius:var(--ac-radius-xs);
-  font-size:var(--ac-fs-xs);color:transparent;background:var(--ac-bg-1)}
-.ac-select__option.is-checked .ac-select__check{background:var(--ac-primary-6);
-  border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-
-.ac-input{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-input::placeholder{color:var(--ac-color-text-3)}
-.ac-input:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-
-.ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
-  padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm)}
-.ac-range:focus-within{background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-.ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-
-/* ===== 按钮 ===== */
-.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
-  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
-  background:var(--ac-bg-1);color:var(--ac-color-text-1);
-  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-btn:hover{background:var(--ac-fill-1)}
-.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
-.ac-btn--secondary{background:var(--ac-fill-2);border-color:transparent;color:var(--ac-color-text-1)}
-.ac-btn--secondary:hover{background:var(--ac-fill-3)}
-.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
-  color:var(--ac-primary-6);font-size:var(--ac-fs-sm)}
-.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
-.ac-btn--text.is-danger{color:var(--ac-color-danger)}
-
-/* ===== KPI 统计卡（筛选 panel 之后 · 表格 panel 之前） ===== */
-.tpl-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--ac-space-4)}
-.tpl-kpi{background:var(--ac-bg-1);border:1px solid var(--ac-border-1);
-  border-radius:var(--ac-radius-sm);padding:var(--ac-space-4) var(--ac-space-5);
-  display:flex;flex-direction:column;gap:var(--ac-space-2);cursor:pointer;
-  transition:box-shadow var(--ac-duration-fast) var(--ac-easing-standard)}
-.tpl-kpi:hover{box-shadow:var(--ac-shadow-2)}
-.tpl-kpi.is-active{border-color:var(--ac-primary-6);background:var(--ac-primary-1)}
-.tpl-kpi__head{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-kpi__dot{width:6px;height:6px;border-radius:var(--ac-radius-full);background:var(--ac-color-text-3)}
-.tpl-kpi__dot.is-primary{background:var(--ac-palette-blue-6)}
-.tpl-kpi__dot.is-success{background:var(--ac-color-success)}
-.tpl-kpi__dot.is-warning{background:var(--ac-color-warning)}
-.tpl-kpi__dot.is-danger{background:var(--ac-color-danger)}
-.tpl-kpi__label{font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.tpl-kpi__hint{margin-left:auto;width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
-  background:var(--ac-fill-2);border-radius:var(--ac-radius-full);
-  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);cursor:help}
-.tpl-kpi__value-row{display:flex;align-items:baseline;gap:var(--ac-space-1)}
-.tpl-kpi__value{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-5xl);
-  font-weight:var(--ac-fw-semibold);line-height:var(--ac-lh-tight);color:var(--ac-color-text-1)}
-.tpl-kpi__suffix{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.tpl-kpi__foot{min-height:20px;display:flex;align-items:center;gap:var(--ac-space-1);
-  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== Tab / 操作栏 ===== */
-.tpl-tabs{display:flex;align-items:center;gap:var(--ac-space-6);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  border-bottom:1px solid var(--ac-border-2)}
-.tpl-tabs__tab{padding:var(--ac-space-3) 0;margin-bottom:-1px;cursor:pointer;
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2);border-bottom:2px solid transparent}
-.tpl-tabs__tab:hover{color:var(--ac-color-text-1)}
-.tpl-tabs__tab.is-active{color:var(--ac-primary-6);font-weight:var(--ac-fw-medium);
-  border-bottom-color:var(--ac-primary-6)}
-.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
-.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
-.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-toolbar__title{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
-.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== 表格 ===== */
-.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
-.tpl-table{width:100%;min-width:1360px;border-collapse:separate;border-spacing:0;
-  font-size:var(--ac-fs-md)}
-.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
-  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
-  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
-  border-bottom:1px solid var(--ac-border-2)}
-.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
-.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
-.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
-  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
-.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
-.cell-link{color:var(--ac-primary-6);text-decoration:none;font-family:var(--ac-ff-mono);
-  font-size:var(--ac-fs-sm);cursor:pointer}
-.cell-link:hover{text-decoration:underline}
-.cell-title{display:block;max-width:320px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cell-muted{color:var(--ac-color-text-3)}
-.cell-card{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
-.cell-card__invalid{padding:0 var(--ac-space-1);border-radius:var(--ac-radius-xs);
-  font-size:var(--ac-fs-xs);color:var(--ac-color-danger);background:var(--ac-color-danger-1)}
-.cell-no{display:inline-flex;align-items:center;gap:var(--ac-space-1);flex-wrap:wrap}
-.cell-sub{display:block;font-size:var(--ac-fs-xs);color:var(--ac-color-text-3);
-  max-width:140px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.cell-stack{display:flex;flex-direction:column;gap:var(--ac-space-1);min-width:0}
-.cell-attach{display:inline-flex;align-items:center;gap:var(--ac-space-1)}
-.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3);position:relative}
-
-/* ===== 标签（状态 / 产品线 / 业务线 / 优先级 / 提交来源 / 滞留程度） ===== */
-.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
-.ac-tag--pill{border-radius:var(--ac-radius-full);padding:0 var(--ac-space-3)}
-.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
-.ac-tag.is-processing{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
-.ac-tag.is-warning{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
-.ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
-.ac-tag.is-error{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
-/* 业务线四色 */
-.ac-tag.is-ops{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
-.ac-tag.is-fin{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
-.ac-tag.is-scm{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
-.ac-tag.is-digital{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
-/* 产品线两色：零食王国 primary 红 / 有点推荐 magenta 品红 */
-.ac-tag.is-snack{background:var(--ac-primary-1);color:var(--ac-primary-7)}
-.ac-tag.is-ydtj{background:var(--ac-palette-magenta-1);color:var(--ac-palette-magenta-6)}
-/* 提交来源：外部提交 orangered 橙 */
-.ac-tag.is-external{background:var(--ac-palette-orangered-1);color:var(--ac-palette-orangered-6)}
-
-/* ===== 分页 ===== */
-.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
-  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.tpl-pagination__pager{display:flex;gap:var(--ac-space-1)}
-.tpl-pagination__pager button{min-width:32px;height:32px;padding:0 var(--ac-space-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm);background:transparent;
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1);cursor:pointer}
-.tpl-pagination__pager button:hover:not(:disabled){background:var(--ac-fill-2)}
-.tpl-pagination__pager button.is-active{background:var(--ac-primary-1);color:var(--ac-primary-6)}
-.tpl-pagination__pager button:disabled{color:var(--ac-text-4);cursor:not-allowed}
-.tpl-pagination__size{height:32px;padding:0 var(--ac-space-2);border:1px solid var(--ac-border-2);
-  border-radius:var(--ac-radius-sm);background:var(--ac-bg-1);font-family:inherit;
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-
-/* ===== Popconfirm / Toast ===== */
-.ac-popconfirm{display:none;position:absolute;top:calc(100% + var(--ac-space-2));right:0;
-  width:280px;padding:var(--ac-space-4);background:var(--ac-bg-1);
-  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
-  z-index:var(--ac-z-popconfirm);text-align:left}
-.ac-popconfirm.is-open{display:block}
-.ac-popconfirm__text{font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
-  margin-bottom:var(--ac-space-3)}
-.ac-popconfirm__actions{display:flex;justify-content:flex-end;gap:var(--ac-space-2)}
-.ac-toast{position:fixed;top:var(--ac-space-6);left:50%;transform:translateX(-50%);
-  display:none;align-items:center;gap:var(--ac-space-2);
-  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-bg-1);
-  border-radius:var(--ac-radius-md);box-shadow:var(--ac-shadow-3);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);z-index:var(--ac-z-toast)}
-.ac-toast.is-open{display:flex}
-.ac-toast__icon{color:var(--ac-color-success)}
-
-/* 滞留表格：默认隐藏，切至「滞留需求」Tab 时展示（静态原型演示用） */
-#staleTableWrap{display:none}
-.is-stale-mode #normalTableWrap{display:none}
-.is-stale-mode #staleTableWrap{display:block}
-
-/* ===== 响应式（主战场 min-width:1200px，窄屏降列） ===== */
-@media (max-width:1280px){
-  .tpl-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>需求工单管理 · 需求管理 · 鸣鸣很忙</title>
+<!--
+  需求管理 · 需求列表页（Web 原型）
+  页面描述真源：../../references/web-ui.md#需求列表页 ｜ 页面类型 order-list
+  整页范例：busyming-skills-design/web/templates/order-list.html ｜ DOM 依据：skeletons/web/list-page.vue.tpl
+  区块：页头（导出 / 新增需求）→ KPI 统计卡 ×4（点击下钻）→ 视角 Tab ×5 → 筛选区（8 项）→ 数据表格（视角决定列集）→ 分页
+  演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为「陈默」（产品经理，兼实施负责人——用于演示「滞留需求」视角的手动催办）。
+  筛选条件与页码真实场景同步至页面地址（原型不做地址栏改写）；加载/错误三态见脚本内注释。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
 <body>
-<div class="tpl-layout">
-
-  <!-- 面包屑：页面身份由 Layout 承担，页面内不再加大标题 -->
-  <nav class="tpl-breadcrumb">
-    <a href="#">首页</a><span class="tpl-breadcrumb__sep">/</span>
-    <a href="#">研发</a><span class="tpl-breadcrumb__sep">/</span>
-    <span class="tpl-breadcrumb__current">需求管理</span>
-  </nav>
-
-  <section class="tpl-page" id="pageRoot">
-
-    <!-- ① 筛选 panel：状态 / 产品线 / 业务线 / 提交来源 / 优先级 / 类型 / 提交人 / 提交时间 -->
-    <div class="tpl-panel">
-      <form class="tpl-filter" onsubmit="return false">
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">当前状态</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select" data-select="multi">
-              <div class="ac-select__trigger is-placeholder" data-placeholder="全部状态（可多选）">
-                <span class="ac-select__value">全部状态（可多选）</span>
-                <span class="ac-select__arrow">▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>草稿</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>已提交</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>业务线审批中</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>实施确认中</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>产品确认中</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>待关联排期</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>已关联排期</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>已驳回</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 产品线：置于业务线之前；选「有点推荐」时业务线置灰并清空 -->
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">产品线</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select" data-select="single" data-role="product-line">
-              <div class="ac-select__trigger is-placeholder" data-placeholder="全部产品线">
-                <span class="ac-select__value">全部产品线</span>
-                <span class="ac-select__arrow">▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option">零食王国</div>
-                <div class="ac-select__option">有点推荐</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">所属业务线</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select" data-select="single" data-role="biz-line">
-              <div class="ac-select__trigger is-placeholder" data-placeholder="全部业务线">
-                <span class="ac-select__value">全部业务线</span>
-                <span class="ac-select__arrow">▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option">运营</div>
-                <div class="ac-select__option">财务</div>
-                <div class="ac-select__option">供应链</div>
-                <div class="ac-select__option">数字化</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 提交来源：仅邀约人 / 有点推荐负责人 / 实施负责人 / 管理员可见；「外部提交」Tab 下锁定置灰 -->
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">提交来源</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select" data-select="single" data-role="submit-source">
-              <div class="ac-select__trigger is-placeholder" data-placeholder="全部来源">
-                <span class="ac-select__value">全部来源</span>
-                <span class="ac-select__arrow">▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option">内部提交</div>
-                <div class="ac-select__option">外部提交</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">优先级</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select" data-select="multi">
-              <div class="ac-select__trigger is-placeholder" data-placeholder="全部优先级（可多选）">
-                <span class="ac-select__value">全部优先级（可多选）</span>
-                <span class="ac-select__arrow">▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>P0 紧急</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>P1 高</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>P2 中</div>
-                <div class="ac-select__option"><span class="ac-select__check">✓</span>P3 低</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">需求类型</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select" data-select="single">
-              <div class="ac-select__trigger is-placeholder" data-placeholder="全部类型">
-                <span class="ac-select__value">全部类型</span>
-                <span class="ac-select__arrow">▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option">新功能</div>
-                <div class="ac-select__option">功能优化</div>
-                <div class="ac-select__option">缺陷修复</div>
-                <div class="ac-select__option">数据报表</div>
-                <div class="ac-select__option">系统集成</div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">提交人</span>
-          <div class="tpl-filter__control">
-            <input class="ac-input" placeholder="提交人姓名，支持模糊（含外部提交人）" />
-          </div>
-        </div>
-
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">提交时间</span>
-          <div class="tpl-filter__control">
-            <div class="ac-range">
-              <input value="2026-09-16" aria-label="开始日期" />
-              <span class="ac-range__sep">至</span>
-              <input value="2026-10-16" aria-label="结束日期" />
-            </div>
-          </div>
-        </div>
-
-        <div class="tpl-filter__actions">
-          <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按当前条件查询，共 42 条')">查询</button>
-          <button type="button" class="ac-btn" onclick="acToast('已恢复默认筛选（近 30 天）')">重置</button>
-        </div>
-      </form>
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb">研发 / 需求管理 / <b>需求工单管理</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
+      <div class="ac-dropdown-group-title">需求管理 · Web 7 页</div>
+      <a class="ac-dropdown-item is-active" role="menuitem" href="requirement-list.html">需求列表</a>
+      <a class="ac-dropdown-item" role="menuitem" href="requirement-detail.html">需求详情</a>
+      <a class="ac-dropdown-item" role="menuitem" href="requirement-submit.html">需求提交</a>
+      <a class="ac-dropdown-item" role="menuitem" href="requirement-public-link.html">外链管理</a>
+      <a class="ac-dropdown-item" role="menuitem" href="requirement-config.html">审批链配置</a>
+      <a class="ac-dropdown-item" role="menuitem" href="requirement-sla-config.html">SLA 配置</a>
+      <a class="ac-dropdown-item" role="menuitem" href="requirement-sla-dashboard.html">SLA 仪表盘</a>
     </div>
+  </div>
+  <span class="web-nav__crumb">陈默</span>
+</nav>
 
-    <!-- ② KPI 统计卡区（点击可下钻筛选；滞留 Tab 下不刷新） -->
-    <div class="tpl-kpi-grid">
-      <div class="tpl-kpi" data-kpi="draft">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot"></span>
-          <span class="tpl-kpi__label">待提交</span>
-          <span class="tpl-kpi__hint" title="本人草稿状态需求数，点击下钻 status=DRAFT">?</span>
+<section class="tpl-page" id="listPage">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">需求工单管理</h1>
+      <div class="tpl-page-subtitle">一屏回答「需求谁提的、卡在哪级、有没有排上开发」</div>
+    </div>
+    <div class="tpl-page-head__actions">
+      <button class="ac-btn" type="button" id="exportBtn"><span class="ac-icon" data-ac="AcIcon" data-name="export" data-size="sm"></span> 导出</button>
+      <a class="ac-btn ac-btn--primary" data-ac="AcButton" href="requirement-submit.html"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span> 新增需求</a>
+    </div>
+  </div>
+
+  <!-- KPI 统计卡（4 张横排，点击下钻；取数跟随当前角色可见范围，与表格筛选同源） -->
+  <div class="tpl-kpi-grid" id="kpiGrid">
+    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="draft"><div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">待提交数</span><span class="tpl-kpi__hint" title="本人草稿数，点击筛选草稿">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiDraft">1</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">本人草稿，点击筛选</span></div></div>
+    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="todo"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">待我审批数</span><span class="tpl-kpi__hint" title="当前登录人处于快照当前级次的待审数，点击切至「待我审批」视角">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiTodo">3</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">点击切至待我审批</span></div></div>
+    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="passed"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">已通过数</span><span class="tpl-kpi__hint" title="待关联排期 + 已关联排期，点击筛选该两状态">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiPassed">5</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">待关联 + 已关联排期</span></div></div>
+    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="rejected"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">已驳回数</span><span class="tpl-kpi__hint" title="点击筛选已驳回">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiRejected">2</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">点击筛选已驳回</span></div></div>
+  </div>
+
+  <!-- 视角 Tab：我提交的 / 待我审批 / 外部提交 / 滞留需求 / 全部 -->
+  <div class="ac-tabs" id="viewTabs">
+    <div class="ac-tabs__nav">
+      <span class="ac-tab" data-view="mine">我提交的</span>
+      <span class="ac-tab" data-view="todo">待我审批 <span class="ac-badge ac-badge--count ac-tab__badge" id="todoBadge">3</span></span>
+      <span class="ac-tab" data-view="external">外部提交</span>
+      <span class="ac-tab" data-view="stale">滞留需求</span>
+      <span class="ac-tab is-active" data-view="all">全部</span>
+    </div>
+  </div>
+
+  <!-- 筛选区（8 项；视角/筛选/页码真实场景同步至页面地址） -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">状态</label>
+        <div class="ac-select ac-select--medium is-multiple" data-ac="AcSelect" id="fStatus">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部状态</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="DRAFT"><span class="ac-select__option-label">草稿</span></li>
+            <li class="ac-select__option" data-value="SUBMITTED"><span class="ac-select__option-label">已提交</span></li>
+            <li class="ac-select__option" data-value="BU_REVIEWING"><span class="ac-select__option-label">业务线审批中</span></li>
+            <li class="ac-select__option" data-value="IMPL_REVIEWING"><span class="ac-select__option-label">实施确认中</span></li>
+            <li class="ac-select__option" data-value="PM_REVIEWING"><span class="ac-select__option-label">产品确认中</span></li>
+            <li class="ac-select__option" data-value="PM_SUBMITTED"><span class="ac-select__option-label">待关联排期</span></li>
+            <li class="ac-select__option" data-value="LINKED"><span class="ac-select__option-label">已关联排期</span></li>
+            <li class="ac-select__option" data-value="REJECTED"><span class="ac-select__option-label">已驳回</span></li>
+          </ul></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">3</span><span class="tpl-kpi__suffix">条</span></div>
-        <div class="tpl-kpi__foot">本人草稿</div>
       </div>
-      <div class="tpl-kpi is-active" data-kpi="mine">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-primary"></span>
-          <span class="tpl-kpi__label">待我审批</span>
-          <span class="tpl-kpi__hint" title="当前审批节点候选人含我的需求数，点击切换至「待我审批」视角">?</span>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">产品线</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fProduct">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="mm"><span class="ac-select__option-label">鸣鸣很忙</span></li>
+            <li class="ac-select__option" data-value="yd"><span class="ac-select__option-label">有点推荐</span></li>
+          </ul></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">5</span><span class="tpl-kpi__suffix">条</span></div>
-        <div class="tpl-kpi__foot">当前节点待我处理</div>
       </div>
-      <div class="tpl-kpi" data-kpi="passed">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-success"></span>
-          <span class="tpl-kpi__label">已通过</span>
-          <span class="tpl-kpi__hint" title="审批链已通过的需求数（含待关联排期与已关联排期）">?</span>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">所属业务线</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fLine">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="运营"><span class="ac-select__option-label">运营</span></li>
+            <li class="ac-select__option" data-value="财务"><span class="ac-select__option-label">财务</span></li>
+            <li class="ac-select__option" data-value="供应链"><span class="ac-select__option-label">供应链</span></li>
+            <li class="ac-select__option" data-value="数字化"><span class="ac-select__option-label">数字化</span></li>
+          </ul></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">24</span><span class="tpl-kpi__suffix">条</span></div>
-        <div class="tpl-kpi__foot">含待关联排期 6 条</div>
       </div>
-      <div class="tpl-kpi" data-kpi="rejected">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-danger"></span>
-          <span class="tpl-kpi__label">已驳回</span>
-          <span class="tpl-kpi__hint" title="被任一审批节点驳回的需求数，点击下钻 status=REJECTED">?</span>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">提交来源</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fSource">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="in"><span class="ac-select__option-label">内部提交</span></li>
+            <li class="ac-select__option" data-value="out"><span class="ac-select__option-label">外部提交</span></li>
+          </ul></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">2</span><span class="tpl-kpi__suffix">条</span></div>
-        <div class="tpl-kpi__foot">需修改后重新提交</div>
+      </div>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">优先级</label>
+        <div class="ac-select ac-select--medium is-multiple" data-ac="AcSelect" id="fPriority">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部优先级</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="P0"><span class="ac-select__option-label">P0 紧急</span></li>
+            <li class="ac-select__option" data-value="P1"><span class="ac-select__option-label">P1 高</span></li>
+            <li class="ac-select__option" data-value="P2"><span class="ac-select__option-label">P2 中</span></li>
+            <li class="ac-select__option" data-value="P3"><span class="ac-select__option-label">P3 低</span></li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">需求类型</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fType">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="新功能"><span class="ac-select__option-label">新功能</span></li>
+            <li class="ac-select__option" data-value="功能优化"><span class="ac-select__option-label">功能优化</span></li>
+            <li class="ac-select__option" data-value="缺陷修复"><span class="ac-select__option-label">缺陷修复</span></li>
+            <li class="ac-select__option" data-value="数据报表"><span class="ac-select__option-label">数据报表</span></li>
+            <li class="ac-select__option" data-value="系统集成"><span class="ac-select__option-label">系统集成</span></li>
+          </ul></div>
+        </div>
+      </div>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">提交人</label>
+        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fSubmitter" placeholder="内部姓名 / 外部手填姓名" autocomplete="off" /></span>
+      </div>
+      <div class="ac-form-item ac-form-item--wide">
+        <label class="ac-form-item__label">提交时间</label>
+        <span class="ac-input ac-range-picker" data-ac="AcDatePicker"><input class="ac-input__inner" id="fRange" value="2026-09-18 ~ 2026-10-18" readonly /></span>
+      </div>
+      <div class="tpl-filter__actions">
+        <button class="ac-btn ac-btn--primary" type="button" id="btnQuery">查询</button>
+        <button class="ac-btn" type="button" id="btnReset">重置</button>
       </div>
     </div>
+  </div>
 
-    <!-- ③ 表格 panel：Tab → 表格（内置工具栏）→ 分页 -->
-    <div class="tpl-panel">
-      <!-- 视角 Tab：外部提交仅对可见外部单的角色展示；滞留需求对所有可见列表的角色展示 -->
-      <div class="tpl-tabs">
-        <div class="tpl-tabs__tab" data-tab="mine">我提交的</div>
-        <div class="tpl-tabs__tab is-active" data-tab="pending">待我审批</div>
-        <div class="tpl-tabs__tab" data-tab="external">外部提交</div>
-        <div class="tpl-tabs__tab" data-tab="stale">滞留需求</div>
-        <div class="tpl-tabs__tab" data-tab="all">全部</div>
-      </div>
-
-      <!-- ③-1 常规视角表格（我提交的 / 待我审批 / 外部提交 / 全部）：11 列 -->
-      <div id="normalTableWrap">
-        <div class="tpl-toolbar">
-          <div class="tpl-toolbar__left">
-            <span class="tpl-toolbar__title">需求清单</span>
-            <span class="tpl-toolbar__meta">数据范围跟随当前角色可见范围</span>
-          </div>
-          <div class="tpl-toolbar__right">
-            <button type="button" class="ac-btn ac-btn--primary"
-              onclick="location.href='./requirement-submit.html'">+ 新增需求</button>
-            <button type="button" class="ac-btn" onclick="acToast('导出任务已提交，请在下载中心查看')">导出</button>
-          </div>
-        </div>
-
-        <div class="tpl-table-wrap">
-          <table class="tpl-table">
-            <thead>
-              <tr>
-                <th>需求编号</th>
-                <th>标题</th>
-                <th>产品线</th>
-                <th>所属业务线</th>
-                <th>提交人</th>
-                <th>当前状态</th>
-                <th>当前审批人</th>
-                <th>优先级</th>
-                <th>关联排期卡片</th>
-                <th>附件</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261015-003</a></td>
-                <td><span class="cell-title" title="门店补货分析报表新增拣货人数指标">门店补货分析报表新增拣货人数指标</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-scm">供应链</span></td>
-                <td>陈晓雯</td>
-                <td><span class="ac-tag is-processing">业务线审批中</span></td>
-                <td title="王志远">王志远</td>
-                <td><span class="ac-tag is-warning">P1 高</span></td>
-                <td class="cell-muted">—</td>
-                <td><a class="cell-link cell-attach" href="./requirement-detail.html">📌 3</a></td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <button type="button" class="ac-btn ac-btn--text is-danger" data-popconfirm>撤回</button>
-                    <div class="ac-popconfirm">
-                      <div class="ac-popconfirm__text">撤回后需求回到草稿、审批链作废，确认撤回？</div>
-                      <div class="ac-popconfirm__actions">
-                        <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                        <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
-                          data-msg="需求 REQ-20261015-003 已撤回至草稿">确认撤回</button>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <!-- 外部单：编号后跟橙色「外部提交」标签 -->
-                  <span class="cell-no">
-                    <a class="cell-link" href="./requirement-detail.html">REQ-20261014-011</a>
-                    <span class="ac-tag is-external">外部提交</span>
-                  </span>
-                </td>
-                <td><span class="cell-title" title="推广链接点击数据看板支持分渠道导出">推广链接点击数据看板支持分渠道导出</span></td>
-                <td><span class="ac-tag ac-tag--pill is-ydtj">有点推荐</span></td>
-                <!-- YDTJ 业务线固定展示 —（biz_line=* 不向用户呈现） -->
-                <td class="cell-muted">—</td>
-                <td>
-                  <!-- 外部单提交人：手填姓名 + 灰色副行手填部门 -->
-                  <span class="cell-stack">
-                    <span>林小满</span>
-                    <span class="cell-sub" title="杭州某食品有限公司（手填，未关联组织架构）">杭州某食品有限公司</span>
-                  </span>
-                </td>
-                <td><span class="ac-tag is-processing">业务线审批中</span></td>
-                <td title="赵敏、孙浩">赵敏 等 2 人</td>
-                <td><span class="ac-tag is-processing">P2 中</span></td>
-                <td class="cell-muted">—</td>
-                <td><a class="cell-link cell-attach" href="./requirement-detail.html">📌 2</a></td>
-                <td>
-                  <!-- 外部单仅渲染「查看详情」：编辑 / 撤回 / 删除全部不渲染 -->
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261014-002</a></td>
-                <td><span class="cell-title" title="供应商入驻资质到期自动校验">供应商入驻资质到期自动校验</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-digital">数字化</span></td>
-                <td>刘一鸣</td>
-                <td><span class="ac-tag is-processing">已提交</span></td>
-                <td title="赵敏、孙浩">赵敏 等 2 人</td>
-                <td><span class="ac-tag is-processing">P2 中</span></td>
-                <td class="cell-muted">—</td>
-                <td class="cell-muted">—</td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <button type="button" class="ac-btn ac-btn--text is-danger" data-popconfirm>撤回</button>
-                    <div class="ac-popconfirm">
-                      <div class="ac-popconfirm__text">撤回后需求回到草稿、审批链作废，确认撤回？</div>
-                      <div class="ac-popconfirm__actions">
-                        <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                        <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
-                          data-msg="需求 REQ-20261014-002 已撤回至草稿">确认撤回</button>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261013-012</a></td>
-                <td><span class="cell-title" title="会员储值到期提醒规则调整">会员储值到期提醒规则调整</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-ops">运营</span></td>
-                <td>周雨桐</td>
-                <td><span class="ac-tag is-processing">实施确认中</span></td>
-                <td>李思远</td>
-                <td><span class="ac-tag is-processing">P2 中</span></td>
-                <td class="cell-muted">—</td>
-                <td><a class="cell-link cell-attach" href="./requirement-detail.html">📌 1</a></td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261012-008</a></td>
-                <td><span class="cell-title" title="财务凭证批量冲销支持导出明细">财务凭证批量冲销支持导出明细</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-fin">财务</span></td>
-                <td>吴国栋</td>
-                <td><span class="ac-tag is-success">已关联排期</span></td>
-                <td class="cell-muted">—</td>
-                <td><span class="ac-tag is-processing">P2 中</span></td>
-                <td><span class="cell-card"><a class="cell-link" href="#" target="_blank">FS-20261020-014</a><span class="cell-card__invalid">已失效</span></span></td>
-                <td class="cell-muted">—</td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261011-021</a></td>
-                <td><span class="cell-title" title="门店巡检任务全流程数字化改造">门店巡检任务全流程数字化改造</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-digital">数字化</span></td>
-                <td>郑浩然</td>
-                <td><span class="ac-tag is-warning">待关联排期</span></td>
-                <td class="cell-muted">—</td>
-                <td><span class="ac-tag is-error">P0 紧急</span></td>
-                <td class="cell-muted">—</td>
-                <td><a class="cell-link cell-attach" href="./requirement-detail.html">📌 5</a></td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261010-005</a></td>
-                <td><span class="cell-title" title="采购在途库存口径与报表统一">采购在途库存口径与报表统一</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-scm">供应链</span></td>
-                <td>孙鹏飞</td>
-                <td><span class="ac-tag is-error">已驳回</span></td>
-                <td class="cell-muted">—</td>
-                <td><span class="ac-tag is-warning">P1 高</span></td>
-                <td class="cell-muted">—</td>
-                <td class="cell-muted">—</td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <a class="ac-btn ac-btn--text" href="./requirement-submit.html">编辑</a>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261009-001</a></td>
-                <td><span class="cell-title" title="夜市销售报表增加毛利列">夜市销售报表增加毛利列</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-ops">运营</span></td>
-                <td>陈晓雯</td>
-                <td><span class="ac-tag is-default">草稿</span></td>
-                <td class="cell-muted">—</td>
-                <td><span class="ac-tag is-default">P3 低</span></td>
-                <td class="cell-muted">—</td>
-                <td class="cell-muted">—</td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <a class="ac-btn ac-btn--text" href="./requirement-submit.html">编辑</a>
-                    <button type="button" class="ac-btn ac-btn--text is-danger" data-popconfirm>删除</button>
-                    <div class="ac-popconfirm">
-                      <div class="ac-popconfirm__text">删除后该草稿不可恢复，确认删除？</div>
-                      <div class="ac-popconfirm__actions">
-                        <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                        <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
-                          data-msg="草稿已删除">确认删除</button>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- ③-2 滞留需求 Tab 表格：9 列（停留时长默认倒序 + 滞留级次 + 行内手动催办），无提交人/关联排期/附件列 -->
-      <div id="staleTableWrap">
-        <div class="tpl-toolbar">
-          <div class="tpl-toolbar__left">
-            <span class="tpl-toolbar__title">滞留需求</span>
-            <span class="tpl-toolbar__meta">当前级次停留 ≥ 催办阈值且未处理，按停留时长倒序；阈值按产品线×优先级×级次逐行命中</span>
-          </div>
-        </div>
-
-        <div class="tpl-table-wrap">
-          <table class="tpl-table">
-            <thead>
-              <tr>
-                <th>需求编号</th>
-                <th>标题</th>
-                <th>产品线</th>
-                <th>所属业务线</th>
-                <th>当前状态</th>
-                <th>优先级</th>
-                <th title="当前审批节点的实时停留时长，默认按此列倒序">停留时长 ▾</th>
-                <th>滞留级次</th>
-                <th>操作</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261008-006</a></td>
-                <td><span class="cell-title" title="仓库盘点差异审批流接入流程中心">仓库盘点差异审批流接入流程中心</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-scm">供应链</span></td>
-                <td><span class="ac-tag is-processing">业务线审批中</span></td>
-                <td><span class="ac-tag is-error">P0 紧急</span></td>
-                <!-- 已升级：staleHours ≥ escalateHours → 红；悬浮展示命中阈值与催办痕迹 -->
-                <td><span class="ac-tag is-error" title="催办阈值 24 小时 / 升级阈值 48 小时；已升级至上级；已催办 2 次；最后催办 2026-10-15 08:00">3 天 2 小时</span></td>
-                <td>
-                  <span class="cell-stack">
-                    <span>业务线审批</span>
-                    <span class="cell-sub">王志远</span>
-                  </span>
-                </td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <button type="button" class="ac-btn ac-btn--text" data-popconfirm>手动催办</button>
-                    <div class="ac-popconfirm">
-                      <div class="ac-popconfirm__text">将向当前审批人发送企微催办消息，确认催办？</div>
-                      <div class="ac-popconfirm__actions">
-                        <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                        <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
-                          data-msg="已向 王志远 发送催办">确认催办</button>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td>
-                  <span class="cell-no">
-                    <a class="cell-link" href="./requirement-detail.html">REQ-20261009-017</a>
-                    <span class="ac-tag is-external">外部提交</span>
-                  </span>
-                </td>
-                <td><span class="cell-title" title="兼职人员提成报表按周汇总展示">兼职人员提成报表按周汇总展示</span></td>
-                <td><span class="ac-tag ac-tag--pill is-ydtj">有点推荐</span></td>
-                <td class="cell-muted">—</td>
-                <td><span class="ac-tag is-processing">实施确认中</span></td>
-                <td><span class="ac-tag is-processing">P2 中</span></td>
-                <!-- 已催办：remindHours ≤ staleHours < escalateHours → 橙 -->
-                <td><span class="ac-tag is-warning" title="催办阈值 48 小时 / 升级阈值 72 小时；已催办 1 次；最后催办 2026-10-15 08:00">2 天 5 小时</span></td>
-                <td>
-                  <span class="cell-stack">
-                    <span>实施确认</span>
-                    <span class="cell-sub">李思远、孙浩</span>
-                  </span>
-                </td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <button type="button" class="ac-btn ac-btn--text" data-popconfirm>手动催办</button>
-                    <div class="ac-popconfirm">
-                      <div class="ac-popconfirm__text">将向当前审批人发送企微催办消息，确认催办？</div>
-                      <div class="ac-popconfirm__actions">
-                        <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                        <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
-                          data-msg="已向 李思远、孙浩 发送催办">确认催办</button>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-              <tr>
-                <td><a class="cell-link" href="./requirement-detail.html">REQ-20261013-009</a></td>
-                <td><span class="cell-title" title="门店报损图片上传数量上限提升">门店报损图片上传数量上限提升</span></td>
-                <td><span class="ac-tag ac-tag--pill is-snack">零食王国</span></td>
-                <td><span class="ac-tag ac-tag--pill is-ops">运营</span></td>
-                <td><span class="ac-tag is-processing">产品确认中</span></td>
-                <td><span class="ac-tag is-default">P3 低</span></td>
-                <!-- 正常：staleHours < remindHours → 灰（此处仅演示滞留 Tab 行结构，实际入榜行均 ≥ 催办阈值） -->
-                <td><span class="ac-tag is-warning" title="催办阈值 72 小时 / 升级阈值 120 小时；已催办 1 次；最后催办 2026-10-14 08:00">3 天 1 小时</span></td>
-                <td>
-                  <span class="cell-stack">
-                    <span>产品确认</span>
-                    <span class="cell-sub">陈默</span>
-                  </span>
-                </td>
-                <td>
-                  <div class="tpl-row-actions">
-                    <a class="ac-btn ac-btn--text" href="./requirement-detail.html">查看详情</a>
-                    <button type="button" class="ac-btn ac-btn--text" data-popconfirm>手动催办</button>
-                    <div class="ac-popconfirm">
-                      <div class="ac-popconfirm__text">将向当前审批人发送企微催办消息，确认催办？</div>
-                      <div class="ac-popconfirm__actions">
-                        <button type="button" class="ac-btn ac-btn--secondary" data-pop-cancel>取消</button>
-                        <button type="button" class="ac-btn ac-btn--primary" data-pop-ok
-                          data-msg="已向 陈默 发送催办">确认催办</button>
-                      </div>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <div class="tpl-pagination">
-        <span>共 42 条</span>
-        <select class="tpl-pagination__size">
-          <option>20 条/页</option><option>50 条/页</option><option>100 条/页</option>
-        </select>
-        <div class="tpl-pagination__pager">
-          <button type="button" disabled>‹</button>
-          <button type="button" class="is-active">1</button>
-          <button type="button">2</button>
-          <button type="button">3</button>
-          <button type="button">›</button>
-        </div>
-      </div>
+  <!-- 数据表格：视角决定列集；「滞留需求」视角去掉附件列，增加 停留时长 / 滞留级次 / 催办情况，默认按停留时长倒序 -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left" id="infoBar">共 16 条</div>
+      <div class="tpl-toolbar__right"><span class="u-sub" id="viewNote"></span></div>
     </div>
-  </section>
+    <div class="ac-table-wrap" id="tableWrap">
+      <table class="ac-table" id="listTable">
+        <thead id="listThead"></thead>
+        <tbody id="listTbody"></tbody>
+      </table>
+      <div class="ac-table__loading" aria-live="polite" id="tableLoading" hidden><span class="ac-table__spinner" aria-label="加载中"></span></div>
+    </div>
+    <div class="tpl-pagination">
+      <span class="tpl-pagination__info" id="pageInfo">共 16 条 · 第 1 / 1 页</span>
+      <div class="tpl-pagination__pages">
+        <a class="tpl-pagination__page">‹</a>
+        <a class="tpl-pagination__page is-active">1</a>
+        <a class="tpl-pagination__page">›</a>
+      </div>
+      <span class="tpl-pagination__size">20 条/页 <span class="ac-select__arrow"><span class="ac-icon" data-ac="AcIcon" data-name="down"></span></span></span>
+    </div>
+  </div>
+</section>
+
+<!-- 通用 AcPopconfirm 浮层（撤回 / 删除草稿 / 手动催办 二次确认） -->
+<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
+  <div class="ac-popconfirm__inner">
+    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
+    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
+  </div>
+  <span class="ac-popconfirm__arrow"></span>
 </div>
 
-<div class="ac-toast" id="acToast"><span class="ac-toast__icon">✓</span><span id="acToastText"></span></div>
+<!-- 全局提示宿主 -->
+<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
 
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
 <script>
-(function () {
-  /* ── Select：单选替换值 / 多选切换勾选；disabled 不响应 ── */
-  function closeAllSelects(except) {
-    document.querySelectorAll('.ac-select.is-open').forEach(function (el) {
-      if (el !== except) el.classList.remove('is-open');
-    });
-  }
-  document.querySelectorAll('.ac-select').forEach(function (sel) {
-    var trigger = sel.querySelector('.ac-select__trigger');
-    var valueEl = sel.querySelector('.ac-select__value');
-    var multi = sel.getAttribute('data-select') === 'multi';
-    trigger.addEventListener('click', function (e) {
-      e.stopPropagation();
-      if (sel.classList.contains('is-disabled')) return;
-      var open = sel.classList.contains('is-open');
-      closeAllSelects();
-      if (!open) sel.classList.add('is-open');
-    });
-    sel.querySelectorAll('.ac-select__option').forEach(function (opt) {
-      opt.addEventListener('click', function (e) {
-        e.stopPropagation();
-        if (multi) {
-          opt.classList.toggle('is-checked');
-          var picked = [].map.call(sel.querySelectorAll('.ac-select__option.is-checked'), function (o) {
-            return o.textContent.trim().replace(/^✓/, '');
-          });
-          valueEl.textContent = picked.length ? picked.join('、') : trigger.getAttribute('data-placeholder');
-          trigger.classList.toggle('is-placeholder', picked.length === 0);
-        } else {
-          sel.querySelectorAll('.ac-select__option').forEach(function (o) { o.classList.remove('is-checked'); });
-          opt.classList.add('is-checked');
-          valueEl.textContent = opt.textContent.trim();
-          trigger.classList.remove('is-placeholder');
-          sel.classList.remove('is-open');
-          /* 产品线选「有点推荐」→ 业务线置灰并清空 */
-          if (sel.getAttribute('data-role') === 'product-line') {
-            var biz = document.querySelector('[data-role="biz-line"]');
-            var isYdtj = opt.textContent.trim() === '有点推荐';
-            biz.classList.toggle('is-disabled', isYdtj);
-            if (isYdtj) {
-              biz.querySelector('.ac-select__value').textContent = '有点推荐不区分业务线';
-              biz.querySelector('.ac-select__trigger').classList.add('is-placeholder');
-            } else {
-              biz.querySelector('.ac-select__value').textContent =
-                biz.querySelector('.ac-select__trigger').getAttribute('data-placeholder');
-            }
-          }
-        }
-      });
-    });
-  });
+/* ==================== 基础工具（页面自管交互：body 委托 + stopPropagation，避免设计仓演示运行时干扰） ==================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms || 400));
 
-  /* ── 视角 Tab：滞留需求切换独立表结构（独立接口取数；KPI 不刷新）；外部提交锁定来源筛选 ── */
-  var pageRoot = document.getElementById('pageRoot');
-  var sourceSel = document.querySelector('[data-role="submit-source"]');
-  document.querySelectorAll('[data-tab]').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      document.querySelectorAll('[data-tab]').forEach(function (t) { t.classList.remove('is-active'); });
-      tab.classList.add('is-active');
-      var key = tab.getAttribute('data-tab');
-      pageRoot.classList.toggle('is-stale-mode', key === 'stale');
-      var lockExternal = key === 'external';
-      sourceSel.classList.toggle('is-disabled', lockExternal);
-      if (lockExternal) {
-        sourceSel.querySelector('.ac-select__value').textContent = '外部提交';
-        sourceSel.querySelector('.ac-select__trigger').classList.remove('is-placeholder');
-      }
-      acToast('已切换视角：' + tab.textContent.trim() + '，页码重置为 1');
-    });
-  });
-
-  /* ── KPI 下钻：被选卡片高亮，再点取消 ── */
-  document.querySelectorAll('.tpl-kpi').forEach(function (card) {
-    card.addEventListener('click', function () {
-      var wasActive = card.classList.contains('is-active');
-      document.querySelectorAll('.tpl-kpi').forEach(function (c) { c.classList.remove('is-active'); });
-      if (!wasActive) card.classList.add('is-active');
-      acToast('筛选条件已回填：' + card.querySelector('.tpl-kpi__label').textContent);
-    });
-  });
-
-  /* ── Popconfirm ── */
-  function closeAllPops() {
-    document.querySelectorAll('.ac-popconfirm.is-open').forEach(function (p) { p.classList.remove('is-open'); });
-  }
-  document.querySelectorAll('[data-popconfirm]').forEach(function (btn) {
-    btn.addEventListener('click', function (e) {
-      e.stopPropagation();
-      var pop = btn.parentNode.querySelector('.ac-popconfirm');
-      var open = pop.classList.contains('is-open');
-      closeAllPops();
-      if (!open) pop.classList.add('is-open');
-    });
-  });
-  document.querySelectorAll('[data-pop-cancel]').forEach(function (b) {
-    b.addEventListener('click', function (e) { e.stopPropagation(); closeAllPops(); });
-  });
-  document.querySelectorAll('[data-pop-ok]').forEach(function (b) {
-    b.addEventListener('click', function (e) {
-      e.stopPropagation(); closeAllPops(); acToast(b.getAttribute('data-msg'));
-    });
-  });
-
-  document.addEventListener('click', function () { closeAllSelects(); closeAllPops(); });
-})();
-
-/* ── Toast ── */
-var acToastTimer;
-function acToast(text) {
-  var box = document.getElementById('acToast');
-  document.getElementById('acToastText').textContent = text;
-  box.classList.add('is-open');
-  clearTimeout(acToastTimer);
-  acToastTimer = setTimeout(function () { box.classList.remove('is-open'); }, 2200);
+function toast(msg, type) {
+  const t = type || 'success';
+  const el = document.createElement('div');
+  el.className = 'ac-message__item is-' + t;
+  el.innerHTML = '<span class="ac-message__icon is-' + t + '">' + ({ success: '✓', error: '!', warning: '!', info: 'i' })[t] + '</span><span class="ac-message__text">' + esc(msg) + '</span>';
+  $('#toastList').appendChild(el);
+  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 240); }, 2600);
 }
+function busy(btn, on) {
+  if (!btn) return;
+  btn.disabled = !!on;
+  btn.classList.toggle('is-loading', !!on);
+  const sp = btn.querySelector('.ac-btn-spin');
+  if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+  if (!on && sp) sp.remove();
+}
+
+/* ---------- 通用 Popconfirm（定位到触发元素上方） ---------- */
+let popResolve = null;
+function askPop(anchor, title, content, okText) {
+  const p = $('#popconfirm');
+  $('#pcTitle').textContent = title;
+  $('#pcContent').textContent = content || '';
+  $('#pcOkBtn').textContent = okText || '确认';
+  p.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
+  p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
+  return new Promise((res) => { popResolve = res; });
+}
+function settlePop(v) {
+  if (!popResolve) return;
+  const r = popResolve;
+  popResolve = null;
+  if (!v) $('#popconfirm').hidden = true;
+  r(v);
+}
+const popOpen = () => !$('#popconfirm').hidden;
+
+/* ---------- 事件委托 ---------- */
+const HANDLERS = {};
+const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
+['click', 'input', 'keydown', 'mousedown', 'change'].forEach((type) => {
+  document.body.addEventListener(type, (e) => {
+    const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
+    for (const [sel, fn] of HANDLERS[type] || []) {
+      const el = sel ? t && t.closest(sel) : t;
+      if (el && fn(e, el) === true) break;
+    }
+    e.stopPropagation();
+  });
+});
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!popOpen() && !$$('.ac-select.is-open').length) return;
+  e.stopPropagation();
+  if (popOpen()) { settlePop(false); return; }
+  $$('.ac-select.is-open').forEach((s) => closeSelect(s));
+}, true);
+
+/* ---------- AcSelect 页面自管实现（单选 / 多选） ---------- */
+function closeSelect(root) {
+  root.classList.remove('is-open');
+  const pop = $('.ac-select__popup', root);
+  if (pop) pop.hidden = true;
+}
+function closeAllSelects(keep) { $$('.ac-select.is-open').forEach((s) => { if (s !== keep) closeSelect(s); }); }
+function selectValue(root) { return root.getAttribute('data-value') || ''; }
+function selectLabel(root, v) {
+  const opt = $(`.ac-select__option[data-value="${CSS.escape(v)}"]`, root);
+  return opt ? $('.ac-select__option-label', opt).textContent.trim() : '';
+}
+function setSelect(root, v, silent) {
+  root.setAttribute('data-value', v);
+  const single = $('.ac-select__single', root);
+  single.textContent = selectLabel(root, v);
+  single.classList.remove('is-placeholder');
+  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', o.getAttribute('data-value') === v));
+  if (!silent) root.dispatchEvent(new CustomEvent('ac:change', { bubbles: true, detail: { value: v } }));
+}
+function resetSelect(root) {
+  root.removeAttribute('data-value');
+  const single = $('.ac-select__single', root);
+  single.textContent = root.getAttribute('data-placeholder') || '请选择';
+  single.classList.add('is-placeholder');
+  $$('.ac-select__option', root).forEach((o) => o.classList.remove('is-selected'));
+}
+function multiValues(root) { return $$('.ac-select__tag', root).map((t) => t.getAttribute('data-value')); }
+function setMulti(root, values) {
+  const trigger = $('.ac-select__trigger', root);
+  $$('.ac-select__tag', trigger).forEach((t) => t.remove());
+  const single = $('.ac-select__single', trigger);
+  values.forEach((v) => {
+    const tag = document.createElement('span');
+    tag.className = 'ac-select__tag';
+    tag.setAttribute('data-value', v);
+    tag.innerHTML = '<span class="ac-select__tag-label">' + esc(v) + '</span><span class="ac-select__tag-close" role="button" tabindex="0">×</span>';
+    trigger.insertBefore(tag, single);
+  });
+  single.hidden = values.length > 0;
+  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', values.includes(o.getAttribute('data-value'))));
+}
+on('click', '.ac-select .ac-select__trigger', (e, el) => {
+  if (e.target.closest('.ac-select__tag-close')) return true;
+  const root = el.closest('.ac-select');
+  if (root.classList.contains('is-disabled')) return true;
+  const willOpen = !root.classList.contains('is-open');
+  closeAllSelects(root);
+  root.classList.toggle('is-open', willOpen);
+  $('.ac-select__popup', root).hidden = !willOpen;
+  return true;
+});
+on('click', '.ac-select .ac-select__option', (e, el) => {
+  const root = el.closest('.ac-select');
+  const v = el.getAttribute('data-value');
+  if (root.classList.contains('is-multiple')) {
+    const values = multiValues(root);
+    const i = values.indexOf(v);
+    if (i >= 0) values.splice(i, 1); else values.push(v);
+    setMulti(root, values);
+  } else {
+    setSelect(root, v);
+    closeSelect(root);
+  }
+  return true;
+});
+on('click', '.ac-select .ac-select__tag-close', (e, el) => {
+  const root = el.closest('.ac-select');
+  const tag = el.closest('.ac-select__tag');
+  const values = multiValues(root).filter((v) => v !== tag.getAttribute('data-value'));
+  setMulti(root, values);
+  return true;
+});
+on('mousedown', null, (e, t) => {
+  if (popOpen() && !(t && t.closest('#popconfirm'))) settlePop(false);
+  $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
+  const menu = $('#protoMenu');
+  if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
+  return false;
+});
+
+/* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
+/* 当前登录人：陈默（产品经理，兼实施负责人——用于演示滞留视角的手动催办） */
+const ME = '陈默';
+const STATUS_LABEL = { DRAFT: '草稿', SUBMITTED: '已提交', BU_REVIEWING: '业务线审批中', IMPL_REVIEWING: '实施确认中', PM_REVIEWING: '产品确认中', PM_SUBMITTED: '待关联排期', LINKED: '已关联排期', REJECTED: '已驳回' };
+const STATUS_TONE = { DRAFT: '', SUBMITTED: 'processing', BU_REVIEWING: 'processing', IMPL_REVIEWING: 'processing', PM_REVIEWING: 'processing', PM_SUBMITTED: 'warning', LINKED: 'success', REJECTED: 'danger' };
+const PRI_TAG = { P0: ['red', 'P0 紧急'], P1: ['orange', 'P1 高'], P2: ['blue', 'P2 中'], P3: ['gray', 'P3 低'] };
+const LINE_TAG = { 运营: 'blue', 财务: 'purple', 供应链: 'green', 数字化: 'orange' };   /* 数字化「金」以 orange 近似（ac-tag 五色约束） */
+const DEV_TAG = { 待开发: '', 开发中: 'processing', 开发完成: 'success' };
+const STALE_TAG = { 正常: '', 已催办: 'warning', 已升级: 'danger' };
+
+/* stayH：当前级次停留时长（小时）；level：滞留级次；urge：已催办次数；lastUrge：最近催办时间；esc：已升级 */
+const ROWS = [
+  { no: null, title: '门店夜间补货流程优化（草稿）', product: 'mm', line: '供应链', source: 'in', submitter: '陈默', status: 'DRAFT', approver: null, priority: 'P2', type: '功能优化', attach: 0, time: '2026-10-17 21:08', stayH: 0 },
+  { no: null, title: '门店盘点差异自动预警（草稿）', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'DRAFT', approver: null, priority: 'P3', type: '新功能', attach: 1, time: '2026-10-16 18:40', stayH: 0 },
+  { no: 'REQ-20261017-004', title: '会员积分兑换页面加载优化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'SUBMITTED', approver: '周文杰', priority: 'P2', type: '功能优化', attach: 2, time: '2026-10-17 15:22', stayH: 20, level: '业务线审批', urge: 0 },
+  { no: 'REQ-20261016-009', title: '要货审批增加批量通过', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'BU_REVIEWING', approver: '周文杰', priority: 'P1', type: '功能优化', attach: 0, time: '2026-10-16 09:12', stayH: 30, level: '业务线审批', urge: 0 },
+  { no: 'REQ-20261015-006', title: '门店报损流程线上化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'IMPL_REVIEWING', approver: '李思远 等 2 人', priority: 'P2', type: '新功能', attach: 3, time: '2026-10-15 11:05', stayH: 54, level: '实施确认', urge: 1, lastUrge: '2026-10-17 10:00' },
+  { no: 'REQ-20261016-012', title: '门店要货单支持按周转天数智能建议补货量', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'PM_REVIEWING', approver: '陈默', priority: 'P1', type: '功能优化', attach: 4, time: '2026-10-16 08:30', stayH: 76, level: '产品确认', urge: 2, lastUrge: '2026-10-17 16:12', esc: true },
+  { no: 'REQ-20261014-002', title: '要货历史数据看板', product: 'mm', line: '数字化', source: 'in', submitter: '陈默', status: 'PM_SUBMITTED', approver: null, priority: 'P2', type: '数据报表', attach: 1, time: '2026-10-14 14:47', stayH: 0 },
+  { no: 'REQ-20261013-011', title: '要货单导出增加成本列', product: 'mm', line: '财务', source: 'in', submitter: '陈默', status: 'LINKED', approver: null, priority: 'P3', type: '功能优化', card: 'SCH-202610-023', dev: '开发中', attach: 0, time: '2026-10-13 10:18', stayH: 0 },
+  { no: 'REQ-20261012-007', title: '盘点任务 App 推送', product: 'mm', line: '运营', source: 'in', submitter: '王五', status: 'LINKED', approver: null, priority: 'P2', type: '新功能', card: 'SCH-202610-018', cardInvalid: true, dev: '待开发', attach: 2, time: '2026-10-12 16:55', stayH: 0 },
+  { no: 'REQ-20261010-003', title: '要货审批超时自动提醒', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'LINKED', approver: null, priority: 'P1', type: '功能优化', card: 'SCH-202609-044', dev: '开发完成', attach: 1, time: '2026-10-10 09:26', stayH: 0 },
+  { no: 'REQ-20261016-003', title: '要货单自动合并相同商品', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'REJECTED', approver: null, priority: 'P3', type: '功能优化', attach: 0, time: '2026-10-16 10:41', stayH: 0 },
+  { no: 'REQ-20261011-015', title: '门店自主定价申请', product: 'mm', line: '财务', source: 'in', submitter: '张三', status: 'REJECTED', approver: null, priority: 'P2', type: '新功能', attach: 2, time: '2026-10-11 13:29', stayH: 0 },
+  { no: 'REQ-20261017-001', title: '要货提交偶发重复扣减库存', product: 'mm', line: '供应链', source: 'in', submitter: '张三', status: 'PM_REVIEWING', approver: '陈默', priority: 'P0', type: '缺陷修复', attach: 2, time: '2026-10-17 09:14', stayH: 26, level: '产品确认', urge: 0 },
+  { no: 'REQ-20261015-019', title: '盘点单拍照上传失败', product: 'mm', line: '数字化', source: 'in', submitter: '李四', status: 'LINKED', approver: null, priority: 'P1', type: '缺陷修复', ticket: 'BL-20261016-045', attach: 1, time: '2026-10-15 17:36', stayH: 0 },
+  { no: 'REQ-20261017-002', title: '希望有点推荐支持按小区筛选商品', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'BU_REVIEWING', approver: '何静', priority: 'P2', type: '功能优化', attach: 2, time: '2026-10-17 11:58', stayH: 50, level: '业务线审批', urge: 1, lastUrge: '2026-10-18 09:05' },
+  { no: 'REQ-20261016-014', title: '有点推荐小程序首页加载白屏', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'PM_REVIEWING', approver: '陈默', priority: 'P1', type: '新功能', attach: 3, time: '2026-10-16 15:03', stayH: 80, level: '产品确认', urge: 2, lastUrge: '2026-10-17 18:30', esc: true },
+];
+
+/* ==================== 筛选与视角状态 ==================== */
+const S = { view: 'all', kpi: null, page: 1 };
+const TODO_SET = new Set(['REQ-20261016-012', 'REQ-20261017-001', 'REQ-20261016-014']);   /* 快照当前级次审批人含陈默 */
+const STALE_SET = new Set(ROWS.filter((r) => ['BU_REVIEWING', 'IMPL_REVIEWING', 'PM_REVIEWING'].includes(r.status)).map((r) => r.no));
+
+function passFilters(r) {
+  const sts = multiValues($('#fStatus'));
+  if (sts.length && !sts.includes(r.status)) return false;
+  const prod = selectValue($('#fProduct'));
+  if (prod && r.product !== prod) return false;
+  const line = selectValue($('#fLine'));
+  if (line && r.line !== line) return false;
+  const src = selectValue($('#fSource'));
+  if (src && r.source !== src) return false;
+  const pri = multiValues($('#fPriority'));
+  if (pri.length && !pri.includes(r.priority)) return false;
+  const type = selectValue($('#fType'));
+  if (type && r.type !== type) return false;
+  const sub = ($('#fSubmitter').value || '').trim();
+  if (sub && !r.submitter.includes(sub)) return false;
+  return true;
+}
+function viewRows() {
+  let rows = ROWS.slice();
+  if (S.view === 'mine') rows = rows.filter((r) => r.source === 'in' && r.submitter === ME);
+  else if (S.view === 'todo') rows = rows.filter((r) => TODO_SET.has(r.no));
+  else if (S.view === 'external') rows = rows.filter((r) => r.source === 'out');
+  else if (S.view === 'stale') rows = rows.filter((r) => STALE_SET.has(r.no)).sort((a, b) => b.stayH - a.stayH);
+  return rows.filter(passFilters);
+}
+
+/* ==================== 渲染 ==================== */
+function statusCell(r) {
+  if (r.status === 'DRAFT') return '<span class="ac-tag ac-tag--gray">草稿</span>';
+  const label = r.type === '缺陷修复' && r.status === 'PM_SUBMITTED' ? '待转黑灯工厂' : r.type === '缺陷修复' && r.status === 'LINKED' ? '已转黑灯工厂' : STATUS_LABEL[r.status];
+  const tone = STATUS_TONE[r.status];
+  return `<span class="tpl-cell-status${tone ? ' is-' + tone : ''}">${label}</span>`;
+}
+function productTag(r) {
+  return r.product === 'mm' ? '<span class="ac-tag ac-tag--red">鸣鸣很忙</span>' : '<span class="ac-tag ac-tag--purple">有点推荐</span>';
+}
+function lineTag(r) {
+  return r.line ? `<span class="ac-tag ac-tag--${LINE_TAG[r.line]}">${r.line}</span>` : '<span class="u-muted">—</span>';
+}
+function priTag(r) { const p = PRI_TAG[r.priority]; return `<span class="ac-tag ac-tag--${p[0]}">${p[1]}</span>`; }
+function noCell(r) {
+  const no = r.no ? `<a class="ac-link mono" href="requirement-detail.html">${r.no}</a>` : '<span class="u-muted">—</span>';
+  const ext = r.source === 'out' ? ' <span class="ac-tag ac-tag--orange">外部提交</span>' : '';
+  return no + ext;
+}
+function submitterCell(r) {
+  if (r.source === 'out') return `<div>${esc(r.submitter)}</div><div class="u-sub" title="${esc(r.dept)}">${esc(r.dept)}</div>`;
+  return esc(r.submitter);
+}
+function relCell(r) {
+  if (r.type === '缺陷修复') {
+    return r.ticket ? `<a class="ac-link mono" href="requirement-detail.html" title="黑灯工厂工单">${r.ticket}</a>` : '<span class="u-muted">—</span>';
+  }
+  if (!r.card) return '<span class="u-muted">—</span>';
+  const invalid = r.cardInvalid ? ' <span class="ac-tag ac-tag--orange">已失效</span>' : '';
+  const dev = r.dev ? ` <span class="tpl-cell-status${DEV_TAG[r.dev] ? ' is-' + DEV_TAG[r.dev] : ''}">${r.dev}</span>` : '';
+  return `<a class="ac-link mono" href="requirement-detail.html" title="新标签页打开功能排期">${r.card}</a>${invalid}${dev}`;
+}
+function attachCell(r) {
+  if (!r.attach) return '<span class="u-muted">—</span>';
+  return `<a class="ac-link" href="requirement-detail.html" title="查看附件"><span class="ac-icon" data-ac="AcIcon" data-name="paperclip" data-size="sm"></span> ${r.attach}</a>`;
+}
+function stayText(h) {
+  if (h >= 48) return `${Math.floor(h / 24)} 天 ${h % 24} 小时`;
+  return `${h} 小时`;
+}
+function staleDegree(r) {
+  if (r.esc) return '已升级';
+  if (r.urge > 0) return '已催办';
+  return '正常';
+}
+function rowActions(r) {
+  const acts = [];
+  acts.push('<a class="ac-btn ac-btn--text ac-btn--sm" href="requirement-detail.html">查看详情</a>');
+  if (r.source === 'in') {
+    const own = r.submitter === ME;
+    if (own && (r.status === 'DRAFT' || r.status === 'REJECTED')) acts.push('<a class="ac-btn ac-btn--text ac-btn--sm" href="requirement-submit.html">编辑</a>');
+    if (own && (r.status === 'SUBMITTED' || r.status === 'BU_REVIEWING')) acts.push(`<button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="withdraw" data-no="${r.no}">撤回</button>`);
+    if (own && r.status === 'DRAFT') acts.push('<button class="ac-btn ac-btn--text ac-btn--sm ac-btn--text-danger" type="button" data-act="del" data-no="draft">删除</button>');
+  }
+  if (S.view === 'stale') acts.push(`<button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="urge" data-no="${r.no}">手动催办</button>`);
+  return `<div class="ac-row-actions" data-ac="AcRowActions">${acts.join('')}</div>`;
+}
+
+const COLS_NORMAL = ['需求编号', '标题', '产品线', '所属业务线', '提交人', '当前状态', '当前审批人', '优先级', '关联排期 / 工单', '附件', '操作'];
+const COLS_STALE = ['需求编号', '标题', '产品线', '优先级', '当前状态', '停留时长', '滞留级次', '催办情况', '操作'];
+
+function renderHead() {
+  const cols = S.view === 'stale' ? COLS_STALE : COLS_NORMAL;
+  $('#listThead').innerHTML = '<tr>' + cols.map((c) => `<th>${c}</th>`).join('') + '</tr>';
+}
+function approverCell(r) {
+  if (!r.approver) return '<span class="u-muted">—</span>';
+  if (r.approver.includes('等')) return `<span title="李思远、孙浩（或签）">${esc(r.approver)}</span>`;
+  return esc(r.approver);
+}
+function renderTable() {
+  const rows = viewRows();
+  const stale = S.view === 'stale';
+  renderHead();
+  $('#infoBar').textContent = `共 ${rows.length} 条`;
+  $('#pageInfo').textContent = `共 ${rows.length} 条 · 第 1 / 1 页`;
+  $('#viewNote').textContent = stale ? '滞留程度相对命中阈值（服务端返回）展示；默认按停留时长倒序' : '';
+  const tbody = $('#listTbody');
+  if (!rows.length) {
+    const text = stale ? '很好，当前没有超时未处理的需求' : '暂无符合条件的需求';
+    const guide = stale ? '' : '<div style="margin-top:8px"><a class="ac-btn ac-btn--primary ac-btn--sm" href="requirement-submit.html">新增需求</a></div>';
+    const cols = stale ? COLS_STALE.length : COLS_NORMAL.length;
+    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">${text}</div>${guide}</div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((r) => {
+    if (stale) {
+      const deg = staleDegree(r);
+      return `<tr>
+        <td>${noCell(r)}</td>
+        <td><span title="${esc(r.title)}">${esc(r.title)}</span></td>
+        <td>${productTag(r)}</td>
+        <td>${priTag(r)}</td>
+        <td>${statusCell(r)}</td>
+        <td><span class="mono">${stayText(r.stayH)}</span> <span class="tpl-cell-status${STALE_TAG[deg] ? ' is-' + STALE_TAG[deg] : ''}">${deg}</span></td>
+        <td>${esc(r.level || '')}（${esc(r.approver || '—')}）</td>
+        <td>${r.urge ? `已催办 ${r.urge} 次 · 最近 ${esc(r.lastUrge)}` : '未催办'}${r.esc ? ' <span class="ac-tag ac-tag--red">已升级</span>' : ''}</td>
+        <td>${rowActions(r)}</td>
+      </tr>`;
+    }
+    return `<tr>
+      <td>${noCell(r)}</td>
+      <td><span title="${esc(r.title)}">${esc(r.title)}</span></td>
+      <td>${productTag(r)}</td>
+      <td>${lineTag(r)}</td>
+      <td>${submitterCell(r)}</td>
+      <td>${statusCell(r)}</td>
+      <td>${approverCell(r)}</td>
+      <td>${priTag(r)}</td>
+      <td>${relCell(r)}</td>
+      <td>${attachCell(r)}</td>
+      <td>${rowActions(r)}</td>
+    </tr>`;
+  }).join('');
+}
+/* 加载态：视角切换 / 查询时表格区 300ms 加载指示（骨架屏语义，真实页面为 10 行骨架占位）；
+   错误态：加载失败时表格区展示错误插图 +「点击重试」（本原型演示成功路径，错误态 DOM 同 AcEmpty 结构替换文案） */
+function renderWithLoading() {
+  $('#tableLoading').hidden = false;
+  setTimeout(() => { $('#tableLoading').hidden = true; renderTable(); }, 300);
+}
+function renderKpis() {
+  $('#kpiDraft').textContent = ROWS.filter((r) => r.status === 'DRAFT' && r.submitter === ME).length;
+  $('#kpiTodo').textContent = ROWS.filter((r) => TODO_SET.has(r.no)).length;
+  $('#kpiPassed').textContent = ROWS.filter((r) => ['PM_SUBMITTED', 'LINKED'].includes(r.status)).length;
+  $('#kpiRejected').textContent = ROWS.filter((r) => r.status === 'REJECTED').length;
+  $('#todoBadge').textContent = ROWS.filter((r) => TODO_SET.has(r.no)).length;
+}
+/* ==================== 事件绑定与初始化 ==================== */
+/* 视角 Tab 切换：表格骨架（加载指示）+ 页码重置为 1 */
+on('click', '#viewTabs .ac-tab', (e, el) => {
+  $$('#viewTabs .ac-tab').forEach((t) => t.classList.remove('is-active'));
+  el.classList.add('is-active');
+  S.view = el.getAttribute('data-view');
+  S.page = 1;
+  /* 「外部提交」视角下提交来源锁定为外部提交并置灰 */
+  const src = $('#fSource');
+  if (S.view === 'external') { setSelect(src, 'out', true); src.classList.add('is-disabled'); }
+  else { src.classList.remove('is-disabled'); }
+  renderWithLoading();
+  return true;
+});
+
+/* KPI 下钻：筛选回填并刷新，被选卡片高亮 */
+on('click', '[data-kpi]', (e, el) => {
+  const k = el.getAttribute('data-kpi');
+  $$('#kpiGrid .tpl-kpi').forEach((c) => c.classList.remove('is-active'));
+  el.classList.add('is-active');
+  if (k === 'draft') { switchView('mine'); setMulti($('#fStatus'), ['DRAFT']); }
+  else if (k === 'todo') { switchView('todo'); setMulti($('#fStatus'), []); }
+  else if (k === 'passed') { switchView('all'); setMulti($('#fStatus'), ['PM_SUBMITTED', 'LINKED']); }
+  else if (k === 'rejected') { switchView('all'); setMulti($('#fStatus'), ['REJECTED']); }
+  renderWithLoading();
+  return true;
+});
+function switchView(v) {
+  S.view = v;
+  $$('#viewTabs .ac-tab').forEach((t) => t.classList.toggle('is-active', t.getAttribute('data-view') === v));
+}
+
+/* 查询 / 重置 */
+on('click', '#btnQuery', () => { S.page = 1; renderWithLoading(); return true; });
+on('click', '#btnReset', () => {
+  resetSelect($('#fProduct')); resetSelect($('#fLine')); resetSelect($('#fSource')); resetSelect($('#fType'));
+  setMulti($('#fStatus'), []); setMulti($('#fPriority'), []);
+  $('#fSubmitter').value = '';
+  $('#fRange').value = '2026-09-18 ~ 2026-10-18';   /* 默认近 30 天 */
+  $('#fLine').classList.remove('is-disabled');
+  S.page = 1;
+  renderWithLoading();
+  return true;
+});
+
+/* 产品线 = 有点推荐时，所属业务线置灰并清空 */
+document.body.addEventListener('ac:change', (e) => {
+  if (e.target && e.target.id === 'fProduct') {
+    const line = $('#fLine');
+    if (e.detail.value === 'yd') { resetSelect(line); line.classList.add('is-disabled'); }
+    else line.classList.remove('is-disabled');
+  }
+});
+
+/* 撤回（提交人本人 + 已提交 / 业务线审批中） */
+on('click', '[data-act="withdraw"]', async (e, el) => {
+  const no = el.getAttribute('data-no');
+  const ok = await askPop(el, '撤回需求', '撤回后需求回到草稿、审批链作废，确认撤回？', '确认撤回');
+  $('#popconfirm').hidden = true;
+  if (!ok) return true;
+  busy(el, true);
+  await wait(500);
+  busy(el, false);
+  const row = ROWS.find((r) => r.no === no);
+  if (row) { row.status = 'DRAFT'; row.no = null; }
+  toast(`需求 ${no} 已撤回至草稿`);
+  renderKpis();
+  renderTable();
+  return true;
+});
+
+/* 删除草稿（提交人本人 + 草稿；删除后不可恢复） */
+on('click', '[data-act="del"]', async (e, el) => {
+  const ok = await askPop(el, '删除草稿', '删除后该草稿不可恢复，确认删除？', '确认删除');
+  $('#popconfirm').hidden = true;
+  if (!ok) return true;
+  busy(el, true);
+  await wait(400);
+  busy(el, false);
+  const i = ROWS.findIndex((r) => r.status === 'DRAFT' && r.submitter === ME);
+  if (i >= 0) ROWS.splice(i, 1);
+  toast('草稿已删除');
+  renderKpis();   /* 待提交数同步减一 */
+  renderTable();
+  return true;
+});
+
+/* 手动催办（滞留需求视角 + 管理员 / 实施负责人） */
+on('click', '[data-act="urge"]', async (e, el) => {
+  const no = el.getAttribute('data-no');
+  const row = ROWS.find((r) => r.no === no);
+  const ok = await askPop(el, '手动催办', '将向当前审批人发送企微催办消息，确认催办？', '确认催办');
+  $('#popconfirm').hidden = true;
+  if (!ok) return true;
+  busy(el, true);
+  await wait(500);
+  busy(el, false);
+  if (row) { row.urge = (row.urge || 0) + 1; row.lastUrge = '2026-10-18 10:26'; }
+  toast(`已向 ${row ? row.approver : '审批人'} 发送催办`);
+  renderTable();
+  return true;
+});
+
+/* 导出 */
+on('click', '#exportBtn', async (e, btn) => {
+  busy(btn, true);
+  await wait(600);
+  busy(btn, false);
+  toast('导出任务已提交，请在下载中心查看');
+  return true;
+});
+
+/* proto-bar 页间互联 */
+on('click', '#protoBtn', () => {
+  const menu = $('#protoMenu');
+  const willOpen = menu.hidden;
+  menu.hidden = !willOpen;
+  $('#protoDd').classList.toggle('is-open', willOpen);
+  return true;
+});
+on('click', '#pcOkBtn', () => { settlePop(true); return true; });
+on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
+
+/* 初始化 */
+renderKpis();
+renderTable();
 </script>
 </body>
 </html>

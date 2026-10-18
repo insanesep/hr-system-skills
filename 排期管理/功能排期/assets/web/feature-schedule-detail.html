@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>卡片详情 · 功能排期 · 鸣鸣很忙</title>
+<!--
+  功能排期 · 卡片详情页（Web 原型）
+  页面描述真源：../../references/web-ui.md#卡片详情页｜页面类型 order-detail｜整页范例 busyming-skills-design/web/templates/order-detail.html｜DOM 依据 skeletons/web/detail-page.vue.tpl
+  区块：页头（返回 + 编号标题 + 只读操作）→ 业务提示 → 开发进度 → 关键摘要 → 页级 Tab（基本信息 / 子卡明细 / 完成 commit / 操作日志）→ 双层沉底操作栏 → 弹窗与提示
+  演示数据与工作台共用 feature-schedule-data.js（会话内保存）；导航栏「原型页面」切换页面、演示卡片与整页状态，真实页面由接口状态驱动、不保留演示入口。演示基准日 2026-10-17。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
+</head>
+<body>
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb">研发 / 研发管理 / <a class="ac-link is-hoverable" data-ac="AcLink" data-status="normal" href="feature-schedule.html" data-go-back><span class="ac-link__label">功能排期管理</span></a> / <b>卡片详情</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden></div>
+  </div>
+  <span class="web-nav__crumb">张三</span>
+</nav>
+
+<section class="tpl-page tpl-page--with-actionbar" id="normalView" hidden>
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <a class="ac-link u-sm" href="feature-schedule.html" data-go-back><span class="ac-icon" data-ac="AcIcon" data-name="left"></span> 返回研发排期工作台</a>
+      <h1 class="tpl-page-title" id="pageTitle"></h1>
+      <div class="tpl-page-head__tags" id="pageTags"></div>
+    </div>
+    <div class="tpl-page-head__actions">
+      <button class="ac-btn" type="button" id="copyNoBtn"><span class="ac-icon" data-ac="AcIcon" data-name="copy" data-size="sm"></span><span class="ac-btn__label">复制编号</span></button>
+    </div>
+  </div>
+
+  <div class="tpl-section" id="alertBox" hidden></div>
+
+  <div class="tpl-panel" id="lifePanel">
+    <div class="tpl-toolbar">
+      <span class="tpl-toolbar__title">开发进度</span>
+      <span class="u-sub" id="lifeSub"></span>
+    </div>
+    <div class="ac-steps ac-steps--chevron" id="lifeSteps"></div>
+  </div>
+
+  <div class="tpl-panel">
+    <div class="tpl-section">
+      <div class="tpl-section__head">关键摘要</div>
+      <div class="tpl-kpi-grid tpl-kpi-grid--embedded" id="kpiGrid"></div>
+    </div>
+  </div>
+
+  <div class="tpl-panel">
+    <div class="ac-tabs" id="pageTabs">
+      <div class="ac-tabs__nav" role="tablist" id="tabNav"></div>
+      <div class="ac-tab-panel" data-pane="basic" id="paneBasic"></div>
+      <div class="ac-tab-panel" data-pane="children" id="paneChildren" hidden></div>
+      <div class="ac-tab-panel" data-pane="commits" id="paneCommits" hidden></div>
+      <div class="ac-tab-panel" data-pane="logs" id="paneLogs" hidden></div>
+    </div>
+  </div>
+
+  <div class="tpl-actionbar tpl-actionbar--stack" id="actionBar">
+    <div class="tpl-actionbar__inner">
+      <span class="tpl-actionbar__hint" id="barHint"></span>
+      <div class="tpl-actionbar__row" id="barRow"></div>
+    </div>
+  </div>
+</section>
+
+<section class="tpl-page" id="loadingView">
+  <div class="tpl-panel">
+    <div class="ac-skeleton">
+      <div class="ac-skeleton__line ac-skeleton__line--title"></div>
+      <div class="ac-skeleton__line"></div>
+      <div class="ac-skeleton__line ac-skeleton__line--short"></div>
+    </div>
+  </div>
+  <div class="tpl-panel">
+    <div class="ac-skeleton">
+      <div class="ac-skeleton__line ac-skeleton__line--title"></div>
+      <div class="ac-skeleton__line"></div>
+      <div class="ac-skeleton__line"></div>
+      <div class="ac-skeleton__line"></div>
+      <div class="ac-skeleton__line ac-skeleton__line--short"></div>
+    </div>
+  </div>
+</section>
+
+<section class="tpl-page" id="errorView" hidden>
+  <div class="tpl-panel">
+    <div class="ac-result">
+      <div class="ac-result__icon ac-result__icon--error"></div>
+      <div class="ac-result__title">卡片详情加载失败</div>
+      <div class="ac-result__desc">网络异常或服务暂不可用，请稍后重试。</div>
+      <button class="ac-btn ac-btn--primary" type="button" id="retryBtn">重新加载</button>
+    </div>
+  </div>
+</section>
+
+<section class="tpl-page" id="missingView" hidden>
+  <div class="tpl-panel">
+    <div class="ac-empty">
+      <div class="ac-empty__art"></div>
+      <div class="ac-empty__title">卡片不存在或已删除</div>
+      <div class="ac-empty__desc" id="missingDesc">该卡片可能已被删除，或合并卡已解散；请回到研发排期工作台查看。</div>
+      <button class="ac-btn ac-btn--primary" type="button" data-go-back>返回研发排期工作台</button>
+    </div>
+  </div>
+</section>
+
+<div class="ac-modal" data-ac="AcModal" id="editModal" hidden>
+  <div class="ac-modal__mask" data-close="editModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="560">
+      <div class="ac-modal__header"><div class="ac-modal__title">编辑卡片信息</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="editModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="editBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="editModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="editOkBtn">保存</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="scheduleModal" hidden>
+  <div class="ac-modal__mask" data-close="scheduleModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="480">
+      <div class="ac-modal__header"><div class="ac-modal__title">调整排期</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="scheduleModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="scheduleBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="scheduleModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="scheduleOkBtn">保存排期</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="doneModal" hidden>
+  <div class="ac-modal__mask" data-close="doneModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="640">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="doneTitle">标记完成</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="doneModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="doneBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="doneModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="doneOkBtn">确认完成</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="revertModal" hidden>
+  <div class="ac-modal__mask" data-close="revertModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="480">
+      <div class="ac-modal__header"><div class="ac-modal__title">回退状态</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="revertModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="revertBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="revertModal">取消</button><button class="ac-btn ac-btn--danger" type="button" id="revertOkBtn">确认回退</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
+  <div class="ac-modal__mask" data-close="confirmModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="440">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="confirmTitle">确认操作</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="confirmModal">×</button></div>
+      <div class="ac-modal__body ac-modal__body--semantic"><span class="ac-modal__sem-icon ac-modal__sem-icon--warning">!</span><div id="confirmContent"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" id="confirmCancelBtn">取消</button><button class="ac-btn ac-btn--primary" type="button" id="confirmOkBtn">确认</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
+  <div class="ac-popconfirm__inner">
+    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning">⚠</span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
+    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
+  </div>
+  <span class="ac-popconfirm__arrow"></span>
+</div>
+
+<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
+
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
+<script src="feature-schedule-data.js"></script>
+<script>
+(function () {
+  'use strict';
+  /* ---------- 基础工具 ---------- */
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const pad = (n) => String(n).padStart(2, '0');
+  const ds = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const pd = (s) => { const a = s.slice(0, 10).split('-').map(Number); return new Date(a[0], a[1] - 1, a[2]); };
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const span = (a, b) => Math.round((pd(b) - pd(a)) / 86400000);
+  const md = (s) => s.slice(5, 10);
+  const mdt = (s) => String(s || '').slice(5, 16);
+  const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
+  const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms || 360));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { return; } },
+  };
+
+  /* ---------- 演示数据与页面状态 ---------- */
+  const D = window.FS_DEMO;
+  const TODAY_S = D.TODAY;
+  const NOW_S = D.NOW;
+  const ME = D.ME;
+  const USERS = D.USERS;
+  const REPOS = D.REPOS;
+  const COMMITS = D.COMMITS;
+  const PERM = { EDIT: true, DELETE: true, MARK_DONE: true };
+  const WORKBENCH = 'feature-schedule.html';
+
+  const ST = {
+    PENDING: { label: '待开发', badge: 'default', tag: 'default' },
+    IN_PROGRESS: { label: '开发中', badge: 'processing', tag: 'blue' },
+    DONE: { label: '开发完成', badge: 'success', tag: 'success' },
+    DELAYED: { label: '延期', badge: 'warning', tag: 'warning' },
+    NON_FEATURE: { label: '非需求改动', badge: 'default', tag: 'gray' },
+  };
+  const LOG_TONE = { MARKED_DONE: 'success', REVERTED: 'danger', DELETED: 'danger', RESCHEDULED: 'warning', UNSCHEDULED: 'warning', RELEASED: 'warning' };
+  const FIELD_LABEL = { title: '标题', content: '内容', owner: '负责人', nature: '需求性质', contact: '业务对接人' };
+  const NATURE_LABEL = { BIZ: '业务功能', TECH: '技术支持' };
+  const DEMO_CARDS = [
+    ['FS-20261016-009', '合并卡 · 开发中'],
+    ['FS-20261010-005', '子卡 · 只读'],
+    ['FS-20261017-003', '待开发 · 缺业务对接人'],
+    ['FS-20261014-003', '待开发 · 已被需求单关联'],
+    ['FS-20261008-002', '开发中 · 已延期'],
+    ['FS-20261012-001', '开发完成 · 已关联 commit'],
+    ['FS-20261016-028', '非需求改动'],
+    ['FS-20261015-007', '提交人未匹配系统用户'],
+  ];
+
+  const DB = D.load();
+  const CARDS = DB.cards;
+  const PROJECTS = DB.projects;
+  const persist = () => D.save(DB);
+
+  const params = new URLSearchParams(location.search);
+  const S = { no: params.get('no') || DEMO_CARDS[0][0], tab: 'basic', view: 'loading', logType: '', logQ: '' };
+
+  /* ---------- 卡片判定 ---------- */
+  const byNo = (no) => CARDS.find((c) => c.no === no);
+  const card = () => { const c = byNo(S.no); return c && !c.deleted ? c : null; };
+  const endOf = (c) => c.end || c.start;
+  const repoOf = (r) => REPOS.find((x) => x.repo === r);
+  const isDelayed = (c) => (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && !!c.start && endOf(c) < TODAY_S;
+  const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
+  const isRO = (c) => !!c.parent || !PERM.EDIT;
+  const needContact = (c) => !c.req && c.nature !== 'TECH' && !String(c.contact || '').trim();
+  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.repos.includes(repo)); return p ? p.name : '未归属项目'; };
+  const days = (c) => span(c.start, endOf(c)) + 1;
+  const rangeText = (a, b) => (a === b ? a : a + ' ~ ' + b);
+  const addLog = (c, type, detail) => c.logs.unshift(D.makeLog(type, detail, ME, NOW_S));
+  const spread = (c) => (c.merged ? '，扩散至 ' + c.children.length + ' 张子卡' : '');
+  function diffuse(mc, fields) {
+    if (!mc.merged) return;
+    mc.children.forEach((no) => { const ch = byNo(no); if (ch) fields.forEach((k) => { ch[k] = Array.isArray(mc[k]) ? mc[k].slice() : mc[k]; }); });
+  }
+
+  /* ---------- 组件片段 ---------- */
+  const icon = (name) => `<span class="ac-icon" data-ac="AcIcon" data-name="${name}" data-size="sm"></span>`;
+  const txt = (html, cls) => `<span data-ac="AcTypographyText" class="ac-typo-text${cls ? ' ' + cls : ''}"><span class="ac-typo-text__body">${html}</span></span>`;
+  const tag = (text, color, pre, size) => `<span data-ac="AcTag" class="ac-tag ac-tag--${size || 'mini'} ac-tag--${color || 'default'} is-filled">${pre || ''}<span class="ac-tag__text">${esc(text)}</span></span>`;
+  const badge = (st) => `<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--status" data-status="${ST[st].badge}"><span class="ac-badge__dot"></span><span class="ac-badge__text">${esc(ST[st].label)}</span></span>`;
+  const emptyHtml = (desc, extra) => `<div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__image"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div><div class="ac-empty__description">${esc(desc)}</div>${extra ? '<div class="ac-empty__footer">' + extra + '</div>' : ''}</div>`;
+  const alertHtml = (type, text, action) => `<div class="ac-alert ac-alert--${type}" data-ac="AcAlert" role="alert"><div class="ac-alert__icon">${{ info: 'ℹ', success: '✓', warning: '⚠', error: '⊘', normal: '●' }[type]}</div><div class="ac-alert__body"><div class="ac-alert__content">${esc(text)}</div></div>${action ? '<div class="ac-alert__action">' + action + '</div>' : ''}</div>`;
+  const desc = (label, value, full) => `<div class="ac-desc-item${full ? ' ac-desc-item--full' : ''}"><span class="ac-desc-label">${label}</span><span class="ac-desc-value">${value}</span></div>`;
+  const mono = (s) => `<span class="mono">${esc(s)}</span>`;
+  const muted = (s) => txt(esc(s), 'ac-typo-text--secondary');
+  const btn = (label, attrs, kind, ic) => `<button class="ac-btn${kind ? ' ' + kind.split(' ').map((k) => 'ac-btn--' + k).join(' ') : ''}" type="button" ${attrs}>${ic ? icon(ic) : ''}<span class="ac-btn__label">${label}</span></button>`;
+  const rowBtn = (label, attrs) => `<button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" ${attrs}><span class="ac-btn__label">${label}</span></button>`;
+  const inputHtml = (field, value, ph, o) => {
+    const opt = o || {};
+    return `<div class="ac-input${opt.disabled ? ' is-disabled' : ''}" data-ac="AcInput" data-size="medium"${opt.error ? ' data-status="error"' : ''}><input class="ac-input__inner" data-field="${field}" value="${esc(value)}" placeholder="${esc(ph || '')}"${opt.max ? ' maxlength="' + opt.max + '"' : ''}${opt.disabled ? ' disabled' : ''} />${opt.max ? '<span class="ac-input__suffix" data-count="' + field + '">' + String(value || '').length + '/' + opt.max + '</span>' : ''}</div>`;
+  };
+  const formItem = (label, control, o) => {
+    const opt = o || {};
+    return `<div class="ac-form-item ac-form-item--vertical${opt.required ? ' is-required' : ''}${opt.error ? ' is-error' : ''}" data-ac="AcFormItem"><label class="ac-form-item__label">${opt.required ? '<span class="ac-form-item__required">*</span>' : ''}${label}</label><div class="ac-form-item__wrapper"><div class="ac-form-item__control">${control}</div><div class="ac-form-item__help${opt.error ? ' is-error' : ''}"${opt.helpId ? ' id="' + opt.helpId + '"' : ''}>${esc(opt.error || opt.help || '')}</div></div></div>`;
+  };
+  const selectHtml = (key, value, options, ph, disabled) => {
+    const cur = options.find((x) => x.value === value);
+    const list = options.map((x) => `<li class="ac-select__option${x.value === value ? ' is-selected' : ''}" data-value="${esc(x.value)}"><span class="ac-select__option-label">${esc(x.label)}</span>${x.sub ? muted(x.sub) : ''}</li>`).join('');
+    return `<div class="ac-select ac-select--medium${disabled ? ' is-disabled' : ''}" data-ac="AcSelect" data-select="${key}"><div class="ac-select__trigger" tabindex="0"><span class="ac-select__single${cur ? '' : ' is-placeholder'}">${esc(cur ? cur.label : ph)}</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div><div class="ac-select__popup" hidden><ul class="ac-select__list">${list}</ul></div></div>`;
+  };
+  const radioGroup = (key, value, opts, disabled) => `<div class="ac-radio-group" role="radiogroup" data-ac="AcRadioGroup">${opts.map((x) => { const off = disabled || x[2]; return `<span class="ac-radio ac-radio--dot${x[0] === value ? ' is-checked' : ''}${off ? ' is-disabled' : ''}" role="radio" tabindex="0" aria-checked="${x[0] === value}" data-ac="AcRadio" data-radio="${key}" data-value="${x[0]}" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">${x[1]}</span></span>`; }).join(' ')}</div>`;
+
+  /* ---------- 页头、业务提示、开发进度与关键摘要 ---------- */
+  function renderHead(c) {
+    const st = dispStatus(c);
+    $('#pageTitle').innerHTML = `${mono(c.no)} ${esc(c.title)}`;
+    const tags = [tag(ST[st].label, ST[st].tag, '', 'small')];
+    if (c.merged) tags.push(tag('合并卡 · ' + c.children.length + ' 项', 'primary', icon('link'), 'small'));
+    if (c.parent) tags.push(tag('子卡', 'default', icon('link'), 'small'));
+    tags.push(tag(c.module, 'blue', '', 'small'));
+    if (c.nature === 'TECH') tags.push(tag('技术支持', 'purple', '', 'small'));
+    $('#pageTags').innerHTML = tags.join('');
+    document.title = c.no + ' ' + c.title + ' · 卡片详情 · 功能排期 · 鸣鸣很忙';
+  }
+  function renderAlerts(c) {
+    const list = [];
+    if (c.parent) list.push(alertHtml('info', '当前隶属合并卡 ' + c.parent + '，状态、排期与开发人由合并卡控制，本页只读', btn('查看合并卡', `data-open-card="${c.parent}"`, 'sm text')));
+    if (c.status === 'NON_FEATURE') list.push(alertHtml('warning', '该卡片为非需求改动：不进入待排期池与月历，不参与排期、领取与完成'));
+    if (isDelayed(c)) list.push(alertHtml('warning', '已延期：排期截止 ' + endOf(c) + '，当前仍为「' + ST[c.status].label + '」，已超出 ' + span(endOf(c), TODAY_S) + ' 天'));
+    if (!c.parent && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && needContact(c)) list.push(alertHtml('normal', '排期写入前需补录业务对接人（未被需求单关联的业务功能卡）', PERM.EDIT ? btn('去补录', 'data-act="editContact"', 'sm text') : ''));
+    $('#alertBox').innerHTML = list.join('');
+    $('#alertBox').hidden = !list.length;
+  }
+  function renderLife(c) {
+    $('#lifePanel').hidden = c.status === 'NON_FEATURE';
+    if (c.status === 'NON_FEATURE') return;
+    const idx = { PENDING: 0, IN_PROGRESS: 1, DONE: 2 }[c.status];
+    $('#lifeSteps').innerHTML = ['待开发', '开发中', '开发完成'].map((l, i) => `<span class="ac-steps__item${i < idx ? ' is-done' : i === idx ? ' is-active' : ''}"><span class="ac-steps__num">${i + 1}</span>${l}</span>`).join('');
+    const sub = ['当前阶段：' + ST[c.status].label];
+    if (c.status === 'PENDING') sub.push('尚未领取');
+    else if (c.dev) sub.push('开发人 ' + c.dev + (c.takenAt ? '，领取于 ' + mdt(c.takenAt) : ''));
+    if (c.status === 'DONE' && c.doneAt) sub.push('完成于 ' + mdt(c.doneAt));
+    if (isDelayed(c)) sub.push('已延期');
+    if (c.parent) sub.push('随合并卡 ' + c.parent + ' 流转');
+    $('#lifeSub').textContent = sub.join(' · ');
+  }
+  const kpi = (label, value, unit, foot, tone, isMono) => `<div class="tpl-kpi${tone ? ' is-' + tone : ''}"><div class="tpl-kpi__head"><span class="tpl-kpi__dot${tone && tone !== 'info' ? ' is-' + tone : ''}"></span><span class="tpl-kpi__label">${label}</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value${isMono ? ' mono' : ''}">${esc(value)}</span>${unit ? '<span class="tpl-kpi__unit">' + unit + '</span>' : ''}</div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">${esc(foot)}</span></div></div>`;
+  function renderKpi(c) {
+    const nf = c.status === 'NON_FEATURE';
+    const late = isDelayed(c);
+    const sched = c.start
+      ? kpi('排期', c.start === endOf(c) ? md(c.start) : md(c.start) + ' ~ ' + md(endOf(c)), '', '共 ' + days(c) + ' 天' + (late ? ' · 已延期 ' + span(endOf(c), TODAY_S) + ' 天' : ''), late ? 'warning' : 'primary', true)
+      : kpi('排期', '—', '', nf ? '非需求改动不参与排期' : '未排期，卡片在待排期池', '', true);
+    const working = c.status === 'IN_PROGRESS' || c.status === 'DONE';
+    const dev = kpi('开发人', working && c.dev ? c.dev : '—', '', working && c.takenAt ? '领取于 ' + mdt(c.takenAt) : nf ? '不参与领取' : '待领取', 'info');
+    const done = kpi('完成 commit', String(c.done.length), '个', c.status === 'DONE' ? (c.doneAt ? '完成于 ' + mdt(c.doneAt) : '已完成') : nf ? '不参与完成' : '开发完成后可关联', 'success', true);
+    const fourth = c.merged ? kpi('子卡', String(c.children.length), '张', '同模块 ' + c.module, '', true) : kpi('所属项目', projectOf(c.repo), '', '按源仓 ' + c.repo + ' 解析', '');
+    $('#kpiGrid').innerHTML = sched + dev + done + fourth;
+  }
+
+  /* ---------- 页级 Tab ---------- */
+  function tabsOf(c) {
+    const t = [['basic', '基本信息', null]];
+    if (c.merged) t.push(['children', '子卡明细', c.children.length]);
+    if (c.status !== 'NON_FEATURE') t.push(['commits', '完成 commit', c.done.length]);
+    t.push(['logs', '操作日志', c.logs.length]);
+    return t;
+  }
+  function basicHtml(c) {
+    const ro = isRO(c);
+    const nf = c.status === 'NON_FEATURE';
+    const owner = esc(c.owner) + (c.ownerUnmatched ? ' ' + tag('未匹配系统用户', 'warning') : '');
+    let contact = esc(c.contact);
+    if (!c.contact) contact = c.req ? muted('未填写，以需求单提交人 ' + c.req + ' 兜底') : nf || c.nature === 'TECH' ? '—' : txt('未填写，排期写入前需补录', 'ac-typo-text--warning');
+    const source = c.merged ? muted('合并卡（无源仓）') : esc((repoOf(c.repo) || { name: c.repo }).name) + ' ' + muted(c.repo);
+    const info = [
+      desc('卡片编号', mono(c.no)),
+      desc('标题', esc(c.title)),
+      desc('负责人', owner),
+      desc('来源模块', tag(c.module, 'blue')),
+      desc('需求性质', NATURE_LABEL[c.nature]),
+      desc('业务对接人', contact),
+      desc('所属项目', esc(projectOf(c.repo))),
+      desc('源代码仓', source),
+      desc('源 commit', c.merged ? '—' : mono(String(c.commit).slice(0, 7))),
+      desc('创建时间', mono(c.createdAt)),
+      desc('内容', `<span>${esc(c.content).replace(/\n/g, '<br>')}</span>`, true),
+    ].join('');
+    const editBtn = ro ? '' : btn('编辑', 'data-act="edit"', 'sm', 'edit');
+    const sec1 = `<div class="tpl-section"><div class="tpl-toolbar"><span class="tpl-toolbar__title">卡片信息</span><div class="tpl-toolbar__right">${editBtn}</div></div><div class="ac-descriptions">${info}</div></div>`;
+    if (nf) return sec1;
+    const locked = c.status === 'DONE';
+    const working = c.status === 'IN_PROGRESS' || locked;
+    const tools = ro || locked ? '' : btn('调整排期', 'data-act="schedule"', 'sm', 'calendar') + `<button class="ac-btn ac-btn--sm" type="button" data-act="unschedule"${c.start ? '' : ' disabled'}><span class="ac-btn__label">移回待排期</span></button>`;
+    const sched = [
+      desc('排期日期', c.start ? mono(rangeText(c.start, endOf(c))) : muted('未排期，卡片在待排期池')),
+      desc('排期天数', c.start ? '共 ' + days(c) + ' 天' : '—'),
+      desc('开发状态', badge(dispStatus(c))),
+      desc('开发人', working && c.dev ? esc(c.dev) : '—'),
+      desc('领取时间', working && c.takenAt ? mono(c.takenAt) : '—'),
+      desc('完成时间', locked && c.doneAt ? mono(c.doneAt) : '—'),
+    ].join('');
+    const lock = locked ? alertHtml('normal', '开发完成的卡片已锁定排期，如需改期请先回退状态') : '';
+    return sec1 + '<hr class="ac-divider" />' + `<div class="tpl-section"><div class="tpl-toolbar"><span class="tpl-toolbar__title">排期与开发</span><div class="tpl-toolbar__right">${tools}</div></div>${lock}<div class="ac-descriptions">${sched}</div></div>`;
+  }
+  function childrenHtml(c) {
+    const rows = c.children.map((no) => ({ ch: byNo(no), snap: c.snaps[no] || {} })).filter((x) => x.ch).sort((a, b) => ((a.snap.at || '') < (b.snap.at || '') ? 1 : -1));
+    const head = `<div class="tpl-toolbar"><span class="tpl-toolbar__title">子卡明细</span><div class="tpl-toolbar__right"><span class="u-sub">子卡状态、排期与开发人随合并卡扩散；合并前快照用于解散恢复</span></div></div>`;
+    if (!rows.length) return `<div class="tpl-section">${head}${emptyHtml('合并卡暂无子卡')}</div>`;
+    const body = rows.map((x) => `<tr><td><span class="ac-link mono" role="link" tabindex="0" data-open-card="${x.ch.no}">${esc(x.ch.no)}</span></td><td class="u-wrap">${esc(x.ch.title)}</td><td>${tag(x.ch.module, 'blue')}</td><td>${esc(x.ch.owner)}</td><td>${badge(x.snap.status || 'PENDING')}</td><td class="mono">${esc(x.snap.start || '未排期')}</td><td class="mono">${esc(x.snap.at || '—')}</td><td><div class="ac-row-actions" data-ac="AcRowActions">${rowBtn('查看', `data-open-card="${x.ch.no}"`)}</div></td></tr>`).join('');
+    return `<div class="tpl-section">${head}<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>子卡编号</th><th class="u-wrap">标题</th><th>来源模块</th><th>提交人</th><th>合并前状态</th><th>合并前排期日</th><th>并入时间</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+  }
+  function commitsHtml(c) {
+    const can = c.status === 'DONE' && !isRO(c);
+    const head = `<div class="tpl-toolbar"><span class="tpl-toolbar__title">完成 commit</span><div class="tpl-toolbar__right"><span class="u-sub">选填；只能从代码仓检索点选，hash 与链接自动回填</span>${can ? btn('关联 commit', 'data-act="commits"', 'sm', 'link') : ''}</div></div>`;
+    if (c.status !== 'DONE') return `<div class="tpl-section">${head}${emptyHtml('卡片开发完成后可关联完成 commit')}</div>`;
+    if (!c.done.length) return `<div class="tpl-section">${head}${emptyHtml('未关联完成 commit')}</div>`;
+    const body = c.done.map((x, i) => `<tr><td class="mono">${esc(x.short)}</td><td class="u-wrap">${esc(x.msg)}</td><td>${esc((repoOf(x.repo) || { name: x.repo }).name)} ${muted(x.repo)}</td><td>${esc(x.author)}</td><td class="mono">${esc(x.at)}</td><td><div class="ac-row-actions" data-ac="AcRowActions">${rowBtn('查看', `data-commit-link="${i}"`)}${can ? rowBtn('移除', `data-remove-commit="${i}"`) : ''}</div></td></tr>`).join('');
+    return `<div class="tpl-section">${head}<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>短 hash</th><th class="u-wrap">提交说明</th><th>代码仓</th><th>作者</th><th>提交时间</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
+  }
+  function logListHtml(c) {
+    const q = S.logQ.trim().toLowerCase();
+    const list = c.logs.filter((l) => (!S.logType || l.type === S.logType) && (!q || (l.by + ' ' + l.detail).toLowerCase().includes(q)));
+    if (!list.length) return '<div class="ac-oplog__empty">没有匹配的操作日志</div>';
+    return list.map((l) => `<div class="ac-oplog__item"><div class="ac-oplog__line"><span class="ac-oplog__time">${esc(l.at)}</span><span class="ac-oplog__tag${LOG_TONE[l.type] ? ' ac-oplog__tag--' + LOG_TONE[l.type] : ''}">${esc(l.label)}</span><span class="ac-oplog__user">${esc(l.by)}</span></div><div class="ac-oplog__detail">${esc(l.detail)}</div></div>`).join('');
+  }
+  function renderLogs(c) {
+    const types = [...new Set(c.logs.map((l) => l.type))];
+    if (S.logType && !types.includes(S.logType)) S.logType = '';
+    const opts = [{ value: '', label: '全部操作类型' }].concat(types.map((t) => ({ value: t, label: D.LOG_LABEL[t] })));
+    $('#paneLogs').innerHTML = `<div class="ac-oplog"><div class="ac-oplog__toolbar">${selectHtml('logType', S.logType, opts, '全部操作类型')}<div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix">${icon('search')}</span><input class="ac-input__inner" type="search" data-field="logQ" value="${esc(S.logQ)}" placeholder="搜索操作人或描述" /></div></div><div id="logList">${logListHtml(c)}</div></div>`;
+  }
+  function renderTabs(c) {
+    const tabs = tabsOf(c);
+    if (!tabs.some((t) => t[0] === S.tab)) S.tab = 'basic';
+    $('#tabNav').innerHTML = tabs.map((t) => `<span class="ac-tab${S.tab === t[0] ? ' is-active' : ''}" role="tab" tabindex="0" aria-selected="${S.tab === t[0]}" data-tab="${t[0]}">${t[1]}${t[2] == null ? '' : ' <span class="ac-badge ac-badge--muted ac-tab__badge">' + t[2] + '</span>'}</span>`).join('');
+    $$('#pageTabs > .ac-tab-panel').forEach((p) => { p.hidden = p.dataset.pane !== S.tab; });
+    $('#paneBasic').innerHTML = basicHtml(c);
+    $('#paneChildren').innerHTML = c.merged ? childrenHtml(c) : '';
+    $('#paneCommits').innerHTML = c.status === 'NON_FEATURE' ? '' : commitsHtml(c);
+    renderLogs(c);
+  }
+
+  /* ---------- 沉底操作栏 ---------- */
+  function barHint(c) {
+    if (c.parent) return '子卡只读：状态、排期与开发人由合并卡 ' + c.parent + ' 控制';
+    if (!PERM.EDIT && !PERM.DELETE && !PERM.MARK_DONE) return '当前账号无功能排期编辑权限，仅可查看';
+    if (c.status === 'NON_FEATURE') return '恢复后卡片回到待排期池，重新参与排期、领取与完成；删除需二次确认';
+    const parts = [];
+    if (c.status === 'PENDING') parts.push('领取后进入开发中并记录开发人');
+    if (c.status === 'IN_PROGRESS') parts.push('标记完成时可选关联完成 commit');
+    if (c.status === 'DONE') parts.push('开发完成的卡片已锁定排期，回退将清空完成 commit 回执');
+    if (c.merged) parts.push('状态与编辑同步扩散至 ' + c.children.length + ' 张子卡');
+    parts.push('删除、移入非需求改动与解散合并需二次确认并写入操作日志');
+    return parts.join('；');
+  }
+  function barButtons(c) {
+    const b = [btn('返回', 'data-go-back')];
+    if (c.parent) return b.concat(btn('查看合并卡', `data-open-card="${c.parent}"`, 'primary'));
+    const more = [];
+    if (PERM.EDIT && c.status !== 'NON_FEATURE') more.push(['toNonFeature', '移入非需求改动', false]);
+    if (PERM.EDIT && c.merged) more.push(['dissolve', '解散合并', c.status === 'DONE']);
+    if (more.length) b.push(`<div class="ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="barMoreDd"><button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="barMoreBtn"><span class="ac-btn__label">更多操作</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button><div class="ac-dropdown__menu" role="menu" id="barMoreMenu" hidden>${more.map((m) => `<div class="ac-dropdown-item${m[2] ? ' is-disabled' : ''}" role="menuitem" tabindex="0" data-act="${m[0]}"${m[2] ? ' title="开发完成的合并卡不可解散，需先回退状态"' : ''}>${m[1]}</div>`).join('')}</div></div>`);
+    if (PERM.DELETE) b.push(btn('删除', 'data-act="delete"', 'outline-danger'));
+    if (c.status === 'NON_FEATURE') return PERM.EDIT ? b.concat(btn('恢复为待开发', 'data-act="restore"', 'primary')) : b;
+    if (c.status === 'PENDING') {
+      if (PERM.MARK_DONE) b.push(btn('标记完成', 'data-act="markDone"'));
+      if (PERM.EDIT) b.push(btn('领取开发', 'data-act="take"', 'primary'));
+    }
+    if (c.status === 'IN_PROGRESS') {
+      if (PERM.EDIT) b.push(btn('取消领取', 'data-act="release"'));
+      if (PERM.MARK_DONE) b.push(btn('标记完成', 'data-act="markDone"', 'primary'));
+    }
+    if (c.status === 'DONE' && PERM.MARK_DONE) b.push(btn('回退', 'data-act="revert"', 'outline-danger'));
+    return b;
+  }
+  function renderBar(c) {
+    $('#barHint').textContent = barHint(c);
+    $('#barRow').innerHTML = barButtons(c).join('');
+  }
+
+  /* ---------- 原型切换栏与整页状态 ---------- */
+  function renderProto() {
+    const item = (href, label, on) => `<a class="ac-dropdown-item${on ? ' is-active' : ''}" role="menuitem" href="${href}">${esc(label)}</a>`;
+    const demo = (key, label) => `<div class="ac-dropdown-item" role="menuitem" tabindex="0" data-demo="${key}">${label}</div>`;
+    $('#protoMenu').innerHTML = '<div class="ac-dropdown-group-title">Web</div>'
+      + item(WORKBENCH, '研发排期工作台', false) + item('feature-schedule-detail.html?no=' + encodeURIComponent(S.no), '卡片详情', true)
+      + '<div class="ac-dropdown-divider"></div><div class="ac-dropdown-group-title">演示卡片</div>'
+      + DEMO_CARDS.map((d) => item('feature-schedule-detail.html?no=' + d[0], d[1] + ' · ' + d[0], d[0] === S.no)).join('')
+      + '<div class="ac-dropdown-divider"></div><div class="ac-dropdown-group-title">演示状态</div>'
+      + demo('loading', '整页加载骨架') + demo('error', '整页加载失败') + demo('missing', '卡片不存在')
+      + demo('perm', PERM.EDIT ? '切换为只读视角' : '恢复编辑视角') + demo('reset', '重置演示数据');
+  }
+  function showView(v) {
+    S.view = v;
+    ['normal', 'loading', 'error', 'missing'].forEach((k) => { $('#' + k + 'View').hidden = k !== v; });
+  }
+  function renderPage() {
+    persist();
+    renderProto();
+    const c = card();
+    if (!c) {
+      const gone = byNo(S.no);
+      $('#missingDesc').textContent = gone ? '卡片 ' + S.no + ' 已被删除或解散，请回到研发排期工作台查看。' : '未找到卡片 ' + S.no + '，请检查链接或回到研发排期工作台查看。';
+      showView('missing');
+      return;
+    }
+    showView('normal');
+    renderHead(c);
+    renderAlerts(c);
+    renderLife(c);
+    renderKpi(c);
+    renderTabs(c);
+    renderBar(c);
+  }
+
+  /* ---------- 弹窗、浮层与反馈 ---------- */
+  const OPEN = new Set();
+  function showLayer(id) {
+    const el = $('#' + id);
+    clearTimeout(el.leaveTimer);
+    el.inert = false;
+    el.hidden = false;
+    void el.offsetWidth;
+    el.classList.add('is-open');
+    OPEN.add(id);
+  }
+  function hideLayer(id) {
+    const el = $('#' + id);
+    if (el.hidden || !el.classList.contains('is-open')) return;
+    OPEN.delete(id);
+    el.classList.remove('is-open');
+    el.inert = true;
+    el.leaveTimer = setTimeout(() => { el.hidden = true; el.inert = false; }, Number(el.getAttribute('data-ds-leave')) || 320);
+  }
+  function toast(msg, type) {
+    const t = type || 'success';
+    const el = document.createElement('div');
+    el.className = 'ac-message__item is-' + t;
+    el.innerHTML = `<span class="ac-message__icon is-${t}">${{ success: '✓', error: '!', warning: '!', info: 'i' }[t]}</span><span class="ac-message__text">${esc(msg)}</span>`;
+    $('#toastList').appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+  function busy(el, on) {
+    if (!el) return;
+    el.disabled = on;
+    el.classList.toggle('is-loading', on);
+    const sp = el.querySelector('.ac-btn-spin');
+    if (on && !sp) el.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+    if (!on && sp) sp.remove();
+  }
+  function setHelp(id, msg) {
+    const el = $('#' + id);
+    if (!el) return;
+    el.textContent = msg;
+    el.classList.toggle('is-error', !!msg);
+    const item = el.closest('.ac-form-item');
+    if (item) item.classList.toggle('is-error', !!msg);
+  }
+
+  let confirmResolve = null;
+  function askConfirm(title, content, okText, danger) {
+    $('#confirmTitle').textContent = title;
+    $('#confirmContent').textContent = content;
+    const ok = $('#confirmOkBtn');
+    ok.textContent = okText || '确认';
+    ok.className = 'ac-btn ' + (danger ? 'ac-btn--danger' : 'ac-btn--primary');
+    showLayer('confirmModal');
+    return new Promise((r) => { confirmResolve = r; });
+  }
+  function settleConfirm(v) {
+    if (!confirmResolve) return;
+    const r = confirmResolve;
+    confirmResolve = null;
+    if (!v) hideLayer('confirmModal');
+    r(v);
+  }
+  async function confirmRun(title, content, okText, danger, run) {
+    if (!(await askConfirm(title, content, okText, danger))) return false;
+    const ok = $('#confirmOkBtn');
+    busy(ok, true);
+    await wait();
+    try { await run(); } finally { busy(ok, false); hideLayer('confirmModal'); }
+    return true;
+  }
+  let popResolve = null;
+  function askPop(anchor, title, content) {
+    const p = $('#popconfirm');
+    $('#pcTitle').textContent = title;
+    $('#pcContent').textContent = content || '';
+    p.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
+    p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
+    return new Promise((res) => { popResolve = res; });
+  }
+  function settlePop(v) {
+    if (!popResolve) return;
+    const r = popResolve;
+    popResolve = null;
+    if (!v) $('#popconfirm').hidden = true;
+    r(v);
+  }
+
+  const FLOATS = new Map();
+  function openFloat(el, onClose) { closeFloats(el); el.hidden = false; FLOATS.set(el, onClose || null); }
+  function closeFloat(el) {
+    if (!FLOATS.has(el)) return;
+    const done = FLOATS.get(el);
+    FLOATS.delete(el);
+    if (!el.isConnected) return;
+    el.hidden = true;
+    const root = el.closest('[data-ac="AcSelect"], [data-ac="AcDropdown"]');
+    if (root) root.classList.remove('is-open');
+    if (done) done();
+  }
+  function closeFloats(keep) { [...FLOATS.keys()].forEach((el) => { if (!keep || (el !== keep && !el.contains(keep))) closeFloat(el); }); }
+  function placeFixed(el, x, y) {
+    el.style.left = '0px';
+    el.style.top = '0px';
+    el.style.left = Math.max(8, Math.min(window.innerWidth - el.offsetWidth - 8, x)) + 'px';
+    el.style.top = Math.max(8, Math.min(window.innerHeight - el.offsetHeight - 8, y)) + 'px';
+  }
+  function toggleMenu(menu, trigger, above) {
+    if (FLOATS.has(menu)) { closeFloat(menu); return; }
+    openFloat(menu);
+    trigger.closest('[data-ac="AcDropdown"]').classList.add('is-open');
+    const r = trigger.getBoundingClientRect();
+    placeFixed(menu, r.right - menu.offsetWidth, above ? r.top - menu.offsetHeight - 4 : r.bottom + 4);
+  }
+
+  /* ---------- 编辑卡片信息 ---------- */
+  let ED = null;
+  const edDirty = () => !!ED && JSON.stringify(ED.d) !== ED.orig;
+  function renderEdit() {
+    const c = card();
+    const d = ED.d;
+    const nf = c.status === 'NON_FEATURE';
+    const owners = USERS.includes(d.owner) ? USERS : USERS.concat(d.owner);
+    const notes = (c.merged ? alertHtml('info', '保存后标题、内容与负责人同步扩散至 ' + c.children.length + ' 张子卡') : '') + (nf ? alertHtml('normal', '非需求改动卡仅可编辑标题、内容与负责人') : '');
+    $('#editBody').innerHTML = notes + `<div class="ac-form ac-form--vertical" data-ac="AcForm">${
+      formItem('标题', inputHtml('title', d.title, '请输入标题', { max: 30 }), { required: true, helpId: 'helpTitle' })
+    }${
+      formItem('内容', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="content" rows="4">${esc(d.content)}</textarea></div>`)
+    }${
+      formItem('负责人', selectHtml('owner', d.owner, owners.map((u) => ({ value: u, label: u + (u === c.owner && c.ownerUnmatched ? '（未匹配系统用户）' : '') })), '请选择负责人'), { required: true })
+    }${
+      formItem('需求性质', radioGroup('nature', d.nature, [['BIZ', '业务功能'], ['TECH', '技术支持']], nf), { help: '技术支持指技术类、非功能性改动，如文档补录、参数说明、性能优化、工具脚本、changelog' })
+    }${
+      formItem('业务对接人', inputHtml('contact', d.contact, c.req ? '可手工填写，留空时以需求单提交人兜底' : '排期写入前需补录', { max: 64, disabled: nf }), { help: c.req ? 'REQ 单提交人：' + c.req : '', helpId: 'helpContact' })
+    }</div>`;
+  }
+  function openEdit(focus) {
+    const c = card();
+    ED = { d: { title: c.title, content: c.content, owner: c.owner, nature: c.nature, contact: c.contact } };
+    ED.orig = JSON.stringify(ED.d);
+    renderEdit();
+    showLayer('editModal');
+    setTimeout(() => { const el = $('#editModal [data-field="' + (focus || 'title') + '"]'); if (el) el.focus(); }, 60);
+  }
+  async function saveEdit(el) {
+    const c = card();
+    const d = ED.d;
+    const val = (k) => (k === 'title' || k === 'contact' ? d[k].trim() : d[k]);
+    if (!val('title')) { setHelp('helpTitle', '请输入标题'); return; }
+    const edits = ['title', 'content', 'owner', 'nature', 'contact'].filter((k) => val(k) !== c[k]);
+    if (!edits.length) { toast('没有需要保存的修改', 'info'); return; }
+    busy(el, true);
+    await wait();
+    const show = (k, x) => (k === 'nature' ? NATURE_LABEL[x] : x || '空');
+    const lines = edits.map((k) => { const line = FIELD_LABEL[k] + '：' + show(k, c[k]) + ' → ' + show(k, val(k)); c[k] = val(k); return line; });
+    if (edits.includes('owner')) c.ownerUnmatched = !USERS.includes(c.owner);
+    const shared = edits.filter((k) => k === 'title' || k === 'content' || k === 'owner');
+    addLog(c, 'EDITED', lines.join('；') + (shared.length ? spread(c) : ''));
+    diffuse(c, shared);
+    busy(el, false);
+    ED = null;
+    hideLayer('editModal');
+    toast('卡片已保存');
+    renderPage();
+  }
+
+  /* ---------- 调整排期 ---------- */
+  let SC = null;
+  function calHtml() {
+    const v = SC.view;
+    const begin = mondayOf(new Date(v.getFullYear(), v.getMonth(), 1));
+    let cells = '';
+    for (let i = 0; i < 42; i++) {
+      const dt = addDays(begin, i);
+      const k = ds(dt);
+      const past = k < TODAY_S;
+      const on = !!SC.start && k >= SC.start && k <= (SC.end || SC.start);
+      cells += `<span class="ac-calendar__cell${dt.getMonth() !== v.getMonth() ? ' is-outside' : ''}${k === TODAY_S ? ' is-today' : ''}${past ? ' is-disabled' : ''}${on ? ' is-selected' : ''}" role="gridcell" tabindex="${past ? -1 : 0}" aria-selected="${on}" aria-disabled="${past}" data-sc-day="${k}"><span class="ac-calendar__cell-inner"><span class="ac-calendar__num">${dt.getDate()}</span></span></span>`;
+    }
+    return `<div class="ac-calendar ac-calendar--panel" data-ac="AcCalendar" role="grid" id="scCal"><div class="ac-calendar__header"><button class="ac-btn ac-calendar__nav" type="button" data-sc-nav="-1" aria-label="上个月">‹</button><div class="ac-calendar__title"><span class="ac-calendar__title-text">${v.getFullYear()} 年 ${v.getMonth() + 1} 月</span></div><button class="ac-btn ac-calendar__nav" type="button" data-sc-nav="1" aria-label="下个月">›</button></div><div class="ac-calendar__weekrow" role="row">${WEEK.map((w) => `<span class="ac-calendar__weekname" role="columnheader">${w}</span>`).join('')}</div><div class="ac-calendar__grid" role="rowgroup">${cells}</div></div>`;
+  }
+  function renderSchedule() {
+    const c = card();
+    const now = c.start ? '当前排期：' + rangeText(c.start, endOf(c)) + (isDelayed(c) ? '（已延期）' : '') : '当前未排期，卡片在待排期池';
+    const end = SC.end || SC.start;
+    const picked = SC.start ? '已选：' + rangeText(SC.start, end) + ' · 共 ' + (span(SC.start, end) + 1) + ' 天' + (SC.picking ? '，可再点选结束日期' : '') : '点选开始日期与结束日期；单日排期只点一次';
+    $('#scheduleBody').innerHTML = (SC.err ? alertHtml('error', SC.err) : '')
+      + (SC.need ? alertHtml('warning', '该卡片未被需求单关联且为业务功能，排期写入前需补录业务对接人') : '')
+      + `<div>${muted(now)}</div>` + calHtml() + `<div>${SC.start ? txt(esc(picked), 'is-bold') : muted(picked)}</div>`
+      + (SC.need ? `<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('业务对接人', inputHtml('scContact', SC.contact, '请输入业务对接人', { max: 64 }), { required: true, helpId: 'helpScContact' })}</div>` : '');
+  }
+  function openSchedule() {
+    const c = card();
+    const keep = c.start && c.start >= TODAY_S;
+    SC = { start: keep ? c.start : null, end: keep ? endOf(c) : null, picking: false, view: pd((keep ? c.start : TODAY_S).slice(0, 8) + '01'), need: needContact(c), contact: '', err: '' };
+    renderSchedule();
+    showLayer('scheduleModal');
+  }
+  function pickDay(k) {
+    if (!SC || k < TODAY_S) return;
+    SC.err = '';
+    if (!SC.picking) { SC.start = k; SC.end = k; SC.picking = true; } else { if (k < SC.start) { SC.end = SC.start; SC.start = k; } else SC.end = k; SC.picking = false; }
+    renderSchedule();
+  }
+  async function saveSchedule(el) {
+    const c = card();
+    const start = SC.start;
+    const end = SC.end || SC.start;
+    SC.err = !start ? '请选择排期日期' : start < TODAY_S ? '不可将卡片改期到今天之前' : end < start ? '结束日期不能早于开始日期' : '';
+    if (SC.err) { renderSchedule(); return; }
+    if (start === c.start && end === endOf(c)) { toast('排期没有变化', 'info'); return; }
+    if (SC.need && !SC.contact.trim()) { setHelp('helpScContact', '排期写入前请先补录业务对接人'); return; }
+    busy(el, true);
+    await wait();
+    if (SC.need) { c.contact = SC.contact.trim(); addLog(c, 'EDITED', '业务对接人：空 → ' + c.contact); }
+    const before = c.start;
+    c.start = start;
+    c.end = end;
+    addLog(c, before ? 'RESCHEDULED' : 'SCHEDULED', '排期：' + (before ? before + ' → ' : '') + start + (end !== start ? ' ~ ' + end : '') + spread(c));
+    diffuse(c, ['start', 'end']);
+    busy(el, false);
+    SC = null;
+    hideLayer('scheduleModal');
+    toast('排期已更新：' + md(start) + ' ~ ' + md(end));
+    renderPage();
+  }
+  async function unscheduleCard(el) {
+    const c = card();
+    if (!c.start) return;
+    busy(el, true);
+    await wait();
+    const before = c.start;
+    c.start = null;
+    c.end = null;
+    addLog(c, 'UNSCHEDULED', '取消排期：' + before + spread(c));
+    diffuse(c, ['start', 'end']);
+    toast('已移回待排期');
+    renderPage();
+  }
+
+  /* ---------- 标记完成与完成 commit ---------- */
+  let DN = null;
+  const repoName = (r) => (repoOf(r) || { name: r }).name;
+  function commitListHtml() {
+    const q = DN.q.trim().toLowerCase();
+    const found = (COMMITS[DN.repo] || []).filter((x) => x.branch === DN.branch && (!q || (x.msg + ' ' + x.hash + ' ' + x.author).toLowerCase().includes(q)));
+    if (!found.length) return emptyHtml('该分支下没有匹配的 commit');
+    return `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${found.map((x) => `<div class="ac-list-item ac-list-item--small is-clickable" role="listitem" tabindex="0" data-pick-commit="${x.hash}"><div class="ac-list-item__main">${txt(x.hash.slice(0, 7), 'is-code')} ${esc(x.msg)}</div>${muted(x.author + ' · ' + x.at)}${DN.picked.some((y) => y.hash === x.hash) ? ' ' + tag('已选', 'success') : ''}</div>`).join('')}</div></div>`;
+  }
+  function renderDone() {
+    const c = card();
+    const picked = DN.picked.length
+      ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split" role="list"><div class="ac-list__body">${DN.picked.map((x, i) => `<div class="ac-list-item ac-list-item--small" role="listitem"><div class="ac-list-item__main">${txt(esc(x.short), 'is-code')} ${esc(x.msg)} ${muted(repoName(x.repo))}</div>${btn('移除', `data-unpick="${i}"`, 'sm text')}</div>`).join('')}</div></div>`
+      : `<div>${muted('尚未选择完成 commit（选填）')}</div>`;
+    let picker = formItem('代码仓', selectHtml('doneRepo', DN.repo, REPOS.map((r) => ({ value: r.repo, label: r.name, sub: r.repo })), '请选择代码仓'), DN.repo ? {} : { help: '先选择代码仓，再按分支搜索 commit 并点选' });
+    if (DN.repo) {
+      const chips = repoOf(DN.repo).branches.map((b) => `<span class="ac-chip${b === DN.branch ? ' is-active' : ''}" role="button" tabindex="0" data-branch="${esc(b)}">${esc(b)}</span>`).join(' ');
+      picker += formItem('分支', inputHtml('branch', DN.branch, '输入或选择分支') + `<div>${chips}</div>`, { help: '默认取该仓默认分支，手改的分支按仓在本浏览器记忆' })
+        + formItem('commit', `<div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix">${icon('search')}</span><input class="ac-input__inner" type="search" data-field="commitQ" value="${esc(DN.q)}" placeholder="搜索提交说明 / hash / 作者" /></div>`)
+        + `<div id="commitList">${commitListHtml()}</div>`;
+    }
+    const note = DN.mode === 'done' ? alertHtml('info', '完成 commit 选填，可不关联直接完成' + (c.merged ? '；完成状态同步扩散至 ' + c.children.length + ' 张子卡' : '')) : '';
+    $('#doneBody').innerHTML = note + `<div class="tpl-section"><div class="tpl-section__head">已选 commit（${DN.picked.length}）</div>${picked}</div><hr class="ac-divider" /><div class="ac-form ac-form--vertical" data-ac="AcForm">${picker}</div>`;
+  }
+  function openDone(mode) {
+    const c = card();
+    DN = { mode, picked: mode === 'commits' ? c.done.slice() : [], repo: '', branch: '', q: '' };
+    DN.orig = JSON.stringify(DN.picked);
+    $('#doneTitle').textContent = mode === 'done' ? '标记完成' : '关联完成 commit';
+    $('#doneOkBtn').textContent = mode === 'done' ? '确认完成' : '保存';
+    renderDone();
+    showLayer('doneModal');
+  }
+  async function saveDone(el) {
+    const c = card();
+    if (DN.mode === 'commits' && JSON.stringify(DN.picked) === DN.orig) { toast('没有需要保存的修改', 'info'); return; }
+    busy(el, true);
+    await wait();
+    let msg = '完成 commit 已更新';
+    if (DN.mode === 'done') {
+      if (!c.dev) { c.dev = ME; c.takenAt = NOW_S; }
+      c.status = 'DONE';
+      c.doneAt = NOW_S;
+      c.done = DN.picked.slice();
+      addLog(c, 'MARKED_DONE', (c.done.length ? '标记完成，关联 ' + c.done.length + ' 个 commit' : '标记完成（未关联完成 commit）') + spread(c));
+      diffuse(c, ['status', 'dev', 'takenAt', 'doneAt', 'done']);
+      msg = c.done.length ? '已标记完成，关联 ' + c.done.length + ' 个 commit' : '已标记完成';
+    } else {
+      addLog(c, 'EDITED', '完成 commit：' + c.done.length + ' → ' + DN.picked.length + ' 个');
+      c.done = DN.picked.slice();
+      diffuse(c, ['done']);
+    }
+    busy(el, false);
+    DN = null;
+    hideLayer('doneModal');
+    toast(msg);
+    renderPage();
+  }
+  async function removeCommit(el) {
+    const c = card();
+    const x = c.done[Number(el.dataset.removeCommit)];
+    if (!x || !(await askPop(el, '确认移除该完成 commit？', x.short + ' ' + x.msg))) return;
+    busy($('#pcOkBtn'), true);
+    await wait();
+    addLog(c, 'EDITED', '完成 commit：' + c.done.length + ' → ' + (c.done.length - 1) + ' 个');
+    c.done = c.done.filter((y) => y.hash !== x.hash);
+    diffuse(c, ['done']);
+    busy($('#pcOkBtn'), false);
+    $('#popconfirm').hidden = true;
+    toast('已移除完成 commit ' + x.short);
+    renderPage();
+  }
+
+  /* ---------- 状态流转、移入与删除 ---------- */
+  let RV = null;
+  function renderRevert() {
+    const c = card();
+    $('#revertBody').innerHTML = alertHtml('warning', '回退将清空完成 commit 回执与完成时间，并写入操作日志' + (c.merged ? '；同步扩散至 ' + c.children.length + ' 张子卡' : ''))
+      + `<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('回退为', radioGroup('revertTo', RV.to, [['IN_PROGRESS', '开发中（保留开发人' + (c.dev ? ' ' + esc(c.dev) : '') + '）', !c.dev], ['PENDING', '待开发（清空开发人）']]), { required: true, help: c.dev ? '' : '卡片无开发人，只能回退为待开发' })}</div>`;
+  }
+  function openRevert() {
+    RV = { to: card().dev ? 'IN_PROGRESS' : 'PENDING' };
+    renderRevert();
+    showLayer('revertModal');
+  }
+  async function saveRevert(el) {
+    const c = card();
+    const to = RV.to;
+    busy(el, true);
+    await wait();
+    c.status = to;
+    c.done = [];
+    c.doneAt = null;
+    if (to === 'PENDING') { c.dev = null; c.takenAt = null; }
+    addLog(c, 'REVERTED', (to === 'PENDING' ? '已回退为「待开发」' : '已回退为「开发中」，保留开发人 ' + c.dev) + spread(c));
+    diffuse(c, ['status', 'dev', 'takenAt', 'doneAt', 'done']);
+    busy(el, false);
+    RV = null;
+    hideLayer('revertModal');
+    toast(to === 'PENDING' ? '已回退为待开发' : '已回退为开发中');
+    renderPage();
+  }
+  async function take(el) {
+    const c = card();
+    busy(el, true);
+    await wait();
+    Object.assign(c, { status: 'IN_PROGRESS', dev: ME, takenAt: NOW_S });
+    addLog(c, 'TAKEN', '领取开发：' + ME + spread(c));
+    diffuse(c, ['status', 'dev', 'takenAt']);
+    toast('已领取开发');
+    renderPage();
+  }
+  async function release(el) {
+    const c = card();
+    busy(el, true);
+    await wait();
+    addLog(c, 'RELEASED', '释放开发：' + (c.dev || '—') + spread(c));
+    Object.assign(c, { status: 'PENDING', dev: null, takenAt: null });
+    diffuse(c, ['status', 'dev', 'takenAt']);
+    toast('已释放开发');
+    renderPage();
+  }
+  async function toNonFeature() {
+    const c = card();
+    const ok = await confirmRun('移入非需求改动', '移入非需求改动后将清空排期、开发人与完成 commit，不进入待排期池与月历。确认移入？', '确认移入', false, () => {
+      const was = ST[c.status].label;
+      Object.assign(c, { status: 'NON_FEATURE', start: null, end: null, dev: null, takenAt: null, done: [], doneAt: null });
+      addLog(c, 'EDITED', '从『' + was + '』移入非需求改动');
+      diffuse(c, ['status', 'start', 'end', 'dev', 'takenAt', 'done', 'doneAt']);
+    });
+    if (!ok) return;
+    toast('已移入非需求改动');
+    renderPage();
+  }
+  async function restore(el) {
+    const c = card();
+    busy(el, true);
+    await wait();
+    c.status = 'PENDING';
+    addLog(c, 'EDITED', '从非需求改动恢复为待开发');
+    diffuse(c, ['status']);
+    toast('已恢复为待开发，卡片回到待排期池');
+    renderPage();
+  }
+  function dissolveCore(mc) {
+    const n = mc.children.length;
+    mc.children.forEach((no) => {
+      const ch = byNo(no);
+      const sp = mc.snaps[no] || {};
+      if (!ch) return;
+      Object.assign(ch, { parent: null, status: sp.status || 'PENDING', dev: sp.dev || null, takenAt: sp.takenAt || null, done: [], doneAt: null, start: sp.start || null, end: sp.end || sp.start || null });
+      let note = '从合并 ' + mc.no + ' 解散恢复';
+      if (ch.start && ch.start < TODAY_S) { ch.start = null; ch.end = null; note += '，快照日期已过期，已回待排期池'; }
+      addLog(ch, 'EDITED', note);
+    });
+    addLog(mc, 'DELETED', '解散合并，子卡恢复独立（' + n + ' 张）');
+    mc.children = [];
+    mc.snaps = {};
+    mc.deleted = true;
+    return n;
+  }
+  function leave(msg) {
+    persist();
+    D.stash('fs.flash', { msg, type: 'success' });
+    location.href = WORKBENCH;
+  }
+  async function dissolve() {
+    const c = card();
+    let n = 0;
+    if (!(await confirmRun('解散合并', '解散后子卡按合并前快照恢复独立，快照日期已过期的回到待排期池。确认解散？', '确认解散', true, () => { n = dissolveCore(c); }))) return;
+    leave('已解散合并，' + n + ' 张子卡恢复独立');
+  }
+  async function deleteCard() {
+    const c = card();
+    const ok = await confirmRun('删除卡片', '删除后该卡片不可恢复（源 commit 不会再次触发生成）。确认删除 ' + c.no + '？', '确认删除', true, () => {
+      if (c.merged) dissolveCore(c);
+      c.deleted = true;
+      if (!c.merged) addLog(c, 'DELETED', '删除卡片');
+    });
+    if (ok) leave('卡片 ' + c.no + ' 已删除');
+  }
+
+  /* ---------- 关闭、导航与演示 ---------- */
+  async function requestClose(id) {
+    if (id === 'confirmModal') { settleConfirm(false); return; }
+    if (id === 'editModal' && edDirty()) {
+      if (!(await askConfirm('放弃修改', '当前卡片有未保存的修改，确认放弃？', '放弃修改', true))) return;
+      hideLayer('confirmModal');
+    }
+    closeFloats();
+    if (id === 'editModal') ED = null;
+    if (id === 'scheduleModal') SC = null;
+    if (id === 'doneModal') DN = null;
+    if (id === 'revertModal') RV = null;
+    hideLayer(id);
+  }
+  const goBack = () => { location.href = WORKBENCH; };
+  const openCard = (no) => { location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no); };
+  function onEscape() {
+    if (!$('#popconfirm').hidden) { settlePop(false); return; }
+    if (FLOATS.size) { closeFloats(); return; }
+    if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
+    const m = ['revertModal', 'doneModal', 'scheduleModal', 'editModal'].find((id) => OPEN.has(id));
+    if (m) requestClose(m);
+  }
+  async function demo(key) {
+    closeFloats();
+    if (key === 'reset') { D.reset(); location.reload(); return; }
+    if (key === 'perm') {
+      const on = !PERM.EDIT;
+      Object.assign(PERM, { EDIT: on, DELETE: on, MARK_DONE: on });
+      renderPage();
+      toast(on ? '已恢复编辑视角' : '已切换为只读视角：无编辑、删除与标记完成权限', 'info');
+      return;
+    }
+    if (key === 'missing') { $('#missingDesc').textContent = '演示：卡片编号不存在、卡片已删除或合并卡已解散时展示本状态。'; showView('missing'); return; }
+    if (key === 'error') { showView('error'); return; }
+    showView('loading');
+    await wait(1200);
+    renderPage();
+  }
+  function copyNo() {
+    const no = card().no;
+    const fail = () => toast('复制失败，请手动复制', 'error');
+    if (!navigator.clipboard || !window.isSecureContext) { fail(); return; }
+    navigator.clipboard.writeText(no).then(() => toast('卡片编号 ' + no + ' 已复制'), fail);
+  }
+  function onSelect(key, v) {
+    if (key === 'owner' && ED) { ED.d.owner = v; renderEdit(); }
+    if (key === 'doneRepo' && DN) { DN.repo = v; DN.branch = store.get('fs.branch.' + v, repoOf(v).branch); DN.q = ''; renderDone(); }
+    if (key === 'logType') { S.logType = v; renderLogs(card()); }
+  }
+  function act(el) {
+    const a = el.dataset.act;
+    if (el.disabled) return;
+    if (el.classList.contains('is-disabled')) { if (a === 'dissolve') toast('开发完成的合并卡不可解散，需先回退状态', 'error'); return; }
+    closeFloats();
+    const fn = {
+      edit: () => openEdit(),
+      editContact: () => openEdit('contact'),
+      schedule: openSchedule,
+      unschedule: () => unscheduleCard(el),
+      commits: () => openDone('commits'),
+      markDone: () => openDone('done'),
+      take: () => take(el),
+      release: () => release(el),
+      revert: openRevert,
+      toNonFeature,
+      dissolve,
+      delete: deleteCard,
+      restore: () => restore(el),
+    }[a];
+    if (fn) fn();
+  }
+  function syncCount(el) {
+    const cnt = el.closest('.ac-input') && el.closest('.ac-input').querySelector('[data-count]');
+    if (cnt) cnt.textContent = el.value.length + '/' + el.maxLength;
+  }
+  function hint(id, msg) {
+    const el = $('#' + id);
+    if (!el) return;
+    setHelp(id, '');
+    el.textContent = msg;
+  }
+
+  /* ---------- 事件委托：页面自管交互，事件不再冒泡到组件文档站运行时 ---------- */
+  const HANDLERS = {};
+  const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
+  ['click', 'input', 'keydown', 'mousedown', 'focusin', 'focusout'].forEach((type) => {
+    document.body.addEventListener(type, (e) => {
+      const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
+      for (const [sel, fn] of HANDLERS[type] || []) {
+        const el = sel ? t && t.closest(sel) : t;
+        if (el && fn(e, el) === true) break;
+      }
+      e.stopPropagation();
+    });
+  });
+
+  on('mousedown', null, (e, t) => {
+    if (!$('#popconfirm').hidden && !(t && t.closest('#popconfirm'))) settlePop(false);
+    [...FLOATS.keys()].forEach((el) => {
+      const owner = el.closest('[data-ac="AcSelect"], [data-ac="AcDropdown"]');
+      if (t && (el.contains(t) || (owner && owner.contains(t)))) return;
+      closeFloat(el);
+    });
+    return false;
+  });
+  on('focusin', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.add('is-focused'); return true; });
+  on('focusout', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.remove('is-focused'); return true; });
+
+  on('click', '[data-close]', (e, el) => { requestClose(el.dataset.close); return true; });
+  on('click', '#confirmOkBtn', () => { settleConfirm(true); return true; });
+  on('click', '#confirmCancelBtn', () => { settleConfirm(false); return true; });
+  on('click', '#pcOkBtn', () => { settlePop(true); return true; });
+  on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
+  on('click', '[data-ac="AcSelect"] .ac-select__option', (e, el) => {
+    const root = el.closest('[data-ac="AcSelect"]');
+    closeFloat(root.querySelector('.ac-select__popup'));
+    onSelect(root.dataset.select, el.dataset.value);
+    return true;
+  });
+  on('click', '[data-ac="AcSelect"] .ac-select__trigger', (e, el) => {
+    const root = el.closest('[data-ac="AcSelect"]');
+    const pop = root.querySelector('.ac-select__popup');
+    if (root.classList.contains('is-disabled')) return true;
+    if (FLOATS.has(pop)) closeFloat(pop); else { openFloat(pop); root.classList.add('is-open'); }
+    return true;
+  });
+  on('click', '#protoBtn', (e, el) => { toggleMenu($('#protoMenu'), el, false); return true; });
+  on('click', '#barMoreBtn', (e, el) => { toggleMenu($('#barMoreMenu'), el, true); return true; });
+  on('click', '[data-demo]', (e, el) => { demo(el.dataset.demo); return true; });
+  on('click', '[data-go-back]', (e) => { e.preventDefault(); goBack(); return true; });
+  on('click', '[data-open-card]', (e, el) => { openCard(el.dataset.openCard); return true; });
+  on('click', '[data-act]', (e, el) => { act(el); return true; });
+  on('click', '[data-tab]', (e, el) => { S.tab = el.dataset.tab; renderTabs(card()); return true; });
+  on('click', '#copyNoBtn', () => { copyNo(); return true; });
+  on('click', '#retryBtn', () => { demo('loading'); return true; });
+  on('click', '#editOkBtn', (e, el) => { saveEdit(el); return true; });
+  on('click', '#scheduleOkBtn', (e, el) => { saveSchedule(el); return true; });
+  on('click', '#doneOkBtn', (e, el) => { saveDone(el); return true; });
+  on('click', '#revertOkBtn', (e, el) => { saveRevert(el); return true; });
+  on('click', '[data-sc-nav]', (e, el) => { SC.view = new Date(SC.view.getFullYear(), SC.view.getMonth() + Number(el.dataset.scNav), 1); renderSchedule(); return true; });
+  on('click', '[data-sc-day]', (e, el) => { pickDay(el.dataset.scDay); return true; });
+  on('click', '[data-branch]', (e, el) => { DN.branch = el.dataset.branch; store.set('fs.branch.' + DN.repo, DN.branch); renderDone(); return true; });
+  on('click', '[data-pick-commit]', (e, el) => {
+    const x = COMMITS[DN.repo].find((y) => y.hash === el.dataset.pickCommit);
+    if (DN.picked.some((y) => y.hash === x.hash)) { toast('该 commit 已选中', 'info'); return true; }
+    DN.picked.push({ repo: DN.repo, hash: x.hash, short: x.hash.slice(0, 7), msg: x.msg, author: x.author, at: x.at });
+    renderDone();
+    return true;
+  });
+  on('click', '[data-unpick]', (e, el) => { DN.picked.splice(Number(el.dataset.unpick), 1); renderDone(); return true; });
+  on('click', '[data-remove-commit]', (e, el) => { removeCommit(el); return true; });
+  on('click', '[data-commit-link]', (e, el) => { const x = card().done[Number(el.dataset.commitLink)]; toast('原型不跳转：将在新窗口打开 ' + x.repo + ' 的 commit ' + x.short, 'info'); return true; });
+  on('click', '[data-radio]', (e, el) => {
+    if (el.classList.contains('is-disabled')) return true;
+    if (el.dataset.radio === 'nature' && ED) { ED.d.nature = el.dataset.value; renderEdit(); }
+    if (el.dataset.radio === 'revertTo' && RV) { RV.to = el.dataset.value; renderRevert(); }
+    return true;
+  });
+
+  on('input', '#editModal [data-field]', (e, el) => {
+    const f = el.dataset.field;
+    ED.d[f] = el.value;
+    syncCount(el);
+    if (f === 'title') hint('helpTitle', el.value.length >= 30 ? '标题最长 30 字符' : '');
+    return true;
+  });
+  on('input', '[data-field="scContact"]', (e, el) => { SC.contact = el.value; syncCount(el); setHelp('helpScContact', ''); return true; });
+  on('input', '[data-field="branch"]', (e, el) => { DN.branch = el.value.trim(); store.set('fs.branch.' + DN.repo, DN.branch); $('#commitList').innerHTML = commitListHtml(); return true; });
+  on('input', '[data-field="commitQ"]', (e, el) => { DN.q = el.value; $('#commitList').innerHTML = commitListHtml(); return true; });
+  on('input', '[data-field="logQ"]', (e, el) => { S.logQ = el.value; $('#logList').innerHTML = logListHtml(card()); return true; });
+
+  on('keydown', '[data-tab], [data-sc-day], [data-open-card], [data-branch], [data-pick-commit], [data-radio], [data-demo], [data-act], .ac-select__trigger, .ac-select__option', (e, el) => {
+    if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== el || el.tagName === 'BUTTON' || el.tagName === 'A') return false;
+    e.preventDefault();
+    el.click();
+    return true;
+  });
+  on('keydown', null, (e) => { if (e.key !== 'Escape') return false; onEscape(); return true; });
+  window.addEventListener('scroll', () => { [...FLOATS.keys()].filter((el) => el.matches('.ac-dropdown__menu')).forEach(closeFloat); }, true);
+
+  showView('loading');
+  setTimeout(() => {
+    renderPage();
+    const f = D.unstash('fs.flash');
+    if (f) toast(f.msg, f.type);
+  }, 300);
+})();
+</script>
+</body>
+</html>

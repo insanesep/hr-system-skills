@@ -1,0 +1,1421 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>研发排期工作台 · 功能排期 · 鸣鸣很忙</title>
+<!--
+  功能排期 · 研发排期工作台（Web 原型）
+  页面描述真源：../../references/web-ui.md；规则真源：business-rule.md / state-machine.md / field-rules.md / permission-rules.md
+  样式只引用 design-system.css，控件取 busyming-skills-design/web/components 的组件 DOM；
+  交互由页内脚本承接，runtime.js 只负责图标注入与组件尺寸投影。卡片详情见 feature-schedule-detail.html，
+  两页共用 feature-schedule-data.js 的会话内演示数据。演示基准日 2026-10-17，数据为虚构样例。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
+</head>
+<body>
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb">研发 / 研发管理 / <b>功能排期管理</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
+      <div class="ac-dropdown-group-title">Web</div>
+      <a class="ac-dropdown-item is-active" role="menuitem" href="feature-schedule.html">研发排期工作台</a>
+      <a class="ac-dropdown-item" role="menuitem" href="feature-schedule-detail.html">卡片详情</a>
+      <div class="ac-dropdown-divider"></div>
+      <div class="ac-dropdown-item" role="menuitem" tabindex="0" id="protoResetBtn">重置演示数据</div>
+    </div>
+  </div>
+  <span class="web-nav__crumb">张三</span>
+</nav>
+
+<section class="tpl-page" id="fsPage">
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left">
+        <button class="ac-btn" type="button" id="poolExpandBtn" hidden><span class="ac-icon" data-ac="AcIcon" data-name="double-right" data-size="sm"></span><span class="ac-btn__label">待排期</span><span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="poolExpandCount">0</span></span></button>
+        <button class="ac-btn" type="button" id="prevBtn" aria-label="上一期"><span class="ac-icon" data-ac="AcIcon" data-name="left" data-size="sm"></span></button>
+        <span class="ac-popover" data-ac="AcPopover" data-trigger="click" id="periodPop">
+          <button class="ac-btn ac-btn--text" type="button" id="periodBtn"><span class="ac-btn__label" id="periodText">2026 年 10 月</span><span class="ac-icon" data-ac="AcIcon" data-name="down" data-size="sm" id="periodArrow"></span></button>
+          <span data-ac="AcDatePicker"><span class="ac-date-picker__panel" id="monthPanel" hidden></span></span>
+        </span>
+        <button class="ac-btn" type="button" id="nextBtn" aria-label="下一期"><span class="ac-icon" data-ac="AcIcon" data-name="right" data-size="sm"></span></button>
+        <button class="ac-btn" type="button" id="todayBtn">今天</button>
+        <span id="statsInline"></span>
+        <span class="ac-popover" data-ac="AcPopover" data-trigger="click" id="progressPop" hidden>
+          <button class="ac-btn" type="button" id="progressBtn"><span class="ac-btn__label">进度</span><span class="ac-icon" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+          <span class="ac-popover__pop" role="dialog" id="progressPanel" hidden><span class="ac-popover__title">本月进度</span><span class="ac-popover__content" id="statsPop"></span></span>
+        </span>
+      </div>
+      <div class="tpl-toolbar__right">
+        <span class="ac-input tpl-toolbar__search" id="searchBox"><span class="ac-input__prefix"><span class="ac-icon" data-ac="AcIcon" data-name="search" data-size="sm"></span></span><input class="ac-input__inner" type="search" id="searchInput" placeholder="搜索任务：标题 / 编号 / 提交人" autocomplete="off" /></span>
+        <div class="ac-segmented" data-ac="AcSegmented" role="tablist" id="viewSeg">
+          <button class="ac-btn ac-segmented__item" type="button" data-view="month" data-long="月视图" data-short="月">月视图</button>
+          <button class="ac-btn ac-segmented__item" type="button" data-view="week" data-long="周视图" data-short="周">周视图</button>
+          <button class="ac-btn ac-segmented__item" type="button" data-view="list" data-long="列表" data-short="列表">列表</button>
+        </div>
+        <button class="ac-btn" type="button" id="filterBtn"><span class="ac-icon" data-ac="AcIcon" data-name="filter" data-size="sm"></span><span class="ac-btn__label">筛选</span><span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count" id="filterCountWrap" hidden><span class="ac-badge__count" id="filterCount">0</span></span></button>
+        <button class="ac-btn ac-btn--primary" type="button" id="newCardBtn"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span><span class="ac-btn__label">新建卡片</span></button>
+        <div class="ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="moreDd">
+          <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="moreBtn"><span class="ac-btn__label">更多</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+          <div class="ac-dropdown__menu" role="menu" id="moreMenu" hidden>
+            <div class="ac-dropdown-item" role="menuitem" data-menu="merge">合并卡片</div>
+            <div class="ac-dropdown-divider"></div>
+            <div class="ac-dropdown-group-title">显示密度</div>
+            <div class="ac-dropdown-item" role="menuitem" data-menu="density" data-density="standard">标准</div>
+            <div class="ac-dropdown-item" role="menuitem" data-menu="density" data-density="compact">紧凑</div>
+            <div class="ac-dropdown-divider"></div>
+            <div class="ac-dropdown-item" role="menuitem" data-menu="nonfeature">非需求改动<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="nfCount">0</span></span></div>
+            <div class="ac-dropdown-item" role="menuitem" data-menu="repos">代码仓配置</div>
+            <div class="ac-dropdown-item" role="menuitem" data-menu="projects">项目配置</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tpl-dual" id="mainDual">
+    <aside class="tpl-dual__side tpl-dual__side--sticky" id="poolSide">
+      <div class="tpl-panel" id="poolPanel" data-drop="pool">
+        <div class="tpl-toolbar">
+          <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">待排期</span><span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="poolCount">0</span></span></div>
+          <div class="tpl-toolbar__right">
+            <button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="batchBtn">批量</button>
+            <button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="poolCollapseBtn" aria-label="收起待排期池"><span class="ac-icon" data-ac="AcIcon" data-name="double-left" data-size="sm"></span></button>
+          </div>
+        </div>
+        <div class="tpl-section" id="poolList"></div>
+        <button class="ac-btn ac-btn--block" type="button" id="poolMoreBtn" hidden>加载更多</button>
+      </div>
+    </aside>
+    <div class="tpl-dual__main">
+      <div class="tpl-panel" id="viewPanel">
+        <div class="ac-calendar ac-calendar--full" data-ac="AcCalendar" role="grid" id="monthView"></div>
+        <div data-ac="AcCalendar" id="weekView" hidden></div>
+        <div id="listView" hidden></div>
+        <div class="ac-alert ac-alert--normal" data-ac="AcAlert" role="status" id="zeroHint" hidden>
+          <div class="ac-alert__icon">●</div>
+          <div class="ac-alert__body"><div class="ac-alert__content">当前筛选/搜索条件下暂无任务</div></div>
+          <div class="ac-alert__action"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="clearFiltersBtn">清空筛选</button><button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="clearSearchBtn">清除搜索</button></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="tpl-actionbar" id="modeBar" hidden>
+  <div class="tpl-actionbar__inner">
+    <div class="tpl-batch-bar">
+      <span class="tpl-batch-bar__info" id="modeInfo"></span>
+      <div class="tpl-batch-bar__actions">
+        <button class="ac-btn ac-btn--sm" type="button" id="modeCancelBtn">取消</button>
+        <button class="ac-btn ac-btn--sm ac-btn--primary" type="button" id="modeOkBtn">确认合并</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-drawer ac-drawer--right" data-ac="AcDrawer" data-placement="right" data-width="380" id="filterDrawer" hidden>
+  <div class="ac-drawer__mask" data-close="filterDrawer"></div>
+  <div class="ac-drawer__body ac-drawer__body--right" role="dialog" aria-modal="true">
+    <header class="ac-drawer__header"><div class="ac-drawer__title">筛选</div><div class="ac-drawer__extra"><button class="ac-btn ac-drawer__close" type="button" aria-label="关闭" data-close="filterDrawer">×</button></div></header>
+    <div class="ac-drawer__content" id="fdContent"></div>
+    <footer class="ac-drawer__footer">
+      <button class="ac-btn" type="button" id="fdResetBtn">重置</button>
+      <button class="ac-btn" type="button" data-close="filterDrawer">取消</button>
+      <button class="ac-btn ac-btn--primary" type="button" id="fdOkBtn">确定</button>
+    </footer>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="dayModal" hidden>
+  <div class="ac-modal__mask" data-close="dayModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="560">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="dayModalTitle">日详情</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="dayModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="dayModalBody"></div></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="mergeModal" hidden>
+  <div class="ac-modal__mask" data-close="mergeModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="460">
+      <div class="ac-modal__header"><div class="ac-modal__title">生成合并卡</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="mergeModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="mergeModalBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="mergeModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="mergeOkBtn">确定</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="newCardModal" hidden>
+  <div class="ac-modal__mask" data-close="newCardModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="600">
+      <div class="ac-modal__header"><div class="ac-modal__title">新建卡片</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="newCardModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="newCardBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="newCardModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="newCardOkBtn">确认建卡</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="nfModal" hidden>
+  <div class="ac-modal__mask" data-close="nfModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="600">
+      <div class="ac-modal__header"><div class="ac-modal__title">非需求改动</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="nfModal">×</button></div>
+      <div class="ac-modal__body" id="nfModalBody"></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="repoModal" hidden>
+  <div class="ac-modal__mask" data-close="repoModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="680">
+      <div class="ac-modal__header"><div class="ac-modal__title">代码仓配置</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="repoModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="repoModalBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn ac-btn--primary" type="button" data-close="repoModal">知道了</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="projectModal" hidden>
+  <div class="ac-modal__mask" data-close="projectModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="860">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="projectModalTitle">项目配置</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="projectModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="projectModalBody"></div></div>
+      <div class="ac-modal__footer" id="projectModalFooter"></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal" data-ac="AcModal" id="contactModal" hidden>
+  <div class="ac-modal__mask" data-close="contactModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="480">
+      <div class="ac-modal__header"><div class="ac-modal__title">补录业务对接人</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="contactModal">×</button></div>
+      <div class="ac-modal__body"><div class="tpl-section" id="contactBody"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="contactModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="contactOkBtn">保存并排期</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
+  <div class="ac-modal__mask" data-close="confirmModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="440">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="confirmTitle">确认操作</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="confirmModal">×</button></div>
+      <div class="ac-modal__body ac-modal__body--semantic"><span class="ac-modal__sem-icon ac-modal__sem-icon--warning">!</span><div id="confirmContent"></div></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" id="confirmCancelBtn">取消</button><button class="ac-btn ac-btn--primary" type="button" id="confirmOkBtn">确认</button></div>
+    </div>
+  </div>
+</div>
+
+<div class="ac-dropdown" data-ac="AcDropdown" data-trigger="contextmenu" id="ctxDd"><div class="ac-dropdown__menu" role="menu" id="ctxMenu" hidden></div></div>
+
+<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
+  <div class="ac-popconfirm__inner">
+    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning">⚠</span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
+    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
+  </div>
+  <span class="ac-popconfirm__arrow"></span>
+</div>
+
+<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
+
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
+<script src="feature-schedule-data.js"></script>
+<script>
+(function () {
+  'use strict';
+  /* ---------- 基础工具 ---------- */
+  const $ = (s, r) => (r || document).querySelector(s);
+  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
+  const pad = (n) => String(n).padStart(2, '0');
+  const ds = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  const pd = (s) => { const a = s.slice(0, 10).split('-').map(Number); return new Date(a[0], a[1] - 1, a[2]); };
+  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
+  const shift = (s, n) => ds(addDays(pd(s), n));
+  const span = (a, b) => Math.round((pd(b) - pd(a)) / 86400000);
+  const md = (s) => s.slice(5, 10);
+  const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
+  const parseDT = (s) => { const p = s.split(' '); const a = p[0].split('-').map(Number); const b = (p[1] || '00:00').split(':').map(Number); return new Date(a[0], a[1] - 1, a[2], b[0], b[1]); };
+  const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
+  const wait = (ms) => new Promise((r) => setTimeout(r, ms || 360));
+  const store = {
+    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
+    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { return; } },
+  };
+
+  const D = window.FS_DEMO;
+  const TODAY_S = D.TODAY;
+  const TODAY = pd(TODAY_S);
+  const NOW_S = D.NOW;
+  const NOW = parseDT(NOW_S);
+  const ME = D.ME;
+  const USERS = D.USERS;
+  const PERM = { EDIT: true, DELETE: true, MARK_DONE: true, RELEASE_DAY: true };
+
+  const ST = {
+    PENDING: { label: '待开发', badge: 'default' },
+    IN_PROGRESS: { label: '开发中', badge: 'processing' },
+    DONE: { label: '开发完成', badge: 'success' },
+    DELAYED: { label: '延期', badge: 'warning' },
+    NON_FEATURE: { label: '非需求改动', badge: 'default' },
+  };
+  const STAT_KEYS = ['PENDING', 'IN_PROGRESS', 'DONE', 'DELAYED'];
+  const STAT_LABEL = { PENDING: '待开发', IN_PROGRESS: '开发中', DONE: '已完成', DELAYED: '延期' };
+  const LOG_TONE = { MARKED_DONE: 'success', REVERTED: 'danger', DELETED: 'danger', RESCHEDULED: 'warning', UNSCHEDULED: 'warning', RELEASED: 'warning' };
+
+  /* ---------- 演示数据（与卡片详情页共用，会话内保存） ---------- */
+  const REPOS = D.REPOS;
+  const repoOf = (r) => REPOS.find((x) => x.repo === r);
+  const COMMITS = D.COMMITS;
+  const DB = D.load();
+  const CARDS = DB.cards;
+  const PROJECTS = DB.projects;
+  const RELEASE = new Set(DB.release);
+  const mk = D.mk;
+  const makeLog = D.makeLog;
+  const persist = () => { DB.release = [...RELEASE]; D.save(DB); };
+
+  /* ---------- 页面状态 ---------- */
+  const newFilter = () => ({ onlyMine: false, status: new Set(), owner: new Set(), module: new Set(), repo: null, project: null });
+  const cloneFilter = (f) => ({ onlyMine: f.onlyMine, status: new Set(f.status), owner: new Set(f.owner), module: new Set(f.module), repo: f.repo ? new Set(f.repo) : null, project: f.project ? new Set(f.project) : null });
+  const S = {
+    view: store.get('fs.view', 'month'),
+    density: store.get('fs.density', 'standard'),
+    poolCollapsed: store.get('fs.poolCollapsed', '0') === '1',
+    y: TODAY.getFullYear(),
+    m: TODAY.getMonth(),
+    weekStart: mondayOf(TODAY),
+    search: '',
+    f: newFilter(),
+    draft: null,
+    mode: null,
+    selected: new Set(),
+    mergeModule: null,
+    poolLimit: 6,
+    sort: { key: 'start', dir: 'asc' },
+    drag: null,
+  };
+  if (!['month', 'week', 'list'].includes(S.view)) S.view = 'month';
+  if (!['standard', 'compact'].includes(S.density)) S.density = 'standard';
+  const CTX = D.unstash('fs.ctx');
+  if (CTX) {
+    const toSet = (a) => (a ? new Set(a) : null);
+    Object.assign(S, { view: CTX.view, y: CTX.y, m: CTX.m, weekStart: pd(CTX.weekStart), search: CTX.search, poolLimit: CTX.poolLimit, sort: CTX.sort });
+    S.f = { onlyMine: CTX.f.onlyMine, status: new Set(CTX.f.status), owner: new Set(CTX.f.owner), module: new Set(CTX.f.module), repo: toSet(CTX.f.repo), project: toSet(CTX.f.project) };
+  }
+
+  /* ---------- 卡片判定 ---------- */
+  const byNo = (no) => CARDS.find((c) => c.no === no);
+  const alive = (c) => !c.deleted;
+  const endOf = (c) => c.end || c.start;
+  const ownerKey = (c) => c.dev || c.owner;
+  const monthKey = () => (S.view === 'week' ? ds(S.weekStart).slice(0, 7) : S.y + '-' + pad(S.m + 1));
+  const delayCtx = () => (S.view === 'week' ? TODAY >= S.weekStart && TODAY <= addDays(S.weekStart, 6) : S.y === TODAY.getFullYear() && S.m === TODAY.getMonth());
+  const isDelayed = (c) => delayCtx() && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && !!c.start && endOf(c) < TODAY_S;
+  const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
+  const isLocked = (c) => c.status === 'DONE' || c.status === 'NON_FEATURE' || !!c.parent;
+  const needContact = (c) => !c.req && c.nature !== 'TECH' && !String(c.contact || '').trim();
+  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.repos.includes(repo)); return p ? p.name : '未归属项目'; };
+  const sourceRepos = () => { const s = REPOS.filter((r) => r.source); return (s.length ? s : REPOS).map((r) => r.repo); };
+  const projectOptions = () => PROJECTS.filter((p) => p.enabled).map((p) => p.name).concat('未归属项目');
+  const subset = (set, all) => !!set && set.size > 0 && set.size < all.length;
+  function passFilters(c, f, o) {
+    const opt = o || {};
+    if (f.onlyMine && c.owner !== ME && c.dev !== ME) return false;
+    if (subset(f.project, projectOptions()) && !f.project.has(projectOf(c.repo))) return false;
+    if (opt.onlyBase) return true;
+    if (f.status.size && !f.status.has(opt.pool ? c.status : dispStatus(c))) return false;
+    if (f.owner.size && !f.owner.has(ownerKey(c))) return false;
+    if (f.module.size && !f.module.has(c.module)) return false;
+    if (subset(f.repo, sourceRepos()) && !f.repo.has(c.repo)) return false;
+    return true;
+  }
+  const tokens = () => S.search.trim().toLowerCase().split(/[,，\s]+/).filter(Boolean);
+  function hitOf(c) {
+    const t = tokens();
+    if (!t.length) return null;
+    const hay = (c.title + ' ' + c.content + ' ' + c.no + ' ' + c.owner).toLowerCase();
+    return t.every((k) => hay.includes(k));
+  }
+  const poolAll = () => CARDS.filter((c) => alive(c) && !c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, { pool: true })).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const poolVisible = () => poolAll().filter((c) => hitOf(c) !== false);
+  const calCards = () => CARDS.filter((c) => alive(c) && c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, {}));
+  const cardsOn = (k, list) => list.filter((c) => c.start <= k && endOf(c) >= k);
+  function filterCount(f) {
+    const x = f || S.f;
+    return [subset(x.repo, sourceRepos()), subset(x.project, projectOptions()), x.status.size > 0, x.owner.size > 0, x.module.size > 0, x.onlyMine].filter(Boolean).length;
+  }
+  function genNo(dateS) {
+    const p = 'FS-' + dateS.replace(/-/g, '') + '-';
+    const max = CARDS.filter((c) => c.no.startsWith(p)).reduce((m, c) => Math.max(m, Number(c.no.slice(-3))), 0);
+    return p + String(max + 1).padStart(3, '0');
+  }
+  const titleFromMsg = (msg) => { const line = String(msg).split('\n')[0]; const i = line.indexOf(':'); return (i >= 0 ? line.slice(i + 1) : line).trim().slice(0, 30); };
+  const moduleFromMsg = (msg) => { const m = /^[a-z]+\(([A-Za-z0-9_-]+)\)\s*:/.exec(msg); return m ? m[1] : 'MISC'; };
+  const addLog = (c, type, detail) => c.logs.unshift(makeLog(type, detail, ME, NOW_S));
+
+  /* ---------- 组件片段 ---------- */
+  const icon = (name) => `<span class="ac-icon" data-ac="AcIcon" data-name="${name}" data-size="sm"></span>`;
+  const txt = (html, cls) => `<span data-ac="AcTypographyText" class="ac-typo-text${cls ? ' ' + cls : ''}"><span class="ac-typo-text__body">${html}</span></span>`;
+  const tag = (text, color, pre) => `<span data-ac="AcTag" class="ac-tag ac-tag--mini ac-tag--${color || 'default'} is-filled">${pre || ''}<span class="ac-tag__text">${esc(text)}</span></span>`;
+  const badge = (st, label) => `<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--status" data-status="${ST[st].badge}"><span class="ac-badge__dot"></span>${label === false ? '' : '<span class="ac-badge__text">' + esc(label || ST[st].label) + '</span>'}</span>`;
+  const checkbox = (on, disabled, label, attrs) => `<span class="ac-checkbox${on === 'mixed' ? ' is-indeterminate' : on ? ' is-checked' : ''}${disabled ? ' is-disabled' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-ac="AcCheckbox" data-size="medium" data-shape="square"${attrs || ''}><span class="ac-checkbox__box">${on === 'mixed' ? '<span class="ac-checkbox__dash"></span>' : '<span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span>'}</span>${label ? '<span class="ac-checkbox__label">' + label + '</span>' : ''}</span>`;
+  const emptyHtml = (desc, extra) => `<div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__image"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div><div class="ac-empty__description">${esc(desc)}</div>${extra ? '<div class="ac-empty__footer">' + extra + '</div>' : ''}</div>`;
+  function relTag(c) {
+    const min = Math.max(0, Math.floor((NOW - parseDT(c.createdAt)) / 60000));
+    let s = '刚刚';
+    if (min >= 525600) s = Math.floor(min / 525600) + ' 年前';
+    else if (min >= 43200) s = Math.floor(min / 43200) + ' 个月前';
+    else if (min >= 1440) s = Math.floor(min / 1440) + ' 天前';
+    else if (min >= 60) s = Math.floor(min / 60) + ' 小时前';
+    else if (min >= 1) s = min + ' 分钟前';
+    return tag(s, min > 7 * 1440 ? 'warning' : 'blue');
+  }
+
+  /* ---------- 多选态 ---------- */
+  const boxCtx = () => (S.mode === 'merge' ? ['month', 'pool', 'day'] : S.mode === 'batch' ? ['pool'] : []);
+  function eligible(c, ctx) {
+    if (S.mode === 'batch') return ctx === 'pool';
+    if (S.mode === 'merge') return !c.parent && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && (!S.mergeModule || c.module === S.mergeModule);
+    return false;
+  }
+  const dragFlag = () => (S.mode || !PERM.EDIT ? 'false' : 'true');
+
+  /* ---------- 卡片呈现 ---------- */
+  function cardHtml(c, ctx) {
+    const st = ctx === 'pool' ? c.status : dispStatus(c);
+    const hit = hitOf(c);
+    const dim = hit === false;
+    const box = boxCtx().includes(ctx) ? checkbox(S.selected.has(c.no), !eligible(c, ctx)) + ' ' : '';
+    const tCls = 'is-bold' + (hit ? ' is-mark' : '') + (dim ? ' is-disabled' : '');
+    const mCls = 'ac-typo-text--secondary' + (dim ? ' is-disabled' : '');
+    const head = box + (c.merged ? icon('link') + ' ' : '') + txt(esc(c.title), tCls);
+    const titleRow = ctx === 'day' ? `<div>${head}</div>` : `<div class="ac-card__title">${head}</div>`;
+    const lock = c.status === 'DONE' ? ' ' + icon('lock') : '';
+    const devT = c.dev && (c.status === 'IN_PROGRESS' || c.status === 'DONE') ? ' ' + tag(c.dev, 'default', icon('user')) : '';
+    const mergeT = c.merged ? ' ' + tag(c.children.length + ' 项', 'primary') : '';
+    let rows = `<div>${badge(st)} ${txt(esc(c.no), mCls)}${lock}</div><div>${txt(esc(c.owner), mCls)} ${tag(c.module, dim ? 'default' : 'blue')}${devT}${mergeT}</div>`;
+    if (ctx === 'pool') rows += `<div>${icon('time')} ${txt(esc(c.createdAt), mCls)} ${relTag(c)}</div>`;
+    return `<div data-ac="AcCard" class="ac-card ac-card--small is-bordered is-hoverable" data-card="${c.no}" data-ctx="${ctx}" draggable="${dragFlag()}" tabindex="0"><div class="ac-card__body">${titleRow}${rows}</div></div>`;
+  }
+  function chipHtml(c) {
+    const hit = hitOf(c);
+    const box = boxCtx().includes('month') ? checkbox(S.selected.has(c.no), !eligible(c, 'month')) : '';
+    const cls = ((hit ? 'is-mark' : '') + (hit === false ? ' is-disabled' : '')).trim();
+    return `<span class="ac-calendar__event" data-card="${c.no}" data-ctx="month" draggable="${dragFlag()}" tabindex="0">${box}${badge(dispStatus(c), false)}<span class="ac-calendar__ev-text">${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), cls)}</span><span>${esc(c.owner)}</span></span>`;
+  }
+
+  /* ---------- 待排期池 ---------- */
+  function renderPool() {
+    const list = poolVisible();
+    $('#poolCount').textContent = list.length;
+    $('#poolExpandCount').textContent = list.length;
+    $('#poolList').innerHTML = list.length
+      ? list.slice(0, S.poolLimit).map((c) => cardHtml(c, 'pool')).join('')
+      : S.f.onlyMine ? emptyHtml('没有由你提交的卡片', txt('关闭『只看自己』可查看全部', 'ac-typo-text--secondary')) : emptyHtml('待排期池已清空');
+    $('#poolMoreBtn').hidden = list.length <= S.poolLimit;
+    $('#batchBtn').hidden = !PERM.EDIT;
+    $('#batchBtn').textContent = S.mode === 'batch' ? '退出批量' : '批量';
+  }
+
+  /* ---------- 月视图 ---------- */
+  function renderMonth() {
+    const first = new Date(S.y, S.m, 1);
+    const end = addDays(mondayOf(new Date(S.y, S.m + 1, 0)), 6);
+    const list = calCards();
+    const seen = new Set();
+    let cells = '';
+    for (let d = mondayOf(first); d <= end; d = addDays(d, 1)) {
+      const k = ds(d);
+      const out = d.getMonth() !== S.m;
+      const items = out ? [] : cardsOn(k, list);
+      items.forEach((c) => seen.add(c));
+      const shown = items.slice(0, 3).map((c) => (S.density === 'compact' ? chipHtml(c) : cardHtml(c, 'month'))).join('');
+      const more = items.length > 3 ? `<span class="ac-calendar__more" role="button" tabindex="0" data-more="${k}">+${items.length - 3}</span>` : '';
+      const rel = !out && RELEASE.has(k) ? ' ' + tag('发版', 'blue') : '';
+      const cls = 'ac-calendar__cell' + (out ? ' is-outside' : '') + (k === TODAY_S ? ' is-today' : '');
+      cells += `<div class="${cls}" role="gridcell" data-date="${k}"${out ? '' : ' data-drop="cell"'}><div class="ac-calendar__cell-inner"><div><span class="ac-calendar__num">${d.getDate()}</span>${rel}</div><div class="ac-calendar__events">${shown}${more}</div></div></div>`;
+    }
+    $('#monthView').innerHTML = `<div class="ac-calendar__weekrow" role="row">${WEEK.map((w) => `<span class="ac-calendar__weekname" role="columnheader">周${w}</span>`).join('')}</div><div class="ac-calendar__grid" role="rowgroup">${cells}</div>`;
+    return [...seen];
+  }
+
+  /* ---------- 周视图 ---------- */
+  function renderWeek() {
+    const days = [0, 1, 2, 3, 4, 5, 6].map((i) => ds(addDays(S.weekStart, i)));
+    const list = calCards().filter((c) => c.start <= days[6] && endOf(c) >= days[0]);
+    const owners = [...new Set(list.map(ownerKey))].sort((a, b) => a.localeCompare(b, 'zh'));
+    const cur = delayCtx();
+    const head = '<th>负责人</th>' + days.map((k, i) => `<th>周${WEEK[i]} ${md(k)}${k === TODAY_S ? ' ' + tag('今天', 'primary') : ''}</th>`).join('');
+    const body = owners.map((o) => {
+      const mine = list.filter((c) => ownerKey(c) === o);
+      const late = cur ? mine.filter(isDelayed).length : 0;
+      const cells = days.map((k) => `<td data-drop="cell" data-date="${k}"><div class="ac-calendar__events">${cardsOn(k, mine).map((c) => cardHtml(c, 'week')).join('')}</div></td>`).join('');
+      return `<tr><td><div>${txt(esc(o), 'is-bold')}</div><div>${txt(mine.length + ' 张', 'ac-typo-text--secondary')}${late ? ' ' + tag('延 ' + late, 'warning') : ''}</div></td>${cells}</tr>`;
+    }).join('');
+    $('#weekView').innerHTML = owners.length
+      ? `<div class="ac-table-wrap"><table class="ac-table ac-table--fixed"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`
+      : emptyHtml('本周暂无已排期的卡片');
+    return list;
+  }
+
+  /* ---------- 列表视图 ---------- */
+  function rowAction(c) {
+    const act = { PENDING: ['take', '领取'], IN_PROGRESS: ['done', '完成'], DONE: ['revert', '回退'] }[c.status];
+    if (!PERM.MARK_DONE || !act) return '—';
+    return `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-row-act="${act[0]}" data-no="${c.no}"><span class="ac-btn__label">${act[1]}</span></button></div>`;
+  }
+  function renderList() {
+    const key = monthKey();
+    const rows = calCards().filter((c) => c.start.slice(0, 7) === key);
+    const { key: sk, dir } = S.sort;
+    rows.sort((a, b) => {
+      const x = a[sk] || '';
+      const y = b[sk] || '';
+      if (!x || !y) return x ? -1 : y ? 1 : 0;
+      return (x < y ? -1 : x > y ? 1 : 0) * (dir === 'asc' ? 1 : -1);
+    });
+    const th = (k, label) => `<th class="is-sortable${sk === k ? ' is-' + dir : ''}" data-sort="${k}">${label}</th>`;
+    const head = `<th class="u-wrap">任务</th><th>编号</th><th>模块</th><th>提交人</th><th>开发人</th>${th('start', '开始')}<th>截止</th><th>状态</th>${th('createdAt', '创建时间')}<th>操作</th>`;
+    const body = rows.length
+      ? rows.map((c) => {
+          const hit = hitOf(c);
+          const dim = hit === false ? ' is-disabled' : '';
+          return `<tr data-row="${c.no}"><td class="u-wrap">${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), ((hit ? 'is-mark' : '') + dim).trim())}</td><td>${txt(esc(c.no), 'ac-typo-text--secondary' + dim)}</td><td>${tag(c.module, 'blue')}</td><td>${esc(c.owner)}</td><td>${esc(c.dev || '—')}</td><td>${c.start}</td><td>${endOf(c)}</td><td>${badge(dispStatus(c))}</td><td>${esc(c.createdAt)}</td><td>${rowAction(c)}</td></tr>`;
+        }).join('')
+      : `<tr><td colspan="10">${emptyHtml('本月暂无已排期的卡片')}</td></tr>`;
+    $('#listView').innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
+    return rows;
+  }
+
+  /* ---------- 指挥栏与统计 ---------- */
+  function statsHtml() {
+    const key = monthKey();
+    const scope = (c) => alive(c) && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, { onlyBase: true });
+    const pool = CARDS.filter((c) => scope(c) && !c.start).length;
+    const n = { PENDING: 0, IN_PROGRESS: 0, DONE: 0, DELAYED: 0 };
+    CARDS.filter((c) => scope(c) && c.start && c.start.slice(0, 7) === key).forEach((c) => { n[dispStatus(c)] += 1; });
+    const chips = STAT_KEYS.map((k) => {
+      const on = S.f.status.has(k);
+      return `<span class="ac-chip${on ? ' is-active' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-stat="${k}">${badge(k, STAT_LABEL[k])} ${n[k]}${on ? ' ' + icon('check') : ''}</span>`;
+    }).join(' ');
+    return txt('待排期 ' + pool, 'ac-typo-text--secondary') + ' ' + chips;
+  }
+  function renderToolbar() {
+    $('#periodText').textContent = S.view === 'week' ? md(ds(S.weekStart)) + ' ~ ' + md(ds(addDays(S.weekStart, 6))) : S.y + ' 年 ' + pad(S.m + 1) + ' 月';
+    $('#periodArrow').hidden = S.view === 'week';
+    const html = statsHtml();
+    $('#statsInline').innerHTML = html;
+    $('#statsPop').innerHTML = html;
+    const fc = filterCount();
+    $('#filterCountWrap').hidden = !fc;
+    $('#filterCount').textContent = fc;
+    $('#nfCount').textContent = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').length;
+    $$('#viewSeg [data-view]').forEach((b) => { const on = b.dataset.view === S.view; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', String(on)); });
+    $$('#moreMenu [data-density]').forEach((it) => it.classList.toggle('is-active', it.dataset.density === S.density));
+    $('#newCardBtn').hidden = !PERM.EDIT;
+    $('#moreMenu [data-menu="merge"]').hidden = !PERM.EDIT;
+    $('#poolSide').hidden = S.poolCollapsed;
+    $('#mainDual').classList.toggle('tpl-dual', !S.poolCollapsed);
+    $('#poolExpandBtn').hidden = !S.poolCollapsed;
+  }
+  function toolbarFits() {
+    const kids = $$('#fsPage > .tpl-panel > .tpl-toolbar > div > *').filter((x) => !x.hidden && x.getClientRects().length);
+    const cy = kids.map((x) => { const r = x.getBoundingClientRect(); return r.top + r.height / 2; });
+    return Math.max(...cy) - Math.min(...cy) <= 12;
+  }
+  function fitToolbar() {
+    if (FLOATS.has($('#progressPanel'))) return;
+    $('#statsInline').hidden = false;
+    $('#progressPop').hidden = true;
+    if (toolbarFits()) return;
+    $('#statsInline').hidden = true;
+    $('#progressPop').hidden = false;
+  }
+  function applyResponsive() {
+    const narrow = window.innerWidth < 1440;
+    $$('#viewSeg [data-view]').forEach((b) => { b.textContent = narrow ? b.dataset.short : b.dataset.long; });
+    fitToolbar();
+  }
+  function renderZero(shown) {
+    const fc = filterCount();
+    const searching = tokens().length > 0;
+    const visible = shown.filter((c) => hitOf(c) !== false).length;
+    $('#zeroHint').hidden = !((fc > 0 || searching) && visible === 0);
+    $('#clearFiltersBtn').hidden = fc === 0;
+    $('#clearSearchBtn').hidden = !searching;
+  }
+  function renderMode() {
+    $('#modeBar').hidden = !S.mode;
+    $('#fsPage').classList.toggle('tpl-page--with-actionbar', !!S.mode);
+    if (!S.mode) return;
+    const n = S.selected.size;
+    $('#modeInfo').innerHTML = S.mode === 'merge' ? `已选 <strong>${n}</strong> 张 · 模块 ${esc(S.mergeModule || '未锁定')}` : `已选 <strong>${n}</strong> 张`;
+    $('#modeOkBtn').textContent = S.mode === 'merge' ? '确认合并' : '移入非需求';
+    $('#modeOkBtn').disabled = S.mode === 'merge' ? n < 2 : n < 1;
+  }
+  function renderAll() {
+    persist();
+    renderToolbar();
+    renderPool();
+    $('#monthView').hidden = S.view !== 'month';
+    $('#weekView').hidden = S.view !== 'week';
+    $('#listView').hidden = S.view !== 'list';
+    const shown = S.view === 'month' ? renderMonth() : S.view === 'week' ? renderWeek() : renderList();
+    renderZero(shown);
+    renderMode();
+    fitToolbar();
+  }
+
+  /* ---------- 弹窗与反馈 ---------- */
+  const OPEN = new Set();
+  function showLayer(id) {
+    const el = $('#' + id);
+    clearTimeout(el.leaveTimer);
+    el.inert = false;
+    el.hidden = false;
+    void el.offsetWidth;
+    el.classList.add('is-open');
+    OPEN.add(id);
+  }
+  function hideLayer(id) {
+    const el = $('#' + id);
+    if (el.hidden || !el.classList.contains('is-open')) return;
+    OPEN.delete(id);
+    el.classList.remove('is-open');
+    el.inert = true;
+    el.leaveTimer = setTimeout(() => { el.hidden = true; el.inert = false; }, Number(el.getAttribute('data-ds-leave')) || 320);
+  }
+  function toast(msg, type) {
+    const t = type || 'success';
+    const el = document.createElement('div');
+    el.className = 'ac-message__item is-' + t;
+    el.innerHTML = `<span class="ac-message__icon is-${t}">${{ success: '✓', error: '!', warning: '!', info: 'i' }[t]}</span><span class="ac-message__text">${esc(msg)}</span>`;
+    $('#toastList').appendChild(el);
+    setTimeout(() => el.remove(), 2600);
+  }
+  function busy(btn, on) {
+    if (!btn) return;
+    btn.disabled = on;
+    btn.classList.toggle('is-loading', on);
+    const sp = btn.querySelector('.ac-btn-spin');
+    if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+    if (!on && sp) sp.remove();
+  }
+  function markLoading(no) {
+    $$('[data-card="' + no + '"]').forEach((el) => {
+      const t = el.querySelector('.ac-card__title, .ac-calendar__ev-text, .ac-card__body > div');
+      if (t && !el.querySelector('.ac-btn-spin')) t.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span> ');
+    });
+  }
+  const alertHtml = (type, text, action) => `<div class="ac-alert ac-alert--${type}" data-ac="AcAlert" role="alert"><div class="ac-alert__icon">${{ info: 'ℹ', success: '✓', warning: '⚠', error: '⊘', normal: '●' }[type]}</div><div class="ac-alert__body"><div class="ac-alert__content">${esc(text)}</div></div>${action ? '<div class="ac-alert__action">' + action + '</div>' : ''}</div>`;
+  const section = (title, html) => `<div class="tpl-section"><div class="tpl-section__head">${title}</div>${html}</div>`;
+
+  let confirmResolve = null;
+  function askConfirm(title, content, okText, danger) {
+    $('#confirmTitle').textContent = title;
+    $('#confirmContent').textContent = content;
+    const ok = $('#confirmOkBtn');
+    ok.textContent = okText || '确认';
+    ok.className = 'ac-btn ' + (danger ? 'ac-btn--danger' : 'ac-btn--primary');
+    showLayer('confirmModal');
+    return new Promise((r) => { confirmResolve = r; });
+  }
+  function settleConfirm(v) {
+    if (!confirmResolve) return;
+    const r = confirmResolve;
+    confirmResolve = null;
+    if (!v) hideLayer('confirmModal');
+    r(v);
+  }
+  async function confirmRun(title, content, okText, danger, run) {
+    if (!(await askConfirm(title, content, okText, danger))) return false;
+    const btn = $('#confirmOkBtn');
+    busy(btn, true);
+    await wait();
+    try { await run(); } finally { busy(btn, false); hideLayer('confirmModal'); }
+    return true;
+  }
+
+  let popResolve = null;
+  function askPop(anchor, title, content) {
+    const p = $('#popconfirm');
+    $('#pcTitle').textContent = title;
+    $('#pcContent').textContent = content || '';
+    p.hidden = false;
+    const r = anchor.getBoundingClientRect();
+    p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
+    p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
+    return new Promise((res) => { popResolve = res; });
+  }
+  function settlePop(v) {
+    if (!popResolve) return;
+    const r = popResolve;
+    popResolve = null;
+    if (!v) $('#popconfirm').hidden = true;
+    r(v);
+  }
+
+  /* ---------- 浮动面板（菜单、年月选择、下拉、日期面板） ---------- */
+  const FLOATS = new Map();
+  function openFloat(el, onClose) { closeFloats(el); el.hidden = false; FLOATS.set(el, onClose || null); }
+  function closeFloat(el) {
+    if (!FLOATS.has(el)) return;
+    const done = FLOATS.get(el);
+    FLOATS.delete(el);
+    if (!el.isConnected) return;
+    el.hidden = true;
+    const root = el.closest('[data-ac="AcSelect"], [data-ac="AcDropdown"]');
+    if (root) root.classList.remove('is-open');
+    if (done) done();
+  }
+  function closeFloats(keep) { [...FLOATS.keys()].forEach((el) => { if (!keep || (el !== keep && !el.contains(keep))) closeFloat(el); }); }
+  function placeFixed(el, x, y) {
+    el.style.left = '0px';
+    el.style.top = '0px';
+    el.style.left = Math.max(8, Math.min(window.innerWidth - el.offsetWidth - 8, x)) + 'px';
+    el.style.top = Math.max(8, Math.min(window.innerHeight - el.offsetHeight - 8, y)) + 'px';
+  }
+  function placeUnder(el, anchor) {
+    const r = anchor.getBoundingClientRect();
+    const leftHalf = r.left + r.width / 2 < window.innerWidth / 2;
+    el.style.left = '0px';
+    placeFixed(el, leftHalf ? r.left : r.right - el.offsetWidth, r.bottom + 4);
+  }
+  let pickerYear = S.y;
+  function renderMonthPanel() {
+    const cells = Array.from({ length: 12 }, (_, i) => `<button class="ac-btn ac-date-picker__cell${pickerYear === S.y && i === S.m ? ' is-selected' : ''}" type="button" data-pick-month="${i}">${i + 1} 月</button>`).join('');
+    $('#monthPanel').innerHTML = `<span class="ac-date-picker__header"><button class="ac-btn ac-date-picker__nav" type="button" data-pick-year="-1" aria-label="上一年">‹</button><span class="ac-date-picker__title">${pickerYear} 年</span><button class="ac-btn ac-date-picker__nav" type="button" data-pick-year="1" aria-label="下一年">›</button></span><span class="ac-date-picker__cell-grid">${cells}</span>`;
+  }
+
+  /* ---------- 表单片段 ---------- */
+  const inputHtml = (field, value, ph, o) => {
+    const opt = o || {};
+    return `<div class="ac-input${opt.disabled ? ' is-disabled' : ''}" data-ac="AcInput" data-size="medium"${opt.error ? ' data-status="error"' : ''}><input class="ac-input__inner" data-field="${field}" value="${esc(value)}" placeholder="${esc(ph || '')}"${opt.max ? ' maxlength="' + opt.max + '"' : ''}${opt.disabled ? ' disabled' : ''} />${opt.max ? '<span class="ac-input__suffix" data-count="' + field + '">' + String(value || '').length + '/' + opt.max + '</span>' : ''}</div>`;
+  };
+  const formItem = (label, control, o) => {
+    const opt = o || {};
+    return `<div class="ac-form-item ac-form-item--vertical${opt.required ? ' is-required' : ''}${opt.error ? ' is-error' : ''}" data-ac="AcFormItem"><label class="ac-form-item__label">${opt.required ? '<span class="ac-form-item__required">*</span>' : ''}${label}</label><div class="ac-form-item__wrapper"><div class="ac-form-item__control">${control}</div><div class="ac-form-item__help${opt.error ? ' is-error' : ''}"${opt.helpId ? ' id="' + opt.helpId + '"' : ''}>${esc(opt.error || opt.help || '')}</div></div></div>`;
+  };
+  const selectHtml = (key, value, options, ph, disabled) => {
+    const cur = options.find((x) => x.value === value);
+    const list = options.map((x) => `<li class="ac-select__option${x.value === value ? ' is-selected' : ''}${x.disabled ? ' is-disabled' : ''}" data-value="${esc(x.value)}"><span class="ac-select__option-label">${esc(x.label)}</span>${x.sub ? txt(esc(x.sub), 'ac-typo-text--secondary') : ''}</li>`).join('');
+    return `<div class="ac-select ac-select--medium${disabled ? ' is-disabled' : ''}" data-ac="AcSelect" data-select="${key}"><div class="ac-select__trigger" tabindex="0"><span class="ac-select__single${cur ? '' : ' is-placeholder'}">${esc(cur ? cur.label : ph)}</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div><div class="ac-select__popup" hidden><ul class="ac-select__list">${list}</ul></div></div>`;
+  };
+  const radioGroup = (key, value, opts, disabled) => `<div class="ac-radio-group" role="radiogroup" data-ac="AcRadioGroup">${opts.map((x) => `<span class="ac-radio ac-radio--dot${x[0] === value ? ' is-checked' : ''}${disabled ? ' is-disabled' : ''}" role="radio" tabindex="0" aria-checked="${x[0] === value}" data-ac="AcRadio" data-radio="${key}" data-value="${x[0]}" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">${x[1]}</span></span>`).join(' ')}</div>`;
+
+  /* ---------- 卡片详情跳转 ---------- */
+  function goDetail(no) {
+    const f = S.f;
+    const arr = (x) => (x ? [...x] : null);
+    D.stash('fs.ctx', { view: S.view, y: S.y, m: S.m, weekStart: ds(S.weekStart), search: S.search, poolLimit: S.poolLimit, sort: S.sort, f: { onlyMine: f.onlyMine, status: [...f.status], owner: [...f.owner], module: [...f.module], repo: arr(f.repo), project: arr(f.project) } });
+    persist();
+    location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
+  }
+
+  /* ---------- 排期与发版日 ---------- */
+  function diffuse(mc, fields) {
+    if (!mc.merged) return;
+    mc.children.forEach((no) => { const ch = byNo(no); if (ch) fields.forEach((k) => { ch[k] = Array.isArray(mc[k]) ? mc[k].slice() : mc[k]; }); });
+  }
+  const spread = (c) => (c.merged ? '，扩散至 ' + c.children.length + ' 张子卡' : '');
+  function setHelp(id, msg) { const el = $('#' + id); if (!el) return; el.textContent = msg; el.classList.toggle('is-error', !!msg); }
+  let CT = null;
+  function openContact(c, start, end) {
+    CT = { no: c.no, start, end };
+    const rows = [['卡片', c.no + ' ' + c.title], ['目标排期', start + (end !== start ? ' ~ ' + end : '')]];
+    $('#contactBody').innerHTML = alertHtml('warning', '该卡片未被需求单关联且为业务功能，排期写入前需补录业务对接人')
+      + `<div data-ac="AcDescriptions" class="ac-descriptions ac-descriptions--medium ac-descriptions--layout-horizontal"><dl class="ac-descriptions__list">${rows.map((p) => `<div class="ac-descriptions__pair"><dt class="ac-descriptions__label">${p[0]}<span class="ac-descriptions__colon">:</span></dt><dd class="ac-descriptions__value">${esc(p[1])}</dd></div>`).join('')}</dl></div>`
+      + `<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('业务对接人', inputHtml('ctContact', '', '请输入业务对接人', { max: 64 }), { required: true, helpId: 'helpCtContact' })}</div>`;
+    showLayer('contactModal');
+    setTimeout(() => { const el = $('#contactModal [data-field="ctContact"]'); if (el) el.focus(); }, 60);
+  }
+  async function saveContact(btn) {
+    const c = byNo(CT.no);
+    const v = ($('#contactModal [data-field="ctContact"]').value || '').trim();
+    if (!v) { setHelp('helpCtContact', '排期写入前请先补录业务对接人'); return; }
+    busy(btn, true);
+    await wait();
+    c.contact = v;
+    addLog(c, 'EDITED', '业务对接人：空 → ' + v);
+    const { start, end } = CT;
+    busy(btn, false);
+    CT = null;
+    hideLayer('contactModal');
+    await applySchedule(c, start, end, { msg: '已补录业务对接人，' + (c.start ? '改期到 ' : '排期到 ') + md(start) });
+  }
+  async function applySchedule(c, start, end, o) {
+    const opt = o || {};
+    if (start < TODAY_S) { toast('不可将卡片改期到今天之前', 'error'); return false; }
+    if (c.start === start && endOf(c) === end) return false;
+    if (needContact(c)) { openContact(c, start, end); return false; }
+    markLoading(c.no);
+    await wait();
+    const before = c.start;
+    c.start = start;
+    c.end = end;
+    addLog(c, before ? 'RESCHEDULED' : 'SCHEDULED', '排期：' + (before ? before + ' → ' : '') + start + (end !== start ? ' ~ ' + end : '') + spread(c));
+    diffuse(c, ['start', 'end']);
+    toast(opt.msg || (before ? '已改期到 ' : '已排期到 ') + md(start));
+    renderAll();
+    if (OPEN.has('dayModal')) renderDayModal();
+    return true;
+  }
+  async function unschedule(c) {
+    if (!c.start) return false;
+    markLoading(c.no);
+    await wait();
+    const before = c.start;
+    c.start = null;
+    c.end = null;
+    addLog(c, 'UNSCHEDULED', '取消排期：' + before + spread(c));
+    diffuse(c, ['start', 'end']);
+    toast('已移回待排期');
+    renderAll();
+    if (OPEN.has('dayModal')) renderDayModal();
+    return true;
+  }
+  async function toggleRelease(k, cell) {
+    if (!PERM.RELEASE_DAY) return;
+    const num = cell.querySelector('.ac-calendar__num');
+    if (num) num.insertAdjacentHTML('afterend', ' <span class="ac-btn-spin"></span>');
+    await wait(260);
+    if (RELEASE.has(k)) { RELEASE.delete(k); toast('已取消 ' + md(k) + ' 的发版日标记'); } else { RELEASE.add(k); toast('已标记 ' + md(k) + ' 为发版日'); }
+    renderAll();
+  }
+
+  /* ---------- 批量移入与列表行内状态流转 ---------- */
+  function moveToNF(c) {
+    const was = ST[c.status].label;
+    Object.assign(c, { status: 'NON_FEATURE', start: null, end: null, dev: null, takenAt: null, done: [], doneAt: null });
+    addLog(c, 'EDITED', '从『' + was + '』移入非需求改动');
+    diffuse(c, ['status', 'start', 'end', 'dev', 'takenAt', 'done', 'doneAt']);
+  }
+  async function rowAct(btn) {
+    const c = byNo(btn.dataset.no);
+    const act = btn.dataset.rowAct;
+    const text = { take: ['确认领取开发？', ''], done: ['确认标记完成？', '完成 commit 可稍后在卡片详情页补录'], revert: ['确认回退为开发中？', '将清空完成 commit，保留开发人'] }[act];
+    if (!c || !(await askPop(btn, text[0], text[1]))) return;
+    busy($('#pcOkBtn'), true);
+    await wait();
+    if (act === 'take') { c.status = 'IN_PROGRESS'; c.dev = ME; c.takenAt = NOW_S; addLog(c, 'TAKEN', '领取开发：' + ME + spread(c)); toast('已领取开发'); }
+    if (act === 'done') { c.status = 'DONE'; if (!c.dev) { c.dev = ME; c.takenAt = NOW_S; } c.doneAt = NOW_S; addLog(c, 'MARKED_DONE', '标记完成（未关联完成 commit）' + spread(c)); toast('已标记完成'); }
+    if (act === 'revert') {
+      const keep = !!c.dev;
+      c.status = keep ? 'IN_PROGRESS' : 'PENDING'; c.done = []; c.doneAt = null;
+      if (!keep) c.takenAt = null;
+      addLog(c, 'REVERTED', (keep ? '已回退为「开发中」，保留开发人 ' + c.dev : '已回退为「待开发」') + spread(c));
+      toast(keep ? '已回退为开发中' : '已回退为待开发');
+    }
+    diffuse(c, ['status', 'dev', 'takenAt', 'doneAt', 'done']);
+    busy($('#pcOkBtn'), false);
+    $('#popconfirm').hidden = true;
+    renderAll();
+  }
+
+  /* ---------- 合并与批量 ---------- */
+  function startMode(mode) {
+    if (!PERM.EDIT) return;
+    S.mode = mode; S.selected.clear(); S.mergeModule = null;
+    closeFloats();
+    renderAll();
+    toast(mode === 'merge' ? '已进入合并多选态：勾选同模块卡片，至少 2 张' : '已进入批量多选态：勾选待排期卡片后移入非需求改动', 'info');
+  }
+  function exitMode() { S.mode = null; S.selected.clear(); S.mergeModule = null; renderAll(); if (OPEN.has('dayModal')) renderDayModal(); }
+  function toggleSelect(c, ctx) {
+    if (!eligible(c, ctx)) {
+      if (S.mode === 'merge') toast(c.parent ? '子卡不可再次合并' : c.status === 'DONE' || c.status === 'NON_FEATURE' ? '开发完成或非需求改动的卡片不可合并' : '仅同模块卡片可合并', 'error');
+      return;
+    }
+    if (S.selected.has(c.no)) S.selected.delete(c.no); else S.selected.add(c.no);
+    if (S.mode === 'merge') S.mergeModule = S.selected.size ? S.mergeModule || c.module : null;
+    renderAll();
+    if (OPEN.has('dayModal')) renderDayModal();
+  }
+  function mergeCheck(cards) {
+    if (cards.length < 2) return '至少选择 2 张卡片';
+    if (cards.some((c) => c.parent)) return '子卡不可再次合并，请先解散其合并卡';
+    if (cards.some((c) => c.status !== 'PENDING' && c.status !== 'IN_PROGRESS')) return '开发完成或非需求改动的卡片不可合并';
+    if (new Set(cards.map((c) => c.module)).size > 1) return '仅同模块卡片可合并';
+    return '';
+  }
+  let MERGE_NOS = [];
+  function openMergeModal(nos) {
+    MERGE_NOS = nos;
+    const cards = nos.map(byNo);
+    $('#mergeModalBody').innerHTML = `<div id="mergeAlert"></div>${txt('已选 ' + cards.length + ' 张 · 模块 ' + esc(cards[0].module), 'ac-typo-text--secondary')}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('合并卡标题', inputHtml('mergeTitle', '', '最长 30 字符', { max: 30 }), { required: true, helpId: 'helpMerge' })}</div><div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split" role="list"><div class="ac-list__body">${cards.map((c) => `<div class="ac-list-item ac-list-item--small" role="listitem"><div class="ac-list-item__main">${esc(c.no)} ${esc(c.title)}</div>${badge(c.status)}</div>`).join('')}</div></div>`;
+    showLayer('mergeModal');
+    setTimeout(() => { const el = $('#mergeModal [data-field="mergeTitle"]'); if (el) el.focus(); }, 30);
+  }
+  async function createMerge(btn) {
+    const title = ($('#mergeModal [data-field="mergeTitle"]').value || '').trim();
+    if (!title) { setHelp('helpMerge', '请输入合并卡标题'); return; }
+    const picked = MERGE_NOS.map(byNo);
+    const err = mergeCheck(picked);
+    if (err) { $('#mergeAlert').innerHTML = alertHtml('error', err); return; }
+    busy(btn, true);
+    await wait();
+    const no = genNo(TODAY_S);
+    const leaves = [];
+    const snaps = {};
+    picked.forEach((c) => {
+      if (c.merged) {
+        c.children.forEach((n) => { leaves.push(n); snaps[n] = c.snaps[n]; });
+        c.children = []; c.deleted = true;
+        addLog(c, 'DELETED', '被合并至 ' + no);
+      } else {
+        leaves.push(c.no);
+        snaps[c.no] = { status: c.status, start: c.start, end: c.end, dev: c.dev, takenAt: c.takenAt, at: NOW_S };
+      }
+    });
+    const start = picked.map((c) => c.start).filter(Boolean).sort()[0] || null;
+    const mc = mk({ no, title, status: 'PENDING', start, end: start, module: picked[0].module, repo: '_merge', commit: 'MERGE:' + no, merged: true, children: leaves, snaps, createdAt: NOW_S, content: '合并自 ' + leaves.length + ' 张子卡：\n' + leaves.map((n) => '- ' + n + ' ' + byNo(n).title).join('\n') });
+    mc.logs = [makeLog('CREATED', '合并自 ' + leaves.length + ' 张：' + leaves.join(', '), ME, NOW_S)];
+    CARDS.push(mc);
+    leaves.forEach((n) => { const ch = byNo(n); Object.assign(ch, { parent: no, status: 'PENDING', start, end: start, dev: null, takenAt: null }); addLog(ch, 'EDITED', '并入合并卡 ' + no); });
+    busy(btn, false);
+    hideLayer('mergeModal');
+    S.mode = null; S.selected.clear(); S.mergeModule = null;
+    toast('已生成合并卡 ' + no);
+    renderAll();
+    if (OPEN.has('dayModal')) renderDayModal();
+  }
+  async function batchToNF() {
+    const nos = [...S.selected];
+    await confirmRun('批量移入非需求改动', '将 ' + nos.length + ' 张卡片移入非需求改动？移入后清空排期、开发人与完成 commit', '确认移入', false, () => {
+      let ok = 0;
+      let fail = 0;
+      nos.forEach((no) => { const c = byNo(no); if (!c || c.parent || c.deleted || c.status === 'NON_FEATURE') { fail += 1; return; } moveToNF(c); ok += 1; });
+      toast('已移入 ' + ok + ' 张，失败 ' + fail + ' 张', fail ? 'warning' : 'success');
+      S.mode = null; S.selected.clear();
+    });
+    renderAll();
+  }
+
+  /* ---------- 新建卡片 ---------- */
+  const NC = { repo: '', q: '', pick: '' };
+  const cardByCommit = (repo, hash) => CARDS.find((c) => c.repo === repo && hash.startsWith(c.commit));
+  function ncListHtml() {
+    if (!NC.repo) return emptyHtml('请先选择代码仓');
+    const q = NC.q.trim().toLowerCase();
+    const list = (COMMITS[NC.repo] || []).filter((x) => !q || (x.msg + ' ' + x.hash + ' ' + x.author).toLowerCase().includes(q));
+    if (!list.length) return emptyHtml('没有匹配的 commit');
+    return `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((x) => {
+      const on = NC.pick === x.hash;
+      const has = cardByCommit(NC.repo, x.hash);
+      return `<div class="ac-list-item ac-list-item--small is-clickable" role="listitem" tabindex="0" data-nc-pick="${x.hash}"><span class="ac-radio ac-radio--dot${on ? ' is-checked' : ''}" role="radio" aria-checked="${on}" data-ac="AcRadio" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span></span><div class="ac-list-item__main">${txt(x.hash.slice(0, 7), 'is-code')} ${esc(x.msg)}</div>${txt(esc(x.author + ' · ' + x.at), 'ac-typo-text--secondary')}${has ? ' ' + tag(has.deleted ? '卡片已删除' : '已有卡片 ' + has.no, 'default') : ''}</div>`;
+    }).join('')}</div></div>`;
+  }
+  function renderNewCard() {
+    const repos = REPOS.filter((r) => r.source);
+    $('#newCardBody').innerHTML = `<div id="ncAlert"></div><div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('代码仓', selectHtml('ncRepo', NC.repo, repos.map((r) => ({ value: r.repo, label: r.name, sub: r.repo })), '请选择代码仓'), { required: true, helpId: 'helpNcRepo' })}${formItem('commit', `<div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix">${icon('search')}</span><input class="ac-input__inner" type="search" data-field="ncQ" value="${esc(NC.q)}" placeholder="搜索提交说明 / hash / 作者" /></div>`, { required: true, helpId: 'helpNcCommit' })}</div><div id="ncList">${ncListHtml()}</div>`;
+  }
+  async function createCard(btn) {
+    $('#ncAlert').innerHTML = '';
+    if (!NC.repo) { setHelp('helpNcRepo', '请选择代码仓'); return; }
+    if (!NC.pick) { setHelp('helpNcCommit', '请选择一条 commit'); return; }
+    const exist = cardByCommit(NC.repo, NC.pick);
+    if (exist && exist.deleted) { $('#ncAlert').innerHTML = alertHtml('error', '该 commit 的卡片 ' + exist.no + ' 已删除，源 commit 不再出卡'); return; }
+    if (exist) { hideLayer('newCardModal'); D.stash('fs.flash', { msg: '该 commit 已有卡片 ' + exist.no + '，已为你打开', type: 'info' }); goDetail(exist.no); return; }
+    busy(btn, true);
+    await wait();
+    const x = COMMITS[NC.repo].find((y) => y.hash === NC.pick);
+    const no = genNo(x.at.slice(0, 10));
+    const c = mk({ no, title: titleFromMsg(x.msg), content: x.msg, owner: x.author, ownerUnmatched: !USERS.includes(x.author), module: moduleFromMsg(x.msg), repo: NC.repo, commit: x.hash.slice(0, 7), createdAt: NOW_S });
+    c.logs = [makeLog('CREATED', '手动新建：' + NC.repo + ' @ ' + c.commit, ME, NOW_S)];
+    CARDS.push(c);
+    busy(btn, false);
+    hideLayer('newCardModal');
+    toast('已生成卡片 ' + no + '，落入待排期池');
+    renderAll();
+  }
+
+  /* ---------- 非需求改动、代码仓与项目配置 ---------- */
+  function renderNF() {
+    const list = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+    $('#nfModalBody').innerHTML = list.length
+      ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((c) => `<div class="ac-list-item ac-list-item--medium is-clickable" role="listitem" tabindex="0" data-open-card="${c.no}"><div class="ac-list-item__main"><div>${txt(esc(c.title), 'is-bold')} ${tag('非需求改动', 'warning')}</div><div>${txt(esc(c.no + ' · ' + c.owner + ' · ' + c.createdAt), 'ac-typo-text--secondary')}</div></div></div>`).join('')}</div></div>`
+      : emptyHtml('暂无非需求改动卡片');
+  }
+  function renderRepos() {
+    $('#repoModalBody').innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>仓库标识</th><th>名称</th><th>默认分支</th></tr></thead><tbody>${REPOS.map((r) => `<tr><td>${esc(r.repo)}</td><td>${esc(r.name)}</td><td>${esc(r.branch)}</td></tr>`).join('')}</tbody></table></div>${alertHtml('info', '需增减 / 修改？请联系运维修改代码仓配置')}`;
+  }
+  const PJ = { view: 'list', edit: null, draft: null, base: '', err: '' };
+  const pjDirty = () => PJ.view === 'form' && JSON.stringify(PJ.draft) !== PJ.base;
+  function openProjectForm(id) {
+    const p = PROJECTS.find((x) => x.id === id);
+    PJ.view = 'form'; PJ.edit = id || null; PJ.err = '';
+    PJ.draft = p ? { name: p.name, harness: p.harness, repos: p.repos.slice(), enabled: p.enabled, note: p.note } : { name: '', harness: '', repos: [], enabled: true, note: '' };
+    PJ.base = JSON.stringify(PJ.draft);
+    renderProjects();
+  }
+  function renderProjects() {
+    const body = $('#projectModalBody');
+    const foot = $('#projectModalFooter');
+    if (PJ.view === 'list') {
+      $('#projectModalTitle').textContent = '项目配置';
+      body.innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>项目名称</th><th>harness 工程</th><th class="u-wrap">代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>${PROJECTS.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.harness)}</td><td class="u-wrap">${p.repos.map((r) => (repoOf(r) ? tag(r, 'blue') : tag(r + '（已移出名单）', 'default'))).join(' ')}</td><td>${p.enabled ? badge('DONE', '启用') : badge('PENDING', '停用')}</td><td>${PERM.EDIT ? `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-edit="${p.id}"><span class="ac-btn__label">编辑</span></button><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-toggle="${p.id}"><span class="ac-btn__label">${p.enabled ? '停用' : '启用'}</span></button></div>` : '—'}</td></tr>`).join('')}</tbody></table></div>`;
+      foot.innerHTML = (PERM.EDIT ? '<button class="ac-btn ac-btn--primary" type="button" data-pj-new>新建项目</button>' : '') + '<button class="ac-btn" type="button" data-close="projectModal">关闭</button>';
+      return;
+    }
+    const d = PJ.draft;
+    $('#projectModalTitle').textContent = PJ.edit ? '编辑项目' : '新建项目';
+    const taken = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && p.repos.includes(repo));
+    const checks = REPOS.map((r) => {
+      const t = taken(r.repo);
+      const on = d.repos.includes(r.repo);
+      return `<div>${checkbox(on, !!t && !on, esc(r.name) + ' ' + txt(esc(r.repo), 'ac-typo-text--secondary') + (t ? ' ' + tag('已归属 ' + t.name, 'default') : ''), ' data-pj-repo="' + r.repo + '"')}</div>`;
+    }).join('') + d.repos.filter((r) => !repoOf(r)).map((r) => `<div>${checkbox(true, true, txt(esc(r) + '（已移出名单，映射失效）', 'ac-typo-text--secondary is-disabled'))}</div>`).join('');
+    body.innerHTML = `${PJ.err ? alertHtml('error', PJ.err) : ''}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('项目名称', inputHtml('pjName', d.name, '请填写项目名称'), { required: true, helpId: 'helpPjName' })}${formItem('harness 工程', inputHtml('pjHarness', d.harness, '项目的需求 / 文档真源工程标识'), { required: true, helpId: 'helpPjHarness' })}${formItem('代码服务仓', `<div class="ac-checkbox-group">${checks}</div>`, { required: true, helpId: 'helpPjRepos', help: '只能从代码仓名单中选择；被其他启用中项目占用的仓不可选' })}${formItem('状态', radioGroup('pjEnabled', d.enabled ? 'on' : 'off', [['on', '启用'], ['off', '停用']]), { required: true })}${formItem('备注', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="pjNote" rows="2">${esc(d.note)}</textarea></div>`)}</div>`;
+    foot.innerHTML = '<button class="ac-btn" type="button" data-pj-back>返回列表</button><button class="ac-btn ac-btn--primary" type="button" data-pj-save>保存</button>';
+  }
+  async function saveProject(btn) {
+    const d = PJ.draft;
+    const name = d.name.trim();
+    const harness = d.harness.trim();
+    const live = d.repos.filter((r) => repoOf(r));
+    PJ.err = '';
+    setHelp('helpPjName', !name ? '请填写项目名称' : d.enabled && PROJECTS.some((p) => p.enabled && p.id !== PJ.edit && p.name === name) ? '项目名称「' + name + '」已被启用中项目占用' : '');
+    setHelp('helpPjHarness', harness ? '' : '请填写 harness 工程');
+    setHelp('helpPjRepos', live.length ? '' : '请至少选择 1 个代码服务仓');
+    if (live.length) $('#helpPjRepos').textContent = '只能从代码仓名单中选择；被其他启用中项目占用的仓不可选';
+    if ($$('#projectModal .ac-form-item__help.is-error').length) return;
+    const clash = d.enabled ? live.map((r) => [r, PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && p.repos.includes(r))]).find((x) => x[1]) : null;
+    if (clash) { PJ.err = '代码仓 ' + clash[0] + ' 已被启用中项目「' + clash[1].name + '」占用'; renderProjects(); return; }
+    busy(btn, true);
+    await wait();
+    const data = { name, harness, repos: d.repos.slice(), enabled: d.enabled, note: d.note };
+    if (PJ.edit) Object.assign(PROJECTS.find((p) => p.id === PJ.edit), data);
+    else PROJECTS.push(Object.assign({ id: 'p' + (PROJECTS.length + 1) }, data));
+    PJ.view = 'list';
+    toast('项目已保存，卡片归属已按新映射重新解析');
+    renderProjects();
+    renderAll();
+  }
+  async function toggleProject(id, btn) {
+    const p = PROJECTS.find((x) => x.id === id);
+    if (p.enabled) {
+      await confirmRun('停用项目', '停用后「' + p.name + '」退出筛选选项集，其代码仓卡片回落「未归属项目」。确认停用？', '确认停用', true, () => { p.enabled = false; toast('项目已停用'); });
+    } else {
+      const clash = p.repos.map((r) => [r, PROJECTS.find((x) => x.enabled && x.id !== p.id && x.repos.includes(r))]).find((x) => x[1]);
+      if (clash) { toast('代码仓 ' + clash[0] + ' 已被启用中项目「' + clash[1].name + '」占用', 'error'); return; }
+      busy(btn, true);
+      await wait();
+      p.enabled = true;
+      toast('项目已启用');
+    }
+    renderProjects();
+    renderAll();
+  }
+
+  /* ---------- 日详情、筛选抽屉与右键菜单 ---------- */
+  let DAY = null;
+  function renderDayModal() {
+    if (!DAY) return;
+    const items = cardsOn(DAY, calCards());
+    $('#dayModalTitle').textContent = Number(DAY.slice(5, 7)) + ' 月 ' + Number(DAY.slice(8, 10)) + ' 日 · ' + items.length + ' 张';
+    $('#dayModalBody').innerHTML = items.length ? items.map((c) => cardHtml(c, 'day')).join('') : emptyHtml('当日暂无卡片');
+  }
+  function openFilter() { S.draft = cloneFilter(S.f); renderFilter(); showLayer('filterDrawer'); }
+  const groupSet = (f, key, all) => (key === 'repo' || key === 'project' ? (f[key] ? f[key] : new Set(all)) : f[key]);
+  function renderFilter() {
+    const f = S.draft;
+    const owners = [...new Set(CARDS.filter((c) => alive(c) && !c.parent && c.status !== 'NON_FEATURE').map(ownerKey))].sort((a, b) => a.localeCompare(b, 'zh'));
+    const modules = [...new Set(CARDS.filter((c) => alive(c) && !c.parent).map((c) => c.module))].sort();
+    const repos = sourceRepos();
+    const projects = projectOptions();
+    const chips = [];
+    f.status.forEach((v) => chips.push(['status', v, '状态：' + STAT_LABEL[v]]));
+    f.owner.forEach((v) => chips.push(['owner', v, '负责人：' + v]));
+    if (subset(f.repo, repos)) f.repo.forEach((v) => chips.push(['repo', v, '仓库：' + v]));
+    if (subset(f.project, projects)) f.project.forEach((v) => chips.push(['project', v, '项目：' + v]));
+    f.module.forEach((v) => chips.push(['module', v, '模块：' + v]));
+    const chipsHtml = chips.length ? chips.map((x) => `<span data-ac="AcTag" class="ac-tag ac-tag--small ac-tag--primary is-filled is-closable"><span class="ac-tag__text">${esc(x[2])}</span><button class="ac-btn ac-tag__close" type="button" aria-label="移除条件" data-chip-group="${x[0]}" data-chip-value="${esc(x[1])}">×</button></span>`).join(' ') : txt('未设置筛选条件', 'ac-typo-text--secondary');
+    const group = (key, title, opts, withAll) => {
+      const set = groupSet(f, key, opts.map((o) => o[0]));
+      const allOn = set.size === opts.length;
+      const head = withAll ? `<div>${checkbox(allOn ? true : set.size ? 'mixed' : false, false, '全部', ' data-fd-all="' + key + '"')}</div><hr class="ac-divider" />` : '';
+      return section(title, head + opts.map((o) => `<div>${checkbox(set.has(o[0]), false, esc(o[1]), ' data-fd-group="' + key + '" data-fd-value="' + esc(o[0]) + '"')}</div>`).join(''));
+    };
+    $('#fdContent').innerHTML = `<div class="tpl-section"><div><button class="ac-btn ac-switch${S.f.onlyMine ? ' is-checked' : ''}" type="button" role="switch" aria-checked="${S.f.onlyMine}" data-ac="AcSwitch" data-size="medium" data-shape="rounded" id="onlyMineSwitch"><span class="ac-switch__thumb"></span></button> ${txt('只看自己', 'is-bold')} ${txt('即时生效：只显示提交人或开发人为当前用户的卡片', 'ac-typo-text--secondary')}</div>${section('已选条件', '<div>' + chipsHtml + '</div>')}${group('status', '状态', STAT_KEYS.map((k) => [k, STAT_LABEL[k]]))}${group('owner', '负责人', owners.map((o) => [o, o]))}${group('repo', 'skills 仓库', repos.map((r) => [r, r]), true)}${group('project', '项目', projects.map((p) => [p, p]), true)}${group('module', '模块', modules.map((m) => [m, m]))}</div>`;
+  }
+  function toggleGroup(key, value) {
+    const f = S.draft;
+    if (key === 'repo' || key === 'project') {
+      const all = key === 'repo' ? sourceRepos() : projectOptions();
+      const set = new Set(groupSet(f, key, all));
+      if (set.has(value)) set.delete(value); else set.add(value);
+      f[key] = set.size === all.length ? null : set;
+    } else if (f[key].has(value)) f[key].delete(value); else f[key].add(value);
+    renderFilter();
+  }
+  function openCtx(e, c) {
+    const locked = !PERM.EDIT || isLocked(c);
+    const items = [['detail', '查看详情', false], ['today', '改期到今天', locked], ['tomorrow', '改期到明天', locked], ['pool', '移回待排期', locked || !c.start]];
+    const menu = $('#ctxMenu');
+    menu.innerHTML = items.map((x) => `<div class="ac-dropdown-item${x[2] ? ' is-disabled' : ''}" role="menuitem" data-ctx-act="${x[0]}" data-no="${c.no}">${x[1]}</div>`).join('');
+    (e.target.closest('[data-ac="AcModal"]') || document.body).appendChild($('#ctxDd'));
+    openFloat(menu);
+    placeFixed(menu, e.clientX, e.clientY);
+  }
+  async function ctxAct(item) {
+    const c = byNo(item.dataset.no);
+    const act = item.dataset.ctxAct;
+    if (!c || item.classList.contains('is-disabled')) return;
+    closeFloats();
+    if (act === 'detail') { goDetail(c.no); return; }
+    if (act === 'pool') { await unschedule(c); return; }
+    const s = act === 'today' ? TODAY_S : shift(TODAY_S, 1);
+    await applySchedule(c, s, shift(s, c.start ? span(c.start, endOf(c)) : 0));
+  }
+
+  /* ---------- 关闭与导航 ---------- */
+  async function requestClose(id) {
+    if (id === 'confirmModal') { settleConfirm(false); return; }
+    if (id === 'projectModal' && pjDirty()) {
+      if (!(await askConfirm('放弃修改', '项目信息尚未保存，确认放弃？', '放弃修改', true))) return;
+      hideLayer('confirmModal');
+    }
+    if (id === 'filterDrawer') S.draft = null;
+    if (id === 'projectModal') PJ.view = 'list';
+    if (id === 'dayModal') DAY = null;
+    if (id === 'contactModal') CT = null;
+    hideLayer(id);
+  }
+  async function pjBack() {
+    if (pjDirty()) {
+      if (!(await askConfirm('放弃修改', '项目信息尚未保存，确认放弃？', '放弃修改', true))) return;
+      hideLayer('confirmModal');
+    }
+    PJ.view = 'list';
+    renderProjects();
+  }
+  async function applyFilterDraft(btn) {
+    busy(btn, true);
+    await wait(240);
+    const d = S.draft;
+    d.onlyMine = S.f.onlyMine;
+    S.f = d;
+    S.draft = null;
+    S.poolLimit = 6;
+    busy(btn, false);
+    hideLayer('filterDrawer');
+    renderAll();
+  }
+  function step(n) {
+    if (S.view === 'week') S.weekStart = addDays(S.weekStart, 7 * n);
+    else { const d = new Date(S.y, S.m + n, 1); S.y = d.getFullYear(); S.m = d.getMonth(); }
+    S.poolLimit = 6;
+    renderAll();
+  }
+  function goToday() {
+    S.y = TODAY.getFullYear();
+    S.m = TODAY.getMonth();
+    S.weekStart = mondayOf(TODAY);
+    renderAll();
+    const el = S.view === 'month' ? $('.ac-calendar__cell.is-today') : null;
+    if (el) el.scrollIntoView({ block: 'center' });
+  }
+  function onEscape() {
+    if (FLOATS.has($('#ctxMenu'))) { closeFloat($('#ctxMenu')); return; }
+    if (!$('#popconfirm').hidden) { settlePop(false); return; }
+    if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
+    const modal = ['contactModal', 'mergeModal', 'newCardModal', 'nfModal', 'repoModal', 'projectModal', 'dayModal'].find((id) => OPEN.has(id));
+    if (modal) { requestClose(modal); return; }
+    if (FLOATS.size) { closeFloats(); return; }
+    if (OPEN.has('filterDrawer')) { requestClose('filterDrawer'); return; }
+    if (S.mode) exitMode();
+  }
+  function onSelect(key, v) {
+    if (key === 'ncRepo') { NC.repo = v; NC.pick = ''; NC.q = ''; renderNewCard(); }
+  }
+  function markDrop(cell) {
+    $$('.ac-calendar__cell.is-selected').forEach((x) => { if (x !== cell) x.classList.remove('is-selected'); });
+    if (cell) cell.classList.add('is-selected');
+  }
+
+  /* ---------- 事件委托：页面自管交互，事件不再冒泡到组件文档站运行时 ---------- */
+  const HANDLERS = {};
+  const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
+  ['click', 'input', 'keydown', 'contextmenu', 'dragstart', 'dragover', 'drop', 'dragend', 'mousedown', 'focusin', 'focusout'].forEach((type) => {
+    document.body.addEventListener(type, (e) => {
+      const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
+      for (const [sel, fn] of HANDLERS[type] || []) {
+        const el = sel ? t && t.closest(sel) : t;
+        if (el && fn(e, el) === true) break;
+      }
+      e.stopPropagation();
+    });
+  });
+
+  on('mousedown', null, (e, t) => {
+    if (!$('#popconfirm').hidden && !(t && t.closest('#popconfirm'))) settlePop(false);
+    [...FLOATS.keys()].forEach((el) => {
+      const owner = el.closest('[data-ac="AcSelect"], #moreDd, #periodPop, #progressPop, #protoDd');
+      if (t && (el.contains(t) || (owner && owner.contains(t)))) return;
+      closeFloat(el);
+    });
+    return false;
+  });
+  on('focusin', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.add('is-focused'); return true; });
+  on('focusout', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.remove('is-focused'); return true; });
+
+  on('click', '[data-close]', (e, el) => { requestClose(el.dataset.close); return true; });
+  on('click', '#confirmOkBtn', () => { settleConfirm(true); return true; });
+  on('click', '#confirmCancelBtn', () => { settleConfirm(false); return true; });
+  on('click', '#pcOkBtn', () => { settlePop(true); return true; });
+  on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
+  on('click', '[data-ctx-act]', (e, el) => { ctxAct(el); return true; });
+  on('click', '[data-ac="AcSelect"] .ac-select__option', (e, el) => {
+    const root = el.closest('[data-ac="AcSelect"]');
+    if (el.classList.contains('is-disabled')) return true;
+    closeFloat(root.querySelector('.ac-select__popup'));
+    onSelect(root.dataset.select, el.dataset.value);
+    return true;
+  });
+  on('click', '[data-ac="AcSelect"] .ac-select__trigger', (e, el) => {
+    const root = el.closest('[data-ac="AcSelect"]');
+    const pop = root.querySelector('.ac-select__popup');
+    if (root.classList.contains('is-disabled')) return true;
+    if (FLOATS.has(pop)) closeFloat(pop); else { openFloat(pop); root.classList.add('is-open'); }
+    return true;
+  });
+  on('click', '#periodBtn', () => {
+    const p = $('#monthPanel');
+    if (S.view === 'week') return true;
+    if (FLOATS.has(p)) { closeFloat(p); return true; }
+    pickerYear = S.y;
+    renderMonthPanel();
+    openFloat(p);
+    return true;
+  });
+  on('click', '[data-pick-year]', (e, el) => { pickerYear += Number(el.dataset.pickYear); renderMonthPanel(); return true; });
+  on('click', '[data-pick-month]', (e, el) => { S.y = pickerYear; S.m = Number(el.dataset.pickMonth); closeFloats(); renderAll(); return true; });
+  on('click', '#prevBtn', () => { step(-1); return true; });
+  on('click', '#nextBtn', () => { step(1); return true; });
+  on('click', '#todayBtn', () => { goToday(); return true; });
+  on('click', '#progressBtn', (e, el) => {
+    const pop = $('#progressPanel');
+    if (FLOATS.has(pop)) { closeFloat(pop); return true; }
+    openFloat(pop);
+    pop.style.left = '0px';
+    pop.style.top = el.offsetHeight + 8 + 'px';
+    return true;
+  });
+  on('click', '[data-stat]', (e, el) => {
+    const k = el.dataset.stat;
+    if (S.f.status.has(k)) S.f.status.delete(k); else S.f.status.add(k);
+    S.poolLimit = 6;
+    renderAll();
+    return true;
+  });
+  on('click', '#viewSeg [data-view]', (e, el) => {
+    const v = el.dataset.view;
+    if (v === S.view) return true;
+    if (S.view === 'week') { S.y = S.weekStart.getFullYear(); S.m = S.weekStart.getMonth(); }
+    if (v === 'week') S.weekStart = S.y === TODAY.getFullYear() && S.m === TODAY.getMonth() ? mondayOf(TODAY) : mondayOf(new Date(S.y, S.m, 1));
+    S.view = v;
+    store.set('fs.view', v);
+    renderAll();
+    return true;
+  });
+  on('click', '#filterBtn', () => { openFilter(); return true; });
+  on('click', '#newCardBtn', () => { NC.repo = ''; NC.q = ''; NC.pick = ''; renderNewCard(); showLayer('newCardModal'); return true; });
+  on('click', '#moreBtn', (e, el) => {
+    const m = $('#moreMenu');
+    if (FLOATS.has(m)) { closeFloat(m); return true; }
+    openFloat(m);
+    $('#moreDd').classList.add('is-open');
+    placeUnder(m, el);
+    return true;
+  });
+  on('click', '[data-menu]', (e, el) => {
+    const k = el.dataset.menu;
+    closeFloats();
+    if (k === 'merge') startMode('merge');
+    if (k === 'density') { S.density = el.dataset.density; store.set('fs.density', S.density); renderAll(); }
+    if (k === 'nonfeature') { renderNF(); showLayer('nfModal'); }
+    if (k === 'repos') { renderRepos(); showLayer('repoModal'); }
+    if (k === 'projects') { PJ.view = 'list'; renderProjects(); showLayer('projectModal'); }
+    return true;
+  });
+  on('click', '#poolCollapseBtn', () => { S.poolCollapsed = true; store.set('fs.poolCollapsed', '1'); renderAll(); return true; });
+  on('click', '#poolExpandBtn', () => { S.poolCollapsed = false; store.set('fs.poolCollapsed', '0'); renderAll(); return true; });
+  on('click', '#batchBtn', () => { if (S.mode === 'batch') exitMode(); else startMode('batch'); return true; });
+  on('click', '#poolMoreBtn', () => { S.poolLimit += 6; renderPool(); return true; });
+  on('click', '#modeCancelBtn', () => { exitMode(); return true; });
+  on('click', '#modeOkBtn', (e, el) => { if (el.disabled) return true; if (S.mode === 'merge') openMergeModal([...S.selected]); else batchToNF(); return true; });
+  on('click', '#mergeOkBtn', (e, el) => { createMerge(el); return true; });
+  on('click', '#newCardOkBtn', (e, el) => { createCard(el); return true; });
+  on('click', '[data-nc-pick]', (e, el) => { NC.pick = el.dataset.ncPick; setHelp('helpNcCommit', ''); $('#ncList').innerHTML = ncListHtml(); return true; });
+  on('click', '#clearFiltersBtn', () => { S.f = newFilter(); renderAll(); return true; });
+  on('click', '#clearSearchBtn', () => { S.search = ''; $('#searchInput').value = ''; renderAll(); return true; });
+  on('click', '[data-more]', (e, el) => { DAY = el.dataset.more; renderDayModal(); showLayer('dayModal'); return true; });
+  on('click', '#contactOkBtn', (e, el) => { saveContact(el); return true; });
+  on('click', '#protoBtn', (e, el) => {
+    const m = $('#protoMenu');
+    if (FLOATS.has(m)) { closeFloat(m); return true; }
+    openFloat(m);
+    $('#protoDd').classList.add('is-open');
+    placeUnder(m, el);
+    return true;
+  });
+  on('click', '#protoResetBtn', () => { D.reset(); location.reload(); return true; });
+  on('click', '[data-radio]', (e, el) => {
+    if (el.classList.contains('is-disabled')) return true;
+    if (el.dataset.radio === 'pjEnabled') { PJ.draft.enabled = el.dataset.value === 'on'; renderProjects(); }
+    return true;
+  });
+  on('click', '[data-open-card]', (e, el) => { goDetail(el.dataset.openCard); return true; });
+
+  on('click', '#onlyMineSwitch', () => { S.f.onlyMine = !S.f.onlyMine; if (S.draft) S.draft.onlyMine = S.f.onlyMine; S.poolLimit = 6; renderFilter(); renderAll(); return true; });
+  on('click', '[data-fd-all]', (e, el) => {
+    const key = el.dataset.fdAll;
+    const all = key === 'repo' ? sourceRepos() : projectOptions();
+    S.draft[key] = groupSet(S.draft, key, all).size === all.length ? new Set() : null;
+    renderFilter();
+    return true;
+  });
+  on('click', '[data-fd-group]', (e, el) => { toggleGroup(el.dataset.fdGroup, el.dataset.fdValue); return true; });
+  on('click', '[data-chip-group]', (e, el) => {
+    const g = el.dataset.chipGroup;
+    if (g === 'repo' || g === 'project') toggleGroup(g, el.dataset.chipValue);
+    else { S.draft[g].delete(el.dataset.chipValue); renderFilter(); }
+    return true;
+  });
+  on('click', '#fdOkBtn', (e, el) => { applyFilterDraft(el); return true; });
+  on('click', '#fdResetBtn', () => { S.f = newFilter(); S.draft = newFilter(); S.poolLimit = 6; renderFilter(); renderAll(); toast('已重置筛选', 'info'); return true; });
+
+  on('click', '[data-pj-new]', () => { openProjectForm(); return true; });
+  on('click', '[data-pj-edit]', (e, el) => { openProjectForm(el.dataset.pjEdit); return true; });
+  on('click', '[data-pj-toggle]', (e, el) => { toggleProject(el.dataset.pjToggle, el); return true; });
+  on('click', '[data-pj-back]', () => { pjBack(); return true; });
+  on('click', '[data-pj-save]', (e, el) => { saveProject(el); return true; });
+  on('click', '[data-pj-repo]', (e, el) => {
+    if (el.classList.contains('is-disabled')) return true;
+    const r = el.dataset.pjRepo;
+    const i = PJ.draft.repos.indexOf(r);
+    if (i >= 0) PJ.draft.repos.splice(i, 1); else PJ.draft.repos.push(r);
+    renderProjects();
+    return true;
+  });
+
+  on('click', '[data-row-act]', (e, el) => { rowAct(el); return true; });
+  on('click', '[data-sort]', (e, el) => { const k = el.dataset.sort; S.sort = { key: k, dir: S.sort.key === k && S.sort.dir === 'asc' ? 'desc' : 'asc' }; renderAll(); return true; });
+  on('click', 'tr[data-row]', (e, el) => { goDetail(el.dataset.row); return true; });
+  on('click', '[data-card]', (e, el) => {
+    const c = byNo(el.dataset.card);
+    if (!c) return true;
+    if (S.mode) { toggleSelect(c, el.dataset.ctx); return true; }
+    goDetail(c.no);
+    return true;
+  });
+  on('click', '.ac-calendar__cell[data-drop]', (e, cell) => { toggleRelease(cell.dataset.date, cell); return true; });
+
+  on('input', '#searchInput', (e, el) => { S.search = el.value; S.poolLimit = 6; renderAll(); return true; });
+  on('input', '#contactModal [data-field="ctContact"]', (e, el) => {
+    const cnt = el.closest('.ac-input').querySelector('[data-count]');
+    if (cnt) cnt.textContent = el.value.length + '/64';
+    setHelp('helpCtContact', '');
+    return true;
+  });
+  on('input', '#mergeModal [data-field="mergeTitle"]', (e, el) => {
+    const cnt = el.closest('.ac-input').querySelector('[data-count]');
+    if (cnt) cnt.textContent = el.value.length + '/30';
+    setHelp('helpMerge', el.value.length >= 30 ? '标题最长 30 字符' : '');
+    $('#helpMerge').classList.remove('is-error');
+    return true;
+  });
+  on('input', '#newCardModal [data-field="ncQ"]', (e, el) => { NC.q = el.value; $('#ncList').innerHTML = ncListHtml(); return true; });
+  on('input', '#projectModal [data-field]', (e, el) => { const k = { pjName: 'name', pjHarness: 'harness', pjNote: 'note' }[el.dataset.field]; if (k) PJ.draft[k] = el.value; return true; });
+
+  on('contextmenu', '[data-card]', (e, el) => { const c = byNo(el.dataset.card); if (!c) return false; e.preventDefault(); openCtx(e, c); return true; });
+  on('dragstart', '[data-card]', (e, el) => {
+    const c = byNo(el.dataset.card);
+    if (!c || S.mode || !PERM.EDIT) { e.preventDefault(); return true; }
+    if (isLocked(c)) { e.preventDefault(); toast('已完成的卡片不允许拖拽改期；如需改期请先回退状态', 'error'); return true; }
+    S.drag = c.no;
+    e.dataTransfer.effectAllowed = 'move';
+    e.dataTransfer.setData('text/plain', c.no);
+    return true;
+  });
+  on('dragover', '[data-card]', (e, el) => { if (!S.drag || el.dataset.card === S.drag) return false; e.preventDefault(); markDrop(null); return true; });
+  on('dragover', '[data-drop="cell"]', (e, cell) => { if (!S.drag) return false; e.preventDefault(); markDrop(cell.matches('.ac-calendar__cell') && cell.dataset.date >= TODAY_S ? cell : null); return true; });
+  on('dragover', '[data-drop="pool"]', (e) => { if (S.drag) { e.preventDefault(); markDrop(null); } return true; });
+  on('drop', '[data-card]', (e, el) => {
+    if (!S.drag || el.dataset.card === S.drag) return false;
+    e.preventDefault();
+    const a = byNo(S.drag);
+    const b = byNo(el.dataset.card);
+    S.drag = null;
+    markDrop(null);
+    const err = mergeCheck([b, a]);
+    if (err) toast(err, 'error'); else openMergeModal([b.no, a.no]);
+    return true;
+  });
+  on('drop', '[data-drop="cell"]', (e, cell) => {
+    if (!S.drag) return false;
+    e.preventDefault();
+    const c = byNo(S.drag);
+    const k = cell.dataset.date;
+    S.drag = null;
+    markDrop(null);
+    if (k < TODAY_S) { toast('不可将卡片改期到今天之前', 'error'); return true; }
+    applySchedule(c, k, shift(k, c.start ? span(c.start, endOf(c)) : 0));
+    return true;
+  });
+  on('drop', '[data-drop="pool"]', (e) => {
+    if (!S.drag) return false;
+    e.preventDefault();
+    const c = byNo(S.drag);
+    S.drag = null;
+    markDrop(null);
+    if (c.start) unschedule(c);
+    return true;
+  });
+  on('dragend', null, () => { S.drag = null; markDrop(null); return false; });
+
+  on('keydown', '#mergeModal [data-field="mergeTitle"]', (e) => { if (e.key !== 'Enter') return false; createMerge($('#mergeOkBtn')); return true; });
+  on('keydown', '#contactModal [data-field="ctContact"]', (e) => { if (e.key !== 'Enter') return false; saveContact($('#contactOkBtn')); return true; });
+  on('keydown', '[data-card], [data-stat], [data-more], [data-nc-pick], [data-open-card], [data-fd-group], [data-fd-all], [data-pj-repo], [data-radio], #protoResetBtn, .ac-select__trigger', (e, el) => {
+    if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== el) return false;
+    e.preventDefault();
+    el.click();
+    return true;
+  });
+  on('keydown', null, (e, t) => {
+    if (e.key === 'Escape') {
+      if (t && t.id === 'searchInput' && S.search) { S.search = ''; t.value = ''; renderAll(); return true; }
+      onEscape();
+      return true;
+    }
+    const typing = t && t.closest('input, textarea, [contenteditable="true"]');
+    if (typing || document.hidden || OPEN.size || FLOATS.size || !$('#popconfirm').hidden) return false;
+    if (e.key === 'ArrowLeft') { step(-1); return true; }
+    if (e.key === 'ArrowRight') { step(1); return true; }
+    if (e.key === 't' || e.key === 'T') { goToday(); return true; }
+    return false;
+  });
+  window.addEventListener('scroll', () => { closeFloat($('#ctxMenu')); closeFloat($('#moreMenu')); closeFloat($('#protoMenu')); }, true);
+  window.addEventListener('resize', applyResponsive);
+
+  $('#searchInput').value = S.search;
+  renderAll();
+  applyResponsive();
+  const flash = D.unstash('fs.flash');
+  if (flash) toast(flash.msg, flash.type);
+
+})();
+</script>
+</body>
+</html>
