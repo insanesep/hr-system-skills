@@ -1,341 +1,300 @@
 <!doctype html>
-<!--
-  人员产出报告（研发周报） · 报告详情页（Web 端原型）
-  ================================================================
-  规格真源：../../references/web-ui.md §报告详情
-  DOM 范本：.agents/skills/page-blueprint/skeletons/web/detail-page.vue.tpl
-            拓扑 = .tpl-page > [元信息 .tpl-panel] > [正文 .tpl-panel + 大纲 .tpl-panel]
-  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
+<meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>报告详情 · 研发周报</title>
+<title>研发周报 - 2026-10-11 · 报告详情 · 鸣鸣很忙</title>
+<!--
+  人员产出报告（研发周报）· 报告详情页（Web 端原型，阅读型）
+  页面描述真源：../../references/web-ui.md §报告详情 ｜ 页面类型 detail
+  整页范例：busyming-skills-design/web/templates/archive-detail.html ｜ DOM 依据：skeletons/web/detail-page.vue.tpl
+  结构：元信息头 panel（标题 + 版本切换 + 描述列表 + 操作）→ tpl-dual--side（阅读区 md 正文 + 右侧 AcAnchor 大纲 sticky）
+  大纲断点显隐：≥1200px 右栏展示；窄屏由 JS matchMedia 隐藏右栏、元信息头露出「大纲」按钮弹 AcDrawer（不依赖私有样式）。
+  正文为 Markdown 前端实时渲染产物（marked + DOMPurify + GitHub 风格），原型以语义 HTML 承载；md 排版仅有消费 --ac-* 的最小样式（待设计层 md 真源）。
+  版本切换演示：v2（当前 · 手动补传）/ v1（服务端生成），切换时正文整体替换并同步 URL ?v=N。
+  演示基准日 2026-10-18；数据为虚构样例。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 <style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
-   ========================================================================== */
-:root{
-  /* palette */
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  /* semantic */
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
-  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
-  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
-  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
-  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
-  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
-  /* spacing */
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
-  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
-  /* radius */
-  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  /* shadow */
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
-  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  /* typography */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
-  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
-  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index */
-  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
-}
-
-/* ==========================================================================
-   基础版式
-   ========================================================================== */
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
-.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
-.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
-.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
-.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
-.web-nav__crumb a{color:var(--ac-color-text-2);text-decoration:none}
-.web-nav__crumb a:hover{color:var(--ac-primary-6)}
-.web-nav__spacer{flex:1}
-
-.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1)}
-
-/* ===== 元信息头 ===== */
-.meta-head{display:flex;align-items:flex-start;gap:var(--ac-space-5)}
-.meta-head__main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.meta-head__title-row{display:flex;align-items:center;gap:var(--ac-space-3);flex-wrap:wrap}
-.meta-head__title{margin:0;font-size:var(--ac-fs-3xl);font-weight:var(--ac-fw-semibold)}
-.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
-.ac-tag.is-weekly{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
-.meta-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ac-space-3) var(--ac-space-5)}
-.meta-grid__item{display:flex;align-items:center;gap:var(--ac-space-2);font-size:var(--ac-fs-md)}
-.meta-grid__label{color:var(--ac-color-text-3);flex-shrink:0}
-.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
-.meta-head__actions{display:flex;gap:var(--ac-space-2);flex-shrink:0}
-
-/* ===== 版本下拉 ===== */
-.ac-select{position:relative}
-.ac-select__trigger{height:28px;display:inline-flex;align-items:center;gap:var(--ac-space-2);
-  padding:0 var(--ac-space-3);cursor:pointer;background:var(--ac-fill-2);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-sm);color:var(--ac-color-text-1)}
-.ac-select__dropdown{display:none;position:absolute;top:calc(100% + var(--ac-space-1));left:0;
-  min-width:260px;padding:var(--ac-space-1);background:var(--ac-bg-1);
-  border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-3);z-index:var(--ac-z-dropdown)}
-.ac-select.is-open .ac-select__dropdown{display:block}
-.ac-select__option{display:flex;flex-direction:column;padding:var(--ac-space-2) var(--ac-space-3);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);cursor:pointer}
-.ac-select__option:hover{background:var(--ac-fill-1)}
-.ac-select__option.is-checked{color:var(--ac-primary-6);background:var(--ac-primary-1)}
-.ac-select__option small{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-
-/* ===== 按钮 ===== */
-.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
-  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
-  background:var(--ac-bg-1);color:var(--ac-color-text-1);
-  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;text-decoration:none}
-.ac-btn:hover{background:var(--ac-fill-1)}
-.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
-
-/* ===== 阅读区 + 大纲 ===== */
-.read-layout{display:flex;gap:var(--ac-space-4);align-items:flex-start}
-.read-main{flex:1;min-width:0}
-.read-side{width:260px;flex-shrink:0;position:sticky;top:var(--ac-space-4)}
-.outline-title{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);margin-bottom:var(--ac-space-3)}
-.outline-item{display:block;padding:var(--ac-space-1) var(--ac-space-2);
-  border-left:2px solid var(--ac-border-2);color:var(--ac-color-text-2);
-  font-size:var(--ac-fs-sm);text-decoration:none;line-height:1.8}
-.outline-item.is-h3{padding-left:var(--ac-space-5);color:var(--ac-color-text-3)}
-.outline-item.is-active{border-left-color:var(--ac-primary-6);color:var(--ac-primary-6)}
-
-/* Markdown 渲染正文（GitHub 风格，前端实时渲染口径） */
-.md-body{font-size:var(--ac-fs-md);line-height:1.8}
-.md-body h1{font-size:var(--ac-fs-3xl);margin:var(--ac-space-5) 0 var(--ac-space-3);
-  padding-bottom:var(--ac-space-2);border-bottom:1px solid var(--ac-border-2)}
-.md-body h2{font-size:var(--ac-fs-xl);margin:var(--ac-space-5) 0 var(--ac-space-3);
-  padding-bottom:var(--ac-space-2);border-bottom:1px solid var(--ac-border-1)}
-.md-body h3{font-size:var(--ac-fs-lg);margin:var(--ac-space-4) 0 var(--ac-space-2)}
-.md-body p{margin:var(--ac-space-2) 0}
-.md-body ul{margin:var(--ac-space-2) 0;padding-left:var(--ac-space-6)}
-.md-body table{width:100%;border-collapse:collapse;margin:var(--ac-space-3) 0;
-  font-size:var(--ac-fs-sm);display:block;overflow-x:auto}
-.md-body th,.md-body td{border:1px solid var(--ac-border-2);
-  padding:var(--ac-space-2) var(--ac-space-3);text-align:left;white-space:nowrap}
-.md-body th{background:var(--ac-fill-1)}
-.md-body blockquote{margin:var(--ac-space-3) 0;padding:var(--ac-space-2) var(--ac-space-4);
-  border-left:3px solid var(--ac-border-3);color:var(--ac-color-text-2);background:var(--ac-fill-1)}
-.md-body code{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);
-  background:var(--ac-fill-2);padding:0 var(--ac-space-1);border-radius:var(--ac-radius-xs)}
-.md-body hr{border:none;border-top:1px solid var(--ac-border-2);margin:var(--ac-space-5) 0}
-
-/* ===== toast ===== */
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-fast);z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
+/* Markdown 渲染正文排版：仅消费 --ac-* 变量，不覆写任何 .ac-*/.tpl-* 组件类（待设计层补充 md 排版真源后移除） */
+.md-body{line-height:var(--ac-lh-normal);color:var(--ac-text-1);font-size:var(--ac-fs-md)}
+.md-body h1{font-size:var(--ac-fs-2xl);font-weight:var(--ac-fw-bold);line-height:var(--ac-lh-tight);margin:0 0 var(--ac-space-4)}
+.md-body h2{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold);margin:var(--ac-space-6) 0 var(--ac-space-3);padding-bottom:var(--ac-space-2);border-bottom:1px solid var(--ac-border-1)}
+.md-body h3{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);margin:var(--ac-space-4) 0 var(--ac-space-2)}
+.md-body p{margin:0 0 var(--ac-space-3)}
+.md-body ul{margin:0 0 var(--ac-space-3);padding-left:var(--ac-space-5)}
+.md-body li{margin-bottom:var(--ac-space-1)}
+.md-body blockquote{margin:0 0 var(--ac-space-3);padding:var(--ac-space-2) var(--ac-space-4);border-left:2px solid var(--ac-primary-6);background:var(--ac-fill-1);color:var(--ac-text-2)}
+.md-body code{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);background:var(--ac-fill-2);border-radius:var(--ac-radius-sm);padding:0 var(--ac-space-1)}
+.md-body .mono{font-variant-numeric:tabular-nums}
+.md-body .ac-table-wrap{margin:0 0 var(--ac-space-4)}
 </style>
 </head>
 <body>
-<div class="tpl-layout">
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb"><a class="ac-link" href="report-list.html">研发 / 研发报告 / 研发周报</a> / <b>报告详情</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
+      <div class="ac-dropdown-group-title">研发周报（Web）</div>
+      <a class="ac-dropdown-item" role="menuitem" href="report-list.html">报告列表</a>
+      <a class="ac-dropdown-item is-active" role="menuitem" href="report-detail.html">报告详情</a>
+    </div>
+  </div>
+  <span class="web-nav__crumb">管理员</span>
+</nav>
 
-  <nav class="web-nav">
-    <span class="web-nav__logo">鸣鸣很忙</span>
-    <span class="web-nav__crumb">研发 / 研发报告 / <a href="./report-list.html">研发周报</a> / <b>报告详情</b></span>
-    <span class="web-nav__spacer"></span>
-    <span class="web-nav__crumb">管理员</span>
-  </nav>
+<section class="tpl-page">
 
-  <section class="tpl-page">
-
-    <!-- ① 元信息头 panel -->
-    <div class="tpl-panel">
-      <div class="meta-head">
-        <div class="meta-head__main">
-          <div class="meta-head__title-row">
-            <h1 class="meta-head__title">研发周报 - 2026-08-31</h1>
-            <span class="ac-tag is-weekly">研发周报</span>
-            <div class="ac-select" data-select="single" id="verSelect">
-              <div class="ac-select__trigger" data-ver-trigger>
-                <span class="ac-select__value">v2 · 共 2 版</span>
-                <span>▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option is-checked">v2（当前）<small>2026-08-31 21:40 · 手动补传 · 杜一凡</small></div>
-                <div class="ac-select__option" data-version="v1">v1<small>2026-08-31 20:05 · 服务端生成 · 生成服务</small></div>
-              </div>
+  <!-- ① 元信息头 panel：标题 + 版本切换 + 元信息描述 + 操作 -->
+  <div class="tpl-panel">
+    <div class="tpl-page-head">
+      <div class="tpl-page-head__main">
+        <h1 class="tpl-page-title" id="reportTitle">研发周报 - 2026-10-11</h1>
+        <div class="tpl-page-head__tags">
+          <!-- 版本切换：多版时下拉选择历史版本，只读，URL 带 ?v=N -->
+          <div class="ac-select ac-select--medium" data-ac="AcSelect" id="verSelect">
+            <div class="ac-select__trigger" tabindex="0" role="button" aria-label="切换版本">
+              <span class="ac-select__single" id="verCurrent">v2 · 共 2 版（当前）</span>
+              <span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span>
+            </div>
+            <div class="ac-select__popup" id="verPopup" hidden>
+              <ul class="ac-select__list">
+                <li class="ac-select__option is-selected" data-version="2"><span class="ac-select__option-label">v2（当前）· 2026-10-12 09:40 · 手动补传</span></li>
+                <li class="ac-select__option" data-version="1"><span class="ac-select__option-label">v1 · 2026-10-11 20:05 · 服务端生成</span></li>
+              </ul>
             </div>
           </div>
-          <div class="meta-grid">
-            <div class="meta-grid__item"><span class="meta-grid__label">发报日</span><span class="meta-grid__value cell-mono">2026-08-31</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">所属周</span><span class="meta-grid__value">2026 年第 36 周（08-31 ~ 09-06）</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">统计区间</span><span class="meta-grid__value cell-mono">2026-08-24 ~ 2026-08-30</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">来源</span><span class="meta-grid__value">手动补传</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">文件大小</span><span class="meta-grid__value cell-mono">43.2KB</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">入库时间</span><span class="meta-grid__value cell-mono">2026-08-31 21:40</span></div>
-          </div>
         </div>
-        <div class="meta-head__actions">
-          <button type="button" class="ac-btn" onclick="acToast('已开始下载 weekly_dev_20260831.md')">获取原件</button>
-          <a class="ac-btn ac-btn--primary" href="./report-list.html">返回列表</a>
+      </div>
+      <div class="tpl-page-head__actions">
+        <button class="ac-btn" type="button" id="outlineBtn" hidden><span class="ac-icon" data-ac="AcIcon" data-name="list" data-size="sm"></span><span class="ac-btn__label">大纲</span></button>
+        <button class="ac-btn" type="button" id="downloadBtn"><span class="ac-icon" data-ac="AcIcon" data-name="download" data-size="sm"></span><span class="ac-btn__label">获取原件</span></button>
+        <a class="ac-btn ac-btn--primary" href="report-list.html"><span class="ac-btn__label">返回列表</span></a>
+      </div>
+    </div>
+    <div class="ac-descriptions ac-descriptions--medium ac-descriptions--layout-horizontal" data-ac="AcDescriptions">
+      <div class="ac-descriptions__row"><span class="ac-descriptions__label">发报日</span><span class="mono" id="metaDate">2026-10-11</span></div>
+      <div class="ac-descriptions__row"><span class="ac-descriptions__label">所属周</span><span>2026 年第 41 周（10-05 ~ 10-11）</span></div>
+      <div class="ac-descriptions__row"><span class="ac-descriptions__label">统计区间</span><span class="mono">2026-10-05 ~ 2026-10-11</span></div>
+      <div class="ac-descriptions__row"><span class="ac-descriptions__label">来源</span><span id="metaSource">手动补传</span></div>
+      <div class="ac-descriptions__row"><span class="ac-descriptions__label">文件大小</span><span class="mono" id="metaSize">45.6KB</span></div>
+      <div class="ac-descriptions__row"><span class="ac-descriptions__label">入库时间</span><span class="mono" id="metaTime">2026-10-12 09:40</span></div>
+    </div>
+  </div>
+
+  <!-- ② 阅读区 + 大纲（tpl-dual--side：左主右 360 栏，右侧 sticky） -->
+  <div class="tpl-dual tpl-dual--side">
+    <div class="tpl-dual__main">
+      <div class="tpl-panel">
+        <div class="md-body" id="mdBody"><!-- 正文由 JS 按当前版本渲染 --></div>
+      </div>
+    </div>
+    <div class="tpl-dual__side tpl-dual__side--sticky" id="outlineSide">
+      <div class="tpl-panel">
+        <div class="ac-anchor ac-anchor--lineless" data-ac="AcAnchor" id="outline">
+          <div class="ac-anchor__rail"></div>
+          <div class="ac-anchor__ball"></div>
+          <ul class="ac-anchor__list" id="outlineList"></ul>
         </div>
       </div>
     </div>
+  </div>
+</section>
 
-    <!-- ② 阅读区 + 大纲 -->
-    <div class="read-layout">
-      <div class="tpl-panel read-main">
-        <div class="md-body">
-          <h1 id="h-1">研发周报 - 2026-08-31</h1>
-          <blockquote>统计区间：2026-08-24（周一）~ 2026-08-30（周日）</blockquote>
-
-          <h2 id="h-2">统计概览</h2>
-          <ul>
-            <li>总提交数: 47</li>
-            <li>参与人数: 6</li>
-            <li>涉及仓库: 8</li>
-            <li>排期任务: 21 个（完成 13 个）</li>
-            <li>Qoder 团队总用量: 128,400 Credits</li>
-          </ul>
-
-          <h2 id="h-3">AI 分析总结</h2>
-          <h3 id="h-3-1">核心进展</h3>
-          <ul>
-            <li>门店要货单导出 Excel 全量上线，覆盖 320 家门店</li>
-            <li>埋点批量上报队列落地，前端丢包率降至 0.3%</li>
-            <li>凭证模板版本管理进入联调</li>
-          </ul>
-          <h3 id="h-3-2">潜在风险</h3>
-          <ul>
-            <li>满足率下钻功能延期 3 天，依赖库存报表口径确认</li>
-          </ul>
-          <h3 id="h-3-3">下周建议</h3>
-          <ul>
-            <li>优先收口满足率下钻与凭证模板联调</li>
-          </ul>
-
-          <h2 id="h-4">按人员综合分析</h2>
-          <h3 id="h-4-1">张三</h3>
-          <p><strong>代码产出</strong>：本周 14 次提交，涉及 repo-a1（store-request / fulfillment-rate）</p>
-          <p><strong>排期任务</strong>：共 5 个（✅完成 4 个，🔄进行中 1 个），完成率 80%</p>
-          <p><strong>Qoder 用量</strong>：32,100 Credits（约 19 元，占团队 25%；模型分布：旗舰 78% / 标准 22%）</p>
-          <p><strong>综合评价</strong>：排期完成率高，产出与用量匹配，进度良好。</p>
-          <hr />
-          <h3 id="h-4-2">王五</h3>
-          <p><strong>代码产出</strong>：本周 11 次提交，涉及 usage-analytics / hardware-management</p>
-          <p><strong>排期任务</strong>：共 4 个（✅完成 3 个），完成率 75%</p>
-          <p><strong>Qoder 用量</strong>：27,900 Credits（约 16 元，占团队 21.7%）</p>
-          <p><strong>综合评价</strong>：埋点队列落地质量高，关注硬件对接排期节奏。</p>
-
-          <h2 id="h-5">功能进展追踪</h2>
-          <table>
-            <thead><tr><th>功能点</th><th>负责人</th><th>状态</th><th>涉及仓库</th></tr></thead>
-            <tbody>
-              <tr><td>要货单导出</td><td>张三</td><td>已完成</td><td>repo-a1</td></tr>
-              <tr><td>埋点上报队列</td><td>王五</td><td>已完成</td><td>repo-a1</td></tr>
-              <tr><td>满足率下钻</td><td>张三</td><td>开发中</td><td>repo-a1</td></tr>
-            </tbody>
-          </table>
-
-          <h2 id="h-6">各仓库提交分布</h2>
-          <h3 id="h-6-1">示例项目A（小计 45 次）</h3>
-          <ul>
-            <li><strong>repo-a1</strong>: 32 次提交</li>
-            <li><strong>repo-a2</strong>: 8 次提交</li>
-          </ul>
-          <h3 id="h-6-2">文档/SKILL 类仓库（小计 2 次）</h3>
-          <ul>
-            <li><strong>skills-repo-a</strong>: 2 次提交</li>
-          </ul>
-
-          <h2 id="h-7">功能使用情况</h2>
-          <table>
-            <thead><tr><th>功能名</th><th>对应路由</th><th>完成日期</th><th>该日使用量</th><th>本周总点击</th><th>负责人</th></tr></thead>
-            <tbody>
-              <tr><td>要货单导出</td><td>/store-request/list</td><td>08-26</td><td>212</td><td>1,430</td><td>张三</td></tr>
-            </tbody>
-          </table>
-
-          <h2 id="h-8">MCP 工具使用情况</h2>
-          <p>总调用 3,842 次、使用人数 18、被用工具 26/41、成功率 97.2%、平均耗时 410ms。</p>
-
-          <hr />
-          <p><em>报告生成时间: 2026-08-31</em></p>
-        </div>
-      </div>
-
-      <div class="tpl-panel read-side">
-        <div class="outline-title">大纲</div>
-        <a class="outline-item" href="#h-2">统计概览</a>
-        <a class="outline-item is-active" href="#h-3">AI 分析总结</a>
-        <a class="outline-item is-h3" href="#h-3-1">核心进展</a>
-        <a class="outline-item is-h3" href="#h-3-2">潜在风险</a>
-        <a class="outline-item is-h3" href="#h-3-3">下周建议</a>
-        <a class="outline-item" href="#h-4">按人员综合分析</a>
-        <a class="outline-item" href="#h-5">功能进展追踪</a>
-        <a class="outline-item" href="#h-6">各仓库提交分布</a>
-        <a class="outline-item" href="#h-7">功能使用情况</a>
-        <a class="outline-item" href="#h-8">MCP 工具使用情况</a>
+<!-- 窄屏大纲抽屉（<1200px 替代右栏） -->
+<div class="ac-drawer ac-drawer--right" data-ac="AcDrawer" data-placement="right" data-width="320" id="outlineDrawer" hidden>
+  <div class="ac-drawer__mask" data-drawer-close></div>
+  <div class="ac-drawer__body ac-drawer__body--right">
+    <header class="ac-drawer__header">
+      <div class="ac-drawer__title">大纲</div>
+      <div class="ac-drawer__extra"><button class="ac-btn ac-drawer__close" type="button" aria-label="关闭" data-drawer-close>×</button></div>
+    </header>
+    <div class="ac-drawer__content">
+      <div class="ac-anchor ac-anchor--lineless" data-ac="AcAnchor">
+        <ul class="ac-anchor__list" id="drawerOutlineList"></ul>
       </div>
     </div>
-
-  </section>
+  </div>
 </div>
 
-<div class="ac-toast" id="acToast"></div>
+<span class="ac-toast" id="toast" role="status" hidden></span>
 
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
 <script>
 (function () {
-  /* ── 版本下拉 ── */
-  var sel = document.getElementById('verSelect');
-  sel.querySelector('[data-ver-trigger]').addEventListener('click', function () {
-    sel.classList.toggle('is-open');
-  });
-  sel.querySelectorAll('.ac-select__option').forEach(function (opt) {
-    opt.addEventListener('click', function () {
-      sel.classList.remove('is-open');
-      if (opt.dataset.version) acToast('已切换到历史版本 ' + opt.dataset.version + '（只读）');
-    });
-  });
+  var $ = function (s, r) { return (r || document).querySelector(s); };
+  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
 
-  /* ── 大纲定位高亮 ── */
-  document.querySelectorAll('.outline-item').forEach(function (item) {
-    item.addEventListener('click', function () {
-      document.querySelectorAll('.outline-item').forEach(function (i) { i.classList.remove('is-active'); });
-      item.classList.add('is-active');
-    });
-  });
-
-  /* ── toast ── */
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
+  var toastEl = $('#toast'), toastTimer = null;
+  function toast(msg) {
+    toastEl.textContent = msg; toastEl.hidden = false;
     clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
+    toastTimer = setTimeout(function () { toastEl.hidden = true; }, 2400);
+  }
+
+  /* ── proto-bar ── */
+  var protoMenu = $('#protoMenu');
+  $('#protoBtn').addEventListener('click', function () { protoMenu.hidden = !protoMenu.hidden; });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#protoDd')) protoMenu.hidden = true;
+  });
+
+  /* ── 两版正文（渲染产物演示；v1 为服务端生成初版，口径修正后补传生成 v2）── */
+  var BODIES = {
+    2: '<h1>研发周报 - 2026-10-11</h1>' +
+      '<blockquote>统计区间：2026-10-05（周一）~ 2026-10-11（周日）· 口径说明见文末</blockquote>' +
+      '<h2>统计概览</h2>' +
+      '<ul><li>总提交数: 52</li><li>参与人数: 6</li><li>涉及仓库: 9</li><li>排期任务: 24 个（完成 15 个）</li><li>Qoder 团队总用量: 136,800 Credits</li></ul>' +
+      '<h2>AI 分析总结</h2>' +
+      '<h3>核心进展</h3>' +
+      '<ul><li>研发报告子域共享规则收口，四类报告统一归档与版本口径</li><li>功能排期月历视图全量启用，卡片自动归集上线</li><li>黑灯工厂缺陷分流建单链路打通</li></ul>' +
+      '<h3>潜在风险</h3>' +
+      '<ul><li>文档一致性报告生成链路依赖人工触发，存在漏周风险</li></ul>' +
+      '<h3>下周建议</h3>' +
+      '<ul><li>报告触发配置收口定时规则，覆盖全部报告类型</li></ul>' +
+      '<h2>按人员综合分析</h2>' +
+      '<h3>刘操</h3>' +
+      '<ul><li>代码产出：本周 14 次提交，主要为报告归档与版本回溯</li><li>排期任务：6 个（完成 4 个，完成率 67%）</li><li>Qoder 用量：38,200 Credits（约 5,730 元，占团队 27.9%；旗舰 82% / 标准 18%）</li></ul>' +
+      '<h3>朱嘉晟</h3>' +
+      '<ul><li>代码产出：本周 11 次提交，主要为功能排期月历视图</li><li>排期任务：5 个（完成 4 个）</li><li>Qoder 用量：31,400 Credits（约 4,710 元，占团队 23.0%）</li></ul>' +
+      '<h2>功能进展追踪</h2>' +
+      '<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>功能点</th><th>负责人</th><th>状态</th><th>涉及仓库</th></tr></thead><tbody>' +
+      '<tr><td>研发报告归档与版本</td><td>刘操</td><td><span class="ac-tag ac-tag--green">已上线</span></td><td class="mono">devops-server</td></tr>' +
+      '<tr><td>功能排期月历视图</td><td>朱嘉晟</td><td><span class="ac-tag ac-tag--green">已上线</span></td><td class="mono">devops-web</td></tr>' +
+      '<tr><td>文档一致性报告</td><td>凌敏</td><td><span class="ac-tag ac-tag--orange">开发中</span></td><td class="mono">devops-server</td></tr>' +
+      '</tbody></table></div>' +
+      '<h2>各仓库提交分布</h2>' +
+      '<ul><li>devops-web: 21 次</li><li>devops-server: 18 次</li><li>busyming-skills-devops: 9 次（文档/需求产出）</li><li>busyming-skills-design: 4 次</li></ul>' +
+      '<h2>功能使用情况</h2>' +
+      '<p>功能排期月历视图上线后首周点击 1,240 次，活跃 38 人；文档一致性报告入口零点击，需确认入口可见性。</p>' +
+      '<h2>MCP 工具使用情况</h2>' +
+      '<ul><li>总调用 3,860 次 · 使用人数 22 · 被用工具 41/58（零调用 17 个）· 成功率 98.2% · 平均耗时 320ms</li><li>调用量 TOP：功能排期、研发周报、错误日志报表</li></ul>' +
+      '<h2>口径说明</h2>' +
+      '<ul><li>提交数按全分支 + SHA 去重 + 剔除 merge 统计</li><li>金额换算：Credits ÷ 2000 × 300，取整，单位元</li><li>旁路态（NON_FEATURE / NON_IMPL）卡片不计入</li></ul>',
+    1: '<h1>研发周报 - 2026-10-11</h1>' +
+      '<blockquote>统计区间：2026-10-05（周一）~ 2026-10-11（周日）</blockquote>' +
+      '<div class="ac-alert ac-alert--info">v1 为服务端生成初版；因人员署名归一口径修正，已由手动补传生成 v2，本版本仅作留痕。</div>' +
+      '<h2>统计概览</h2>' +
+      '<ul><li>总提交数: 51</li><li>参与人数: 7</li><li>涉及仓库: 9</li><li>排期任务: 24 个（完成 15 个）</li><li>Qoder 团队总用量: 136,800 Credits</li></ul>' +
+      '<h2>AI 分析总结</h2>' +
+      '<h3>核心进展</h3>' +
+      '<ul><li>研发报告子域共享规则收口</li><li>功能排期月历视图全量启用</li></ul>' +
+      '<h3>潜在风险</h3>' +
+      '<ul><li>文档一致性报告生成链路依赖人工触发</li></ul>' +
+      '<h3>下周建议</h3>' +
+      '<ul><li>报告触发配置收口定时规则</li></ul>' +
+      '<h2>按人员综合分析</h2>' +
+      '<h3>刘操</h3>' +
+      '<ul><li>代码产出：本周 14 次提交</li><li>排期任务：6 个（完成 4 个）</li><li>Qoder 用量：38,200 Credits</li></ul>' +
+      '<h2>口径说明</h2>' +
+      '<ul><li>提交数按全分支 + SHA 去重 + 剔除 merge 统计</li><li>旁路态卡片不计入</li></ul>'
   };
+  var META = {
+    2: { source: '手动补传', size: '45.6KB', time: '2026-10-12 09:40', label: 'v2 · 共 2 版（当前）' },
+    1: { source: '服务端生成', size: '43.2KB', time: '2026-10-11 20:05', label: 'v1 · 共 2 版' }
+  };
+
+  /* ── 大纲构建与滚动定位（h2/h3 锚点，当前章节高亮）── */
+  var mdBody = $('#mdBody'), outlineList = $('#outlineList'), drawerList = $('#drawerOutlineList');
+  function buildOutline() {
+    var heads = $$('h2, h3', mdBody);
+    var html = heads.map(function (h, i) {
+      var id = 'h-' + i;
+      h.id = id;
+      var cls = h.tagName === 'H3' ? 'ac-anchor__link ac-anchor__link--child' : 'ac-anchor__link';
+      return '<li><a class="' + cls + '" href="#' + id + '" data-anchor="' + id + '">' + h.textContent + '</a></li>';
+    }).join('');
+    outlineList.innerHTML = html;
+    drawerList.innerHTML = html;
+  }
+  function activateAnchor(id) {
+    $$('.ac-anchor__link').forEach(function (a) {
+      a.classList.toggle('ac-anchor__link--active', a.getAttribute('data-anchor') === id);
+    });
+  }
+  document.addEventListener('click', function (e) {
+    var a = e.target.closest('[data-anchor]');
+    if (!a) return;
+    e.preventDefault();
+    var target = document.getElementById(a.getAttribute('data-anchor'));
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    activateAnchor(a.getAttribute('data-anchor'));
+    closeDrawer();
+  });
+  window.addEventListener('scroll', function () {
+    var heads = $$('h2, h3', mdBody), current = heads[0];
+    heads.forEach(function (h) { if (h.getBoundingClientRect().top <= 96) current = h; });
+    if (current) activateAnchor(current.id);
+  }, { passive: true });
+
+  /* ── 版本切换：正文整体替换 + URL ?v=N ── */
+  var verPopup = $('#verPopup'), currentVer = 2;
+  $('#verSelect').addEventListener('click', function (e) {
+    if (e.target.closest('.ac-select__trigger')) verPopup.hidden = !verPopup.hidden;
+  });
+  document.addEventListener('click', function (e) {
+    if (!e.target.closest('#verSelect')) verPopup.hidden = true;
+  });
+  verPopup.addEventListener('click', function (e) {
+    var opt = e.target.closest('[data-version]');
+    if (!opt) return;
+    var v = opt.getAttribute('data-version');
+    verPopup.hidden = true;
+    if (Number(v) === currentVer) return;
+    currentVer = Number(v);
+    mdBody.innerHTML = BODIES[v];
+    $('#metaSource').textContent = META[v].source;
+    $('#metaSize').textContent = META[v].size;
+    $('#metaTime').textContent = META[v].time;
+    $('#verCurrent').textContent = META[v].label;
+    $$('#verPopup .ac-select__option').forEach(function (o) {
+      o.classList.toggle('is-selected', o.getAttribute('data-version') === v);
+    });
+    history.replaceState(null, '', 'report-detail.html?v=' + v);
+    buildOutline();
+    toast('已切换到 v' + v);
+  });
+
+  /* ── 窄屏大纲抽屉：≥1200px 右栏展示，窄屏按钮 + 抽屉；浮层 hidden + is-open 双态（对齐 runtime.js，CSS 过渡依赖 is-open）── */
+  var mq = window.matchMedia('(min-width: 1200px)');
+  var drawer = $('#outlineDrawer'), outlineBtn = $('#outlineBtn'), outlineSide = $('#outlineSide');
+  function applyMq() {
+    var wide = mq.matches;
+    outlineSide.hidden = !wide;
+    outlineBtn.hidden = wide;
+    if (wide) closeDrawer();
+  }
+  function closeDrawer() { drawer.classList.remove('is-open'); drawer.hidden = true; }
+  function openDrawer() { drawer.hidden = false; void drawer.offsetWidth; drawer.classList.add('is-open'); }
+  outlineBtn.addEventListener('click', openDrawer);
+  $$('[data-drawer-close]').forEach(function (el) {
+    el.addEventListener('click', closeDrawer);
+  });
+  if (mq.addEventListener) mq.addEventListener('change', applyMq);
+  applyMq();
+
+  /* ── 获取原件 ── */
+  $('#downloadBtn').addEventListener('click', function () {
+    toast('已开始下载 weekly_dev_20261011.md');
+  });
+
+  /* 初始化：URL ?v=N 可分享 */
+  var initVer = new URLSearchParams(location.search).get('v');
+  mdBody.innerHTML = BODIES[initVer === '1' ? '1' : '2'];
+  if (initVer === '1') {
+    currentVer = 1;
+    $('#metaSource').textContent = META[1].source;
+    $('#metaSize').textContent = META[1].size;
+    $('#metaTime').textContent = META[1].time;
+    $('#verCurrent').textContent = META[1].label;
+    $$('#verPopup .ac-select__option').forEach(function (o) {
+      o.classList.toggle('is-selected', o.getAttribute('data-version') === '1');
+    });
+  }
+  buildOutline();
 })();
 </script>
 </body>

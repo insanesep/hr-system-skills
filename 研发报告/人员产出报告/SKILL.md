@@ -1,6 +1,6 @@
 ---
 name: 人员产出报告
-description: 人员产出报告。Use when 需要按人员维度周期性产出研发报告（提交量、卡片完成、时效、延期）——触发方式（定时/手动）在 Web 端统一配置，触发后服务端生成会话挂载 dev-report skill 产出并直接落库归档，支持按周索引查阅与版本回溯。端型：Web 管理端 + App 查阅端。
+description: 人员产出报告。Use when 需要按人员维度周期性产出研发报告（提交量、卡片完成、时效、延期）；触发方式（定时/手动）在 Web 端统一配置，触发后服务端生成会话挂载 dev-report skill 产出并直接落库归档，支持按周索引查阅与版本回溯；也适用于缺失周次手动补传、历史版本切换查阅、管理层按周追踪个人交付。端型：Web 管理端 + App 查阅端。
 ---
 
 # 人员产出报告
@@ -12,6 +12,25 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 - **服务对象**：管理层、研发负责人（仅授权可见，不做全员公示）
 - **Web 管理端**：触发配置、报告索引、在线阅读、版本回溯
 - **App 查阅端**：按周期分组浏览与阅读
+
+## When to Use
+
+- 管理层 / 研发负责人在 Web 端按周索引查阅研发周报，或回溯某次报告的历史版本
+- 某周报告缺失时，在 Web 端「立即生成」触发服务端生成，或「手动补传」外部会话产出的报告文件
+- 管理层在 App 端按周分组浏览、在线阅读报告正文
+
+## Prerequisites
+
+| 引用资源 | 路径 | 用途 |
+|---------|------|------|
+| 模块业务规则 | [`references/business-rule.md`](references/business-rule.md) | 报告口径与核心规则真源 |
+| 子域共享规则 | [`../报告配置/references/business-rule.md`](../报告配置/references/business-rule.md) | 归档 / 触发 / 版本 / 渲染 / 权限口径真源（busyming-skills-devops） |
+| 报告数据源与推送契约 | [`../报告配置/references/data-source-api.md`](../报告配置/references/data-source-api.md) | 排期双卡采集口径与旁路推送契约（busyming-skills-devops） |
+| 周报生成 skill 入口 | [`references/dev-report.md`](references/dev-report.md) | 服务端生成会话挂载的生成逻辑唯一真源（本模块内置） |
+| 周报章节规范 | [`references/weekly-report.md`](references/weekly-report.md) | 报告章节、模板与计数纪律（dev-report skill 资源） |
+| 周报用量数据源 | [`references/api-endpoints.md`](references/api-endpoints.md) | Qoder 用量等 4 类用量数据字段口径（dev-report skill 资源） |
+| Web 端页面描述 | [`references/web-ui.md`](references/web-ui.md) | 报告列表 / 报告详情的页面对象定义 |
+| App 端页面描述 | [`references/mobile-ui.md`](references/mobile-ui.md) | App 列表 / 详情的页面对象定义 |
 
 ## 生成方式：触发配置 + 服务端生成
 
@@ -25,18 +44,11 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 
 ## 报告内容（口径）
 
-- **产出量**：统计区间内 commit 数、完成的功能卡数、完成的实施卡数（区分提交人与开发人/领取人双口径，避免「代提交」场景产出错记）
-- **时效**：卡片领取 → 完成的平均时长；需求关联卡的端到端周期
-- **质量与纪律**：延期卡数与延期率、完成回退次数
-- **人员透视**：人员 × 项目（模块）、人员 × 周期的产出矩阵
+详见 [`references/business-rule.md` §1 报告内容口径](references/business-rule.md#1-报告内容口径)。
 
 ## 核心规则
 
-- **数据客观唯一**：全部指标由 git 事实与排期卡片流水计算，不引入主观评分；不做「排名」「红黑榜」类产品形态
-- **可见性收口**：人员维度数据敏感，仅管理层与研发负责人角色可见；不向被统计人推送
-- **归档与版本**：按报告发报日所在自然周（周一为起点）建索引；同类型同周期重复入库走版本递增而非覆盖，历史版本可追溯；报告为静态产物，归档后不重新计算指标
-- **旁路态不计入**：统计不含 NON_FEATURE / NON_IMPL 旁路态卡片
-- 指标定义在报告内附口径说明，防止跨周期比较时口径漂移
+详见 [`references/business-rule.md` §2 核心规则](references/business-rule.md#2-核心规则)。
 
 ## 页面功能概览（仅列职责）
 
@@ -51,6 +63,11 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 
 | 模块 | 关系 |
 | ---- | ---- |
-| [`references/`](references/)（周报生成 skill） | 报告生成逻辑真源，服务端生成会话挂载引用 |
 | `排期管理/功能排期` | 卡片领取/完成/回退事实来源（经 skill 内数据源采集） |
 | [`研发报告/报告配置`](../报告配置/SKILL.md) | 子域共享规则真源（归档 / 触发 / 版本 / 渲染 / 权限）；触发配置与配置页归属模块 |
+
+## Tips
+
+- 生成逻辑迭代只改 [`references/`](references/) 内的 dev-report skill 文件，不改本 SKILL.md；页面与交互变更才动 `web-ui.md` / `mobile-ui.md`
+- 报告指标口径以生成时写入报告内的口径说明为准，跨周期比较前先核对口径是否漂移
+- 缺失周次优先「立即生成」走服务端会话；仅外部会话产出无法回传时才用「手动补传」
