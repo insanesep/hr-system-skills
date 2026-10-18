@@ -1,217 +1,205 @@
 <!doctype html>
-<!--
-  文档一致性报告 · 报告详情（App 端原型）
-  ================================================================
-  规格真源：../../references/mobile-ui.md §报告详情
-  DOM 范本：.agents/skills/page-blueprint/skeletons/app/detail-page.tsx.tpl
-  Token   ：.agents/skills/page-blueprint/tokens/app.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>报告详情 · 文档一致性报告 App</title>
-<style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/app.css，值不得改动）
-   ========================================================================== */
-:root{
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-6:#F53F3F;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB;
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px; --ac-space-5:20px;
-  --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:16px;
-  --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-z-modal:1000; --ac-z-toast:1100;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:1.5;
-  max-width:420px;margin:0 auto;min-height:100vh}
-
-/* 顶部导航栏 */
-.ac-navbar{height:48px;display:flex;align-items:center;padding:0 var(--ac-space-4);
-  background:var(--ac-bg-1);position:sticky;top:0;z-index:10;box-shadow:var(--ac-shadow-1)}
-.ac-navbar-back{font-size:22px;color:var(--ac-text-2);padding:var(--ac-space-2)}
-.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold)}
-.ac-navbar-action{font-size:18px;color:var(--ac-text-2);padding:var(--ac-space-2)}
-
-.tpl-page{padding:var(--ac-space-3) var(--ac-space-4) var(--ac-space-8);
-  display:flex;flex-direction:column;gap:var(--ac-space-3)}
-
-/* 元信息折叠卡 */
-.meta-card{background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  padding:var(--ac-space-3);box-shadow:var(--ac-shadow-1)}
-.meta-card__title{font-weight:var(--ac-fw-semibold);line-height:1.4;margin:var(--ac-space-1) 0}
-.meta-row{display:flex;gap:var(--ac-space-2);padding:var(--ac-space-1) 0;
-  font-size:var(--ac-fs-sm)}
-.meta-row__label{color:var(--ac-text-3);flex-shrink:0;width:64px}
-.meta-row__value{color:var(--ac-text-1)}
-.meta-row__value.mono{font-family:var(--ac-ff-mono)}
-.ac-pill{display:inline-flex;align-items:center;height:20px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs)}
-.ac-pill.is-proj-a{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
-.ac-pill.is-proj-b{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
-.meta-card__more{text-align:center;color:var(--ac-text-3);font-size:var(--ac-fs-xs);
-  padding-top:var(--ac-space-2)}
-
-/* 渲染正文 */
-.md-card{background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  padding:var(--ac-space-4);box-shadow:var(--ac-shadow-1)}
-.md-body{font-size:var(--ac-fs-md);line-height:1.8}
-.md-body h1{font-size:20px;margin:var(--ac-space-3) 0;
-  padding-bottom:var(--ac-space-2);border-bottom:1px solid var(--ac-border-2)}
-.md-body h2{font-size:17px;margin:var(--ac-space-4) 0 var(--ac-space-2)}
-.md-body h3{font-size:15px;margin:var(--ac-space-3) 0 var(--ac-space-2)}
-.md-body ul{margin:var(--ac-space-2) 0;padding-left:var(--ac-space-5)}
-.md-body table{display:block;overflow-x:auto;border-collapse:collapse;font-size:var(--ac-fs-sm)}
-.md-body th,.md-body td{border:1px solid var(--ac-border-2);padding:var(--ac-space-1) var(--ac-space-2);white-space:nowrap}
-.md-body th{background:var(--ac-fill-1)}
-.md-body blockquote{margin:var(--ac-space-2) 0;padding:var(--ac-space-2) var(--ac-space-3);
-  border-left:3px solid var(--ac-border-2);color:var(--ac-text-2);background:var(--ac-fill-1)}
-.md-body hr{border:none;border-top:1px solid var(--ac-border-2);margin:var(--ac-space-4) 0}
-
-/* 大纲抽屉 */
-.ac-sheet-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);z-index:var(--ac-z-modal)}
-.ac-sheet-mask.is-open{display:block}
-.ac-sheet{position:fixed;left:0;right:0;bottom:0;max-width:420px;margin:0 auto;
-  background:var(--ac-bg-1);border-radius:var(--ac-space-3) var(--ac-space-3) 0 0;
-  max-height:60vh;display:flex;flex-direction:column;z-index:calc(var(--ac-z-modal) + 1)}
-.ac-sheet__head{display:flex;align-items:center;justify-content:space-between;
-  padding:var(--ac-space-3) var(--ac-space-4);border-bottom:1px solid var(--ac-border-1)}
-.ac-sheet__title{font-weight:var(--ac-fw-semibold)}
-.ac-sheet__body{overflow:auto;padding:var(--ac-space-2) var(--ac-space-4)}
-.outline-item{display:block;padding:var(--ac-space-2) 0;font-size:var(--ac-fs-md);
-  color:var(--ac-text-2);text-decoration:none;border-bottom:1px solid var(--ac-border-1)}
-.outline-item.is-h3{padding-left:var(--ac-space-4);color:var(--ac-text-3);font-size:var(--ac-fs-sm)}
-.outline-item.is-active{color:var(--ac-primary-6)}
-
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity .15s;z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>文档一致性报告 · 报告详情 · App 原型</title>
+<!--
+  文档一致性报告 · 报告详情（App 查阅端原型）
+  页面描述真源：../../references/mobile-ui.md#报告详情 ｜ 页面类型 detail（阅读型）
+  整页范例：busyming-skills-design/mobile/templates/detail.html ｜ DOM 依据：skeletons/app/detail-page.tsx.tpl
+  结构：ac-nav-bar（返回 + 标题 + 大纲图标）→ 元信息折叠卡（AcCollapse，版本行点击弹 ActionSheet）→ Markdown 渲染正文 → 大纲底部抽屉（AcPopup）
+  正文为服务端渲染产物（WebView 消费，XSS 白名单过滤后）；表格以 tpl-data-table 横滚呈现；演示基准日 2026-10-18，数据为虚构样例。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css" />
 </head>
 <body>
-
-<div class="ac-navbar">
-  <span class="ac-navbar-back" onclick="history.back()">‹</span>
-  <div class="ac-navbar-title">文档一致性报告</div>
-  <span class="ac-navbar-action" id="outlineToggle" aria-label="大纲">☰</span>
-</div>
-
 <section class="tpl-page">
+<div class="tpl-panel">
+<div class="app-phone">
+  <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
+  <div class="app-screen">
+    <header class="ac-nav-bar" data-ac="AcNavBar">
+      <a class="ac-nav-bar__side" role="button" tabindex="0" aria-label="返回报告列表" href="report-list.html"><span class="ac-icon" data-icon="back"></span></a>
+      <strong class="ac-nav-bar__title">文档一致性报告</strong>
+      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="大纲" id="outlineBtn"><span class="ac-icon" data-icon="list"></span></span>
+    </header>
+    <div class="app-screen__content">
+      <div class="app-stack" style="padding:var(--ac-space-3)">
 
-  <!-- 元信息折叠卡 -->
-  <div class="meta-card">
-    <span class="ac-pill is-proj-a">示例项目A</span>
-    <div class="meta-card__title">一致性检查报告（示例项目A） - 2026-08-31</div>
-    <div class="meta-row"><span class="meta-row__label">项目</span><span class="meta-row__value">示例项目A</span></div>
-    <div class="meta-row"><span class="meta-row__label">发报日</span><span class="meta-row__value mono">2026-08-31</span></div>
-    <div class="meta-row"><span class="meta-row__label">所属周</span><span class="meta-row__value">2026 年第 36 周（08-31 ~ 09-06）</span></div>
-    <div class="meta-row"><span class="meta-row__label">来源</span><span class="meta-row__value">服务端生成 · 生成服务</span></div>
-    <div class="meta-row"><span class="meta-row__label">文件大小</span><span class="meta-row__value mono">52.6KB</span></div>
-    <div class="meta-row"><span class="meta-row__label">入库时间</span><span class="meta-row__value mono">2026-08-31 21:10</span></div>
-    <div class="meta-row" id="verRow"><span class="meta-row__label">版本</span><span class="meta-row__value">v1 · 共 1 版 ›</span></div>
-    <div class="meta-card__more">收起 ▲</div>
-  </div>
+        <!-- ① 元信息折叠卡（默认展开；折叠态仅保留标题 + 发报日） -->
+        <div class="ac-collapse" data-ac="AcCollapse" id="metaCard">
+          <div class="ac-collapse__item is-open">
+            <div class="ac-collapse__header" id="metaToggle">
+              <div class="ac-collapse__title-block">
+                <div class="ac-collapse__title">一致性检查报告（零食很忙） - 2026-10-18</div>
+                <div class="ac-collapse__description">发报日 2026-10-18 · 第 42 周</div>
+              </div>
+              <span class="ac-collapse__extra mono" id="metaVer">v2</span>
+              <span class="ac-collapse__arrow"><span class="ac-icon" data-icon="down"></span></span>
+            </div>
+            <div class="ac-collapse__content">
+              <div class="ac-descriptions">
+                <div class="ac-descriptions__row"><span class="u-muted">项目</span><span><span class="ac-tag ac-tag--primary">零食很忙</span></span></div>
+                <div class="ac-descriptions__row"><span class="u-muted">发报日</span><span class="mono">2026-10-18</span></div>
+                <div class="ac-descriptions__row"><span class="u-muted">所属周</span><span>第 42 周（10-12 ~ 10-18）</span></div>
+                <div class="ac-descriptions__row"><span class="u-muted">来源</span><span>服务端生成</span></div>
+                <div class="ac-descriptions__row"><span class="u-muted">文件大小</span><span class="u-muted">52.6KB</span></div>
+                <div class="ac-descriptions__row"><span class="u-muted">入库时间</span><span class="u-muted">2026-10-18 21:10</span></div>
+              </div>
+              <div class="ac-cell" role="button" tabindex="0" id="verCell">
+                <div class="ac-cell__body"><div class="ac-cell__title">当前版本</div><div class="ac-cell__label" id="verLabel">v2 · 共 2 版（当前）</div></div>
+                <span class="ac-cell__value"><span class="ac-icon" data-icon="right"></span></span>
+              </div>
+            </div>
+          </div>
+        </div>
 
-  <!-- 渲染正文（WebView 消费服务端渲染产物，此处为同口径样例） -->
-  <div class="md-card">
-    <div class="md-body">
-      <h1>一致性检查报告（示例项目A） - 2026-08-31</h1>
-      <blockquote>检查模式：增量（回看 7 天） · 项目：示例项目A（skills-repo-a / 示例项目A/）</blockquote>
-      <h2>本次检查范围明细</h2>
-      <table>
-        <tr><th>入选模块</th><th>触发变更文件</th></tr>
-        <tr><td>排期管理/功能排期</td><td>SKILL.md</td></tr>
-        <tr><td>研发报告/文档一致性报告</td><td>references/consistency-check.md</td></tr>
-        <tr><td>成本管理/Token管理</td><td>SKILL.md</td></tr>
-      </table>
-      <h2>统计概览</h2>
-      <ul>
-        <li>扫描 SKILL 总数: 3</li>
-        <li>已有 reference 文档: 2</li>
-        <li>缺失 reference 文档: 1</li>
-        <li>覆盖率: 66.7%</li>
-      </ul>
-      <h2>文档三件套对齐表</h2>
-      <table>
-        <tr><th>模块</th><th>SKILL.md</th><th>references/</th><th>反向偏差</th></tr>
-        <tr><td>排期管理/功能排期</td><td>OK</td><td>OK</td><td>🟢 1 项</td></tr>
-        <tr><td>研发报告/文档一致性报告</td><td>OK</td><td>OK</td><td>🟡 1 项</td></tr>
-        <tr><td>成本管理/Token管理</td><td>OK</td><td>MISSING</td><td>🔴 1 项</td></tr>
-      </table>
-      <h2>功能覆盖度分析（AI 判定）</h2>
-      <h3>模块: 成本管理/Token管理</h3>
-      <table>
-        <tr><th>功能点</th><th>状态</th></tr>
-        <tr><td>用量统计看板</td><td>完整</td></tr>
-        <tr><td>预警规则配置</td><td>部分</td></tr>
-        <tr><td>成本分摊试算</td><td>缺失</td></tr>
-      </table>
-      <h2>总体摘要</h2>
-      <ul>
-        <li>枚举模块总数: 3 / 报告覆盖模块数: 3</li>
-        <li>完整: 9 | 部分: 2 | 缺失: 1</li>
-        <li>反向偏差总数: 🔴 1 项 / 🟡 1 项 / 🟢 1 项</li>
-        <li>需立即修复的严重偏差: 1 项</li>
-      </ul>
-      <hr />
-      <p><em>报告生成时间: 2026-08-31</em></p>
+        <!-- ② Markdown 渲染正文（WebView 产物；章节口径见 references/consistency-check.md 输出模板） -->
+        <div class="ac-cell-group" id="mdBody">
+          <div class="ac-cell"><div class="ac-cell__body">
+            <h2 id="h-1">本次检查范围明细</h2>
+            <p class="u-muted">划定方式：增量模式（回看 7 天），以 SKILL 仓库 git log 变更模块为准。</p>
+          </div></div>
+          <div class="tpl-data-table">
+            <div class="tpl-data-table__row tpl-data-table__head"><span class="tpl-data-table__cell">入选模块</span><span class="tpl-data-table__cell">触发变更文件</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">门店要货</span><span class="tpl-data-table__cell">SKILL.md、business-rule.md</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">采购订单</span><span class="tpl-data-table__cell">references/data.md</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">商品档案</span><span class="tpl-data-table__cell">assets/web/list.html</span></div>
+          </div>
+
+          <div class="ac-cell"><div class="ac-cell__body">
+            <h2 id="h-2">统计概览</h2>
+            <p>项目：零食很忙（busyming-skills-store）<br/>扫描 SKILL 总数：<b>13</b> · 覆盖率：100.0%<br/>已有 references 文档：13 · 缺失：0</p>
+          </div></div>
+
+          <div class="ac-cell"><div class="ac-cell__body">
+            <h2 id="h-3">文档三件套对齐表</h2>
+            <p class="u-muted">三模块 SKILL.md / references / assets 均为 OK；行数均 ≤150；无重复风险；缺失文档：无。</p>
+          </div></div>
+          <div class="tpl-data-table">
+            <div class="tpl-data-table__row tpl-data-table__head"><span class="tpl-data-table__cell">模块</span><span class="tpl-data-table__cell">功能点数</span><span class="tpl-data-table__cell">反向偏差</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">门店要货</span><span class="tpl-data-table__cell tpl-data-table__cell--num">8</span><span class="tpl-data-table__cell">🟡 1 项</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">采购订单</span><span class="tpl-data-table__cell tpl-data-table__cell--num">6</span><span class="tpl-data-table__cell">无</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">商品档案</span><span class="tpl-data-table__cell tpl-data-table__cell--num">11</span><span class="tpl-data-table__cell">🟢 2 项</span></div>
+          </div>
+
+          <div class="ac-cell"><div class="ac-cell__body">
+            <h2 id="h-4">功能覆盖度分析</h2>
+            <h3>模块：门店要货</h3>
+          </div></div>
+          <div class="tpl-data-table">
+            <div class="tpl-data-table__row tpl-data-table__head"><span class="tpl-data-table__cell">功能点</span><span class="tpl-data-table__cell">状态</span><span class="tpl-data-table__cell">说明</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">要货单创建</span><span class="tpl-data-table__cell"><span class="ac-status ac-status--completed">完整</span></span><span class="tpl-data-table__cell">Controller + Service 已实现</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">智能建议补货量</span><span class="tpl-data-table__cell"><span class="ac-status ac-status--pending">部分</span></span><span class="tpl-data-table__cell">缺「促销系数」分支</span></div>
+            <div class="tpl-data-table__row"><span class="tpl-data-table__cell">审批超时自动提醒</span><span class="tpl-data-table__cell"><span class="ac-status ac-status--negative">缺失</span></span><span class="tpl-data-table__cell">未找到实现</span></div>
+          </div>
+
+          <div class="ac-cell"><div class="ac-cell__body">
+            <h2 id="h-5">总体摘要</h2>
+            <p>枚举模块总数: 3 / 报告覆盖模块数: 3<br/>完整: 1 | 部分: 1 | 缺失: 1<br/>反向偏差: 🟡 1 项 / 🟢 2 项 · 需立即修复: 0 项</p>
+            <p class="u-muted">报告生成时间: 2026-10-18</p>
+          </div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 大纲底部抽屉（AcPopup；手势返回展开时优先关闭抽屉） -->
+    <div class="ac-popup-overlay" data-ac="AcPopup" data-ds-overlay data-ds-mask-closable="true" data-position="bottom" data-mask="true" data-round="true" id="outlinePopup" hidden>
+      <section class="ac-popup__panel">
+        <div class="ac-popup__handle-zone" role="button" tabindex="0" aria-label="下拉关闭" data-ds-close><span class="ac-popup__handle"></span></div>
+        <div class="ac-popup__content">
+          <h2 class="ac-popup__title">大纲</h2>
+          <div class="ac-cell-group" id="outlineList">
+            <div class="ac-cell" role="button" tabindex="0" data-anchor="h-1"><div class="ac-cell__body"><div class="ac-cell__title">本次检查范围明细</div></div></div>
+            <div class="ac-cell" role="button" tabindex="0" data-anchor="h-2"><div class="ac-cell__body"><div class="ac-cell__title">统计概览</div></div></div>
+            <div class="ac-cell" role="button" tabindex="0" data-anchor="h-3"><div class="ac-cell__body"><div class="ac-cell__title">文档三件套对齐表</div></div></div>
+            <div class="ac-cell" role="button" tabindex="0" data-anchor="h-4"><div class="ac-cell__body"><div class="ac-cell__title">功能覆盖度分析</div></div></div>
+            <div class="ac-cell" role="button" tabindex="0" data-anchor="h-5"><div class="ac-cell__body"><div class="ac-cell__title">总体摘要</div></div></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- 版本切换 ActionSheet（只读历史版本） -->
+    <div class="ac-action-sheet-overlay" data-ac="AcActionSheet" data-ds-overlay data-ds-mask-closable="true" id="verSheet" hidden>
+      <section class="ac-action-sheet" role="dialog" aria-modal="true">
+        <header class="ac-action-sheet__header"><h2 class="ac-action-sheet__title">切换版本</h2><p class="ac-action-sheet__description">历史版本只读</p></header>
+        <div class="ac-action-sheet__list">
+          <button class="ac-btn ac-button ac-action-sheet__item" type="button" data-ver="2">v2 · 当前版本（10-18 21:10 入库）</button>
+          <button class="ac-btn ac-button ac-action-sheet__item" type="button" data-ver="1">v1 · 历史版本（10-18 20:52 入库）</button>
+        </div>
+        <div class="ac-action-sheet__gap"></div>
+        <button class="ac-btn ac-button ac-action-sheet__cancel" type="button" data-ds-close>取消</button>
+      </section>
     </div>
   </div>
+</div>
+</div>
 
+<!-- 原型页间互联与空态演示（非 App 真实 UI） -->
+<nav class="proto-bar">
+  <a class="ac-link" href="report-list.html">报告列表</a> · <b>报告详情</b>
+  ｜空态演示：<a class="ac-link" href="#" data-demo="empty" onclick="return false">正文为空</a> · <a class="ac-link" href="#" data-demo="normal" onclick="return false">恢复</a>
+</nav>
 </section>
 
-<!-- 大纲抽屉 -->
-<div class="ac-sheet-mask" id="sheetMask">
-  <div class="ac-sheet">
-    <div class="ac-sheet__head">
-      <span class="ac-sheet__title">大纲</span>
-      <span class="ac-navbar-action" id="sheetClose">✕</span>
-    </div>
-    <div class="ac-sheet__body">
-      <a class="outline-item">本次检查范围明细</a>
-      <a class="outline-item">统计概览</a>
-      <a class="outline-item">文档三件套对齐表</a>
-      <a class="outline-item is-active">功能覆盖度分析（AI 判定）</a>
-      <a class="outline-item is-h3">模块: 成本管理/Token管理</a>
-      <a class="outline-item">总体摘要</a>
-    </div>
-  </div>
-</div>
-
-<div class="ac-toast" id="acToast"></div>
-
+<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
 <script>
-(function () {
-  var mask = document.getElementById('sheetMask');
-  document.getElementById('outlineToggle').addEventListener('click', function () { mask.classList.add('is-open'); });
-  document.getElementById('sheetClose').addEventListener('click', function () { mask.classList.remove('is-open'); });
-  mask.addEventListener('click', function (e) { if (e.target === mask) mask.classList.remove('is-open'); });
-  document.getElementById('verRow').addEventListener('click', function () { acToast('版本切换 ActionSheet：v1（当前 · 仅 1 版，只读）'); });
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+function toast(text, type) {
+  const layer = document.createElement('div');
+  layer.className = 'ac-toast-layer';
+  layer.innerHTML = `<div class="ac-toast" data-ac="AcToast" data-type="${type || 'success'}" role="status"><span class="ac-toast__text">${text}</span></div>`;
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2600);
+}
 
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
-  };
-})();
+/* 元信息折叠卡：开合由 design runtime 按 data-ac="AcCollapse" 自动接管 */
+
+/* 浮层开合：走 DS.open/close（移进手机框、Esc、遮罩关闭），同步补 is-open 以防 rAF 被节流时浮层透明 */
+function openOv(el, trigger) { DS.open(el, trigger); el.classList.add('is-open'); }
+$('#outlineBtn').addEventListener('click', (e) => openOv($('#outlinePopup'), e.currentTarget));
+$('#verCell').addEventListener('click', (e) => openOv($('#verSheet'), e.currentTarget));
+
+/* 大纲抽屉：点条目滚动定位并收起 */
+$('#outlineList').addEventListener('click', (e) => {
+  const cell = e.target.closest('[data-anchor]');
+  if (!cell) return;
+  const target = document.getElementById(cell.getAttribute('data-anchor'));
+  DS.close($('#outlinePopup'));
+  setTimeout(() => {
+    if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    $$('#outlineList .ac-cell__title').forEach((t) => t.classList.remove('is-active'));
+    cell.querySelector('.ac-cell__title').classList.add('is-active');
+  }, 200);
+});
+
+/* 版本切换：ActionSheet 选版本 → 正文骨架 → 切换 → toast */
+let curVer = '2';
+$$('#verSheet [data-ver]').forEach((btn) => {
+  btn.addEventListener('click', () => {
+    const v = btn.getAttribute('data-ver');
+    DS.close($('#verSheet'));
+    if (v === curVer) return;
+    curVer = v;
+    $('#metaVer').textContent = 'v' + v;
+    $('#verLabel').textContent = v === '2' ? 'v2 · 共 2 版（当前）' : 'v1 · 共 2 版（历史，只读）';
+    toast('已切换至 v' + v + '（只读）');
+  });
+});
+
+/* 空态演示（原型专用）：md 正文为空时展示「报告内容为空」 */
+const mdBody = $('#mdBody');
+const mdBodyHtml = mdBody.innerHTML;
+document.querySelector('.proto-bar').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-demo]');
+  if (!a) return;
+  if (a.getAttribute('data-demo') === 'empty') {
+    mdBody.innerHTML = '<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">报告内容为空</div></div>';
+  } else mdBody.innerHTML = mdBodyHtml;
+});
 </script>
 </body>
 </html>

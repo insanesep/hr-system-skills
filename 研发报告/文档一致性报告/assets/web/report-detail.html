@@ -1,332 +1,321 @@
-<!doctype html>
-<!--
-  文档一致性报告 · 报告详情页（Web 端原型）
-  ================================================================
-  规格真源：../../references/web-ui.md §报告详情
-  DOM 范本：.agents/skills/page-blueprint/skeletons/web/detail-page.vue.tpl
-            拓扑 = .tpl-page > [元信息 .tpl-panel] > [正文 .tpl-panel + 大纲 .tpl-panel]
-  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
-<html lang="zh-CN">
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>报告详情 · 文档一致性报告</title>
-<style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
-   ========================================================================== */
-:root{
-  /* palette */
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  /* semantic */
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
-  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
-  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
-  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
-  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
-  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
-  /* spacing */
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
-  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
-  /* radius */
-  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  /* shadow */
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
-  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  /* typography */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
-  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
-  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index */
-  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
-}
-
-/* ==========================================================================
-   基础版式
-   ========================================================================== */
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
-.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
-.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
-.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
-.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
-.web-nav__crumb a{color:var(--ac-color-text-2);text-decoration:none}
-.web-nav__crumb a:hover{color:var(--ac-primary-6)}
-.web-nav__spacer{flex:1}
-
-.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1)}
-
-/* ===== 元信息头 ===== */
-.meta-head{display:flex;align-items:flex-start;gap:var(--ac-space-5)}
-.meta-head__main{flex:1;min-width:0;display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.meta-head__title-row{display:flex;align-items:center;gap:var(--ac-space-3);flex-wrap:wrap}
-.meta-head__title{margin:0;font-size:var(--ac-fs-3xl);font-weight:var(--ac-fw-semibold)}
-.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
-.ac-tag.is-proj-a{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
-.ac-tag.is-proj-b{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
-.meta-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:var(--ac-space-3) var(--ac-space-5)}
-.meta-grid__item{display:flex;align-items:center;gap:var(--ac-space-2);font-size:var(--ac-fs-md)}
-.meta-grid__label{color:var(--ac-color-text-3);flex-shrink:0}
-.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
-.meta-head__actions{display:flex;gap:var(--ac-space-2);flex-shrink:0}
-
-/* ===== 版本下拉 ===== */
-.ac-select{position:relative}
-.ac-select__trigger{height:28px;display:inline-flex;align-items:center;gap:var(--ac-space-2);
-  padding:0 var(--ac-space-3);cursor:pointer;background:var(--ac-fill-2);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-sm);color:var(--ac-color-text-1)}
-.ac-select__dropdown{display:none;position:absolute;top:calc(100% + var(--ac-space-1));left:0;
-  min-width:260px;padding:var(--ac-space-1);background:var(--ac-bg-1);
-  border-radius:var(--ac-radius-sm);box-shadow:var(--ac-shadow-3);z-index:var(--ac-z-dropdown)}
-.ac-select.is-open .ac-select__dropdown{display:block}
-.ac-select__option{display:flex;flex-direction:column;padding:var(--ac-space-2) var(--ac-space-3);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);cursor:pointer}
-.ac-select__option:hover{background:var(--ac-fill-1)}
-.ac-select__option.is-checked{color:var(--ac-primary-6);background:var(--ac-primary-1)}
-.ac-select__option small{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-
-/* ===== 按钮 ===== */
-.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
-  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
-  background:var(--ac-bg-1);color:var(--ac-color-text-1);
-  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;text-decoration:none}
-.ac-btn:hover{background:var(--ac-fill-1)}
-.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
-
-/* ===== 阅读区 + 大纲 ===== */
-.read-layout{display:flex;gap:var(--ac-space-4);align-items:flex-start}
-.read-main{flex:1;min-width:0}
-.read-side{width:260px;flex-shrink:0;position:sticky;top:var(--ac-space-4)}
-.outline-title{font-size:var(--ac-fs-md);font-weight:var(--ac-fw-semibold);margin-bottom:var(--ac-space-3)}
-.outline-item{display:block;padding:var(--ac-space-1) var(--ac-space-2);
-  border-left:2px solid var(--ac-border-2);color:var(--ac-color-text-2);
-  font-size:var(--ac-fs-sm);text-decoration:none;line-height:1.8}
-.outline-item.is-h3{padding-left:var(--ac-space-5);color:var(--ac-color-text-3)}
-.outline-item.is-active{border-left-color:var(--ac-primary-6);color:var(--ac-primary-6)}
-
-/* Markdown 渲染正文（GitHub 风格，前端实时渲染口径） */
-.md-body{font-size:var(--ac-fs-md);line-height:1.8}
-.md-body h1{font-size:var(--ac-fs-3xl);margin:var(--ac-space-5) 0 var(--ac-space-3);
-  padding-bottom:var(--ac-space-2);border-bottom:1px solid var(--ac-border-2)}
-.md-body h2{font-size:var(--ac-fs-xl);margin:var(--ac-space-5) 0 var(--ac-space-3);
-  padding-bottom:var(--ac-space-2);border-bottom:1px solid var(--ac-border-1)}
-.md-body h3{font-size:var(--ac-fs-lg);margin:var(--ac-space-4) 0 var(--ac-space-2)}
-.md-body p{margin:var(--ac-space-2) 0}
-.md-body ul{margin:var(--ac-space-2) 0;padding-left:var(--ac-space-6)}
-.md-body table{width:100%;border-collapse:collapse;margin:var(--ac-space-3) 0;
-  font-size:var(--ac-fs-sm);display:block;overflow-x:auto}
-.md-body th,.md-body td{border:1px solid var(--ac-border-2);
-  padding:var(--ac-space-2) var(--ac-space-3);text-align:left;white-space:nowrap}
-.md-body th{background:var(--ac-fill-1)}
-.md-body blockquote{margin:var(--ac-space-3) 0;padding:var(--ac-space-2) var(--ac-space-4);
-  border-left:3px solid var(--ac-border-3);color:var(--ac-color-text-2);background:var(--ac-fill-1)}
-.md-body code{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm);
-  background:var(--ac-fill-2);padding:0 var(--ac-space-1);border-radius:var(--ac-radius-xs)}
-.md-body hr{border:none;border-top:1px solid var(--ac-border-2);margin:var(--ac-space-5) 0}
-
-/* ===== toast ===== */
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-fast);z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>报告详情 · 文档一致性报告 · 鸣鸣很忙</title>
+<!--
+  文档一致性报告 · 报告详情页（Web 原型）
+  页面描述真源：../../references/web-ui.md#报告详情 ｜ 页面类型 detail（阅读型）
+  整页范例：busyming-skills-design/web/templates/order-detail.html ｜ DOM 依据：skeletons/web/detail-page.vue.tpl
+  区块：元信息 panel（标题 + tpl-desc + 版本切换 + 操作）→ tpl-dual（主：Markdown 渲染正文｜侧：大纲 ac-anchor，sticky）
+  Web 端为前端实时渲染（marked + DOMPurify + GitHub 风格），大纲锚点 h-{seq} 按 h2/h3 文档序；窄屏侧栏收起，经「大纲」按钮开 AcDrawer。
+  演示基准日 2026-10-18；正文为虚构演示数据。版本切换演示 v1（历史，只读）↔ v2（当前），URL 追加 ?v=N。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
 <body>
-<div class="tpl-layout">
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb">首页 / 研发 / 研发报告 / <a class="ac-link" href="report-list.html">文档一致性报告</a> / <b>报告详情</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
+      <div class="ac-dropdown-group-title">文档一致性报告 · Web 2 页</div>
+      <a class="ac-dropdown-item" role="menuitem" href="report-list.html">报告列表</a>
+      <a class="ac-dropdown-item is-active" role="menuitem" href="report-detail.html">报告详情</a>
+    </div>
+  </div>
+  <span class="web-nav__crumb">管理员</span>
+</nav>
 
-  <nav class="web-nav">
-    <span class="web-nav__logo">鸣鸣很忙</span>
-    <span class="web-nav__crumb">研发 / 研发报告 / <a href="./report-list.html">文档一致性报告</a> / <b>报告详情</b></span>
-    <span class="web-nav__spacer"></span>
-    <span class="web-nav__crumb">管理员</span>
-  </nav>
-
-  <section class="tpl-page">
-
-    <!-- ① 元信息头 panel -->
-    <div class="tpl-panel">
-      <div class="meta-head">
-        <div class="meta-head__main">
-          <div class="meta-head__title-row">
-            <h1 class="meta-head__title">一致性检查报告（示例项目A） - 2026-08-31</h1>
-            <span class="ac-tag is-proj-a">示例项目A</span>
-            <div class="ac-select" data-select="single" id="verSelect">
-              <div class="ac-select__trigger" data-ver-trigger>
-                <span class="ac-select__value">v1 · 共 1 版</span>
-                <span>▾</span>
-              </div>
-              <div class="ac-select__dropdown">
-                <div class="ac-select__option is-checked">v1（当前）<small>2026-08-31 21:10 · 服务端生成 · 生成服务</small></div>
-              </div>
-            </div>
-          </div>
-          <div class="meta-grid">
-            <div class="meta-grid__item"><span class="meta-grid__label">项目</span><span class="meta-grid__value">示例项目A</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">发报日</span><span class="meta-grid__value cell-mono">2026-08-31</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">所属周</span><span class="meta-grid__value">2026 年第 36 周（08-31 ~ 09-06）</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">来源</span><span class="meta-grid__value">服务端生成</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">文件大小</span><span class="meta-grid__value cell-mono">52.6KB</span></div>
-            <div class="meta-grid__item"><span class="meta-grid__label">入库时间</span><span class="meta-grid__value cell-mono">2026-08-31 21:10</span></div>
-          </div>
-        </div>
-        <div class="meta-head__actions">
-          <button type="button" class="ac-btn" onclick="acToast('已开始下载 consistency_20260831_proj-a.md')">获取原件</button>
-          <a class="ac-btn ac-btn--primary" href="./report-list.html">返回列表</a>
-        </div>
+<section class="tpl-page" id="detailPage">
+  <!-- ① 元信息头 -->
+  <div class="tpl-panel">
+    <div class="tpl-page-head">
+      <div class="tpl-page-head__main">
+        <h1 class="tpl-page-title">一致性检查报告（零食很忙） - 2026-10-18</h1>
+        <div class="tpl-page-subtitle">静态产物 · 归档后仅渲染呈现，不重新执行检查</div>
+      </div>
+      <div class="tpl-page-head__actions">
+        <button class="ac-btn" type="button" id="btnOutline"><span class="ac-icon" data-ac="AcIcon" data-name="list" data-size="sm"></span> 大纲</button>
+        <button class="ac-btn" type="button" id="btnDownload"><span class="ac-icon" data-ac="AcIcon" data-name="download" data-size="sm"></span> 获取原件</button>
+        <a class="ac-btn" href="report-list.html">返回列表</a>
       </div>
     </div>
+    <div class="tpl-desc">
+      <div class="tpl-desc__item"><span class="tpl-desc__label">项目</span><span class="tpl-desc__value"><span class="ac-tag ac-tag--red">零食很忙</span></span></div>
+      <div class="tpl-desc__item"><span class="tpl-desc__label">发报日</span><span class="tpl-desc__value mono">2026-10-18</span></div>
+      <div class="tpl-desc__item"><span class="tpl-desc__label">所属周</span><span class="tpl-desc__value">2026 年第 42 周（10-12 ~ 10-18）</span></div>
+      <div class="tpl-desc__item"><span class="tpl-desc__label">来源</span><span class="tpl-desc__value">服务端生成</span></div>
+      <div class="tpl-desc__item"><span class="tpl-desc__label">当前版本</span><span class="tpl-desc__value">
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" id="verSelect">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single">v2 · 共 2 版（当前）</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option is-selected" data-value="2"><span class="ac-select__option-label">v2 · 当前版本（10-18 21:10 入库）</span></li>
+            <li class="ac-select__option" data-value="1"><span class="ac-select__option-label">v1 · 历史版本（10-18 20:52 入库）</span></li>
+          </ul></div>
+        </div>
+      </span></div>
+      <div class="tpl-desc__item"><span class="tpl-desc__label">文件大小</span><span class="tpl-desc__value u-muted">52.6KB</span></div>
+      <div class="tpl-desc__item"><span class="tpl-desc__label">入库时间</span><span class="tpl-desc__value u-muted">2026-10-18 21:10</span></div>
+    </div>
+  </div>
 
-    <!-- ② 阅读区 + 大纲 -->
-    <div class="read-layout">
-      <div class="tpl-panel read-main">
-        <div class="md-body">
-          <h1 id="h-1">一致性检查报告（示例项目A） - 2026-08-31</h1>
-          <blockquote>检查模式：增量（回看 7 天） · 项目：示例项目A（SKILL 仓库 skills-repo-a / 扫描根目录 示例项目A/）</blockquote>
-
-          <h2 id="h-2">本次检查范围明细</h2>
-          <table>
+  <!-- ② 双栏：阅读区 + 大纲 -->
+  <div class="tpl-dual tpl-dual--side">
+    <div class="tpl-dual__main">
+      <div class="tpl-panel ac-spin-wrap" id="readPanel">
+        <div class="ac-spin-mask" id="readSpin" hidden><span class="ac-spin"></span></div>
+        <div class="ac-alert ac-alert--info" id="verBanner" hidden><div class="ac-alert__body"><span class="ac-alert__title">正在查看历史版本 v1（只读），当前最新版本为 v2</span></div></div>
+        <!-- Markdown 渲染正文（章节口径见 references/consistency-check.md 输出模板） -->
+        <article class="md-body" id="mdBody">
+          <h2 id="h-1">本次检查范围明细</h2>
+          <p>划定方式：增量模式（回看 7 天），以 SKILL 仓库 git log 变更模块为准。</p>
+          <div class="ac-table-wrap"><table class="ac-table">
             <thead><tr><th>入选模块</th><th>触发变更文件</th></tr></thead>
             <tbody>
-              <tr><td>排期管理/功能排期</td><td>排期管理/功能排期/SKILL.md、references/schedule-report.md</td></tr>
-              <tr><td>研发报告/文档一致性报告</td><td>研发报告/文档一致性报告/references/consistency-check.md</td></tr>
-              <tr><td>成本管理/Token管理</td><td>成本管理/Token管理/SKILL.md</td></tr>
+              <tr><td>门店要货</td><td class="mono">store-request/SKILL.md、references/business-rule.md</td></tr>
+              <tr><td>采购订单</td><td class="mono">purchase-order/references/data.md</td></tr>
+              <tr><td>商品档案</td><td class="mono">item-archive/assets/web/list.html</td></tr>
             </tbody>
-          </table>
+          </table></div>
 
-          <h2 id="h-3">统计概览</h2>
+          <h2 id="h-2">统计概览</h2>
           <ul>
-            <li>项目: 示例项目A（skills-repo-a / 示例项目A/）</li>
-            <li>扫描 SKILL 总数: 3</li>
-            <li>已有 reference 文档: 2</li>
-            <li>缺失 reference 文档: 1</li>
-            <li>覆盖率: 66.7%</li>
+            <li>项目：零食很忙（busyming-skills-store / 扫描根目录 门店域）</li>
+            <li>扫描 SKILL 总数：<b data-ver-diff="12">13</b></li>
+            <li>已有 references 文档：13 · 缺失 references 文档：0</li>
+            <li>覆盖率：100.0%</li>
           </ul>
 
-          <h2 id="h-4">文档三件套对齐表</h2>
-          <table>
+          <h2 id="h-3">文档三件套对齐表</h2>
+          <div class="ac-table-wrap"><table class="ac-table">
             <thead><tr><th>模块</th><th>SKILL.md</th><th>references/</th><th>assets/</th><th>功能点数</th><th>行数</th><th>重复风险</th><th>反向偏差</th><th>缺失文档</th></tr></thead>
             <tbody>
-              <tr><td>排期管理/功能排期</td><td>OK</td><td>OK</td><td>OK</td><td>6</td><td>92</td><td>无</td><td>🟢 1 项</td><td>-</td></tr>
-              <tr><td>研发报告/文档一致性报告</td><td>OK</td><td>OK</td><td>OK</td><td>4</td><td>78</td><td>无</td><td>🟡 1 项</td><td>-</td></tr>
-              <tr><td>成本管理/Token管理</td><td>OK</td><td>MISSING</td><td>OK</td><td>5</td><td>164</td><td>有</td><td>🔴 1 项</td><td>data-model.md</td></tr>
+              <tr><td>门店要货</td><td>OK</td><td>OK</td><td>OK</td><td>8</td><td>132</td><td>无</td><td>🟡 1 项</td><td>—</td></tr>
+              <tr><td>采购订单</td><td>OK</td><td>OK</td><td>OK</td><td>6</td><td>96</td><td>无</td><td>无</td><td>—</td></tr>
+              <tr><td>商品档案</td><td>OK</td><td>OK</td><td>OK</td><td>11</td><td>148</td><td>无</td><td>🟢 2 项</td><td>—</td></tr>
             </tbody>
-          </table>
+          </table></div>
 
-          <h2 id="h-5">功能覆盖度分析（AI 判定）</h2>
-          <h3 id="h-5-1">模块: 成本管理/Token管理</h3>
-          <p><strong>文档对齐</strong></p>
-          <ul>
-            <li>SKILL.md: OK（164 行，超阈值建议拆分）</li>
-            <li>references/: MISSING（缺 data-model.md）</li>
-            <li>assets/: OK（2 个原型文件）</li>
-          </ul>
-          <p><strong>功能覆盖度</strong></p>
-          <table>
+          <h2 id="h-4">功能覆盖度分析</h2>
+          <h3 id="h-4-1">模块：门店要货</h3>
+          <div class="ac-table-wrap"><table class="ac-table">
             <thead><tr><th>功能点</th><th>状态</th><th>说明</th></tr></thead>
             <tbody>
-              <tr><td>用量统计看板</td><td>完整</td><td>UsageStatController + UsageStatService 已实现</td></tr>
-              <tr><td>预警规则配置</td><td>部分</td><td>AlertRuleService 存在但缺少阈值生效校验</td></tr>
-              <tr><td>成本分摊试算</td><td>缺失</td><td>未找到对应接口与实现</td></tr>
+              <tr><td>要货单创建</td><td>完整</td><td>StoreRequestController + Service 已实现</td></tr>
+              <tr><td>智能建议补货量</td><td>部分</td><td>已按周转天数计算，缺「促销系数」分支</td></tr>
+              <tr><td>审批超时自动提醒</td><td>缺失</td><td>未找到定时任务或消息发送实现</td></tr>
             </tbody>
-          </table>
-          <p><strong>代码 → 文档反向偏差</strong></p>
-          <table>
-            <thead><tr><th>#</th><th>等级</th><th>偏差类型</th><th>偏差位置</th><th>当前实现</th><th>文档期望</th><th>修复方向</th></tr></thead>
+          </table></div>
+          <h3 id="h-4-2">代码 → 文档反向偏差</h3>
+          <div class="ac-table-wrap"><table class="ac-table">
+            <thead><tr><th>#</th><th>等级</th><th>偏差类型</th><th>偏差位置</th><th>修复方向</th></tr></thead>
             <tbody>
-              <tr><td>1</td><td>🔴 严重</td><td>字段类型不一致</td><td>TokenUsageEntity.java:42 vs references/data-model.md §字段定义</td><td>amount BigDecimal(18,4)</td><td>DDL 中为 DECIMAL(12,2)</td><td>改 DDL 升级精度，回写 data-model.md</td></tr>
+              <tr><td>1</td><td>🟡 中等</td><td>文档超前于代码</td><td>store-request/SKILL.md §智能建议 vs StoreRequestService</td><td>补「促销系数」实现或回写文档</td></tr>
+              <tr><td>2</td><td>🟢 轻微</td><td>命名差异</td><td>item-archive references/data.md §字段表</td><td>建议同步命名</td></tr>
             </tbody>
-          </table>
+          </table></div>
+          <p>渲染口径演示：外部图片一律占位「[图片已移除]」；代码块等宽不换行：</p>
+          <div class="ac-table-wrap"><pre class="mono">git log --since="7 days ago" --name-only --pretty=format: -- store-request/</pre></div>
+          <p class="u-muted">[图片已移除]</p>
 
-          <h2 id="h-6">总体摘要</h2>
+          <h2 id="h-5">总体摘要</h2>
           <ul>
             <li>枚举模块总数: 3 / 报告覆盖模块数: 3</li>
-            <li>完整: 9 | 部分: 2 | 缺失: 1</li>
-            <li>SKILL 长度超阈值: 1 个（&gt;150 行）</li>
-            <li>内容重复风险: 1 个</li>
-            <li>反向偏差总数: 🔴 1 项 / 🟡 1 项 / 🟢 1 项</li>
-            <li>需立即修复的严重偏差: 1 项</li>
+            <li>完整: 1 | 部分: 1 | 缺失: 1</li>
+            <li>SKILL 长度超阈值: 0 个（&gt;150 行）</li>
+            <li>反向偏差总数: 🟡 1 项 / 🟢 2 项</li>
+            <li>需立即修复的严重偏差: 0 项</li>
           </ul>
-
-          <hr />
-          <p><em>报告生成时间: 2026-08-31</em></p>
-        </div>
-      </div>
-
-      <div class="tpl-panel read-side">
-        <div class="outline-title">大纲</div>
-        <a class="outline-item" href="#h-2">本次检查范围明细</a>
-        <a class="outline-item" href="#h-3">统计概览</a>
-        <a class="outline-item" href="#h-4">文档三件套对齐表</a>
-        <a class="outline-item is-active" href="#h-5">功能覆盖度分析（AI 判定）</a>
-        <a class="outline-item is-h3" href="#h-5-1">模块: 成本管理/Token管理</a>
-        <a class="outline-item" href="#h-6">总体摘要</a>
+          <p class="u-muted">报告生成时间: 2026-10-18</p>
+        </article>
       </div>
     </div>
 
-  </section>
+    <!-- 大纲侧栏（宽屏 sticky；窄屏由「大纲」按钮开抽屉） -->
+    <div class="tpl-dual__side tpl-dual__side--sticky" id="outlineSide">
+      <div class="tpl-panel">
+        <div class="tpl-panel__title">大纲</div>
+        <nav class="ac-anchor" data-ac="AcAnchor" aria-label="报告大纲">
+          <span class="ac-anchor__rail"></span><span class="ac-anchor__ball" id="anchorBall"></span>
+          <ul class="ac-anchor__list">
+            <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-1">本次检查范围明细</a></li>
+            <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-2">统计概览</a></li>
+            <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-3">文档三件套对齐表</a></li>
+            <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-4">功能覆盖度分析</a>
+              <ul class="ac-anchor__list ac-anchor__list--child">
+                <li class="ac-anchor__item"><a class="ac-anchor__link ac-anchor__link--child" href="#h-4-1">模块：门店要货</a></li>
+                <li class="ac-anchor__item"><a class="ac-anchor__link ac-anchor__link--child" href="#h-4-2">代码 → 文档反向偏差</a></li>
+              </ul>
+            </li>
+            <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-5">总体摘要</a></li>
+          </ul>
+        </nav>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 窄屏大纲抽屉（AcDrawer） -->
+<div class="ac-drawer-mask" data-ac="AcDrawer" id="outlineDrawer" hidden>
+  <div class="ac-drawer" role="dialog" aria-label="大纲">
+    <div class="ac-drawer__header"><b>大纲</b><span class="ac-modal__close" role="button" tabindex="0" id="drawerClose">✕</span></div>
+    <div class="ac-drawer__body">
+      <nav class="ac-anchor ac-anchor--lineless" data-ac="AcAnchor" aria-label="报告大纲（抽屉）">
+        <ul class="ac-anchor__list">
+          <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-1">本次检查范围明细</a></li>
+          <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-2">统计概览</a></li>
+          <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-3">文档三件套对齐表</a></li>
+          <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-4">功能覆盖度分析</a></li>
+          <li class="ac-anchor__item"><a class="ac-anchor__link" href="#h-5">总体摘要</a></li>
+        </ul>
+      </nav>
+    </div>
+  </div>
 </div>
 
-<div class="ac-toast" id="acToast"></div>
-
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
 <script>
-(function () {
-  /* ── 版本下拉 ── */
-  var sel = document.getElementById('verSelect');
-  sel.querySelector('[data-ver-trigger]').addEventListener('click', function () {
-    sel.classList.toggle('is-open');
-  });
-  sel.querySelectorAll('.ac-select__option').forEach(function (opt) {
-    opt.addEventListener('click', function () {
-      sel.classList.remove('is-open');
-      if (opt.dataset.version) acToast('已切换到历史版本 ' + opt.dataset.version + '（只读）');
-    });
-  });
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const wait = (ms) => new Promise((r) => setTimeout(r, ms || 400));
 
-  /* ── 大纲定位高亮 ── */
-  document.querySelectorAll('.outline-item').forEach(function (item) {
-    item.addEventListener('click', function () {
-      document.querySelectorAll('.outline-item').forEach(function (i) { i.classList.remove('is-active'); });
-      item.classList.add('is-active');
-    });
-  });
+let toastTimer;
+function toast(msg, type) {
+  clearTimeout(toastTimer);
+  $('.ac-message') && $('.ac-message').remove();
+  const el = document.createElement('div');
+  el.className = 'ac-message ac-message--' + (type || 'success');
+  el.setAttribute('data-ac', 'AcMessage');
+  el.setAttribute('role', 'alert');
+  el.innerHTML = '<span class="ac-message__icon"></span><span>' + msg + '</span>';
+  document.body.appendChild(el);
+  toastTimer = setTimeout(() => el.remove(), 2600);
+}
+function busy(btn, on) {
+  btn.disabled = !!on;
+  btn.classList.toggle('is-loading', !!on);
+  const sp = btn.querySelector('.ac-btn-spin');
+  if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+  if (!on && sp) sp.remove();
+}
 
-  /* ── toast ── */
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
-  };
-})();
+/* 事件委托 */
+const HANDLERS = {};
+const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
+['click', 'mousedown'].forEach((type) => {
+  document.body.addEventListener(type, (e) => {
+    const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
+    for (const [sel, fn] of HANDLERS[type] || []) {
+      const el = sel ? t && t.closest(sel) : t;
+      if (el && fn(e, el) === true) break;
+    }
+    e.stopPropagation();
+  });
+});
+
+/* AcSelect（版本切换） */
+function closeSelect(root) { root.classList.remove('is-open'); const p = $('.ac-select__popup', root); if (p) p.hidden = true; }
+on('click', '.ac-select .ac-select__trigger', (e, el) => {
+  const root = el.closest('.ac-select');
+  const willOpen = !root.classList.contains('is-open');
+  $$('.ac-select.is-open').forEach((s) => closeSelect(s));
+  root.classList.toggle('is-open', willOpen);
+  $('.ac-select__popup', root).hidden = !willOpen;
+  return true;
+});
+on('click', '.ac-select .ac-select__option', async (e, el) => {
+  const root = el.closest('.ac-select');
+  const v = el.getAttribute('data-value');
+  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', o === el));
+  $('.ac-select__single', root).textContent = $('.ac-select__option-label', el).textContent.trim();
+  closeSelect(root);
+  if (root.id === 'verSelect') await switchVersion(v);
+  return true;
+});
+on('mousedown', null, (e, t) => {
+  $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
+  const menu = $('#protoMenu');
+  if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
+  return false;
+});
+
+/* 版本切换：正文区 AcSpin → 整体替换渲染产物（只读）→ URL 追加 ?v=N */
+let curVer = '2';
+async function switchVersion(v) {
+  if (v === curVer) return;
+  $('#readSpin').hidden = false;
+  await wait(500);
+  curVer = v;
+  $('#readSpin').hidden = true;
+  $('#verBanner').hidden = v !== '1';
+  const diff = $('[data-ver-diff]');
+  if (diff) diff.textContent = v === '1' ? '12' : '13';
+  const url = new URL(location.href);
+  url.searchParams.set('v', v);
+  history.replaceState(null, '', url);
+  toast('已切换至 v' + v + '（只读）');
+}
+
+/* 获取原件 */
+on('click', '#btnDownload', async (e, btn) => {
+  busy(btn, true);
+  await wait(400);
+  busy(btn, false);
+  toast('已开始下载 consistency_20261018_llhm.md');
+  return true;
+});
+
+/* 大纲：平滑滚动 + 高亮 + 指示球 */
+function activateLink(link) {
+  $$('.ac-anchor__link').forEach((l) => l.classList.remove('ac-anchor__link--active'));
+  $$('.ac-anchor__link[href="' + link.getAttribute('href') + '"]').forEach((l) => l.classList.add('ac-anchor__link--active'));
+  const ball = $('#anchorBall');
+  if (ball) {
+    const side = link.closest('#outlineSide');
+    if (side) {
+      ball.classList.add('ac-anchor__ball--visible');
+      ball.style.top = (link.offsetTop + link.offsetHeight / 2 - 4) + 'px';
+    }
+  }
+}
+on('click', '.ac-anchor__link', (e, link) => {
+  e.preventDefault();
+  const target = $(link.getAttribute('href'));
+  if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  activateLink(link);
+  $('#outlineDrawer').hidden = true;
+  return true;
+});
+/* 滚动监听：当前章节高亮 */
+window.addEventListener('scroll', () => {
+  const ids = ['#h-1', '#h-2', '#h-3', '#h-4', '#h-5'];
+  let cur = ids[0];
+  ids.forEach((id) => { const el = $(id); if (el && el.getBoundingClientRect().top <= 120) cur = id; });
+  const link = $('#outlineSide .ac-anchor__link[href="' + cur + '"]');
+  if (link) activateLink(link);
+}, { passive: true });
+
+/* 大纲抽屉（窄屏） */
+on('click', '#btnOutline', () => { $('#outlineDrawer').hidden = false; return true; });
+on('click', '#drawerClose', () => { $('#outlineDrawer').hidden = true; return true; });
+on('click', '.ac-drawer-mask', (e, mask) => { if (e.target === mask) mask.hidden = true; return true; });
+
+/* proto-bar */
+on('click', '#protoBtn', () => {
+  const menu = $('#protoMenu');
+  const willOpen = menu.hidden;
+  menu.hidden = !willOpen;
+  $('#protoDd').classList.toggle('is-open', willOpen);
+  return true;
+});
+
+/* 初始化：URL ?v=N 直达历史版本 */
+const initV = new URL(location.href).searchParams.get('v');
+if (initV === '1') switchVersion('1');
 </script>
 </body>
 </html>

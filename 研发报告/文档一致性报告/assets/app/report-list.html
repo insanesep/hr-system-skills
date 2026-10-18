@@ -1,245 +1,188 @@
 <!doctype html>
-<!--
-  文档一致性报告 · 报告列表（App 端原型）
-  ================================================================
-  规格真源：../../references/mobile-ui.md §报告列表
-  DOM 范本：.agents/skills/page-blueprint/skeletons/app/list-page.tsx.tpl
-  Token   ：.agents/skills/page-blueprint/tokens/app.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
-<html lang="zh-CN">
+<html lang="zh-CN" data-theme="light">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>文档一致性报告 · App</title>
-<style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/app.css，值不得改动）
-   ========================================================================== */
-:root{
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-6:#F53F3F;
-  --ac-success-1:#E8FFEA; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-7:#D25F00;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-2:#F2F3F5;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB;
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px; --ac-space-5:20px;
-  --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04);
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:16px;
-  --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-z-toast:1100;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:1.5;
-  max-width:420px;margin:0 auto;min-height:100vh}
-
-/* 顶部导航栏 */
-.ac-navbar{height:48px;display:flex;align-items:center;padding:0 var(--ac-space-4);
-  background:var(--ac-bg-1);position:sticky;top:0;z-index:10;box-shadow:var(--ac-shadow-1)}
-.ac-navbar-back{font-size:22px;color:var(--ac-text-2);padding:var(--ac-space-2)}
-.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold)}
-.ac-navbar-action{font-size:18px;color:var(--ac-text-2);padding:var(--ac-space-2)}
-
-/* 搜索条 */
-.ac-searchbar{display:none;align-items:center;gap:var(--ac-space-2);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-bg-1)}
-.ac-searchbar.is-open{display:flex}
-.ac-input__inner{flex:1;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:none;border-radius:var(--ac-radius-full);font-size:var(--ac-fs-md);outline:none}
-.ac-searchbar__cancel{color:var(--ac-text-2);font-size:var(--ac-fs-md)}
-
-/* 项目筛选 chip 组 */
-.chip-row{display:flex;align-items:center;gap:var(--ac-space-2);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-bg-1)}
-.ac-chip{height:28px;padding:0 var(--ac-space-3);display:inline-flex;align-items:center;
-  border-radius:var(--ac-radius-full);background:var(--ac-fill-2);
-  color:var(--ac-text-2);font-size:var(--ac-fs-sm)}
-.ac-chip.is-active{background:var(--ac-primary-1);color:var(--ac-primary-6);font-weight:var(--ac-fw-medium)}
-
-.tpl-page{padding:var(--ac-space-3) var(--ac-space-4) var(--ac-space-8);
-  display:flex;flex-direction:column;gap:var(--ac-space-3)}
-
-/* 周分组 */
-.week-group{display:flex;flex-direction:column;gap:var(--ac-space-2)}
-.week-group__head{display:flex;align-items:center;gap:var(--ac-space-2);padding:var(--ac-space-1) 0}
-.week-group__title{font-weight:var(--ac-fw-semibold)}
-.week-group__range{font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
-.week-group__badge{margin-left:auto;font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
-  padding:0 var(--ac-space-2);height:20px;display:inline-flex;align-items:center;border-radius:var(--ac-radius-full)}
-.week-group__badge.is-full{background:var(--ac-success-1);color:var(--ac-success-7)}
-.week-group__badge.is-partial{background:var(--ac-warning-1);color:var(--ac-warning-7)}
-
-/* 报告卡片：徽标独占一行 + 标题整行 */
-.ac-card{background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  padding:var(--ac-space-3);box-shadow:var(--ac-shadow-1)}
-.ac-card-top{display:flex;flex-direction:column;gap:var(--ac-space-1)}
-.ac-card-title{font-weight:var(--ac-fw-medium);line-height:1.4;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ac-card-meta{display:flex;align-items:center;gap:var(--ac-space-3);margin-top:var(--ac-space-2);
-  font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
-.ac-card-meta__ver{font-family:var(--ac-ff-mono)}
-.ac-card.is-missing{background:var(--ac-fill-2);box-shadow:none}
-.ac-card.is-missing .ac-card-title{color:var(--ac-text-4)}
-.mono{font-family:var(--ac-ff-mono)}
-.ac-pill{display:inline-flex;align-items:center;height:20px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);align-self:flex-start}
-.ac-pill.is-proj-a{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
-.ac-pill.is-proj-b{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
-.ac-pill.is-missing{background:var(--ac-border-2);color:var(--ac-text-3)}
-
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity .15s;z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
-</style>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>文档一致性报告 · 报告列表 · App 原型</title>
+<!--
+  文档一致性报告 · 报告列表（App 查阅端原型）
+  页面描述真源：../../references/mobile-ui.md#报告列表 ｜ 页面类型 list（分组卡片流）
+  整页范例：busyming-skills-design/mobile/templates/list.html ｜ DOM 依据：skeletons/app/list-page.tsx.tpl
+  结构：ac-nav-bar（返回 + 标题 + 搜索图标）→ 搜索栏（点图标展开）→ 项目筛选 chip 组 → 周分组卡片流（齐全度徽标）→ 加载更多
+  本周行仅周日当天起展示（演示基准日 2026-10-18 周日）；未入库项灰显占位卡不可点；下拉刷新/上拉加载以 proto-bar 演示与「加载更多」承载。
+  项目集合为虚构演示数据（真源=报告项目配置生效数据）。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css" />
 </head>
 <body>
-
-<div class="ac-navbar">
-  <span class="ac-navbar-back" onclick="acToast('返回工作台')">‹</span>
-  <div class="ac-navbar-title">文档一致性报告</div>
-  <span class="ac-navbar-action" id="searchToggle" aria-label="搜索">⌕</span>
-</div>
-
-<div class="ac-searchbar" id="searchbar">
-  <input class="ac-input__inner" placeholder="按报告标题搜索" id="searchInput">
-  <span class="ac-searchbar__cancel" id="searchCancel">取消</span>
-</div>
-
-<!-- 项目筛选 chip 组 -->
-<div class="chip-row" id="chipRow">
-  <span class="ac-chip is-active">全部</span>
-  <span class="ac-chip">示例项目A</span>
-  <span class="ac-chip">示例项目B</span>
-</div>
-
 <section class="tpl-page">
-
-  <!-- 第 36 周（齐全） -->
-  <div class="week-group">
-    <div class="week-group__head">
-      <span class="week-group__title">第 36 周</span>
-      <span class="week-group__range">08-31 ~ 09-06</span>
-      <span class="week-group__badge is-full">2/2</span>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-proj-a">示例项目A</span>
-        <span class="ac-card-title">一致性检查报告（示例项目A） - 2026-08-31</span>
+<div class="tpl-panel">
+<div class="app-phone">
+  <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
+  <div class="app-screen">
+    <header class="ac-nav-bar" data-ac="AcNavBar">
+      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="返回工作台"><span class="ac-icon" data-icon="back"></span></span>
+      <strong class="ac-nav-bar__title">文档一致性报告</strong>
+      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="搜索" id="searchToggle"><span class="ac-icon" data-icon="search"></span></span>
+    </header>
+    <div class="app-screen__content app-screen__content--flush">
+      <!-- 搜索栏：点导航栏搜索图标展开，按标题模糊匹配 -->
+      <div class="ac-search-bar" data-ac="AcSearchBar" id="searchBar" hidden>
+        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="searchInput" placeholder="按报告标题模糊搜索" autocomplete="off" /></span>
+        <span class="ac-search-bar__clear" role="button" tabindex="0" id="searchCancel">取消</span>
       </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-31</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
+      <!-- 项目筛选 chip 组（单选，切换即刷新） -->
+      <div class="tpl-filter-chips" id="projChips">
+        <span class="tpl-filter-chips__chip is-active" data-proj="">全部</span>
+        <span class="tpl-filter-chips__chip" data-proj="llhm">零食很忙</span>
+        <span class="tpl-filter-chips__chip" data-proj="zym">赵一鸣零食</span>
       </div>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-proj-b">示例项目B</span>
-        <span class="ac-card-title">一致性检查报告（示例项目B） - 2026-08-31</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-31</span>
-        <span>手动补传</span>
-        <span class="ac-card-meta__ver">v2</span>
-      </div>
+      <div class="app-stack" id="cardHost" style="padding:var(--ac-space-3)"></div>
+      <div class="ac-load-more" data-ac="AcLoadMore" id="loadMore">加载更多</div>
     </div>
   </div>
+</div>
+</div>
 
-  <!-- 第 35 周（待补：示例项目B未入库） -->
-  <div class="week-group">
-    <div class="week-group__head">
-      <span class="week-group__title">第 35 周</span>
-      <span class="week-group__range">08-24 ~ 08-30</span>
-      <span class="week-group__badge is-partial">1/2</span>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-proj-a">示例项目A</span>
-        <span class="ac-card-title">一致性检查报告（示例项目A） - 2026-08-24</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-24</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
-    </div>
-    <div class="ac-card is-missing">
-      <div class="ac-card-top">
-        <span class="ac-pill is-missing">示例项目B</span>
-        <span class="ac-card-title">未入库</span>
-      </div>
-    </div>
-  </div>
-
-  <!-- 第 34 周（齐全） -->
-  <div class="week-group">
-    <div class="week-group__head">
-      <span class="week-group__title">第 34 周</span>
-      <span class="week-group__range">08-17 ~ 08-23</span>
-      <span class="week-group__badge is-full">2/2</span>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-proj-a">示例项目A</span>
-        <span class="ac-card-title">一致性检查报告（示例项目A） - 2026-08-17</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-17</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-proj-b">示例项目B</span>
-        <span class="ac-card-title">一致性检查报告（示例项目B） - 2026-08-17</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-17</span>
-        <span>推送上报</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
-    </div>
-  </div>
-
+<!-- 原型页间互联与三态演示（非 App 真实 UI） -->
+<nav class="proto-bar">
+  <b>报告列表</b> ·
+  <a class="ac-link" href="report-detail.html">报告详情</a>
+  ｜三态演示：
+  <a class="ac-link" href="#" data-demo="normal" onclick="return false">正常</a> ·
+  <a class="ac-link" href="#" data-demo="skeleton" onclick="return false">骨架</a> ·
+  <a class="ac-link" href="#" data-demo="empty" onclick="return false">空态</a> ·
+  <a class="ac-link" href="#" data-demo="error" onclick="return false">错误</a>
+</nav>
 </section>
 
-<div class="ac-toast" id="acToast"></div>
-
+<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
 <script>
-(function () {
-  var bar = document.getElementById('searchbar');
-  document.getElementById('searchToggle').addEventListener('click', function () { bar.classList.toggle('is-open'); });
-  document.getElementById('searchCancel').addEventListener('click', function () { bar.classList.remove('is-open'); });
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+function toast(text, type) {
+  const layer = document.createElement('div');
+  layer.className = 'ac-toast-layer';
+  layer.innerHTML = `<div class="ac-toast" data-ac="AcToast" data-type="${type || 'success'}" role="status"><span class="ac-toast__text">${esc(text)}</span></div>`;
+  document.body.appendChild(layer);
+  setTimeout(() => layer.remove(), 2600);
+}
 
-  /* ── 项目筛选 chip 组（单选） ── */
-  document.querySelectorAll('#chipRow .ac-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      document.querySelectorAll('#chipRow .ac-chip').forEach(function (c) { c.classList.remove('is-active'); });
-      chip.classList.add('is-active');
-      acToast('已切换项目筛选：' + chip.textContent);
-    });
-  });
+/* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
+const PROJ = { llhm: ['primary', '零食很忙'], zym: ['warning', '赵一鸣零食'] };
+const WEEKS = [
+  { label: '第 42 周', range: '10-12~10-18', full: false, items: [
+    { proj: 'llhm', title: '一致性检查报告（零食很忙） - 2026-10-18', date: '10-18', src: '服务端生成', ver: 'v1' },
+    { proj: 'zym', missing: true },
+  ]},
+  { label: '第 41 周', range: '10-05~10-11', full: true, items: [
+    { proj: 'llhm', title: '一致性检查报告（零食很忙） - 2026-10-11', date: '10-11', src: '服务端生成', ver: 'v1' },
+    { proj: 'zym', title: '一致性检查报告（赵一鸣零食） - 2026-10-11', date: '10-11', src: '手动补传', ver: 'v2' },
+  ]},
+  { label: '第 40 周', range: '09-28~10-04', full: true, items: [
+    { proj: 'llhm', title: '一致性检查报告（零食很忙） - 2026-10-04', date: '10-04', src: '服务端生成', ver: 'v1' },
+    { proj: 'zym', title: '一致性检查报告（赵一鸣零食） - 2026-10-04', date: '10-04', src: '推送上报', ver: 'v1' },
+  ]},
+];
 
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
-  };
-})();
+const S = { proj: '', kw: '' };
+
+function cardHtml(it) {
+  if (it.missing) {
+    return `<div class="tpl-doc-card" aria-disabled="true">
+      <div class="tpl-doc-card__head"><span class="ac-tag ac-tag--outline">${PROJ[it.proj][1]}</span><span class="ac-tag ac-tag--outline">未入库</span></div>
+      <div class="tpl-doc-card__body"><div><div class="tpl-doc-card__label">报告标题</div><div class="tpl-doc-card__value u-muted">本周期报告未入库，请在 Web 端立即生成或补传</div></div></div>
+    </div>`;
+  }
+  return `<div class="tpl-doc-card" role="button" tabindex="0" data-go="report-detail.html">
+    <div class="tpl-doc-card__head"><span class="ac-tag ac-tag--${PROJ[it.proj][0]}">${PROJ[it.proj][1]}</span><span class="mono u-muted">${it.ver}</span></div>
+    <div class="tpl-doc-card__body">
+      <div><div class="tpl-doc-card__label">报告标题</div><div class="tpl-doc-card__value"><span class="ac-ellipsis" data-ac="AcEllipsis"><span class="ac-ellipsis__text">${esc(it.title)}</span></span></div></div>
+      <div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value mono">${it.date}</div></div>
+      <div><div class="tpl-doc-card__label">来源</div><div class="tpl-doc-card__value">${it.src}</div></div>
+      <div><div class="tpl-doc-card__label">版本号</div><div class="tpl-doc-card__value mono">${it.ver}</div></div>
+    </div>
+  </div>`;
+}
+function groupHtml(w) {
+  const badge = w.full
+    ? `<span class="ac-tag ac-tag--success">${w.items.length}/${w.items.length}</span>`
+    : `<span class="ac-tag ac-tag--warning">${w.items.filter((i) => !i.missing).length}/${w.items.length}</span>`;
+  const items = w.items
+    .filter((it) => (!S.proj || it.proj === S.proj) && (!S.kw || it.missing || it.title.includes(S.kw)))
+    .map(cardHtml).join('');
+  if (!items) return '';
+  return `<div class="tpl-list-group-header"><span class="tpl-list-group-header__title">${w.label}</span><span class="tpl-list-group-header__range">${w.range}</span>${badge}</div>${items}`;
+}
+function emptyHtml() {
+  return `<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">该条件下暂无报告</div></div>`;
+}
+function skeletonHtml() {
+  return Array.from({ length: 3 }).map(() => `<div class="tpl-doc-card"><div class="ac-skeleton"><div class="ac-skeleton--line ac-skeleton--line-sm"></div><div class="ac-skeleton--line"></div><div class="ac-skeleton--line ac-skeleton--line-sm"></div></div></div>`).join('');
+}
+function render() {
+  const host = $('#cardHost');
+  const html = WEEKS.map(groupHtml).join('');
+  host.innerHTML = html || emptyHtml();
+  $('#loadMore').textContent = html ? '加载更多' : '';
+}
+function renderWithSkeleton() {
+  $('#cardHost').innerHTML = skeletonHtml();
+  $('#loadMore').textContent = '';
+  setTimeout(render, 300);
+}
+
+/* ==================== 事件 ==================== */
+/* 搜索图标 → 展开搜索栏；取消 → 收起并清空 */
+$('#searchToggle').addEventListener('click', () => {
+  $('#searchBar').hidden = false;
+  $('#searchInput').focus();
+});
+$('#searchCancel').addEventListener('click', () => {
+  $('#searchBar').hidden = true;
+  $('#searchInput').value = '';
+  S.kw = '';
+  renderWithSkeleton();
+});
+$('#searchInput').addEventListener('input', () => { S.kw = $('#searchInput').value.trim(); render(); });
+
+/* 项目 chip 单选：切换即骨架屏刷新 */
+$('#projChips').addEventListener('click', (e) => {
+  const chip = e.target.closest('.tpl-filter-chips__chip');
+  if (!chip) return;
+  $$('#projChips .tpl-filter-chips__chip').forEach((c) => c.classList.remove('is-active'));
+  chip.classList.add('is-active');
+  S.proj = chip.getAttribute('data-proj');
+  renderWithSkeleton();
+});
+
+/* 卡片跳转详情（未入库占位卡无 data-go，不可点） */
+$('#cardHost').addEventListener('click', (e) => {
+  if (e.target.closest('[data-retry]')) { renderWithSkeleton(); return; }
+  const card = e.target.closest('[data-go]');
+  if (card) location.href = card.getAttribute('data-go');
+});
+
+/* 上拉加载更多（原型以按钮承载手势） */
+$('#loadMore').addEventListener('click', () => {
+  $('#loadMore').textContent = '没有更多了';
+});
+
+/* 三态演示（原型专用）；下拉刷新以「正常」重载演示 */
+document.querySelector('.proto-bar').addEventListener('click', (e) => {
+  const a = e.target.closest('[data-demo]');
+  if (!a) return;
+  const d = a.getAttribute('data-demo');
+  if (d === 'skeleton') { $('#cardHost').innerHTML = skeletonHtml(); $('#loadMore').textContent = ''; }
+  else if (d === 'empty') { $('#cardHost').innerHTML = emptyHtml(); $('#loadMore').textContent = ''; }
+  else if (d === 'error') {
+    $('#cardHost').innerHTML = `<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">加载失败</div><div class="ac-empty__description"><a class="ac-link" href="#" onclick="return false" data-retry>点击重试</a></div></div>`;
+    $('#loadMore').textContent = '';
+  } else renderWithSkeleton();
+});
+
+render();
 </script>
 </body>
 </html>
