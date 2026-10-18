@@ -44,7 +44,7 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 | -- | ---- | ---- |
 | Web | 报告列表（本模块，见 [`references/web-ui.md`](references/web-ui.md)，原型见 `assets/`） | 按周索引 + 明细筛选 + 入库进度；缺失周次立即生成 / 补传 |
 | Web | 报告详情（本模块） | 元信息 + 渲染正文 + 大纲锚点导航 + 版本切换回溯 |
-| Web | 报告触发配置（子域统一页，见 [`../references/web-ui-trigger-config.md`](../references/web-ui-trigger-config.md)） | 研发周报配置行的触发方式、定时规则与启停；立即生成；生成记录与失败重试 |
+| Web | 报告触发配置（报告配置模块，见 [`../报告配置/references/web-ui.md`](../报告配置/references/web-ui.md)） | 研发周报配置行的触发方式、定时规则与启停；立即生成；生成记录与失败重试 |
 | App | 列表 / 详情（本模块，见 [`references/mobile-ui.md`](references/mobile-ui.md)） | 按周分组浏览、渲染阅读 |
 
 ## 关联模块
@@ -53,4 +53,4 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 | ---- | ---- |
 | [`references/`](references/)（周报生成 skill） | 报告生成逻辑真源，服务端生成会话挂载引用 |
 | `排期管理/功能排期` | 卡片领取/完成/回退事实来源（经 skill 内数据源采集） |
-| `研发报告` 子域共享层 | 归档、触发与生成共享机制真源（[`../references/`](../references/)）；报告触发配置统一页 |
+| [`研发报告/报告配置`](../报告配置/SKILL.md) | 子域共享规则真源（归档 / 触发 / 版本 / 渲染 / 权限）；触发配置与配置页归属模块 |

@@ -1,43 +1,12 @@
 # Web 端 UI 描述 · 项目进度报告
 
 > 硬约束（组件白名单 / Token / 三态）详见 page-gen.prompt.md【2. 硬约束】A-L，此处仅填产品侧元信息。
-> 归档、版本、渲染与异常口径以子域 [`../../references/business-rule.md`](../../references/business-rule.md) 为真源；报告章节口径以 [`progress-report.md`](progress-report.md) 章节规范为真源。
+> 归档、版本、渲染与异常口径以子域 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md) 为真源；报告章节口径以 [`progress-report.md`](progress-report.md) 章节规范为真源。
+> 项目配置与触发配置页面归报告配置模块，见 [`../../报告配置/references/web-ui.md`](../../报告配置/references/web-ui.md)。
 
 ---
 
 ## 页面清单
-
-### 项目映射配置
-
-- **页面路径**：`/rnd-report/progress/mapping-config`
-- **权限编码**：
-  - 路由：`MENU:RND:PROGRESS_REPORT`
-  - 按钮：`BTN:DEV_WEEKLY_REPORT:TRIGGER`（新增 / 编辑 / 启停）
-- **页面类型**：列表页（配置表格 + 编辑弹窗）
-- **区块职责**：
-  - 工具栏（筛选 panel）：状态（全部 / 启用 / 停用）、关键词（项目 key / 名称模糊）、查询 / 重置
-  - 主体区（配置表格 panel）：列：项目 key、项目名称、harness 工程（需求/skill 仓）、代码仓清单（数量徽标，悬停展示完整清单）、分支策略（master / 最近 release 且防回退）、启停开关、关联触发配置（项目进度报告配置行状态 + 定时规则摘要）、操作（编辑）
-  - 弹窗：**新增 / 编辑映射弹窗**：项目 key（新增时必填且不可改）、项目名称、harness 工程（仓库选择）、代码仓清单（多选仓库，可增减）、分支策略（单选：master / 最近 release 且防回退）、启停
-  - 联动提示：启用项目的映射保存后，子域统一页「报告触发配置」自动生成 / 更新对应项目进度报告配置行（默认定时每周）；停用映射时同步停用该配置行
-  - 空态：AcEmpty「暂无项目映射」
-- **布局引用**：`参见原型 assets/web/project-mapping.html`（DOM 结构依据：`page-blueprint/skeletons/web/list-page.vue.tpl`）
-
-#### 导航关系
-
-- 来源页：研发分组侧边菜单「研发报告 → 项目进度报告 → 项目映射配置」
-- 去向页：无下游页面；报告查阅跳转本模块「报告列表」
-- 返回行为：浏览器返回回到来源页
-- 面包屑：首页 / 研发 / 研发报告 / 项目进度报告 / 项目映射配置
-
-#### 操作反馈清单
-
-| 操作名 | 触发条件 | 二次确认? | Loading 形式 | 成功反馈+去向 | 失败反馈+重试 |
-|--------|---------|----------|-------------|-------------|-------------|
-| 查询 | 筛选条件变更后点查询 | 否 | 表格 loading | 列表刷新，停留 | toast error + 按钮恢复 |
-| 新增 / 编辑提交 | 弹窗内必填项齐备 | 否 | 提交按钮 loading | toast「映射已保存」→ 关弹窗并刷新表格 | toast error（key 重复 / 仓库清单为空）+ 弹窗保留 |
-| 启停切换 | 点启停开关 | 是（停用提示「停用后不再生成该项目进度报告，历史报告保留」） | 开关 loading | 开关态切换，联动同步触发配置行 | toast error + 开关回退 |
-
----
 
 ### 报告列表
 

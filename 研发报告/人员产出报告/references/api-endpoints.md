@@ -1,6 +1,6 @@
 # 研发周报 用量数据接口
 
-> 本文件为研发周报（人员产出报告）专属的用量类数据源真源。排期双卡 MCP 调用、容错口径与报告推送旁路契约见共享真源 [`../../references/data-source-api.md`](../../references/data-source-api.md)。
+> 本文件为研发周报（人员产出报告）专属的用量类数据源真源。排期双卡 MCP 调用、容错口径与报告推送旁路契约见共享真源 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)。
 >
 > 配置来源按会话类型区分：服务端生成会话由服务端注入基址与令牌；外部会话从生成环境约定的 `config.yaml` 读取（`api.devops_base_url` / `api.foundation_base_url`）。
 >

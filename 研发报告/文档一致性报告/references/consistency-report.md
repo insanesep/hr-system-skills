@@ -14,14 +14,14 @@ description: "生成 SKILL↔代码一致性检查报告（由模型直接执行
 
 ## When Not to Use
 
-- 需要定时自动跑 → 由研发报告模块「报告触发配置」承担定时调度，本 skill 只描述单次生成会话的执行
+- 需要定时自动跑 → 由报告配置模块「报告触发配置」页承担定时调度，本 skill 只描述单次生成会话的执行
 - 研发周报 / 项目进度报告 → 分别由人员产出报告、项目进度报告模块的生成 skill 承载
 
 ## 参数解析
 
 | 参数 | 取值 | 默认 |
 |------|------|------|
-| 项目 | 项目 key（取值来自「项目映射配置」生效数据），可多个 | 服务端会话由入参指定；外部会话默认全部启用项目 |
+| 项目 | 项目 key（取值来自「报告项目配置」生效数据），可多个 | 服务端会话由入参指定；外部会话默认全部启用项目 |
 | lookback_days | N 天 / 0=全量 | 服务端会话由触发配置的类型参数给定；外部会话默认 7 |
 | 代码工作区 | 绝对路径 | 服务端会话由服务端注入；外部会话读取 config.yaml 的 `workspace_dir` 并解析为绝对路径 |
 | 推送 | 服务端会话固定「不推送，产出回传服务端」；外部会话默认生成后推送，用户说「仅生成」则跳过 | 按会话类型 |
@@ -62,7 +62,7 @@ description: "生成 SKILL↔代码一致性检查报告（由模型直接执行
 
 - 写入输出目录，文件名严格遵循：`consistency_yyyyMMdd_<项目key>.md`（服务端按文件名解析类型与日期）
 - **服务端生成会话**：产出文件回传服务端，由服务端校验、渲染并直接落库（版本递增、周索引），本 skill 不调用推送接口
-- **外部会话（旁路）**：推送契约（multipart 表单 + 鉴权头，幂等）见 [`../../references/data-source-api.md`](../../references/data-source-api.md)；推送后把 `reportId / versionNo / duplicated` 回告用户；推送失败不删本地文件，把错误信息告知用户
+- **外部会话（旁路）**：推送契约（multipart 表单 + 鉴权头，幂等）见 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)；推送后把 `reportId / versionNo / duplicated` 回告用户；推送失败不删本地文件，把错误信息告知用户
 
 ## 硬约束汇总
 
@@ -75,4 +75,4 @@ description: "生成 SKILL↔代码一致性检查报告（由模型直接执行
 ## Resources
 
 - [`consistency-check.md`](consistency-check.md) —— 一致性检查维度、执行步骤与输出模板（唯一真源）
-- [`../../references/data-source-api.md`](../../references/data-source-api.md) —— 报告推送契约（旁路，共享）
+- [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md) —— 报告推送契约（旁路，共享）

@@ -1,7 +1,7 @@
 # Web 端 UI 描述 · 人员产出报告（研发周报）
 
 > 硬约束（组件白名单 / Token / 三态）详见 page-gen.prompt.md【2. 硬约束】A-L，此处仅填产品侧元信息。
-> 归档、版本、渲染与异常口径以子域 [`../../references/business-rule.md`](../../references/business-rule.md) 为真源。
+> 归档、版本、渲染与异常口径以子域 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md) 为真源。
 
 ---
 

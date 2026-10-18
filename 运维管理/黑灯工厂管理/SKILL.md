@@ -44,8 +44,8 @@ description: 黑灯工厂巡检产出的工单化闭环管理。三个黑灯 age
 | 错误日志黑灯工厂 | [`references/agent-error-log.md`](references/agent-error-log.md) | 来源 agent 之一(分诊/分级/负责人判定口径) |
 | 大SQL结果集修复 | [`references/agent-bigsql-fix.md`](references/agent-bigsql-fix.md) | 来源 agent 之二 |
 | 服务端bug扫描 | [`references/agent-bug-scan.md`](references/agent-bug-scan.md) | 来源 agent 之三(SLS 错误提取 + harness/代码对照评估口径) |
-| 需求管理 | [`../../排期管理/需求管理/SKILL.md`](../../排期管理/需求管理/SKILL.md) | 人工报 bug 入口:缺陷修复单据审批通过后自动向本模块建单(规则真源其 business-rule §2.7) |
-| 项目进度报告 | [`../../研发报告/项目进度报告/SKILL.md`](../../研发报告/项目进度报告/SKILL.md) | 「项目映射配置」真源:服务端bug扫描按它定位项目的 harness 工程与代码仓 |
+| 需求管理 | [`../../排期管理/需求管理/SKILL.md`](../../排期管理/需求管理/SKILL.md) | 人工报 bug 入口:缺陷修复单据审批通过后自动向本模块建单(规则真源其 business-rule §2) |
+| 功能排期 | [`../../排期管理/功能排期/SKILL.md`](../../排期管理/功能排期/SKILL.md) | 项目映射真源:服务端bug扫描按它定位项目的 harness 工程与代码仓 |
 
 ## 页面功能概览
 

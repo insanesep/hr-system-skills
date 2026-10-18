@@ -1,8 +1,8 @@
 <!doctype html>
 <!--
-  研发报告 · 报告触发配置页（Web 端原型 · 子域统一页）
+  研发报告 · 报告触发配置页（Web 端原型 · 报告配置模块）
   ================================================================
-  规格真源：../../references/web-ui-trigger-config.md §报告触发配置
+  规格真源：../../references/web-ui.md §报告触发配置
   DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
             拓扑 = .tpl-page > [筛选 .tpl-panel] > [表格 .tpl-panel]
   Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
@@ -158,6 +158,15 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   transition:left var(--ac-duration-fast) var(--ac-easing-standard)}
 .ac-switch.is-on{background:var(--ac-primary-6)}
 .ac-switch.is-on::after{left:18px}
+.ac-switch:hover{background:var(--ac-fill-3)}
+.ac-switch.is-on:hover{background:var(--ac-primary-6)}
+
+/* ===== 复选框（AcCheckbox） ===== */
+.ac-checkbox{display:inline-flex;align-items:center;gap:var(--ac-space-1);cursor:pointer;line-height:32px}
+.ac-checkbox__box{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
+  background:var(--ac-bg-1);border:1px solid var(--ac-border-3);border-radius:var(--ac-radius-xs)}
+.ac-checkbox.is-checked .ac-checkbox__box{background:var(--ac-primary-6);border-color:var(--ac-primary-6)}
+.ac-checkbox__icon{color:var(--ac-text-white);font-size:var(--ac-fs-xs)}
 
 /* ===== 最近生成状态 ===== */
 .gen-status{display:inline-flex;align-items:center;gap:var(--ac-space-1);cursor:pointer}
@@ -213,7 +222,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 <div class="tpl-layout">
   <nav class="web-nav">
     <span class="web-nav__logo">研发中台</span>
-    <span class="web-nav__crumb">研发 / 研发报告 / <b>报告触发配置</b></span>
+    <span class="web-nav__crumb">研发 / 研发报告 / 报告配置 / <b>报告触发配置</b></span>
     <span class="web-nav__spacer"></span>
   </nav>
 
@@ -224,6 +233,15 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
       <div class="tpl-filter">
         <div class="tpl-filter__item">
           <span class="tpl-filter__label">报告类型</span>
+          <div class="tpl-filter__control">
+            <div class="ac-select__trigger">
+              <span class="ac-select__value">全部</span>
+              <span class="ac-select__arrow">▾</span>
+            </div>
+          </div>
+        </div>
+        <div class="tpl-filter__item">
+          <span class="tpl-filter__label">项目</span>
           <div class="tpl-filter__control">
             <div class="ac-select__trigger">
               <span class="ac-select__value">全部</span>
@@ -254,12 +272,12 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
       <div class="tpl-toolbar">
         <div class="tpl-toolbar__left">
           <span class="tpl-toolbar__title">报告触发配置</span>
-          <span class="tpl-toolbar__meta">报告项 = 报告类型 + 项目；项目进度报告配置行随项目映射配置联动生成</span>
+          <span class="tpl-toolbar__meta">报告项 = 报告类型 + 项目；项目维度配置行随报告项目配置联动生成</span>
         </div>
       </div>
 
       <div class="tpl-table-wrap">
-        <table class="tpl-table">
+        <table class="ac-table tpl-table">
           <thead>
             <tr>
               <th>报告类型</th>
@@ -279,7 +297,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
               <td class="cell-mono">每周日 20:00</td>
               <td class="cell-muted">—</td>
-              <td><button class="ac-switch is-on" aria-label="启停"></button></td>
+              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
               <td><span class="gen-status is-success">成功 <span class="gen-status__time">10-11 20:00</span></span></td>
               <td><span class="tpl-row-actions">
                 <button class="ac-btn ac-btn--text" onclick="document.getElementById('cfgModal').classList.add('is-open')">编辑</button>
@@ -293,7 +311,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
               <td class="cell-mono">每周日 21:00</td>
               <td class="cell-muted">回看 7 天</td>
-              <td><button class="ac-switch is-on" aria-label="启停"></button></td>
+              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
               <td><span class="gen-status is-success">成功 <span class="gen-status__time">10-11 21:00</span></span></td>
               <td><span class="tpl-row-actions">
                 <button class="ac-btn ac-btn--text">编辑</button>
@@ -307,7 +325,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               <td><span class="ac-tag is-default">手动</span></td>
               <td class="cell-muted">—</td>
               <td class="cell-muted">回看 7 天</td>
-              <td><button class="ac-switch is-on" aria-label="启停"></button></td>
+              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
               <td><span class="gen-status is-failed">失败 <span class="gen-status__time">10-15 10:22</span></span></td>
               <td><span class="tpl-row-actions">
                 <button class="ac-btn ac-btn--text">编辑</button>
@@ -321,7 +339,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
               <td class="cell-mono">每周日 20:30</td>
               <td class="cell-muted">周期：周</td>
-              <td><button class="ac-switch is-on" aria-label="启停"></button></td>
+              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
               <td><span class="gen-status is-running">生成中 <span class="gen-status__time">10-16 09:12</span></span></td>
               <td><span class="tpl-row-actions">
                 <button class="ac-btn ac-btn--text">编辑</button>
@@ -335,7 +353,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               <td><span class="ac-tag is-default">定时</span></td>
               <td class="cell-mono">每月 1 日 09:00</td>
               <td class="cell-muted">周期：月</td>
-              <td><button class="ac-switch" aria-label="启停"></button></td>
+              <td><button class="ac-btn ac-switch" type="button" role="switch" aria-checked="false" data-ac="AcSwitch" aria-label="启停"></button></td>
               <td class="cell-muted">已停用 · 不再生成</td>
               <td><span class="tpl-row-actions">
                 <button class="ac-btn ac-btn--text">编辑</button>
@@ -360,15 +378,15 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   <div class="ac-modal">
     <div class="ac-modal__head">
       <span class="ac-modal__title">编辑触发配置 · 研发周报</span>
-      <button class="ac-modal__close" onclick="document.getElementById('cfgModal').classList.remove('is-open')">✕</button>
+      <button class="ac-btn ac-modal__close" type="button" aria-label="关闭" onclick="document.getElementById('cfgModal').classList.remove('is-open')">✕</button>
     </div>
     <div class="ac-modal__body">
       <div class="ac-form-item">
         <span class="ac-form-item__label"><i class="is-required">*</i> 触发方式</span>
         <div class="ac-form-item__control">
           <div class="ac-checks">
-            <label><input type="checkbox" checked /> 定时</label>
-            <label><input type="checkbox" checked /> 手动</label>
+            <span class="ac-checkbox is-checked" role="checkbox" tabindex="0" aria-checked="true" data-ac="AcCheckbox" data-size="medium" data-shape="square"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">定时</span></span>
+            <span class="ac-checkbox is-checked" role="checkbox" tabindex="0" aria-checked="true" data-ac="AcCheckbox" data-size="medium" data-shape="square"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">手动</span></span>
           </div>
           <div class="ac-form-item__tip">至少启用一种；停用配置则两种均不生效</div>
         </div>
@@ -394,7 +412,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
       <div class="ac-form-item">
         <span class="ac-form-item__label">启停</span>
         <div class="ac-form-item__control">
-          <button class="ac-switch is-on" aria-label="启停"></button>
+          <button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button>
           <div class="ac-form-item__tip">停用即不再定时触发且手动禁用；历史报告与生成记录保留</div>
         </div>
       </div>
@@ -411,7 +429,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
   <div class="ac-drawer">
     <div class="ac-drawer__head">
       <span class="ac-drawer__title">生成记录 · 研发周报</span>
-      <button class="ac-modal__close" onclick="document.getElementById('taskDrawerMask').classList.remove('is-open')">✕</button>
+      <button class="ac-btn ac-modal__close" type="button" aria-label="关闭" onclick="document.getElementById('taskDrawerMask').classList.remove('is-open')">✕</button>
     </div>
     <div class="ac-drawer__body">
       <div class="task-row">
