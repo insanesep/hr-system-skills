@@ -1346,6 +1346,7 @@
     const b = byNo(el.dataset.card);
     S.drag = null;
     markDrop(null);
+    if (a.start && !b.start) { unschedule(a); return true; }
     const err = mergeCheck([b, a]);
     if (err) toast(err, 'error'); else openMergeModal([b.no, a.no]);
     return true;
