@@ -7,7 +7,7 @@
 <!--
   功能排期 · 卡片详情页（Web 原型）
   页面描述真源：../../references/web-ui.md#卡片详情页｜页面类型 order-detail｜整页范例 busyming-skills-design/web/templates/order-detail.html｜DOM 依据 skeletons/web/detail-page.vue.tpl
-  区块：页头（返回 + 编号标题 + 只读操作）→ 业务提示 → 开发进度 → 关键摘要 → 页级 Tab（基本信息 / 子卡明细 / 完成 commit / 操作日志）→ 双层沉底操作栏 → 弹窗与提示
+  区块：页头（返回 + 编号标题 + 右上角操作区）→ 业务提示 → 开发进度 → 关键摘要 → 页级 Tab（基本信息 / 子卡明细 / 完成 commit / 操作日志）→ 弹窗与提示
   演示数据与工作台共用 feature-schedule-data.js（会话内保存）；导航栏「原型页面」切换页面、演示卡片与整页状态，真实页面由接口状态驱动、不保留演示入口。演示基准日 2026-10-17。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
@@ -24,7 +24,7 @@
   <span class="web-nav__crumb">张三</span>
 </nav>
 
-<section class="tpl-page tpl-page--with-actionbar" id="normalView" hidden>
+<section class="tpl-page" id="normalView" hidden>
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <a class="ac-link u-sm" href="feature-schedule.html" data-go-back><span class="ac-icon" data-ac="AcIcon" data-name="left"></span> 返回研发排期工作台</a>
@@ -32,6 +32,8 @@
       <div class="tpl-page-head__tags" id="pageTags"></div>
     </div>
     <div class="tpl-page-head__actions">
+      <span class="u-sub" id="barHint"></span>
+      <span id="barRow"></span>
       <button class="ac-btn" type="button" id="copyNoBtn"><span class="ac-icon" data-ac="AcIcon" data-name="copy" data-size="sm"></span><span class="ac-btn__label">复制编号</span></button>
     </div>
   </div>
@@ -60,13 +62,6 @@
       <div class="ac-tab-panel" data-pane="children" id="paneChildren" hidden></div>
       <div class="ac-tab-panel" data-pane="commits" id="paneCommits" hidden></div>
       <div class="ac-tab-panel" data-pane="logs" id="paneLogs" hidden></div>
-    </div>
-  </div>
-
-  <div class="tpl-actionbar tpl-actionbar--stack" id="actionBar">
-    <div class="tpl-actionbar__inner">
-      <span class="tpl-actionbar__hint" id="barHint"></span>
-      <div class="tpl-actionbar__row" id="barRow"></div>
     </div>
   </div>
 </section>
@@ -250,7 +245,8 @@
   const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
   const isRO = (c) => !!c.parent || !PERM.EDIT;
   const needContact = (c) => !c.req && c.nature !== 'TECH' && !String(c.contact || '').trim();
-  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.repos.includes(repo)); return p ? p.name : '未归属项目'; };
+  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.harness === repo); return p ? p.name : '未归属项目'; };
+  const projectEntryOf = (repo) => PROJECTS.find((x) => x.enabled && x.harness === repo) || null;
   const days = (c) => span(c.start, endOf(c)) + 1;
   const rangeText = (a, b) => (a === b ? a : a + ' ~ ' + b);
   const addLog = (c, type, detail) => c.logs.unshift(D.makeLog(type, detail, ME, NOW_S));
@@ -389,7 +385,7 @@
   }
   function commitsHtml(c) {
     const can = c.status === 'DONE' && !isRO(c);
-    const head = `<div class="tpl-toolbar"><span class="tpl-toolbar__title">完成 commit</span><div class="tpl-toolbar__right"><span class="u-sub">选填；只能从代码仓检索点选，hash 与链接自动回填</span>${can ? btn('关联 commit', 'data-act="commits"', 'sm', 'link') : ''}</div></div>`;
+    const head = `<div class="tpl-toolbar"><span class="tpl-toolbar__title">完成 commit</span><div class="tpl-toolbar__right"><span class="u-sub">选填；候选仓为所属项目的代码服务仓，只能从仓内检索点选，hash 与链接自动回填</span>${can ? btn('关联 commit', 'data-act="commits"', 'sm', 'link') : ''}</div></div>`;
     if (c.status !== 'DONE') return `<div class="tpl-section">${head}${emptyHtml('卡片开发完成后可关联完成 commit')}</div>`;
     if (!c.done.length) return `<div class="tpl-section">${head}${emptyHtml('未关联完成 commit')}</div>`;
     const body = c.done.map((x, i) => `<tr><td class="mono">${esc(x.short)}</td><td class="u-wrap">${esc(x.msg)}</td><td>${esc((repoOf(x.repo) || { name: x.repo }).name)} ${muted(x.repo)}</td><td>${esc(x.author)}</td><td class="mono">${esc(x.at)}</td><td><div class="ac-row-actions" data-ac="AcRowActions">${rowBtn('查看', `data-commit-link="${i}"`)}${can ? rowBtn('移除', `data-remove-commit="${i}"`) : ''}</div></td></tr>`).join('');
@@ -418,7 +414,7 @@
     renderLogs(c);
   }
 
-  /* ---------- 沉底操作栏 ---------- */
+  /* ---------- 页头操作区（右上角） ---------- */
   function barHint(c) {
     if (c.parent) return '子卡只读：状态、排期与开发人由合并卡 ' + c.parent + ' 控制';
     if (!PERM.EDIT && !PERM.DELETE && !PERM.MARK_DONE) return '当前账号无功能排期编辑权限，仅可查看';
@@ -432,7 +428,7 @@
     return parts.join('；');
   }
   function barButtons(c) {
-    const b = [btn('返回', 'data-go-back')];
+    const b = [];
     if (c.parent) return b.concat(btn('查看合并卡', `data-open-card="${c.parent}"`, 'primary'));
     const more = [];
     if (PERM.EDIT && c.status !== 'NON_FEATURE') more.push(['toNonFeature', '移入非需求改动', false]);
@@ -745,7 +741,11 @@
     const picked = DN.picked.length
       ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split" role="list"><div class="ac-list__body">${DN.picked.map((x, i) => `<div class="ac-list-item ac-list-item--small" role="listitem"><div class="ac-list-item__main">${txt(esc(x.short), 'is-code')} ${esc(x.msg)} ${muted(repoName(x.repo))}</div>${btn('移除', `data-unpick="${i}"`, 'sm text')}</div>`).join('')}</div></div>`
       : `<div>${muted('尚未选择完成 commit（选填）')}</div>`;
-    let picker = formItem('代码仓', selectHtml('doneRepo', DN.repo, REPOS.map((r) => ({ value: r.repo, label: r.name, sub: r.repo })), '请选择代码仓'), DN.repo ? {} : { help: '先选择代码仓，再按分支搜索 commit 并点选' });
+    const pj = projectEntryOf(c.repo);
+    const repoOpts = (pj ? pj.repos : []).map(repoOf).filter(Boolean);
+    let picker = repoOpts.length
+      ? formItem('代码仓', selectHtml('doneRepo', DN.repo, repoOpts.map((r) => ({ value: r.repo, label: r.name, sub: r.repo })), '请选择代码仓'), DN.repo ? {} : { help: '先选择代码仓，再按分支搜索 commit 并点选' })
+      : alertHtml('info', '该项目未配置代码服务仓，可不关联直接完成');
     if (DN.repo) {
       const chips = repoOf(DN.repo).branches.map((b) => `<span class="ac-chip${b === DN.branch ? ' is-active' : ''}" role="button" tabindex="0" data-branch="${esc(b)}">${esc(b)}</span>`).join(' ');
       picker += formItem('分支', inputHtml('branch', DN.branch, '输入或选择分支') + `<div>${chips}</div>`, { help: '默认取该仓默认分支，手改的分支按仓在本浏览器记忆' })

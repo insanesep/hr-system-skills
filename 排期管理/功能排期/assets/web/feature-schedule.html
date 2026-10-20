@@ -68,7 +68,6 @@
             <div class="ac-dropdown-item" role="menuitem" data-menu="density" data-density="compact">紧凑</div>
             <div class="ac-dropdown-divider"></div>
             <div class="ac-dropdown-item" role="menuitem" data-menu="nonfeature">非需求改动<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="nfCount">0</span></span></div>
-            <div class="ac-dropdown-item" role="menuitem" data-menu="repos">代码仓配置</div>
             <div class="ac-dropdown-item" role="menuitem" data-menu="projects">项目配置</div>
           </div>
         </div>
@@ -168,17 +167,6 @@
     <div class="ac-modal__panel" data-width="600">
       <div class="ac-modal__header"><div class="ac-modal__title">非需求改动</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="nfModal">×</button></div>
       <div class="ac-modal__body" id="nfModalBody"></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="repoModal" hidden>
-  <div class="ac-modal__mask" data-close="repoModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="680">
-      <div class="ac-modal__header"><div class="ac-modal__title">代码仓配置</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="repoModal">×</button></div>
-      <div class="ac-modal__body"><div class="tpl-section" id="repoModalBody"></div></div>
-      <div class="ac-modal__footer"><button class="ac-btn ac-btn--primary" type="button" data-close="repoModal">知道了</button></div>
     </div>
   </div>
 </div>
@@ -325,8 +313,9 @@
   const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
   const isLocked = (c) => c.status === 'DONE' || c.status === 'NON_FEATURE' || !!c.parent;
   const needContact = (c) => !c.req && c.nature !== 'TECH' && !String(c.contact || '').trim();
-  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.repos.includes(repo)); return p ? p.name : '未归属项目'; };
-  const sourceRepos = () => { const s = REPOS.filter((r) => r.source); return (s.length ? s : REPOS).map((r) => r.repo); };
+  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.harness === repo); return p ? p.name : '未归属项目'; };
+  const projectEntryOf = (repo) => PROJECTS.find((x) => x.enabled && x.harness === repo) || null;
+  const sourceRepos = () => PROJECTS.filter((p) => p.enabled && repoOf(p.harness)).map((p) => p.harness);
   const projectOptions = () => PROJECTS.filter((p) => p.enabled).map((p) => p.name).concat('未归属项目');
   const subset = (set, all) => !!set && set.size > 0 && set.size < all.length;
   function passFilters(c, f, o) {
@@ -917,7 +906,7 @@
     }).join('')}</div></div>`;
   }
   function renderNewCard() {
-    const repos = REPOS.filter((r) => r.source);
+    const repos = sourceRepos().map(repoOf).filter(Boolean);
     $('#newCardBody').innerHTML = `<div id="ncAlert"></div><div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('代码仓', selectHtml('ncRepo', NC.repo, repos.map((r) => ({ value: r.repo, label: r.name, sub: r.repo })), '请选择代码仓'), { required: true, helpId: 'helpNcRepo' })}${formItem('commit', `<div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix">${icon('search')}</span><input class="ac-input__inner" type="search" data-field="ncQ" value="${esc(NC.q)}" placeholder="搜索提交说明 / hash / 作者" /></div>`, { required: true, helpId: 'helpNcCommit' })}</div><div id="ncList">${ncListHtml()}</div>`;
   }
   async function createCard(btn) {
@@ -940,15 +929,12 @@
     renderAll();
   }
 
-  /* ---------- 非需求改动、代码仓与项目配置 ---------- */
+  /* ---------- 非需求改动与项目配置 ---------- */
   function renderNF() {
     const list = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
     $('#nfModalBody').innerHTML = list.length
       ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((c) => `<div class="ac-list-item ac-list-item--medium is-clickable" role="listitem" tabindex="0" data-open-card="${c.no}"><div class="ac-list-item__main"><div>${txt(esc(c.title), 'is-bold')} ${tag('非需求改动', 'warning')}</div><div>${txt(esc(c.no + ' · ' + c.owner + ' · ' + c.createdAt), 'ac-typo-text--secondary')}</div></div></div>`).join('')}</div></div>`
       : emptyHtml('暂无非需求改动卡片');
-  }
-  function renderRepos() {
-    $('#repoModalBody').innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>仓库标识</th><th>名称</th><th>默认分支</th></tr></thead><tbody>${REPOS.map((r) => `<tr><td>${esc(r.repo)}</td><td>${esc(r.name)}</td><td>${esc(r.branch)}</td></tr>`).join('')}</tbody></table></div>${alertHtml('info', '需增减 / 修改？请联系运维修改代码仓配置')}`;
   }
   const PJ = { view: 'list', edit: null, draft: null, base: '', err: '' };
   const pjDirty = () => PJ.view === 'form' && JSON.stringify(PJ.draft) !== PJ.base;
@@ -964,33 +950,34 @@
     const foot = $('#projectModalFooter');
     if (PJ.view === 'list') {
       $('#projectModalTitle').textContent = '项目配置';
-      body.innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>项目名称</th><th>harness 工程</th><th class="u-wrap">代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>${PROJECTS.map((p) => `<tr><td>${esc(p.name)}</td><td>${esc(p.harness)}</td><td class="u-wrap">${p.repos.map((r) => (repoOf(r) ? tag(r, 'blue') : tag(r + '（已移出名单）', 'default'))).join(' ')}</td><td>${p.enabled ? badge('DONE', '启用') : badge('PENDING', '停用')}</td><td>${PERM.EDIT ? `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-edit="${p.id}"><span class="ac-btn__label">编辑</span></button><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-toggle="${p.id}"><span class="ac-btn__label">${p.enabled ? '停用' : '启用'}</span></button></div>` : '—'}</td></tr>`).join('')}</tbody></table></div>`;
+      body.innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>项目名称</th><th>harness 工程</th><th class="u-wrap">代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>${PROJECTS.map((p) => { const h = repoOf(p.harness); return `<tr><td>${esc(p.name)}</td><td>${h ? esc(h.name) + ' ' + txt(esc(p.harness), 'ac-typo-text--secondary') : esc(p.harness) + ' ' + tag('云效侧失效', 'default')}</td><td class="u-wrap">${p.repos.length ? p.repos.map((r) => (repoOf(r) ? tag(r, 'blue') : tag(r + '（云效侧失效）', 'default'))).join(' ') : '—'}</td><td>${p.enabled ? badge('DONE', '启用') : badge('PENDING', '停用')}</td><td>${PERM.EDIT ? `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-edit="${p.id}"><span class="ac-btn__label">编辑</span></button><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-toggle="${p.id}"><span class="ac-btn__label">${p.enabled ? '停用' : '启用'}</span></button></div>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>`;
       foot.innerHTML = (PERM.EDIT ? '<button class="ac-btn ac-btn--primary" type="button" data-pj-new>新建项目</button>' : '') + '<button class="ac-btn" type="button" data-close="projectModal">关闭</button>';
       return;
     }
     const d = PJ.draft;
     $('#projectModalTitle').textContent = PJ.edit ? '编辑项目' : '新建项目';
-    const taken = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && p.repos.includes(repo));
+    const taken = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && (p.harness === repo || p.repos.includes(repo)));
+    const harnessOpts = REPOS.map((r) => { const t = taken(r.repo); return { value: r.repo, label: r.name + (t ? '（已归属 ' + t.name + '）' : ''), sub: r.repo, disabled: !!t }; });
+    if (d.harness && !repoOf(d.harness)) harnessOpts.unshift({ value: d.harness, label: d.harness + '（云效侧失效）', sub: '映射失效', disabled: false });
     const checks = REPOS.map((r) => {
       const t = taken(r.repo);
       const on = d.repos.includes(r.repo);
       return `<div>${checkbox(on, !!t && !on, esc(r.name) + ' ' + txt(esc(r.repo), 'ac-typo-text--secondary') + (t ? ' ' + tag('已归属 ' + t.name, 'default') : ''), ' data-pj-repo="' + r.repo + '"')}</div>`;
-    }).join('') + d.repos.filter((r) => !repoOf(r)).map((r) => `<div>${checkbox(true, true, txt(esc(r) + '（已移出名单，映射失效）', 'ac-typo-text--secondary is-disabled'))}</div>`).join('');
-    body.innerHTML = `${PJ.err ? alertHtml('error', PJ.err) : ''}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('项目名称', inputHtml('pjName', d.name, '请填写项目名称'), { required: true, helpId: 'helpPjName' })}${formItem('harness 工程', inputHtml('pjHarness', d.harness, '项目的需求 / 文档真源工程标识'), { required: true, helpId: 'helpPjHarness' })}${formItem('代码服务仓', `<div class="ac-checkbox-group">${checks}</div>`, { required: true, helpId: 'helpPjRepos', help: '只能从代码仓名单中选择；被其他启用中项目占用的仓不可选' })}${formItem('状态', radioGroup('pjEnabled', d.enabled ? 'on' : 'off', [['on', '启用'], ['off', '停用']]), { required: true })}${formItem('备注', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="pjNote" rows="2">${esc(d.note)}</textarea></div>`)}</div>`;
+    }).join('') + d.repos.filter((r) => !repoOf(r)).map((r) => `<div>${checkbox(true, true, txt(esc(r) + '（云效侧失效，映射失效）', 'ac-typo-text--secondary is-disabled'))}</div>`).join('');
+    body.innerHTML = `${PJ.err ? alertHtml('error', PJ.err) : ''}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('项目名称', inputHtml('pjName', d.name, '请填写项目名称'), { required: true, helpId: 'helpPjName' })}${formItem('harness 工程', selectHtml('pjHarness', d.harness, harnessOpts, '请选择 harness 工程'), { required: true, helpId: 'helpPjHarness', help: '项目的需求 / 文档真源工程，从云效研发仓中单选' })}${formItem('代码服务仓', `<div class="ac-checkbox-group">${checks}</div>`, { helpId: 'helpPjRepos', help: '选填；候选为云效研发仓，被其他启用中项目占用的仓不可选' })}${formItem('状态', radioGroup('pjEnabled', d.enabled ? 'on' : 'off', [['on', '启用'], ['off', '停用']]), { required: true })}${formItem('备注', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="pjNote" rows="2">${esc(d.note)}</textarea></div>`)}</div>`;
     foot.innerHTML = '<button class="ac-btn" type="button" data-pj-back>返回列表</button><button class="ac-btn ac-btn--primary" type="button" data-pj-save>保存</button>';
   }
   async function saveProject(btn) {
     const d = PJ.draft;
     const name = d.name.trim();
-    const harness = d.harness.trim();
+    const harness = d.harness;
     const live = d.repos.filter((r) => repoOf(r));
     PJ.err = '';
     setHelp('helpPjName', !name ? '请填写项目名称' : d.enabled && PROJECTS.some((p) => p.enabled && p.id !== PJ.edit && p.name === name) ? '项目名称「' + name + '」已被启用中项目占用' : '');
-    setHelp('helpPjHarness', harness ? '' : '请填写 harness 工程');
-    setHelp('helpPjRepos', live.length ? '' : '请至少选择 1 个代码服务仓');
-    if (live.length) $('#helpPjRepos').textContent = '只能从代码仓名单中选择；被其他启用中项目占用的仓不可选';
+    setHelp('helpPjHarness', harness ? '' : '请选择 harness 工程');
     if ($$('#projectModal .ac-form-item__help.is-error').length) return;
-    const clash = d.enabled ? live.map((r) => [r, PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && p.repos.includes(r))]).find((x) => x[1]) : null;
+    const takenBy = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && (p.harness === repo || p.repos.includes(repo)));
+    const clash = d.enabled ? [harness].concat(live).map((r) => [r, takenBy(r)]).find((x) => x[1]) : null;
     if (clash) { PJ.err = '代码仓 ' + clash[0] + ' 已被启用中项目「' + clash[1].name + '」占用'; renderProjects(); return; }
     busy(btn, true);
     await wait();
@@ -1005,9 +992,9 @@
   async function toggleProject(id, btn) {
     const p = PROJECTS.find((x) => x.id === id);
     if (p.enabled) {
-      await confirmRun('停用项目', '停用后「' + p.name + '」退出筛选选项集，其代码仓卡片回落「未归属项目」。确认停用？', '确认停用', true, () => { p.enabled = false; toast('项目已停用'); });
+      await confirmRun('停用项目', '停用后「' + p.name + '」退出筛选选项集，其 harness 工程仓的卡片回落「未归属项目」。确认停用？', '确认停用', true, () => { p.enabled = false; toast('项目已停用'); });
     } else {
-      const clash = p.repos.map((r) => [r, PROJECTS.find((x) => x.enabled && x.id !== p.id && x.repos.includes(r))]).find((x) => x[1]);
+      const clash = [p.harness].concat(p.repos).map((r) => [r, PROJECTS.find((x) => x.enabled && x.id !== p.id && (x.harness === r || x.repos.includes(r)))]).find((x) => x[1]);
       if (clash) { toast('代码仓 ' + clash[0] + ' 已被启用中项目「' + clash[1].name + '」占用', 'error'); return; }
       busy(btn, true);
       await wait();
@@ -1130,7 +1117,7 @@
     if (FLOATS.has($('#ctxMenu'))) { closeFloat($('#ctxMenu')); return; }
     if (!$('#popconfirm').hidden) { settlePop(false); return; }
     if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
-    const modal = ['contactModal', 'mergeModal', 'newCardModal', 'nfModal', 'repoModal', 'projectModal', 'dayModal'].find((id) => OPEN.has(id));
+    const modal = ['contactModal', 'mergeModal', 'newCardModal', 'nfModal', 'projectModal', 'dayModal'].find((id) => OPEN.has(id));
     if (modal) { requestClose(modal); return; }
     if (FLOATS.size) { closeFloats(); return; }
     if (OPEN.has('filterDrawer')) { requestClose('filterDrawer'); return; }
@@ -1138,6 +1125,7 @@
   }
   function onSelect(key, v) {
     if (key === 'ncRepo') { NC.repo = v; NC.pick = ''; NC.q = ''; renderNewCard(); }
+    if (key === 'pjHarness' && PJ.draft) { PJ.draft.harness = v; renderProjects(); }
   }
   function markDrop(cell) {
     $$('.ac-calendar__cell.is-selected').forEach((x) => { if (x !== cell) x.classList.remove('is-selected'); });
@@ -1245,7 +1233,6 @@
     if (k === 'merge') startMode('merge');
     if (k === 'density') { S.density = el.dataset.density; store.set('fs.density', S.density); renderAll(); }
     if (k === 'nonfeature') { renderNF(); showLayer('nfModal'); }
-    if (k === 'repos') { renderRepos(); showLayer('repoModal'); }
     if (k === 'projects') { PJ.view = 'list'; renderProjects(); showLayer('projectModal'); }
     return true;
   });
@@ -1337,7 +1324,7 @@
     return true;
   });
   on('input', '#newCardModal [data-field="ncQ"]', (e, el) => { NC.q = el.value; $('#ncList').innerHTML = ncListHtml(); return true; });
-  on('input', '#projectModal [data-field]', (e, el) => { const k = { pjName: 'name', pjHarness: 'harness', pjNote: 'note' }[el.dataset.field]; if (k) PJ.draft[k] = el.value; return true; });
+  on('input', '#projectModal [data-field]', (e, el) => { const k = { pjName: 'name', pjNote: 'note' }[el.dataset.field]; if (k) PJ.draft[k] = el.value; return true; });
 
   on('contextmenu', '[data-card]', (e, el) => { const c = byNo(el.dataset.card); if (!c) return false; e.preventDefault(); openCtx(e, c); return true; });
   on('dragstart', '[data-card]', (e, el) => {

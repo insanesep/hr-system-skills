@@ -1,21 +1,22 @@
 /* 功能排期原型共用演示数据：工作台与卡片详情页读写同一份虚构样例，按浏览器会话保存，关闭页签或「重置演示数据」后恢复初始样例 */
 (function () {
   'use strict';
-  const KEY = 'fs.demo.v1';
+  const KEY = 'fs.demo.v2';
   const TODAY = '2026-10-17';
   const NOW = '2026-10-17 18:00';
   const ME = '张三';
   const USERS = ['张三', '李四', '王五', '赵六', '钱七', '孙八'];
   const LOG_LABEL = { CREATED: '创建卡片', EDITED: '编辑', SCHEDULED: '排期', UNSCHEDULED: '取消排期', RESCHEDULED: '调整排期', TAKEN: '领取开发', RELEASED: '释放开发', MARKED_DONE: '标记完成', REVERTED: '回退', DELETED: '删除' };
 
+  /* 云效组织内研发仓的演示快照：仓信息（名称 / 默认分支 / 分支）以云效 Codeup 为真源，页面经云效 API 实时获取 */
   const REPOS = [
-    { repo: 'busyming-skills', name: '鸣鸣很忙 Skills', branch: 'master', source: true, branches: ['master', 'feature/schedule-board'] },
-    { repo: 'busyming-skills-ydtj', name: '有点推荐 Skills', branch: 'master', source: true, branches: ['master'] },
-    { repo: 'busyming-skills-common', name: '公共 Skills', branch: 'master', source: true, branches: ['master'] },
-    { repo: 'busyming-snackingdom-web', name: '零食王国 Web 管理后台', branch: 'master', source: false, branches: ['master', 'release/2026-10', 'feature/feature-schedule'] },
-    { repo: 'busyming-snackingdom-app', name: '零食王国 App', branch: 'master', source: false, branches: ['master', 'release/2026-10'] },
-    { repo: 'busyming-snackingdom-devops', name: '零食王国 研发运维', branch: 'master', source: false, branches: ['master'] },
-    { repo: 'ocss-mall-admin', name: 'OCSS 商城后台', branch: 'master', source: false, branches: ['master', 'dev'] },
+    { repo: 'busyming-skills', name: '鸣鸣很忙 Skills', branch: 'master', branches: ['master', 'feature/schedule-board'] },
+    { repo: 'busyming-skills-ydtj', name: '有点推荐 Skills', branch: 'master', branches: ['master'] },
+    { repo: 'busyming-skills-common', name: '公共 Skills', branch: 'master', branches: ['master'] },
+    { repo: 'busyming-snackingdom-web', name: '零食王国 Web 管理后台', branch: 'master', branches: ['master', 'release/2026-10', 'feature/feature-schedule'] },
+    { repo: 'busyming-snackingdom-app', name: '零食王国 App', branch: 'master', branches: ['master', 'release/2026-10'] },
+    { repo: 'busyming-snackingdom-devops', name: '零食王国 研发运维', branch: 'master', branches: ['master'] },
+    { repo: 'ocss-mall-admin', name: 'OCSS 商城后台', branch: 'master', branches: ['master', 'dev'] },
   ];
   const COMMITS = {
     'busyming-skills': [
@@ -109,8 +110,9 @@
     return {
       cards,
       projects: [
-        { id: 'p1', name: '零食王国', harness: 'busyming-skills', repos: ['busyming-skills', 'busyming-snackingdom-web', 'busyming-snackingdom-app'], enabled: true, note: '门店 ERP 主线' },
-        { id: 'p2', name: 'OCSS 商城', harness: 'busyming-skills-ydtj', repos: ['busyming-skills-ydtj', 'ocss-mall-admin'], enabled: true, note: '' },
+        { id: 'p1', name: '零食王国', harness: 'busyming-skills', repos: ['busyming-snackingdom-web', 'busyming-snackingdom-app'], enabled: true, note: '门店 ERP 主线' },
+        { id: 'p2', name: 'OCSS 商城', harness: 'busyming-skills-ydtj', repos: ['ocss-mall-admin'], enabled: true, note: '' },
+        { id: 'p4', name: '公共组件', harness: 'busyming-skills-common', repos: [], enabled: true, note: '暂无独立代码服务仓' },
         { id: 'p3', name: '研发运维工具', harness: 'busyming-skills-devops', repos: ['busyming-snackingdom-devops', 'busyming-legacy-tools'], enabled: false, note: '已并入零食王国' },
       ],
       release: ['2026-10-15', '2026-10-29'],
