@@ -10,7 +10,7 @@
 
 - **页面路径**：`/rnd-report/member-output/home`
 - **权限编码**：
-  - 菜单：`M:RND:MEMBER_OUTPUT_REPORT`（仅授管理层与研发负责人）
+  - 菜单：`devhubAppMemberOutputReport`（仅授管理层与研发负责人）
 - **导航方式**：Push（工作台入口进入）
 - **页面类型**：列表页（分组卡片流）
 - **区块职责**：
@@ -40,7 +40,7 @@
 
 - **页面路径**：`/rnd-report/member-output/detail`
 - **权限编码**：
-  - 菜单：`M:RND:MEMBER_OUTPUT_REPORT`
+  - 菜单：`devhubAppMemberOutputReport`
 - **导航方式**：Push
 - **页面类型**：详情页（阅读型）
 - **区块职责**：

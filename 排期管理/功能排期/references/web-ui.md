@@ -20,10 +20,10 @@
 
 ### 研发排期工作台
 
-- **页面路径**：`/snackingdom/portal/feature-schedule`
+- **页面路径**：`/subapp/devhub/feature-schedule`
 - **权限编码**：
-  - 路由：`MENU:RND:MANAGE:FEATURE_SCHEDULE`
-  - 按钮：`BUTTON:FEATURE_SCHEDULE:EDIT`、`BUTTON:FEATURE_SCHEDULE:DELETE`、`BUTTON:FEATURE_SCHEDULE:MARK_DONE`、`BUTTON:FEATURE_SCHEDULE:RELEASE_DAY`，控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubFeatureSchedule`
+  - 按钮：`devhubFeatureScheduleEdit`、`devhubFeatureScheduleDelete`、`devhubFeatureScheduleMarkDone`、`devhubFeatureScheduleReleaseDay`，控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`order-list`
 - **埋点**：页面浏览由 SDK 自动上报；点击埋点的功能编码前缀为 `RND.MANAGE.FEATURE_SCHEDULE`，命名与登记规则见 [功能使用情况管理 business-rule §1.4](../../../成本管理/功能使用情况管理/references/business-rule.md#14-功能编码命名规范)
 - **区块职责**：
@@ -227,10 +227,10 @@
 ### 卡片详情页
 
 - **菜单名称**：功能排期管理下的详情子页，不单独占菜单
-- **页面路径**：功能排期管理（`/snackingdom/portal/feature-schedule`）下的详情子页，以卡片编号为路径参数直达，具体路由以前端路由配置为准
+- **页面路径**：功能排期管理（`/subapp/devhub/feature-schedule`）下的详情子页，以卡片编号为路径参数直达，具体路由以前端路由配置为准
 - **权限编码**：
-  - 路由：`MENU:RND:MANAGE:FEATURE_SCHEDULE`
-  - 按钮：`BUTTON:FEATURE_SCHEDULE:EDIT`、`BUTTON:FEATURE_SCHEDULE:DELETE`、`BUTTON:FEATURE_SCHEDULE:MARK_DONE`，控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubFeatureSchedule`
+  - 按钮：`devhubFeatureScheduleEdit`、`devhubFeatureScheduleDelete`、`devhubFeatureScheduleMarkDone`，控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`order-detail`
 - **埋点**：与研发排期工作台共用功能编码前缀 `RND.MANAGE.FEATURE_SCHEDULE`
 - **页面定位**：一屏回答「这张卡片现在什么状态、排在哪天、谁在开发、交付了哪些 commit」，并在本页推进状态、调整排期与维护卡片信息

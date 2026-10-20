@@ -10,7 +10,7 @@
 
 - **页面路径**：`/rnd-report/consistency/home`
 - **权限编码**：
-  - 菜单：`M:RND:CONSISTENCY_REPORT`
+  - 菜单：`devhubAppConsistencyReport`
 - **导航方式**：Push（工作台入口进入）
 - **页面类型**：列表页（分组卡片流）
 - **区块职责**：
@@ -42,7 +42,7 @@
 
 - **页面路径**：`/rnd-report/consistency/detail`
 - **权限编码**：
-  - 菜单：`M:RND:CONSISTENCY_REPORT`
+  - 菜单：`devhubAppConsistencyReport`
 - **导航方式**：Push
 - **页面类型**：详情页（阅读型）
 - **区块职责**：

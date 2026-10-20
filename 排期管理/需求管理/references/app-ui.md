@@ -45,10 +45,10 @@ App 端开放与仅 Web 可用的能力见 [permission-rules.md §4](permission-
 
 ### 我的需求列表
 
-- **页面路径**：App 内页面，由菜单 `M:RD:REQUIREMENT` 映射进入，无路由参数；具体路由以 App 菜单路由映射为准
+- **页面路径**：App 内页面，由菜单 `devhubAppRequirement` 映射进入，无路由参数；具体路由以 App 菜单路由映射为准
 - **权限编码**：
-  - 菜单：`M:RD:REQUIREMENT`
-  - 独占：`M:RD:REQUIREMENT_M`
+  - 菜单：`devhubAppRequirement`
+  - 独占：`devhubAppRequirementM`
 - **导航方式**：Push（从工作台入口进入）
 - **页面类型**：`list`
 - **区块职责**：
@@ -99,8 +99,8 @@ App 端开放与仅 Web 可用的能力见 [permission-rules.md §4](permission-
 
 - **页面路径**：App 内页面，以需求标识为参数直达，支持企微消息 Deep-link；具体路由以 App 菜单路由映射为准
 - **权限编码**：
-  - 菜单：`M:RD:REQUIREMENT`
-  - 独占：`M:RD:REQUIREMENT_M`
+  - 菜单：`devhubAppRequirement`
+  - 独占：`devhubAppRequirementM`
 - **导航方式**：Push
 - **页面类型**：`detail`
 - **区块职责**（自上而下）：
@@ -232,8 +232,8 @@ App 端开放与仅 Web 可用的能力见 [permission-rules.md §4](permission-
 
 - **页面路径**：App 内页面，无路由参数；从详情页「重新提交」进入时以需求标识为参数预填；具体路由以 App 菜单路由映射为准
 - **权限编码**：
-  - 菜单：`M:RD:REQUIREMENT`
-  - 独占：`M:RD:REQUIREMENT_M`
+  - 菜单：`devhubAppRequirement`
+  - 独占：`devhubAppRequirementM`
 - **导航方式**：Push
 - **页面类型**：`form`
 - **区块职责**：

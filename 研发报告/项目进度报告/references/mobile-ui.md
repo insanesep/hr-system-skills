@@ -11,7 +11,7 @@
 
 - **页面路径**：`/rnd-report/progress/home`
 - **权限编码**：
-  - 菜单：`M:RND:PROGRESS_REPORT`
+  - 菜单：`devhubAppProjectProgressReport`
 - **导航方式**：Push（工作台入口进入）
 - **页面类型**：列表页（项目筛选 + 周分组卡片流）
 - **区块职责**：
@@ -43,7 +43,7 @@
 
 - **页面路径**：`/rnd-report/progress/detail`
 - **权限编码**：
-  - 菜单：`M:RND:PROGRESS_REPORT`
+  - 菜单：`devhubAppProjectProgressReport`
 - **导航方式**：Push
 - **页面类型**：详情页（阅读型）
 - **区块职责**：

@@ -11,8 +11,8 @@
 
 - **页面路径**：`/rnd-report/member-output/list`
 - **权限编码**：
-  - 路由：`MENU:RND:MEMBER_OUTPUT_REPORT`（仅授管理层与研发负责人）
-  - 按钮：`BTN:RND_REPORT:UPLOAD`（手动补传）、`BTN:RND_REPORT:TRIGGER`（立即生成）
+  - 路由：`devhubMemberOutputReport`（仅授管理层与研发负责人）
+  - 按钮：`devhubReportUpload`（手动补传）、`devhubReportTrigger`（立即生成）
 - **页面类型**：列表页（Tab 双视角：按周索引 / 报告明细）
 - **区块职责**：
   - 工具栏（筛选 panel）：发报日期范围（RangePicker）、关键词（标题模糊）、查询 / 重置
@@ -59,7 +59,7 @@
 
 - **页面路径**：`/rnd-report/member-output/detail/:id`
 - **权限编码**：
-  - 路由：`MENU:RND:MEMBER_OUTPUT_REPORT`
+  - 路由：`devhubMemberOutputReport`
 - **页面类型**：详情页（阅读型）
 - **区块职责**：
   - 元信息头（首个 panel）：报告标题（h1 级）、发报日、所属周、统计区间（缺失显示 —）、来源（服务端生成 / 推送上报 / 手动补传）、当前版本（`v2 · 共 3 版`，多版时可下拉切换历史版本）、文件大小、入库时间、操作（获取原件 / 返回列表）

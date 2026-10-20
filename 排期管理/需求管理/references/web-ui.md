@@ -90,10 +90,10 @@
 ### 需求列表页
 
 - **菜单名称**：需求工单管理（侧边菜单与页面标题取此名）
-- **页面路径**：`/snackingdom/portal/requirement/list`；视角、筛选与页码同步至页面地址
+- **页面路径**：`/subapp/devhub/requirement/list`；视角、筛选与页码同步至页面地址
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT`
-  - 按钮：`BTN:REQUIREMENT:CREATE`（新增需求）、`BTN:REQUIREMENT:WITHDRAW`（撤回）、`BTN:REQUIREMENT:DELETE`（删除草稿）、`BTN:REQUIREMENT:EXPORT`（导出），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubRequirementList`
+  - 按钮：`devhubRequirementCreate`（新增需求）、`devhubRequirementWithdraw`（撤回）、`devhubRequirementDelete`（删除草稿）、`devhubRequirementExport`（导出），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`order-list`
 - **页面定位**：一屏回答「需求谁提的、卡在哪级、有没有排上开发」
 - **区块职责**：
@@ -174,10 +174,10 @@
 ### 需求详情页
 
 - **菜单名称**：需求工单管理下的详情子页，不单独占菜单
-- **页面路径**：需求工单管理（`/snackingdom/portal/requirement/list`）下的详情子页，以需求标识为路径参数直达，具体路由以前端路由配置为准；企微消息链接直达本页
+- **页面路径**：需求工单管理（`/subapp/devhub/requirement/list`）下的详情子页，以需求标识为路径参数直达，具体路由以前端路由配置为准；企微消息链接直达本页
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT`（服务端按可见范围二次校验，越权时展示「无权查看该需求」）
-  - 按钮：`BTN:REQUIREMENT:APPROVE`（通过）、`BTN:REQUIREMENT:REJECT`（驳回）、`BTN:REQUIREMENT:LINK_CARD`（关联 / 解除排期）、`BTN:REQUIREMENT:RESUBMIT`（重新提交）、`BTN:REQUIREMENT:WITHDRAW`（撤回）、`BTN:REQUIREMENT:ATTACH_UPLOAD`（审批中追加附件），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubRequirementList`（服务端按可见范围二次校验，越权时展示「无权查看该需求」）
+  - 按钮：`devhubRequirementApprove`（通过）、`devhubRequirementReject`（驳回）、`devhubRequirementLinkCard`（关联与解除排期）、`devhubRequirementResubmit`（重新提交）、`devhubRequirementWithdraw`（撤回）、`devhubRequirementAttachUpload`（审批中追加附件），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`order-detail`
 - **区块职责**（自上而下）：
   - 需求信息卡：
@@ -347,10 +347,10 @@
 
 - **页面形态**：新增与编辑（编辑草稿或驳回后修改）共用同一表单页；**本页仅用于内部提交**，提交人与部门取登录态，不提供手填入口，外部提交走公开 H5
 - **菜单名称**：需求工单管理下的子页，页面标题为「新增需求」或「编辑需求」
-- **页面路径**：需求工单管理（`/snackingdom/portal/requirement/list`）下的新增子页；编辑态以需求标识为路径参数直达，具体路由以前端路由配置为准
+- **页面路径**：需求工单管理（`/subapp/devhub/requirement/list`）下的新增子页；编辑态以需求标识为路径参数直达，具体路由以前端路由配置为准
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT`
-  - 按钮：`BTN:REQUIREMENT:CREATE`（提交审批）、`BTN:REQUIREMENT:SAVE_DRAFT`（暂存草稿）、`BTN:REQUIREMENT:ATTACH_UPLOAD`（上传附件）、`BTN:REQUIREMENT:ATTACH_DELETE`（删除附件），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubRequirementList`
+  - 按钮：`devhubRequirementCreate`（提交审批）、`devhubRequirementSaveDraft`（暂存草稿）、`devhubRequirementAttachUpload`（上传附件）、`devhubRequirementAttachDelete`（删除附件），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`order-form`
 - **区块职责**：
   - 顶部：页面标题「新增需求」/「编辑需求」；编辑态展示需求编号与当前状态；已驳回进入编辑时顶部警示条展示驳回意见，提示「请按驳回意见修改后重新提交」
@@ -413,10 +413,10 @@
 ### 外链管理页
 
 - **菜单名称**：需求外链管理
-- **页面路径**：`/snackingdom/portal/requirement/public-link`；筛选条件与页码同步至页面地址
+- **页面路径**：`/subapp/devhub/requirement/public-link`；筛选条件与页码同步至页面地址
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT_LINK`
-  - 按钮：`BTN:REQUIREMENT_LINK:CREATE`（生成外链）、`BTN:REQUIREMENT_LINK:REVOKE`（撤销），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubRequirementPublicLink`
+  - 按钮：`devhubRequirementLinkCreate`（生成外链）、`devhubRequirementLinkRevoke`（撤销），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
   - 「看全部 / 只看本人」与「可否撤销他人链接」按管理员口径判定，不另发权限码
 - **页面类型**：`order-list`
 - **页面定位**：向外采集有点推荐需求的外链台账——一屏回答「发给了谁、对方看了没、提交了什么」；规则见 [other-rule-public-link.md](other-rule-public-link.md)
@@ -505,10 +505,10 @@
 ### 审批链配置页
 
 - **菜单名称**：需求审批配置（仅管理员可见菜单，服务端二次校验）
-- **页面路径**：`/snackingdom/portal/requirement/config`；一级、二级 Tab 选中值同步至页面地址
+- **页面路径**：`/subapp/devhub/requirement/config`；一级、二级 Tab 选中值同步至页面地址
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT_CONFIG`
-  - 按钮：`BTN:REQUIREMENT_CONFIG:CREATE`、`BTN:REQUIREMENT_CONFIG:EDIT`、`BTN:REQUIREMENT_CONFIG:DELETE`、`BTN:REQUIREMENT_CONFIG:CHAT_SET`（群消息配置）、`BTN:REQUIREMENT_STAT:EXPORT`（导出统计），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubRequirementConfig`
+  - 按钮：`devhubRequirementConfigCreate`、`devhubRequirementConfigEdit`、`devhubRequirementConfigDelete`、`devhubRequirementConfigChatSet`（群消息配置）、`devhubRequirementStatExport`（导出统计），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`archive-list`
 - **页面定位**：按归属维护审批链与群消息映射，并查看该归属的审批统计；规则见 [business-rule.md §3](business-rule.md#3-审批链配置规则)
 - **区块职责**：
@@ -613,9 +613,9 @@
 ### SLA 配置页
 
 - **菜单名称**：SLA规则配置（与 SLA 仪表盘在侧边栏各占一行）
-- **页面路径**：`/snackingdom/portal/requirement/sla-config`；筛选条件同步至页面地址
+- **页面路径**：`/subapp/devhub/requirement/sla-config`；筛选条件同步至页面地址
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT_SLA_CONFIG`
+  - 路由：`devhubRequirementSlaConfig`
   - 按钮：无独立按钮码；新增、编辑、删除、启停均要求管理员身份，仅持有本菜单而非管理员时只读展示，全部写操作按钮不渲染（[permission-rules.md §1](permission-rules.md#1-权限编码)）
 - **页面类型**：`archive-list`
 - **页面定位**：审批超时催办阈值维护——一屏回答「哪类需求多久没审就催、多久就升级」；规则见 [other-rule-sla.md §3](other-rule-sla.md#3-差异化配置)
@@ -692,10 +692,10 @@
 ### SLA 仪表盘页
 
 - **菜单名称**：需求SLA看板
-- **页面路径**：`/snackingdom/portal/requirement/sla-dashboard`；筛选条件同步至页面地址
+- **页面路径**：`/subapp/devhub/requirement/sla-dashboard`；筛选条件同步至页面地址
 - **权限编码**：
-  - 路由：`MENU:RND:REQUIREMENT_SLA`
-  - 按钮：`BTN:REQUIREMENT_STAT:EXPORT`（导出，复用审批统计导出权限码），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
+  - 路由：`devhubRequirementSlaDashboard`
+  - 按钮：`devhubRequirementStatExport`（导出，复用审批统计导出权限码），控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`report`
 - **页面定位**：审批时效全景——一屏回答「哪条业务线审得慢、卡在哪一级、有没有在变好」；指标口径见 [other-rule-sla.md §6](other-rule-sla.md#6-sla-仪表盘指标)
 - **区块职责**（自上而下）：

@@ -11,14 +11,14 @@
 
 - **页面路径**：`/rnd-report/fault/list`
 - **权限编码**：
-  - 路由：`MENU:RND:FAULT_REPORT`
-  - 按钮：`BTN:RND:FAULT:EDIT`（登记 / 编辑）、`BTN:RND:FAULT:REVIEW`（提交复盘 / 打回）、`BTN:RND:FAULT:CLOSE`（闭环确认）
+  - 路由：`devhubFaultReport`
+  - 按钮：`devhubFaultEdit`（登记 / 编辑）、`devhubFaultReview`（提交复盘 / 打回）、`devhubFaultClose`（闭环确认）
 - **页面类型**：`order-list`
 - **区块职责**：
   - 工具栏（筛选 panel）：状态（Select：处理中 / 待复盘 / 复盘中 / 已闭环，默认全部）、定级（Select：P1 / P2 / P3 / P4，默认全部）、发生日期范围（RangePicker）、负责人（人员选择）、关键词（标题模糊）、查询 / 重置
   - KPI 区（筛选后 / 表格前）：处理中、待复盘、逾期未复盘（P1 / P2 恢复超 3 个工作日未复盘）、本月新增
-  - 主体区（表格 panel）：列：故障标题、定级 Tag（P1 红 / P2 橙 / P3 蓝 / P4 灰）、状态 Tag、负责人、发生时间、恢复时间（未恢复显示 —）、改进措施进度（x/y，未进入复盘显示 —）、操作（查看 / 编辑；编辑仅持 `BTN:RND:FAULT:EDIT` 且未闭环可见）；P1 / P2 恢复超 3 个工作日未复盘的行，行首红显「逾期未复盘」标记；存在逾期未完成改进措施的行同列高亮；空态 AcEmpty「该条件下暂无故障」
-  - 工具栏右侧：「+ 故障登记」主按钮（仅持 `BTN:RND:FAULT:EDIT` 可见）→ 故障登记弹窗
+  - 主体区（表格 panel）：列：故障标题、定级 Tag（P1 红 / P2 橙 / P3 蓝 / P4 灰）、状态 Tag、负责人、发生时间、恢复时间（未恢复显示 —）、改进措施进度（x/y，未进入复盘显示 —）、操作（查看 / 编辑；编辑仅持 `devhubFaultEdit` 且未闭环可见）；P1 / P2 恢复超 3 个工作日未复盘的行，行首红显「逾期未复盘」标记；存在逾期未完成改进措施的行同列高亮；空态 AcEmpty「该条件下暂无故障」
+  - 工具栏右侧：「+ 故障登记」主按钮（仅持 `devhubFaultEdit` 可见）→ 故障登记弹窗
 - **布局引用**：`参见原型 assets/web/fault-list.html`（DOM 结构依据：`busyming-skills-design/.skills/page-blueprint/skeletons/web/list-page.vue.tpl`）
 
 #### 导航关系
@@ -42,7 +42,7 @@
 ### 故障登记 / 编辑弹窗
 
 - **打开方式**：故障列表工具栏「+ 故障登记」/ 行内「编辑」/ 故障详情信息头「编辑」
-- **权限编码**：`BTN:RND:FAULT:EDIT`
+- **权限编码**：`devhubFaultEdit`
 - **弹窗类型**：表单弹窗（登记态标题「故障登记」；编辑态标题「编辑故障」，预填全部字段）
 - **表单字段**：
   - 标题（必填，单行，≤50 字）
@@ -85,11 +85,11 @@
 
 - **页面路径**：`/rnd-report/fault/detail/:id`
 - **权限编码**：
-  - 路由：`MENU:RND:FAULT_REPORT`
-  - 按钮：`BTN:RND:FAULT:EDIT`（编辑 / 追加处置记录 / 添加与移除证据）、`BTN:RND:FAULT:REVIEW`（提交复盘 / 打回）、`BTN:RND:FAULT:CLOSE`（闭环确认）
+  - 路由：`devhubFaultReport`
+  - 按钮：`devhubFaultEdit`（编辑 / 追加处置记录 / 添加与移除证据）、`devhubFaultReview`（提交复盘 / 打回）、`devhubFaultClose`（闭环确认）
 - **页面类型**：`order-detail`（操作型）
 - **区块职责**：
-  - 信息头（首个 panel）：故障标题（h1 级）+ 定级 Tag + 状态 Tag；负责人、发生 / 发现 / 恢复时间（未恢复显示 —）、关联项目、现象描述、影响范围；操作（编辑，仅持 `BTN:RND:FAULT:EDIT` 且未闭环可见）；P1 / P2 恢复超 3 个工作日未复盘时头区红显「逾期未复盘」警示
+  - 信息头（首个 panel）：故障标题（h1 级）+ 定级 Tag + 状态 Tag；负责人、发生 / 发现 / 恢复时间（未恢复显示 —）、关联项目、现象描述、影响范围；操作（编辑，仅持 `devhubFaultEdit` 且未闭环可见）；P1 / P2 恢复超 3 个工作日未复盘时头区红显「逾期未复盘」警示
   - 处置过程区（panel）：处置时间线条目列表（时间 + 记录人 + 内容，倒序）；未闭环可追加记录（多行输入 + 提交）
   - 运维证据关联区（panel）：证据卡片列表，证据类型 = 错误日志指纹报表项 / 服务器监控快照 / 黑灯工厂工单；每卡显示类型 Tag + 摘要 + 「跳转溯源」链接（跳转对应运维模块详情；证据只读引用，状态变更不回写故障单）；未闭环支持「添加关联」（选择类型 + 粘贴证据标识 / 链接 + 备注）与卡片「移除」
   - 复盘区（panel）：状态为待复盘 / 复盘中时展示表单——

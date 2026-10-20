@@ -11,8 +11,8 @@
 
 - **页面路径**：`/rnd-report/project-config`
 - **权限编码**：
-  - 路由：`MENU:RND:REPORT_TRIGGER`
-  - 按钮：`BTN:RND_REPORT:TRIGGER`（编辑扩展 / 启停）
+  - 路由：`devhubReportTriggerConfig`
+  - 按钮：`devhubReportTrigger`（编辑扩展 / 启停）
 - **页面类型**：列表页（配置表格 + 编辑弹窗）
 - **区块职责**：
   - 工具栏（筛选 panel）：状态（全部 / 已配置 / 待配置 / 已停用）、关键词（项目 key / 名称模糊）、查询 / 重置
@@ -57,8 +57,8 @@
 
 - **页面路径**：`/rnd-report/trigger-config`
 - **权限编码**：
-  - 路由：`MENU:RND:REPORT_TRIGGER`
-  - 按钮：`BTN:RND_REPORT:TRIGGER`（编辑配置 / 启停 / 立即生成 / 失败重试）
+  - 路由：`devhubReportTriggerConfig`
+  - 按钮：`devhubReportTrigger`（编辑配置 / 启停 / 立即生成 / 失败重试）
 - **页面类型**：列表页（配置表格 + 编辑弹窗 + 生成记录抽屉）
 - **区块职责**：
   - 工具栏（筛选 panel）：报告类型（单选：全部 / 研发周报 / 文档一致性校验 / 项目进度报告）、项目（单选，选项 = 扩展已启用的项目，来自「报告项目配置」生效数据）、状态（全部 / 启用 / 停用）、查询 / 重置

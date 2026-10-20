@@ -50,10 +50,10 @@
 
 | 粒度 | 编码 |
 | ---- | ---- |
-| 菜单 | `MENU:RND:FAULT_REPORT` |
-| 登记 / 编辑 / 追加处置记录 / 添加与移除证据 | `BTN:RND:FAULT:EDIT` |
-| 复盘提交与打回 | `BTN:RND:FAULT:REVIEW` |
-| 闭环确认 | `BTN:RND:FAULT:CLOSE` |
+| 菜单 | `devhubFaultReport` |
+| 登记、编辑、追加处置记录、添加与移除证据 | `devhubFaultEdit` |
+| 复盘提交与打回 | `devhubFaultReview` |
+| 闭环确认 | `devhubFaultClose` |
 
 ## 8. 关联模块分工
 

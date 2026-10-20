@@ -6,43 +6,43 @@
 
 ### 1.1 Web
 
-菜单位于「研发 / 需求管理」分组（分组编码 `REQUIREMENT:MANAGE`），下挂 5 个菜单，侧边栏各占一行。
+菜单位于「研发 / 需求管理」分组（分组编码 `devhubRequirementManage`），下挂 5 个菜单，侧边栏各占一行。
 
 | 类型 | 编码 | 名称 | 控制的操作 |
 |------|------|------|-----------|
-| 菜单 | `MENU:RND:REQUIREMENT` | 需求工单管理 | 需求列表、详情、提交 / 编辑页；路由 `/snackingdom/portal/requirement/list` |
-| 按钮 | `BTN:REQUIREMENT:CREATE` | 新增需求/提交审批 | 新增需求、提交审批 |
-| 按钮 | `BTN:REQUIREMENT:SAVE_DRAFT` | 暂存草稿 | 暂存草稿 |
-| 按钮 | `BTN:REQUIREMENT:ATTACH_UPLOAD` | 上传需求附件 | 提交 / 编辑页上传附件、详情页审批中追加附件 |
-| 按钮 | `BTN:REQUIREMENT:ATTACH_DELETE` | 删除需求附件 | 草稿态删除附件 |
-| 按钮 | `BTN:REQUIREMENT:WITHDRAW` | 撤回 | 撤回 |
-| 按钮 | `BTN:REQUIREMENT:DELETE` | 删除草稿 | 删除草稿 |
-| 按钮 | `BTN:REQUIREMENT:EXPORT` | 列表导出 | 需求列表导出 |
-| 按钮 | `BTN:REQUIREMENT:APPROVE` | 审批通过 | 审批通过 |
-| 按钮 | `BTN:REQUIREMENT:REJECT` | 审批驳回 | 驳回 |
-| 按钮 | `BTN:REQUIREMENT:LINK_CARD` | 关联/解除排期 | 关联排期、解除关联、重新关联 |
-| 按钮 | `BTN:REQUIREMENT:RESUBMIT` | 重新提交 | 驳回后重新提交 |
-| 菜单 | `MENU:RND:REQUIREMENT_CONFIG` | 需求审批配置 | 审批链配置页；路由 `/snackingdom/portal/requirement/config` |
-| 按钮 | `BTN:REQUIREMENT_CONFIG:CREATE` | 新增审批配置 | 新增配置 |
-| 按钮 | `BTN:REQUIREMENT_CONFIG:EDIT` | 编辑/启停审批配置 | 编辑配置、启用 / 停用 |
-| 按钮 | `BTN:REQUIREMENT_CONFIG:DELETE` | 删除审批配置 | 删除配置 |
-| 按钮 | `BTN:REQUIREMENT_CONFIG:CHAT_SET` | 设置业务线群通知 | 群消息配置 |
-| 按钮 | `BTN:REQUIREMENT_STAT:EXPORT` | 导出需求统计 | 审批统计导出、SLA 仪表盘导出 |
-| 菜单 | `MENU:RND:REQUIREMENT_LINK` | 需求外链管理 | 外链管理页；路由 `/snackingdom/portal/requirement/public-link` |
-| 按钮 | `BTN:REQUIREMENT_LINK:CREATE` | 生成需求外链 | 生成外链 |
-| 按钮 | `BTN:REQUIREMENT_LINK:REVOKE` | 撤销需求外链 | 撤销外链 |
-| 菜单 | `MENU:RND:REQUIREMENT_SLA` | 需求SLA看板 | SLA 仪表盘；路由 `/snackingdom/portal/requirement/sla-dashboard` |
-| 菜单 | `MENU:RND:REQUIREMENT_SLA_CONFIG` | SLA规则配置 | SLA 配置页；路由 `/snackingdom/portal/requirement/sla-config`；写操作额外要求管理员 |
+| 菜单 | `devhubRequirementList` | 需求工单管理 | 需求列表、详情、提交 / 编辑页；路由 `/subapp/devhub/requirement/list` |
+| 按钮 | `devhubRequirementCreate` | 新增需求与提交审批 | 新增需求与提交审批 |
+| 按钮 | `devhubRequirementSaveDraft` | 暂存草稿 | 暂存草稿 |
+| 按钮 | `devhubRequirementAttachUpload` | 上传需求附件 | 提交 / 编辑页上传附件、详情页审批中追加附件 |
+| 按钮 | `devhubRequirementAttachDelete` | 删除需求附件 | 草稿态删除附件 |
+| 按钮 | `devhubRequirementWithdraw` | 撤回 | 撤回 |
+| 按钮 | `devhubRequirementDelete` | 删除草稿 | 删除草稿 |
+| 按钮 | `devhubRequirementExport` | 列表导出 | 需求列表导出 |
+| 按钮 | `devhubRequirementApprove` | 审批通过 | 审批通过 |
+| 按钮 | `devhubRequirementReject` | 审批驳回 | 驳回 |
+| 按钮 | `devhubRequirementLinkCard` | 关联与解除排期 | 关联排期、解除关联、重新关联 |
+| 按钮 | `devhubRequirementResubmit` | 重新提交 | 驳回后重新提交 |
+| 菜单 | `devhubRequirementConfig` | 需求审批配置 | 审批链配置页；路由 `/subapp/devhub/requirement/config` |
+| 按钮 | `devhubRequirementConfigCreate` | 新增审批配置 | 新增配置 |
+| 按钮 | `devhubRequirementConfigEdit` | 编辑与启停审批配置 | 编辑配置、启用 / 停用 |
+| 按钮 | `devhubRequirementConfigDelete` | 删除审批配置 | 删除配置 |
+| 按钮 | `devhubRequirementConfigChatSet` | 设置业务线群通知 | 群消息配置 |
+| 按钮 | `devhubRequirementStatExport` | 导出需求统计 | 审批统计导出、SLA 仪表盘导出 |
+| 菜单 | `devhubRequirementPublicLink` | 需求外链管理 | 外链管理页；路由 `/subapp/devhub/requirement/public-link` |
+| 按钮 | `devhubRequirementLinkCreate` | 生成需求外链 | 生成外链 |
+| 按钮 | `devhubRequirementLinkRevoke` | 撤销需求外链 | 撤销外链 |
+| 菜单 | `devhubRequirementSlaDashboard` | 需求SLA看板 | SLA 仪表盘；路由 `/subapp/devhub/requirement/sla-dashboard` |
+| 菜单 | `devhubRequirementSlaConfig` | SLA规则配置 | SLA 配置页；路由 `/subapp/devhub/requirement/sla-config`；写操作额外要求管理员 |
 
-- 本模块的「管理员」指持有 `MENU:RND:REQUIREMENT_CONFIG` 的用户，由服务端统一判定；外链台账看全部、撤销他人外链、SLA 配置写操作均按此口径判定，不另发权限码
+- 本模块的「管理员」指持有 `devhubRequirementConfig` 的用户，由服务端统一判定；外链台账看全部、撤销他人外链、SLA 配置写操作均按此口径判定，不另发权限码
 - 手动催办、AI 方案确认 / 补材 / 重新生成不单独发按钮码：手动催办限管理员与实施负责人，见 [other-rule-sla.md §5](other-rule-sla.md#5-滞留需求看板)；AI 方案操作限当前级次审批人，见 [other-rule-ai-plan.md §5](other-rule-ai-plan.md#5-确认摘要与确认并通过)
 
 ### 1.2 App
 
 | 类型 | 编码 | 名称 | 控制的操作 |
 |------|------|------|-----------|
-| 菜单 | `M:RD:REQUIREMENT` | 需求管理 | App 工作台「设置」分组下的需求管理入口：我的需求列表、需求详情、需求提交 |
-| 菜单 | `M:RD:REQUIREMENT_M` | 需求管理(App 独占) | App 独占叶子菜单 |
+| 菜单 | `devhubAppRequirement` | 需求管理 | App 工作台「设置」分组下的需求管理入口：我的需求列表、需求详情、需求提交 |
+| 菜单 | `devhubAppRequirementM` | 需求管理(App 独占) | App 独占叶子菜单 |
 
 - 公开 H5 不进登录鉴权体系，无权限编码；准入控制见 [other-rule-public-link.md §4](other-rule-public-link.md#4-安全与防刷)
 
@@ -54,8 +54,8 @@
 | 邀约人（内部任一拥有外链菜单权限的用户） | 生成外链、查看与撤销本人生成的外链 |
 | 业务线负责人 | L1 审批通过（可调整优先级）/ 驳回 |
 | 实施负责人 | L2 审批通过（可调整优先级）/ 驳回；滞留需求手动催办 |
-| 产品经理 | L3 审批通过（可调整优先级）/ 驳回；关联 / 解除排期卡片；开启 AI 辅助后确认方案、请求补充材料、重新生成方案 |
-| 管理员 | 配置审批链与 SLA、审批链重建、导出统计、查看与撤销全部外链、关联 / 解除排期、滞留需求手动催办 |
+| 产品经理 | L3 审批通过（可调整优先级）/ 驳回；关联与解除排期卡片；开启 AI 辅助后确认方案、请求补充材料、重新生成方案 |
+| 管理员 | 配置审批链与 SLA、审批链重建、导出统计、查看与撤销全部外链、关联与解除排期、滞留需求手动催办 |
 | 外部提交人 | 仅凭有效外链提交需求（免登录），无任何查询与管理权限 |
 
 ## 3. 数据可见范围

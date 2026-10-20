@@ -113,7 +113,7 @@
 
 ### 5.4 手动补传（兜底通道）
 
-- 仅 Web 端开放，权限 `BTN:RND_REPORT:UPLOAD`
+- 仅 Web 端开放，权限 `devhubReportUpload`
 - 上传时系统按文件名自动识别类型与发报日；识别失败时由用户在表单中手动指定
 - 手动补传记录上传人，来源标记为「手动补传」
 
@@ -149,14 +149,14 @@
 
 | 权限点 | 编码 |
 |--------|------|
-| 报告配置菜单（报告项目配置 + 报告触发配置） | `MENU:RND:REPORT_TRIGGER` |
-| 研发周报菜单（列表 + 详情） | `MENU:RND:MEMBER_OUTPUT_REPORT`（仅授管理层与研发负责人） |
-| 文档一致性报告菜单（列表 + 详情） | `MENU:RND:CONSISTENCY_REPORT` |
-| 项目进度报告菜单（列表 + 详情） | `MENU:RND:PROGRESS_REPORT` |
-| 故障报告菜单（列表 + 详情） | `MENU:RND:FAULT_REPORT` |
-| 手动补传按钮 | `BTN:RND_REPORT:UPLOAD` |
-| 扩展维护 / 触发配置管理 / 立即生成 / 失败重试 | `BTN:RND_REPORT:TRIGGER` |
-| App 菜单（按报告类型） | `M:RND:MEMBER_OUTPUT_REPORT` / `M:RND:CONSISTENCY_REPORT` / `M:RND:PROGRESS_REPORT` |
+| 报告配置菜单（报告项目配置 + 报告触发配置） | `devhubReportTriggerConfig` |
+| 研发周报菜单（列表 + 详情） | `devhubMemberOutputReport`（仅授管理层与研发负责人） |
+| 文档一致性报告菜单（列表 + 详情） | `devhubConsistencyReport` |
+| 项目进度报告菜单（列表 + 详情） | `devhubProjectProgressReport` |
+| 故障报告菜单（列表 + 详情） | `devhubFaultReport` |
+| 手动补传按钮 | `devhubReportUpload` |
+| 扩展维护触发配置管理立即生成失败重试 | `devhubReportTrigger` |
+| App 菜单（按报告类型） | `devhubAppMemberOutputReport` / `devhubAppConsistencyReport` / `devhubAppProjectProgressReport` |
 
 - 权限初始化仅登记权限点，**不指定角色**；授权范围由权限体系侧另行配置
 - 版本切换、原始文件获取与生成记录查看随菜单查看同权，不单独设权限点
