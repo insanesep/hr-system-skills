@@ -28,7 +28,7 @@ description: "生成研发周报（人员产出维度，由模型直接执行，
 
 **配置来源**：
 
-- **服务端生成会话**：工作区、API 基址与令牌等配置全部由服务端注入会话上下文，不读本机文件
+- **服务端生成会话**：工作区即会话 cwd（由 agent 服务按调用方指定的工作区名分配）；仓库清单、云效访问凭证、排期与用量数据全部由调用方在会话数据中提供，不读本机文件
 - **外部会话**：用 Read 读取生成环境约定的 `config.yaml` 并提取：`workspace_dir`、`output.dir`、`projects`（各项目 SKILL 仓库 / skill_roots / 代码仓库清单 / code_branch_policy）、`api.devops_base_url`、`api.foundation_base_url`、`dev_report.ingest_token`、`codeup`（clone 凭证，仅仓库缺失时使用）
 
 **统计窗口（周报与 API 拉数共用）**：最近一个以周日收尾的周一~周日。
@@ -46,14 +46,21 @@ description: "生成研发周报（人员产出维度，由模型直接执行，
 
 ### Step 2 同步仓库
 
-对 `WS` 下每个参与仓库：仓库缺失时按会话配置 `codeup` 凭证浅克隆（命令不内嵌，按生成环境约定执行）。
+- **外部会话**：对 `WS` 下每个参与仓库，仓库缺失时按会话配置 `codeup` 凭证浅克隆（命令不内嵌，按生成环境约定执行）。
+- **服务端生成会话**：工作区即会话 cwd（起始为空）。仓库清单与云效访问凭证由调用方在会话数据「代码仓库清单」中提供，逐仓执行：
+  1. 解析仓库路径：`GET {base-url}/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}`（请求头 `x-yunxiao-token: {令牌}`），取响应 `pathWithNamespace`；解析失败写一行说明并跳过该仓，不得猜测路径
+  2. 克隆到当前目录：`git clone https://oauth2:{令牌}@codeup.aliyun.com/{pathWithNamespace}.git`（`pathWithNamespace` 已含组织前缀，不要再拼 orgId；需覆盖全分支，保证窗口内历史完整；仓过大可用 `--shallow-since={窗口起点}` 截断历史，但须校验窗口内计数完整）
+  3. 目录已存在（周期间复用工作区）：进入仓库执行 `git fetch --all --prune` 增量同步，不重复克隆
+  4. 令牌敏感：仅允许用于解析与克隆，禁止写入报告正文、禁止在输出中原样打印（含 remote url 回显）
 
 ### Step 3 采集数据
 
-- 脚本输出为权威计数（含 0 提交仓库），直接引用，**严禁自己再跑 git log 重新计数**
-- repo 列表 = 各项目 SKILL 仓库 + 代码仓库 + extra 仓库（会话配置 `projects` / `extra`）
-- 排期双卡（功能排期 / 实施排期）走 MCP 工具，调用口径、字段与容错见共享契约 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)（大响应自动落盘后读取分析）
-- 其余 4 个用量数据源（Qoder 成员用量、Qoder 模型用量、功能使用量、MCP 工具用量）走 HTTP 接口调用，见 [`api-endpoints.md`](api-endpoints.md)（响应较大时先落盘再读取分析）
+- **Git 提交计数**：
+  - 外部会话：`collect_commits.sh` 脚本输出为权威计数（含 0 提交仓库），直接引用，**严禁自己再跑 git log 重新计数**
+  - 服务端会话：无采集脚本，由 agent 在工作区内自行采集，纪律不变——全分支（`git log --all`）、SHA 全局去重、剔除 merge（`--no-merges`）、窗口过滤（`--since`/`--until`）；各仓小计必须与总计打平，窗口内提交为 0 的仓标注 0
+- repo 列表：外部会话 = 各项目 SKILL 仓库 + 代码仓库 + extra 仓库（会话配置 `projects` / `extra`）；服务端会话 = 会话数据「代码仓库清单」（含项目归属分组）
+- 排期双卡（功能排期 / 实施排期）：外部会话走 MCP 工具，调用口径、字段与容错见共享契约 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)（大响应自动落盘后读取分析）；服务端会话由调用方在会话数据中直接提供
+- 其余 4 个用量数据源（Qoder 成员用量、Qoder 模型用量、功能使用量、MCP 工具用量）：外部会话走 HTTP 接口调用，见 [`api-endpoints.md`](api-endpoints.md)（响应较大时先落盘再读取分析）；服务端会话暂由调用方在会话数据中直接提供，**后续 MCP 用量能力建成后改由 agent 直接调用 MCP 采集**
 
 ### Step 4 生成报告
 
@@ -63,15 +70,15 @@ description: "生成研发周报（人员产出维度，由模型直接执行，
 ### Step 5 写文件 + 落库 / 推送
 
 - 写入输出目录，文件名严格遵循：`weekly_dev_yyyyMMdd.md`（服务端按文件名解析类型与日期）
-- **服务端生成会话**：产出文件回传服务端，由服务端校验、渲染并直接落库（版本递增、周索引），本 skill 不调用推送接口
+- **服务端生成会话**：报告正文作为会话最终输出直接回传服务端，由服务端校验、渲染并直接落库（版本递增、周索引），本 skill 不调用推送接口；同时在工作区按同名文件留档便于追溯
 - **外部会话（旁路）**：推送契约（multipart 表单 + 鉴权头，幂等）见 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)；推送后把 `reportId / versionNo / duplicated` 回告用户；推送失败不删本地文件，把错误信息告知用户
 
 ## 硬约束汇总
 
 1. 工作区硬约束：只操作 `WS` 内路径（见 Step 1）
-2. 计数纪律：提交数以约定计数脚本输出为唯一权威（脚本由生成环境提供，不随仓维护）
-3. 数据容错：任一 API 失败写一行说明，严禁编造数字
-4. token 只从会话配置（服务端注入或 config.yaml）读取使用，禁止写进报告或 skill 文件
+2. 计数纪律：外部会话提交数以约定计数脚本输出为唯一权威（脚本由生成环境提供，不随仓维护）；服务端会话由 agent 自行采集但纪律不变（全分支、SHA 去重、剔 merge、窗口过滤、小计与总计打平）
+3. 数据容错：任一 API / 仓库克隆失败写一行说明，严禁编造数字
+4. token 只从会话配置（服务端会话数据或 config.yaml）读取使用，禁止写进报告或 skill 文件
 
 ## Resources
 

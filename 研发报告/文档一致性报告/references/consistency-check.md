@@ -11,6 +11,8 @@
 2. 查找功能实现只在本项目代码仓库内搜索；**严禁**因在别的项目仓库搜到同名类/目录就判定「已实现」
 3. 本项目代码仓库内确实找不到实现时按「缺失」判定，并说明已搜索的仓库与关键词
 
+**服务端生成会话的仓库来源**：工作区即会话 cwd。代码仓清单与云效访问凭证由调用方在会话数据中提供，逐仓解析克隆：`GET {base-url}/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}`（请求头 `x-yunxiao-token`）取 `pathWithNamespace`，再 `git clone https://oauth2:{令牌}@codeup.aliyun.com/{pathWithNamespace}.git`（`pathWithNamespace` 已含组织前缀，不要再拼 orgId；目录已存在则 `git fetch --all --prune`）；令牌仅用于解析与克隆，禁止写入报告正文、禁止原样打印。SKILL 仓库若会话数据给出 repoId 同样克隆；仅给出本地路径时按本地路径扫描。
+
 ## 检查范围划定（lookback_days 语义）
 
 `lookback_days` **仅用于划定「本次检查哪些模块」**，依据是 **SKILL 仓库中的变更模块**，不是限制代码检查时间窗口。
