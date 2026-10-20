@@ -6,9 +6,9 @@
 
 ### Qoder 用量分析
 
-- **页面路径**：`/rnd/qoder-usage`
+- **页面路径**：`/subapp/devhub/rnd/qoder-usage`
 - **权限编码**：
-  - 路由：`MENU:RND:QODER_USAGE`
+  - 路由：`devhubQoderUsage`
 - **页面类型**：`report`
 - **区块职责**：
   - 筛选区（公共筛选，驱动全部视图）：日期范围选择器（单个范围控件，默认前 7 天，不含今天，跨度上限见 business-rule.md §1）、成员多选下拉（默认「全部成员」）、查询按钮（主色）、重置按钮

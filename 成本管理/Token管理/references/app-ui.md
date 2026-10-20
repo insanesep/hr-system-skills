@@ -8,8 +8,8 @@
 
 - **页面路径**：`/rnd/qoder-usage`
 - **权限编码**：
-  - 菜单：`M:RND:QODER_USAGE`
-  - 独占：`M:RND:QODER_USAGE_M`
+  - 菜单：`devhubAppQoderUsage`
+  - 独占：`devhubAppQoderUsageM`
 - **导航方式**：Push（首页工作台图标进入）
 - **页面类型**：`dashboard`
 - **页面元素与 Web 端保持一致**（区块集合同 web-ui.md，移动端仅做布局适配）：
