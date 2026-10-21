@@ -5,7 +5,7 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 
 # 人员产出报告
 
-面向管理层的人员维度周期性产出报告：以 git 提交事实与排期卡片流转事实为数据源，按统计周期呈现「谁交付了什么、时效如何」，替代凭印象的绩效复盘。报告分两类：**研发周报**（周复盘，双端可查）与**研发日报**（当日实时快照，仅 Web 端）。
+面向管理层的人员维度周期性产出报告：以 git 提交事实与功能排期卡片流转事实为数据源，按统计周期呈现「谁交付了什么、时效如何」，替代凭印象的绩效复盘。报告分两类：**研发周报**（周复盘，双端可查）与**研发日报**（当日实时快照，仅 Web 端）。
 
 ## 服务对象与端
 
@@ -25,7 +25,7 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 |---------|------|------|
 | 模块业务规则 | [`references/business-rule.md`](references/business-rule.md) | 报告口径与核心规则真源 |
 | 子域共享规则 | [`../报告配置/references/business-rule.md`](../报告配置/references/business-rule.md) | 归档 / 触发 / 版本 / 渲染 / 权限口径真源（busyming-skills-devops） |
-| 报告数据源与推送契约 | [`../报告配置/references/data-source-api.md`](../报告配置/references/data-source-api.md) | 排期双卡采集口径与旁路推送契约（busyming-skills-devops） |
+| 报告数据源与推送契约 | [`../报告配置/references/data-source-api.md`](../报告配置/references/data-source-api.md) | 功能排期卡片采集口径与旁路推送契约（busyming-skills-devops） |
 | 周报生成 skill 入口 | [`references/dev-report.md`](references/dev-report.md) | 服务端生成会话挂载的研发周报生成逻辑唯一真源（本模块内置） |
 | 日报生成 skill 入口 | [`references/daily-report.md`](references/daily-report.md) | 服务端生成会话挂载的研发日报生成逻辑唯一真源（本模块内置） |
 | 周报章节规范 | [`references/weekly-report.md`](references/weekly-report.md) | 周报章节、模板与计数纪律（dev-report skill 资源） |
@@ -39,7 +39,7 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 
 1. 触发方式在 Web 端「报告触发配置」页维护（研发周报、研发日报各一条内置配置行：定时规则 + 手动「立即生成」）；触发后服务端创建生成任务并全程留痕
 2. 服务端通过 **Qoder SDK** 创建生成会话，工作区挂载报告类型对应的生成 skill，统计窗口与生成配置由服务端注入会话入参
-3. 会话按 skill 约定执行：读配置 → 同步代码仓 → 采集数据（git 提交权威计数 + 排期卡片等数据源）→ 按章节规范生成报告（「按人员」章节为核心）→ 写报告文件
+3. 会话按 skill 约定执行：读配置 → 同步代码仓 → 采集数据（git 提交权威计数 + 功能排期卡片等数据源）→ 按章节规范生成报告（「按人员」章节为核心）→ 写报告文件
 4. 产出报告由服务端直接落库归档（渲染、版本递增、周 / 日索引），不经过推送；外部生成会话产出可经推送上报旁路入库（兜底见手动补传）
 5. 统计窗口、计数纪律、数据源清单与推送契约均以 skill 内规范为准，本文件不复述
 
@@ -49,7 +49,7 @@ description: 人员产出报告。Use when 需要按人员维度周期性产出�
 
 ## 统计人员范围
 
-- 代码提交、排期卡片、Qoder 用量等人员维度只统计「报告配置 → 统计人员范围」启用名单内人员；名单外人员不计入、不点名
+- 代码提交、功能排期卡片、Qoder 用量等人员维度只统计「报告配置 → 统计人员范围」启用名单内人员；名单外人员不计入、不点名
 - 名单为空时服务端拒绝生成人员产出报告；项目级数据（需求吞吐、仓库清单）保持全量
 - 名单维护见 [`../报告配置/SKILL.md`](../报告配置/SKILL.md)，规则真源见 [`../报告配置/references/business-rule.md` §3.3](../报告配置/references/business-rule.md#33-统计人员范围)
 

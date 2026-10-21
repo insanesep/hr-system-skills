@@ -10,7 +10,7 @@
   整页范例：busyming-skills-design/web/templates/archive-list.html ｜ DOM 依据：skeletons/web/list-page.vue.tpl
   结构：筛选 panel（发报日期区间 + 关键词 + 查询/重置）→ KPI×4（口径随类型 Tab 切换）→ 表格 panel（类型 Tab：研发周报/研发日报；视角 Tab：按周(日)索引/报告明细 + 工具栏手动补传）
   权限：路由 MENU:RND:MEMBER_OUTPUT_REPORT；BTN:RND_REPORT:UPLOAD（补传）、BTN:RND_REPORT:TRIGGER（立即生成），原型默认均有权限。
-  演示基准日 2026-10-18（周日，第 42 周）：周报本周行仅周日当天起展示；日报当日行仅已入库时展示。数据为虚构样例。
+  演示基准日 2026-10-18（周日，第 42 周）：周报本周行仅周日当天起展示；日报当日行固定置顶（未入库也成行），且始终提供立即生成 / 补传。数据为虚构样例。
   proto-bar 仅为原型页间互联与三态演示，不属于业务 UI。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
@@ -134,7 +134,7 @@
                       <td class="u-muted">—</td>
                       <td><div class="tpl-row-actions">
                         <!-- BTN:RND_REPORT:TRIGGER -->
-                        <button class="ac-btn ac-btn--text" type="button" id="triggerBtn">立即生成</button>
+                        <button class="ac-btn ac-btn--text" type="button" data-trigger-open data-trigger-date="2026-10-18">立即生成</button>
                         <!-- BTN:RND_REPORT:UPLOAD -->
                         <button class="ac-btn ac-btn--text" type="button" data-upload-open data-preset="2026-10-18">补传</button>
                       </div></td>
@@ -250,7 +250,7 @@
       </div>
     </div>
 
-    <!-- 日报 · 视角1 按日索引：按发报日倒序逐日行；当日行仅已入库时展示 -->
+    <!-- 日报 · 视角1 按日索引：按发报日倒序逐日行；当日行固定置顶，无论是否已入库均提供立即生成 / 补传 -->
     <div id="panelDay" hidden>
       <div class="ac-table-wrap">
         <table class="ac-table">
@@ -258,6 +258,7 @@
             <tr><th>日期</th><th>齐全度</th><th>报告标题</th><th>来源</th><th>版本</th><th>文件大小</th><th>入库时间</th><th>操作</th></tr>
           </thead>
           <tbody>
+            <!-- 当日（已入库）：保留立即生成 / 补传，重复入库走版本递增 -->
             <tr>
               <td class="mono">2026-10-18 周日</td>
               <td><span class="ac-tag ac-tag--green">1/1</span></td>
@@ -269,6 +270,10 @@
               <td><div class="tpl-row-actions">
                 <a class="ac-btn ac-btn--text" href="report-detail.html">查看</a>
                 <button class="ac-btn ac-btn--text" type="button" data-download="daily_dev_20261018.md">获取原件</button>
+                <!-- BTN:RND_REPORT:TRIGGER -->
+                <button class="ac-btn ac-btn--text" type="button" data-trigger-open data-trigger-date="2026-10-18">立即生成</button>
+                <!-- BTN:RND_REPORT:UPLOAD -->
+                <button class="ac-btn ac-btn--text" type="button" data-upload-open data-preset="2026-10-18">补传</button>
               </div></td>
             </tr>
             <tr>
@@ -294,7 +299,7 @@
               <td class="u-muted">—</td>
               <td><div class="tpl-row-actions">
                 <!-- BTN:RND_REPORT:TRIGGER -->
-                <button class="ac-btn ac-btn--text" type="button" id="triggerDailyBtn">立即生成</button>
+                <button class="ac-btn ac-btn--text" type="button" data-trigger-open data-trigger-date="2026-10-16">立即生成</button>
                 <!-- BTN:RND_REPORT:UPLOAD -->
                 <button class="ac-btn ac-btn--text" type="button" data-upload-open data-preset="2026-10-16">补传</button>
               </div></td>
@@ -555,20 +560,20 @@
       uploadTitle: '手动补传 · 研发周报',
       uploadRecognized: '已按文件名识别：研发周报 · 发报日 2026-10-11',
       demoFile: 'weekly_dev_20261011.md · 45.6KB',
-      triggerBody: '将为 <strong>2026 年第 42 周</strong> 创建研发周报生成任务，统计窗口 <span class="mono">2026-10-12 ~ 2026-10-18</span>（本周一 ~ 今天）。'
+      triggerBody: function () { return '将为 <strong>2026 年第 42 周</strong> 创建研发周报生成任务，统计窗口 <span class="mono">2026-10-12 ~ 2026-10-18</span>（本周一 ~ 今天）。'; }
     },
     daily: {
       indexTab: '按日索引',
       toolbarTitle: '研发日报索引',
-      toolbarNote: '按发报日倒序；当日行仅已入库时展示，未入库不渲染待补',
-      k1: { label: '今日已入库', hint: '当日研发日报应入库 1 份；当日未入库不渲染待补', value: '1/1', foot: '今日 08:00 定时已生成' },
+      toolbarNote: '按发报日倒序；当日固定置顶，可补传 / 立即生成，未入库不标待补',
+      k1: { label: '今日已入库', hint: '当日研发日报应入库 1 份；当日行始终展示，已入库也可补传 / 立即生成', value: '1/1', foot: '今日 08:00 定时已生成' },
       k2: { hint: '已入库研发日报总数（按发报日计，不含历史版本）', value: '18', foot: '自 2026-10 起归档' },
       k3: { value: '10-18', foot: '服务端生成落库' },
       k4: { value: '1' },
       uploadTitle: '手动补传 · 研发日报',
       uploadRecognized: '已按文件名识别：研发日报 · 发报日 2026-10-17',
       demoFile: 'daily_dev_20261017.md · 9.8KB',
-      triggerBody: '将为 <strong>2026-10-16</strong> 创建研发日报生成任务，统计窗口 <span class="mono">2026-10-16 00:00 ~ 当前</span>（当日实时截断）。'
+      triggerBody: function (date) { return '将为 <strong>' + date + '</strong> 创建研发日报生成任务，统计窗口 <span class="mono">' + date + ' 00:00 ~ 当前</span>（当日实时截断）。'; }
     }
   };
 
@@ -663,12 +668,13 @@
 
   /* ── 立即生成（二次确认统计窗口，文案随报告类型）── */
   var triggerModal = $('#triggerModal');
-  function openTrigger() {
-    $('#triggerBody').innerHTML = typeText[currentType].triggerBody;
+  function openTrigger(date) {
+    $('#triggerBody').innerHTML = typeText[currentType].triggerBody(date);
     openOv(triggerModal);
   }
-  $('#triggerBtn').addEventListener('click', openTrigger);
-  $('#triggerDailyBtn').addEventListener('click', openTrigger);
+  $$('[data-trigger-open]').forEach(function (btn) {
+    btn.addEventListener('click', function () { openTrigger(btn.getAttribute('data-trigger-date')); });
+  });
   $$('[data-trigger-close]').forEach(function (el) {
     el.addEventListener('click', function () { closeOv(triggerModal); });
   });
@@ -684,7 +690,7 @@
     var t = typeText[currentType];
     $('#uploadTitle').textContent = t.uploadTitle;
     $('#uploadHint').textContent = preset
-      ? '已预填：发报日 ' + preset + '（按' + (currentType === 'daily' ? '日' : '周') + '索引缺失行带入）'
+      ? '已预填：发报日 ' + preset + '（按' + (currentType === 'daily' ? '日' : '周') + '索引行带入）'
       : t.uploadRecognized;
     if (preset) $('#reportDateText').textContent = preset;
     openOv(uploadModal);

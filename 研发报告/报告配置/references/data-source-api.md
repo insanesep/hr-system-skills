@@ -1,6 +1,6 @@
 # 研发报告 数据源与推送契约（共享）
 
-> 本文件为三类生成式报告（研发周报 / 文档一致性校验 / 项目进度报告）的共享契约真源：排期双卡 MCP 调用口径、容错口径、报告推送旁路契约。周报专属的用量类数据源见 [`../人员产出报告/references/api-endpoints.md`](../../人员产出报告/references/api-endpoints.md)。
+> 本文件为三类生成式报告（研发周报 / 文档一致性校验 / 项目进度报告）的共享契约真源：功能排期卡片 MCP 调用口径、容错口径、报告推送旁路契约。周报专属的用量类数据源见 [`../人员产出报告/references/api-endpoints.md`](../../人员产出报告/references/api-endpoints.md)。
 >
 > 配置来源按会话类型区分：
 >
@@ -17,11 +17,9 @@
 > 接口调用统一设置 30s 超时。响应统一取 `data` 字段（无 `data` 时整体即数据）。
 > 响应可能较大：先将响应落盘为临时文件，再读取分析。
 
-## 排期双卡（MCP 工具，不走 HTTP）
+## 功能排期卡片（MCP 工具，不走 HTTP）
 
 统计区间记为 START ~ END，格式 YYYY-MM-DD。
-
-### 1. 功能排期卡片
 
 调用 MCP 工具 `mcp__busyming__busyming_feature_schedule`：
 
@@ -30,14 +28,6 @@
 - 数据字段：`cards[]` → `cardNo / title / status(DONE|IN_PROGRESS|PENDING) / scheduledDate / ownerName(创建人) / devUserName / devTakenAt / doneAt / createdAt`；`backupTotal` 为 Backup 池存量
 - ⚠️ 响应很大（单月可达 500KB+），MCP 会自动截断并把完整结果落盘到 tool-results 文件，**直接 Read 落盘文件分析**，不要试图在一次调用里读全量
 - 辅助视图（按需）：`view=logs card_no=FS-xxx`（卡片操作时间线）、`view=non-feature`（非需求改动）、`view=release-days`（月内发版日）
-
-### 2. 实施排期卡片
-
-调用 MCP 工具 `mcp__busyming__busyming_impl_schedule`：
-
-- 与功能排期同口径：按 `scheduledDate` 落窗过滤、`cardNo` 去重；状态为 `PENDING 待实施 / IN_PROGRESS 实施中 / DONE 实施完成`
-- 数据字段：`cards[]` → `cardNo(IS-xxx) / title / funcName / bizPath / sourceFeatCardNos(来源功能卡) / status / scheduledDate / pmName / devNames / takerName(实施人) / takenAt / doneAt / createdAt`；`backupTotal` 为变更待测试项存量
-- 响应同样自动落盘，Read 落盘文件分析
 
 ### 容错口径
 

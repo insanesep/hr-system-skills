@@ -785,13 +785,20 @@
     if (OPEN.has('dayModal')) renderDayModal();
     return true;
   }
-  async function toggleRelease(k, cell) {
+  async function toggleRelease(k) {
     if (!PERM.RELEASE_DAY) return;
-    const num = cell.querySelector('.ac-calendar__num');
-    if (num) num.insertAdjacentHTML('afterend', ' <span class="ac-btn-spin"></span>');
-    await wait(260);
-    if (RELEASE.has(k)) { RELEASE.delete(k); toast('已取消 ' + md(k) + ' 的发版日标记'); } else { RELEASE.add(k); toast('已标记 ' + md(k) + ' 为发版日'); }
-    renderAll();
+    const marked = RELEASE.has(k);
+    await confirmRun(
+      marked ? '取消发版日标记' : '标记发版日',
+      marked ? '确认取消 ' + md(k) + ' 的发版日标记？' : '确认将 ' + md(k) + ' 标记为发版日？',
+      marked ? '取消标记' : '确认标记',
+      false,
+      async () => {
+        await wait();
+        if (marked) { RELEASE.delete(k); toast('已取消 ' + md(k) + ' 的发版日标记'); } else { RELEASE.add(k); toast('已标记 ' + md(k) + ' 为发版日'); }
+        renderAll();
+      },
+    );
   }
 
   /* ---------- 批量移入与列表行内状态流转 ---------- */
@@ -1395,7 +1402,7 @@
     goDetail(c.no);
     return true;
   });
-  on('click', '.ac-calendar__cell[data-drop]', (e, cell) => { toggleRelease(cell.dataset.date, cell); return true; });
+  on('click', '.ac-calendar__cell[data-drop]', (e, cell) => { toggleRelease(cell.dataset.date); return true; });
 
   on('input', '#searchInput', (e, el) => { S.search = el.value; resetPool({ exitMode: true }); renderAll(); return true; });
   on('input', '#mergeModal [data-field="mergeTitle"]', (e, el) => {

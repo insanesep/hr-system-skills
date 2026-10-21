@@ -16,7 +16,7 @@ description: 报告配置。Use when 需要查阅研发报告子域共享规则�
 
 - 报告类型枚举与文件命名、周期归属与周/日索引、触发生成与入库（服务端生成 / 推送上报 / 手动补传）、版本、Markdown 渲染、权限矩阵、异常场景：全部见 [`references/business-rule.md`](references/business-rule.md)
 - 实体定义（报告项目扩展 / 触发配置 / 生成任务 / 报告主表 / 报告版本）：见 [`references/data.md`](references/data.md)
-- 排期双卡 MCP 调用口径、容错口径、推送上报旁路契约：见 [`references/data-source-api.md`](references/data-source-api.md)
+- 功能排期卡片 MCP 调用口径、容错口径、推送上报旁路契约：见 [`references/data-source-api.md`](references/data-source-api.md)
 
 ## 报告项目配置（映射扩展）
 
@@ -32,7 +32,7 @@ description: 报告配置。Use when 需要查阅研发报告子域共享规则�
 ## 统计人员范围
 
 - 研发周报 / 研发日报与 Token 管理共用一份人员名单：姓名 + 别名（git 作者名/邮箱、Qoder 名称/邮箱、排期负责人名）+ 启停，规则真源见 [`references/business-rule.md` §3.3](references/business-rule.md#33-统计人员范围)
-- 名单只作用于人员维度：代码提交、排期卡片、Qoder 用量；名单外人员不计入任何人员维度，也不在报告中出现
+- 名单只作用于人员维度：代码提交、功能排期卡片、Qoder 用量；名单外人员不计入任何人员维度，也不在报告中出现
 - 名单为空时人员产出报告拒绝生成；Token 管理「研发团队」范围返回空并提示去配置，可切换「全部成员」查看组织全量
 
 ## 页面功能概览（仅列职责）
