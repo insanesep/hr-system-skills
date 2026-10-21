@@ -24,6 +24,7 @@
         <div class="ac-dropdown-group-title">演示场景</div>
         <a class="ac-dropdown-item" href="#scene=default" data-act="proto" data-scene="default">默认（前 7 天 · 全部成员）</a>
         <a class="ac-dropdown-item" href="#scene=member" data-act="proto" data-scene="member">成员筛选（张悦 + 李思远）</a>
+        <a class="ac-dropdown-item" href="#scene=dept" data-act="proto" data-scene="dept">部门筛选（创新业务部）</a>
         <a class="ac-dropdown-item" href="#scene=empty" data-act="proto" data-scene="empty">空态</a>
         <a class="ac-dropdown-item" href="#scene=loading" data-act="proto" data-scene="loading">加载态</a>
         <a class="ac-dropdown-item" href="#scene=error" data-act="proto" data-scene="error">错误态（各区块独立）</a>
@@ -35,7 +36,7 @@
   </nav>
 
   <section class="tpl-page">
-    <!-- 公共筛选：日期范围 + 成员多选 + 查询/重置，驱动全部视图（约束见 business-rule.md §1） -->
+    <!-- 公共筛选：日期范围 + 部门单选 + 成员多选 + 查询/重置，驱动全部视图（约束见 business-rule.md §1） -->
     <div class="tpl-panel">
       <form class="ac-form ac-form--inline tpl-filter" data-ac="AcForm" id="filterForm" novalidate>
         <div class="ac-form-item ac-form-item--vertical tpl-filter__item" data-ac="AcFormItem">
@@ -43,6 +44,15 @@
           <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
             <div class="ac-date-picker has-value" data-ac="AcDatePicker" data-size="medium" data-mode="date" data-type="range" data-start="2026-10-11" data-end="2026-10-17" id="fRange">
               <div class="ac-date-picker__trigger" role="button" tabindex="0"><span class="ac-date-picker__text">2026-10-11</span><span class="ac-date-picker__sep">至</span><span class="ac-date-picker__text">2026-10-17</span><span class="ac-date-picker__suffix"><span class="ac-icon ac-date-picker__icon" data-ac="AcIcon" data-name="calendar" data-size="sm"></span></span></div>
+            </div>
+          </div></div>
+        </div>
+        <div class="ac-form-item ac-form-item--vertical tpl-filter__item" data-ac="AcFormItem">
+          <label class="ac-form-item__label">部门</label>
+          <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+            <div class="ac-select ac-select--medium" data-ac="AcSelect" id="fDept">
+              <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single" id="fDeptText">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+              <div class="ac-select__popup" hidden><ul class="ac-select__list" id="fDeptList"></ul></div>
             </div>
           </div></div>
         </div>
@@ -131,11 +141,11 @@
       </div>
     </div>
 
-    <!-- Credits 用量透视表（日期 × 成员，排序规则见 business-rule.md §3） -->
+    <!-- Credits 用量透视表（成员 × 日期，排序规则见 business-rule.md §3） -->
     <div class="tpl-panel">
       <div class="tpl-toolbar">
         <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">Credits 用量透视表</span></div>
-        <div class="tpl-toolbar__right"><span class="u-secondary u-sm">日期 × 成员 · 单位 Credits · 复用顶部公共筛选</span></div>
+        <div class="tpl-toolbar__right"><span class="u-secondary u-sm">成员 × 日期 · 单位 Credits · 复用顶部公共筛选</span></div>
       </div>
       <div class="ac-table-wrap" id="pivotDateWrap">
         <table class="ac-table" data-ac="AcTable" id="pivotDate">
@@ -198,6 +208,9 @@
   /* ============ 演示数据（虚构；聚合口径见 references/business-rule.md §2-§6） ============ */
   var MEMBERS = ['张悦', '李思远', '黄磊', '王倩', '孙浩'];
   var BASE = { '张悦': 210, '李思远': 170, '黄磊': 120, '王倩': 85, '孙浩': 55 };
+  /* 部门单选：全部（默认）/ 数字化中心 / 创新业务部；成员归属为演示虚构映射（真源为组织主数据，见 business-rule.md §1） */
+  var DEPTS = ['全部', '数字化中心', '创新业务部'];
+  var DEPT = { '张悦': '数字化中心', '李思远': '数字化中心', '黄磊': '数字化中心', '王倩': '创新业务部', '孙浩': '创新业务部' };
   var TIERS = ['旗舰 MAX', '高级', '基础', '其他'];          /* 堆叠图系列（其他 = 未识别/空标识，固定最顶层灰色） */
   var TIER_LABEL = ['旗舰 MAX', '高级', '基础', '未标注'];     /* 模型等级列名（空值归「未标注」，排最后） */
   var TIER_COLOR = ['var(--ac-primary-5)', 'var(--ac-warning-5)', 'var(--ac-success-5)', 'var(--ac-fill-4)'];
@@ -222,11 +235,17 @@
   function reqSum(m, a, b) { var s = 0; dList(a, b).forEach(function (d) { s += Math.round(daySum(m, d) / 13) + h(m + d) % 4; }); return s; }
   function creditSum(m, a, b) { var s = 0; dList(a, b).forEach(function (d) { s += cellInt(m, d); }); return s; }
 
-  var SCENES = { 'default': {}, 'member': { members: ['张悦', '李思远'] }, 'empty': { empty: true }, 'loading': { loading: true }, 'error': { err: true }, 'op-fail': { fail: true }, 'over-range': { over: true } };
+  var SCENES = { 'default': {}, 'member': { members: ['张悦', '李思远'] }, 'dept': { dept: '创新业务部' }, 'empty': { empty: true }, 'loading': { loading: true }, 'error': { err: true }, 'op-fail': { fail: true }, 'over-range': { over: true } };
   var S = null;
   var MODE = {};
 
-  function selMembers() { return S.members.length ? S.members.slice() : MEMBERS.slice(); }
+  /* 成员可选清单 = 当前部门 ∩ 统计范围；成员筛选为空 = 交集内全部成员（business-rule.md §1） */
+  function deptMembers() { return S.dept === '全部' ? MEMBERS.slice() : MEMBERS.filter(function (m) { return DEPT[m] === S.dept; }); }
+  function selMembers() {
+    var pool = deptMembers();
+    var sel = S.members.filter(function (m) { return pool.indexOf(m) >= 0; });
+    return sel.length ? sel : pool;
+  }
   function hasData() { return !S.empty; }
   function wow(a, b) { return [dAdd(a, -7), dAdd(b, -7)]; }     /* 上周同期：起止各前移 7 天 */
   function delta(cur, prev) {
@@ -316,18 +335,18 @@
     var ms = selMembers();
     return ms.sort(function (x, y) { return creditSum(y, S.range[0], S.range[1]) - creditSum(x, S.range[0], S.range[1]); });
   }
-  /* 日期 × 成员（§3：行=日期升序，列=成员按期间合计降序，末行末列总计） */
+  /* 成员 × 日期（§3：行=成员按期间合计降序，列=日期按天升序，末行末列总计） */
   function renderPivotDate(mode) {
     pivotMode('pivotDate', mode);
     if (mode !== 'data') return;
     var days = dList(S.range[0], S.range[1]); var ms = memberCols();
-    $('pivotDateHead').innerHTML = '<tr><th>日期</th>' + ms.map(function (m) { return '<th class="u-right">' + m + '</th>'; }).join('') + '<th class="u-right">合计</th></tr>';
-    var colTot = ms.map(function () { return 0; }); var grand = 0;
-    $('pivotDateBody').innerHTML = days.map(function (d) {
+    $('pivotDateHead').innerHTML = '<tr><th>成员</th>' + days.map(function (d) { return '<th class="u-right">' + d + '</th>'; }).join('') + '<th class="u-right">合计</th></tr>';
+    var colTot = days.map(function () { return 0; }); var grand = 0;
+    $('pivotDateBody').innerHTML = ms.map(function (m) {
       var row = 0;
-      var tds = ms.map(function (m, i) { var v = cellInt(m, d); colTot[i] += v; row += v; return '<td class="u-right mono">' + v.toLocaleString('zh-CN') + '</td>'; }).join('');
+      var tds = days.map(function (d, i) { var v = cellInt(m, d); colTot[i] += v; row += v; return '<td class="u-right mono">' + v.toLocaleString('zh-CN') + '</td>'; }).join('');
       grand += row;
-      return '<tr><td>' + d + '</td>' + tds + '<td class="u-right mono"><strong>' + row.toLocaleString('zh-CN') + '</strong></td></tr>';
+      return '<tr><td>' + m + '</td>' + tds + '<td class="u-right mono"><strong>' + row.toLocaleString('zh-CN') + '</strong></td></tr>';
     }).join('');
     $('pivotDateFoot').innerHTML = '<tr><td><span class="ac-table__summary-label">合计</span></td>' + colTot.map(function (v) { return '<td class="u-right mono"><strong>' + v.toLocaleString('zh-CN') + '</strong></td>'; }).join('') + '<td class="u-right mono"><strong>' + grand.toLocaleString('zh-CN') + '</strong></td></tr>';
   }
@@ -362,7 +381,16 @@
   }
   function refreshAll() { ['kpi', 'trend', 'pivotDate', 'pivotModel'].forEach(loadBlock); }
 
-  /* ============ 成员多选 ============ */
+  /* ============ 部门单选与成员多选 ============ */
+  function syncDept() {
+    $('fDeptText').textContent = S.dept;
+    qa('.ac-select__option', $('fDept')).forEach(function (o) { o.classList.toggle('is-selected', o.getAttribute('data-value') === S.dept); });
+  }
+  function renderMemberOptions() {
+    $('fMemberList').innerHTML = deptMembers().map(function (m) {
+      return '<li class="ac-select__option" data-value="' + m + '"><span class="ac-select__option-label">' + m + '</span><span class="ac-select__option-check">✓</span></li>';
+    }).join('');
+  }
   function syncMember() {
     var root = $('fMember'); var trig = root.querySelector('.ac-select__trigger');
     qa('.ac-select__option', root).forEach(function (o) { o.classList.toggle('is-selected', S.members.indexOf(o.getAttribute('data-value')) >= 0); });
@@ -373,14 +401,14 @@
     trig.innerHTML = (S.members.length ? tags : '<span class="ac-select__single is-placeholder">全部成员</span>') +
       '<span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span>';
   }
-  $('fMemberList').innerHTML = MEMBERS.map(function (m) {
-    return '<li class="ac-select__option" data-value="' + m + '"><span class="ac-select__option-label">' + m + '</span><span class="ac-select__option-check">✓</span></li>';
+  $('fDeptList').innerHTML = DEPTS.map(function (d) {
+    return '<li class="ac-select__option" data-value="' + d + '"><span class="ac-select__option-label">' + d + '</span><span class="ac-select__option-check">✓</span></li>';
   }).join('');
 
   /* ============ 日期范围（上限 31 天，超范围拦截，business-rule.md §1） ============ */
   var pickStart = null; var viewMonth = '2026-10';
   function closePopups() {
-    [['fMember'], ['fRange']].forEach(function (p) {
+    [['fMember'], ['fRange'], ['fDept']].forEach(function (p) {
       var root = $(p[0]); root.classList.remove('is-open');
       var pop = root.querySelector('.ac-select__popup, .ac-date-picker__panel'); if (pop) pop.hidden = true;
     });
@@ -453,8 +481,8 @@
       refreshAll();
     },
     reset: function () {
-      S.range = DEFAULT_RANGE.slice(); S.members = []; pickStart = null;
-      syncRange(); syncMember();
+      S.range = DEFAULT_RANGE.slice(); S.dept = '全部'; S.members = []; pickStart = null;
+      renderMemberOptions(); syncDept(); syncRange(); syncMember();
       toast('已恢复默认筛选');
       ACT.query();
     },
@@ -485,6 +513,27 @@
     if (t.closest('#fRange .ac-date-picker__panel')) { e.stopPropagation(); }
     var trig = t.closest('#fRange .ac-date-picker__trigger');
     if (trig) { e.stopPropagation(); e.preventDefault(); var root = $('fRange'); var open = root.classList.contains('is-open'); closePopups(); if (!open) openRangePanel(); return; }
+    var dTrig = t.closest('#fDept .ac-select__trigger');
+    if (dTrig) {
+      e.stopPropagation(); e.preventDefault();
+      var dr = $('fDept'); var dOpen = dr.classList.contains('is-open');
+      closePopups();
+      if (!dOpen) { dr.classList.add('is-open'); dr.querySelector('.ac-select__popup').hidden = false; }
+      return;
+    }
+    var dOpt = t.closest('#fDept .ac-select__option');
+    if (dOpt) {
+      e.stopPropagation(); e.preventDefault();
+      var dv = dOpt.getAttribute('data-value');
+      closePopups();
+      if (dv !== S.dept) {
+        S.dept = dv; S.members = [];                 /* 切换部门：清空已选成员，成员清单与全部视图按新部门重查（web-ui.md 操作反馈） */
+        renderMemberOptions(); syncDept(); syncMember();
+        $('filterError').hidden = true;
+        refreshAll();
+      }
+      return;
+    }
     var mTrig = t.closest('#fMember .ac-select__trigger');
     if (mTrig && !t.closest('.ac-select__tag-close')) {
       e.stopPropagation(); e.preventDefault();
@@ -516,7 +565,7 @@
       var fn = ACT[el.getAttribute('data-act')]; if (fn) fn(el, e);
       return;
     }
-    if (!t.closest('#fMember') && !t.closest('#fRange')) closePopups();
+    if (!t.closest('#fMember') && !t.closest('#fRange') && !t.closest('#fDept')) closePopups();
   }, true);
   document.addEventListener('submit', function (e) { e.preventDefault(); e.stopPropagation(); }, true);
 
@@ -524,10 +573,10 @@
   function sceneKey() { var m = /scene=([\w-]+)/.exec(location.hash); return m && SCENES[m[1]] ? m[1] : 'default'; }
   function applyScene() {
     var key = sceneKey(); var sc = SCENES[key];
-    S = { scene: key, range: DEFAULT_RANGE.slice(), members: (sc.members || []).slice(), empty: !!sc.empty, fail: !!sc.fail, over: !!sc.over, failed: false, err: { kpi: !!sc.err, trend: !!sc.err, pivotDate: !!sc.err, pivotModel: !!sc.err } };
+    S = { scene: key, range: DEFAULT_RANGE.slice(), dept: sc.dept || '全部', members: (sc.members || []).slice(), empty: !!sc.empty, fail: !!sc.fail, over: !!sc.over, failed: false, err: { kpi: !!sc.err, trend: !!sc.err, pivotDate: !!sc.err, pivotModel: !!sc.err } };
     Object.keys(TIMERS).forEach(function (k) { clearTimeout(TIMERS[k]); });
     pickStart = null; viewMonth = '2026-10';
-    syncRange(); syncMember(); closePopups();
+    renderMemberOptions(); syncDept(); syncRange(); syncMember(); closePopups();
     $('filterError').hidden = true;
     ['kpi', 'trend', 'pivotDate', 'pivotModel'].forEach(function (b) { RENDER[b](sc.loading ? 'loading' : S.err[b] ? 'error' : (hasData() ? 'data' : 'empty')); });
     qa('[data-scene]').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-scene') === key); });

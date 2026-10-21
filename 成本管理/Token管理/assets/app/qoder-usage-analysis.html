@@ -24,6 +24,7 @@
     .qusage-btns .ac-button { flex: 1; }
     .qusage-member { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); }
     .qusage-member__label { color: var(--ac-text-3); font-size: var(--ac-fs-sm); }
+    .qusage-dept { display: flex; gap: var(--ac-space-2); flex-wrap: wrap; justify-content: flex-end; }
     .qusage-toast-layer { position: absolute; left: 0; right: 0; top: var(--ac-space-16); display: flex; justify-content: center; z-index: var(--ac-z-toast); pointer-events: none; }
     .qusage-toast-layer .ac-toast { pointer-events: auto; }
   </style>
@@ -56,7 +57,7 @@
             <div class="ac-pull-refresh__content">
               <div class="app-screen__scroll">
 
-                <!-- 公共筛选：日期预设 + 成员多选 + 查询/重置（business-rule.md §1） -->
+                <!-- 公共筛选：日期预设 + 部门单选 + 成员多选 + 查询/重置（business-rule.md §1） -->
                 <section class="ac-section is-bordered is-padded has-title" data-ac="AcSection">
                   <div class="ac-section__header"><strong class="ac-section__title">筛选</strong><span class="ac-section__extra" id="rangeText">10-11 ~ 10-17</span></div>
                   <div class="ac-section__body">
@@ -68,6 +69,10 @@
                         <button class="ac-btn tpl-period-switcher__chip" type="button" data-act="preset" data-key="last30">近 30 天</button>
                         <button class="ac-btn tpl-period-switcher__chip" type="button" data-act="preset" data-key="custom">自定义</button>
                       </div></div>
+                    </div>
+                    <div class="qusage-member">
+                      <span class="qusage-member__label">部门</span>
+                      <div class="qusage-dept" id="deptChips"></div>
                     </div>
                     <div class="qusage-member">
                       <span class="qusage-member__label">成员</span>
@@ -121,9 +126,9 @@
                     </div>
                   </section>
 
-                  <!-- Credits 用量透视表（日期 × 成员，business-rule.md §3） -->
+                  <!-- Credits 用量透视表（成员 × 日期，business-rule.md §3） -->
                   <section class="ac-section is-bordered is-padded has-title" data-ac="AcSection">
-                    <div class="ac-section__header"><strong class="ac-section__title">Credits 用量透视表</strong><span class="ac-section__extra">日期 × 成员 · Credits</span></div>
+                    <div class="ac-section__header"><strong class="ac-section__title">Credits 用量透视表</strong><span class="ac-section__extra">成员 × 日期 · Credits</span></div>
                     <div class="ac-section__body">
                       <div class="tpl-data-table qusage-freeze" id="pivotDate"></div>
                     </div>
@@ -178,6 +183,7 @@
     <nav class="proto-bar tpl-quick-tags" aria-label="演示场景" id="sceneBar">
       <a class="ac-btn tpl-quick-tags__item is-used" href="#scene=default" data-scene="default">默认（前 7 天）</a>
       <a class="ac-btn tpl-quick-tags__item" href="#scene=member" data-scene="member">成员筛选</a>
+      <a class="ac-btn tpl-quick-tags__item" href="#scene=dept" data-scene="dept">部门筛选</a>
       <a class="ac-btn tpl-quick-tags__item" href="#scene=empty" data-scene="empty">空态</a>
       <a class="ac-btn tpl-quick-tags__item" href="#scene=loading" data-scene="loading">加载态</a>
       <a class="ac-btn tpl-quick-tags__item" href="#scene=error" data-scene="error">错误态</a>
@@ -199,6 +205,9 @@
   /* ---------- 演示数据（与 Web 端同口径，虚构） ---------- */
   var MEMBERS = ['张悦', '李思远', '黄磊', '王倩', '孙浩'];
   var BASE = { '张悦': 210, '李思远': 170, '黄磊': 120, '王倩': 85, '孙浩': 55 };
+  /* 部门单选：全部（默认）/ 数字化中心 / 创新业务部；成员归属为演示虚构映射（真源为组织主数据，见 business-rule.md §1） */
+  var DEPTS = ['全部', '数字化中心', '创新业务部'];
+  var DEPT = { '张悦': '数字化中心', '李思远': '数字化中心', '黄磊': '数字化中心', '王倩': '创新业务部', '孙浩': '创新业务部' };
   var TIERS = ['旗舰 MAX', '高级', '基础', '其他'];
   var TIER_LABEL = ['旗舰 MAX', '高级', '基础', '未标注'];
   var TIER_COLOR = ['var(--ac-primary-5)', 'var(--ac-warning-5)', 'var(--ac-success-5)', 'var(--ac-fill-4)'];
@@ -229,11 +238,17 @@
     return v > 0 ? '<span class="tpl-delta-badge tpl-delta-badge--up">↑ ' + v.toFixed(1) + '%</span>' : '<span class="tpl-delta-badge tpl-delta-badge--down">↓ ' + Math.abs(v).toFixed(1) + '%</span>';
   }
 
-  var SCENES = { 'default': {}, 'member': { members: ['张悦', '李思远'] }, 'empty': { empty: true }, 'loading': { loading: true }, 'error': { err: true }, 'op-fail': { fail: true }, 'over-range': { over: true } };
+  var SCENES = { 'default': {}, 'member': { members: ['张悦', '李思远'] }, 'dept': { dept: '创新业务部' }, 'empty': { empty: true }, 'loading': { loading: true }, 'error': { err: true }, 'op-fail': { fail: true }, 'over-range': { over: true } };
   var S = null;
-  var staged = { range: null, members: [], customStart: null, customEnd: null };
+  var staged = { range: null, dept: '全部', members: [], customStart: null, customEnd: null };
 
-  function selMembers() { return S.members.length ? S.members.slice() : MEMBERS.slice(); }
+  /* 成员可选清单 = 当前部门 ∩ 统计范围；成员筛选为空 = 交集内全部成员（business-rule.md §1） */
+  function deptMembersOf(dept) { return dept === '全部' ? MEMBERS.slice() : MEMBERS.filter(function (m) { return DEPT[m] === dept; }); }
+  function selMembers() {
+    var pool = deptMembersOf(S.dept);
+    var sel = S.members.filter(function (m) { return pool.indexOf(m) >= 0; });
+    return sel.length ? sel : pool;
+  }
 
   /* ---------- AcToast ---------- */
   var toastLayer = $('#toastLayer'), toastBox = $('#toastBox'), toastIcon = $('#toastIcon'), toastText = $('#toastText'), toastTimer = null;
@@ -296,14 +311,16 @@
   }
   function renderPivotDate() {
     var days = dList(S.range[0], S.range[1]); var ms = memberCols();
-    var html = '<div class="tpl-data-table__row tpl-data-table__head qusage-cols-' + (ms.length + 2) + '"><span class="tpl-data-table__cell">日期</span>' + ms.map(function (m) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + m + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">合计</span></div>';
-    var colTot = ms.map(function () { return 0; }); var grand = 0;
-    days.forEach(function (d) {
+    /* 成员 × 日期（§3）：行=成员按期间合计降序，列=日期按天升序；列数随天数变化，列宽内联生成 */
+    var cols = 'grid-template-columns:minmax(var(--ac-space-16),1.1fr) repeat(' + (days.length + 1) + ',minmax(var(--ac-space-16),1fr))';
+    var html = '<div class="tpl-data-table__row tpl-data-table__head" style="' + cols + '"><span class="tpl-data-table__cell">成员</span>' + days.map(function (d) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + d.slice(5) + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">合计</span></div>';
+    var colTot = days.map(function () { return 0; }); var grand = 0;
+    ms.forEach(function (m) {
       var row = 0;
-      html += '<div class="tpl-data-table__row qusage-cols-' + (ms.length + 2) + '"><span class="tpl-data-table__cell">' + d.slice(5) + '</span>' + ms.map(function (m, i) { var v = cellInt(m, d); colTot[i] += v; row += v; return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN') + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num"><strong>' + row.toLocaleString('zh-CN') + '</strong></span></div>';
+      html += '<div class="tpl-data-table__row" style="' + cols + '"><span class="tpl-data-table__cell">' + m + '</span>' + days.map(function (d, i) { var v = cellInt(m, d); colTot[i] += v; row += v; return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN') + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num"><strong>' + row.toLocaleString('zh-CN') + '</strong></span></div>';
       grand += row;
     });
-    html += '<div class="tpl-data-table__row tpl-data-table__row--total qusage-cols-' + (ms.length + 2) + '"><span class="tpl-data-table__cell">合计</span>' + colTot.map(function (v) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN') + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + grand.toLocaleString('zh-CN') + '</span></div>';
+    html += '<div class="tpl-data-table__row tpl-data-table__row--total" style="' + cols + '"><span class="tpl-data-table__cell">合计</span>' + colTot.map(function (v) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN') + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + grand.toLocaleString('zh-CN') + '</span></div>';
     $('#pivotDate').innerHTML = html;
   }
   function renderPivotModel() {
@@ -341,6 +358,9 @@
     $$('#presetSwitch .tpl-period-switcher__chip').forEach(function (c) {
       c.classList.toggle('is-active', c.getAttribute('data-key') === staged.preset);
     });
+    $$('#deptChips .tpl-period-switcher__chip').forEach(function (c) {
+      c.classList.toggle('is-active', c.getAttribute('data-value') === staged.dept);
+    });
     $$('#memberChips .ac-filter-sheet__chip').forEach(function (c) {
       c.classList.toggle('is-active', staged.members.indexOf(c.getAttribute('data-value')) >= 0);
     });
@@ -362,9 +382,14 @@
       $('#' + w + 'Sheet').hidden = true;
     });
   }
-  $('#memberChips').innerHTML = MEMBERS.map(function (m) {
-    return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + m + '" data-act="member-chip">' + m + '</button>';
+  $('#deptChips').innerHTML = DEPTS.map(function (d) {
+    return '<button class="ac-btn tpl-period-switcher__chip" type="button" data-value="' + d + '" data-act="dept">' + d + '</button>';
   }).join('');
+  function renderMemberChips() {
+    $('#memberChips').innerHTML = deptMembersOf(staged.dept).map(function (m) {
+      return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + m + '" data-act="member-chip">' + m + '</button>';
+    }).join('');
+  }
   var RECENT = dList(dAdd(TODAY, -31), TODAY);
   $('#dateStartChips').innerHTML = RECENT.map(function (d) { return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + d + '" data-act="date-start">' + d.slice(5) + '</button>'; }).join('');
   $('#dateEndChips').innerHTML = RECENT.map(function (d) { return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + d + '" data-act="date-end">' + d.slice(5) + '</button>'; }).join('');
@@ -383,6 +408,7 @@
       return;
     }
     S.range = staged.range.slice();
+    S.dept = staged.dept;
     S.members = staged.members.slice();
     showOnly('skeleton');
     clearTimeout(queryTimer);
@@ -392,7 +418,8 @@
     }, 600);
   }
   function doReset() {
-    staged = { preset: 'last7', range: DEFAULT_RANGE.slice(), members: [], customStart: null, customEnd: null };
+    staged = { preset: 'last7', range: DEFAULT_RANGE.slice(), dept: '全部', members: [], customStart: null, customEnd: null };
+    renderMemberChips();
     syncFilterView();
     toast('已恢复默认筛选');
     doQuery();
@@ -429,7 +456,15 @@
       syncFilterView();
       if (key === 'custom') { staged.customStart = staged.range[0]; staged.customEnd = staged.range[1]; syncDateChips(); openSheet('date'); }
     }
-    else if (act === 'member') { openSheet('member'); }
+    else if (act === 'member') { renderMemberChips(); syncFilterView(); openSheet('member'); }
+    else if (act === 'dept') {
+      var dv = el.getAttribute('data-value');
+      if (dv !== staged.dept) {
+        staged.dept = dv; staged.members = [];              /* 切换部门：清空已选成员并按新部门重查（app-ui.md 操作反馈） */
+        renderMemberChips(); syncFilterView();
+        doQuery();
+      }
+    }
     else if (act === 'sheet-close') {
       if (el.classList.contains('qusage-sheet') && e.target !== el) return;
       closeSheets();
@@ -472,10 +507,11 @@
   function applyScene(scene) {
     if (!SCENES[scene]) scene = 'default';
     var sc = SCENES[scene];
-    S = { scene: scene, range: DEFAULT_RANGE.slice(), members: (sc.members || []).slice(), empty: !!sc.empty, err: !!sc.err, fail: !!sc.fail, over: !!sc.over, failed: false, errRefresh: scene === 'error' };
-    staged = { preset: 'last7', range: DEFAULT_RANGE.slice(), members: (sc.members || []).slice(), customStart: null, customEnd: null };
+    S = { scene: scene, range: DEFAULT_RANGE.slice(), dept: sc.dept || '全部', members: (sc.members || []).slice(), empty: !!sc.empty, err: !!sc.err, fail: !!sc.fail, over: !!sc.over, failed: false, errRefresh: scene === 'error' };
+    staged = { preset: 'last7', range: DEFAULT_RANGE.slice(), dept: sc.dept || '全部', members: (sc.members || []).slice(), customStart: null, customEnd: null };
     clearTimeout(queryTimer);
     closeSheets();
+    renderMemberChips();
     syncFilterView();
     $$('#sceneBar .tpl-quick-tags__item').forEach(function (a) { a.classList.toggle('is-used', a.getAttribute('data-scene') === scene); });
     if (scene === 'loading') { showOnly('skeleton'); return; }
