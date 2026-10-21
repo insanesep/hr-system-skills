@@ -1,6 +1,6 @@
 ---
 name: Token管理
-description: Use when 需要查询研发团队 Qoder Credits 用量总额与周环比、按成员或模型等级分析消耗结构、查看日消耗趋势对比上周同期、或查看日期×成员 / 成员×模型等级透视表做成本复盘。数据来源为 Qoder Teams OpenAPI，按组织→成员维度聚合 Credits 用量，Web+App 双端只读仪表盘。
+description: Use when 需要查询研发团队 Qoder Credits 用量总额与周环比、按成员或模型等级分析消耗结构、查看日消耗趋势对比上周同期、或查看日期×成员 / 成员×模型等级透视表做成本复盘。数据来源为 Qoder Teams OpenAPI，按组织→成员维度聚合 Credits 用量；统计范围默认研发团队人员名单（报告配置维护），可切换组织全部成员；Web+App 双端只读仪表盘。
 metadata:
   domain: 研发
   clients: web,app
@@ -10,7 +10,7 @@ metadata:
 
 ## 模块概述
 
-数据来源为 Qoder Teams OpenAPI，按组织 → 成员维度展示团队 Credits 用量：KPI 汇总、日消耗堆叠柱形图（按接口返回的模型分类分段堆叠，未识别的归入其他）、日期×成员透视表、成员×模型等级透视表。纯只读分析页，无单据与写操作。
+数据来源为 Qoder Teams OpenAPI，按组织 → 成员维度展示 Credits 用量：KPI 汇总、日消耗堆叠柱形图（按接口返回的模型分类分段堆叠，未识别的归入其他）、日期×成员透视表、成员×模型等级透视表。统计范围默认研发团队人员名单（与研发周报/日报共用，见报告配置），可切换组织全部成员。纯只读分析页，无单据与写操作。
 
 ## 端
 
@@ -36,12 +36,14 @@ metadata:
 | 页面模板 | [web/templates](../../../busyming-skills-design/web/templates/) · [mobile/templates](../../../busyming-skills-design/mobile/templates/) | 页面类型取值与整页范例 | busyming-skills-design |
 | 原型样式入口 | [web](../../../busyming-skills-design/web/styles/design-system.css) · [mobile](../../../busyming-skills-design/mobile/styles/design-system.css) 的 design-system.css | 原型唯一样式入口与组件类 | busyming-skills-design |
 | Qoder Teams OpenAPI | 公共仓未迁入真源（busyming-skills-common 的 api 目录仅有占位） | 用量数据来源与时间范围硬约束 | busyming-skills-common |
+| 统计人员范围 | 报告配置 → 统计人员范围（研发报告子域） | 研发团队名单，Token 管理默认按此范围统计 | busyming-skills-devops |
 
 ## 页面功能概览
 
 双端各一个仪表盘页（Web：`assets/web/qoder-usage-analysis.html`；App：`assets/app/qoder-usage-analysis.html`），由公共筛选区驱动全部视图：
 
-- 公共筛选：Web 为日期范围 + 成员多选 + 查询/重置；App 为日期预设 + 成员多选 + 查询/重置（筛选元素与 Web 对齐）
+- 公共筛选：Web 为日期范围 + 统计范围（研发团队 / 全部成员）+ 成员多选 + 查询/重置；App 为日期预设 + 统计范围 + 成员多选 + 查询/重置（筛选元素与 Web 对齐）
+- 统计范围默认「研发团队」，成员清单与用量事件均按该名单过滤；切换「全部成员」查看组织全量
 - KPI 卡片：总用量 / 总请求数 / 次均消耗 / 人均用量 / 活跃成员（含周环比）
 - 日 Credits 消耗堆叠柱形图：按接口返回的模型分类分段堆叠，未识别的归入其他
 - Credits 用量透视表：日期 × 成员
