@@ -354,7 +354,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
       <div class="tpl-toolbar">
         <div class="tpl-toolbar__left">
           <span class="tpl-toolbar__title">项目进度报告索引</span>
-          <span class="tpl-toolbar__meta">周归属按发报日所在自然周（周一为起点）计算 · 齐全度按启用项目统计</span>
+          <span class="tpl-toolbar__meta">周归属按发报日所在自然周（周一为起点）计算 · 齐全度按启用项目 + 汇总项（_all）统计</span>
         </div>
         <div class="tpl-toolbar__right">
           <button type="button" class="ac-btn ac-btn--primary" data-upload-open>+ 手动补传</button>
@@ -370,9 +370,26 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
             <span class="week-group__arrow">▶</span>
             <span class="week-group__title">2026 年第 36 周</span>
             <span class="week-group__range">08-31 ~ 09-06</span>
-            <span class="week-group__badge is-full">2/2</span>
+            <span class="week-group__badge is-full">3/3</span>
           </div>
           <div class="week-group__body">
+            <div class="report-row">
+              <div class="report-row__main">
+                <span class="ac-tag is-progress">项目进度</span>
+                <span class="report-row__title" title="项目进度报告（全部项目） - 2026-08-31">项目进度报告（全部项目） - 2026-08-31</span>
+              </div>
+              <span><span class="ac-tag is-weekly">全部项目汇总</span></span>
+              <span class="cell-muted">周</span>
+              <span class="cell-mono">08-31</span>
+              <span class="cell-muted">服务端生成</span>
+              <span class="cell-mono">v1</span>
+              <span class="cell-muted">52.4KB</span>
+              <span class="cell-muted">08-31 20:02</span>
+              <span class="tpl-row-actions">
+                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
+                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260831__all.md')">获取原件</button>
+              </span>
+            </div>
             <div class="report-row">
               <div class="report-row__main">
                 <span class="ac-tag is-progress">项目进度</span>
