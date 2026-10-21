@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>研发周报 - 2026-10-11 · 报告详情 · 鸣鸣很忙</title>
 <!--
-  人员产出报告（研发周报）· 报告详情页（Web 端原型，阅读型）
+  人员产出报告（研发周报 / 研发日报）· 报告详情页（Web 端原型，阅读型）
   页面描述真源：../../references/web-ui.md §报告详情 ｜ 页面类型 detail
   整页范例：busyming-skills-design/web/templates/archive-detail.html ｜ DOM 依据：skeletons/web/detail-page.vue.tpl
   结构：元信息头 panel（标题 + 版本切换 + 描述列表 + 操作）→ tpl-dual--side（阅读区 md 正文 + 右侧 AcAnchor 大纲 sticky）
@@ -33,12 +33,12 @@
 <body>
 <nav class="web-nav">
   <span class="web-nav__logo">鸣鸣很忙</span>
-  <span class="web-nav__crumb"><a class="ac-link" href="report-list.html">研发 / 研发报告 / 研发周报</a> / <b>报告详情</b></span>
+  <span class="web-nav__crumb"><a class="ac-link" href="report-list.html">研发 / 研发报告 / 人员产出报告</a> / <b>报告详情</b></span>
   <span class="web-nav__spacer"></span>
   <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
     <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
     <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
-      <div class="ac-dropdown-group-title">研发周报（Web）</div>
+      <div class="ac-dropdown-group-title">人员产出报告（Web）</div>
       <a class="ac-dropdown-item" role="menuitem" href="report-list.html">报告列表</a>
       <a class="ac-dropdown-item is-active" role="menuitem" href="report-detail.html">报告详情</a>
     </div>
@@ -54,6 +54,8 @@
       <div class="tpl-page-head__main">
         <h1 class="tpl-page-title" id="reportTitle">研发周报 - 2026-10-11</h1>
         <div class="tpl-page-head__tags">
+          <!-- 报告类型 Tag：研发周报 / 研发日报 -->
+          <span class="ac-tag ac-tag--blue">研发周报</span>
           <!-- 版本切换：多版时下拉选择历史版本，只读，URL 带 ?v=N -->
           <div class="ac-select ac-select--medium" data-ac="AcSelect" id="verSelect">
             <div class="ac-select__trigger" tabindex="0" role="button" aria-label="切换版本">

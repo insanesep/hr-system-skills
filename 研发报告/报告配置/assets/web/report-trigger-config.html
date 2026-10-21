@@ -144,6 +144,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
 .ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
   border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
 .ac-tag.is-weekly{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
+.ac-tag.is-daily{background:var(--ac-success-1);color:var(--ac-success-7)}
 .ac-tag.is-proj-a{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
 .ac-tag.is-proj-b{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
 .ac-tag.is-progress{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
@@ -306,6 +307,20 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
               </span></td>
             </tr>
             <tr>
+              <td><span class="ac-tag is-daily">研发日报</span></td>
+              <td class="cell-muted">—</td>
+              <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
+              <td class="cell-mono">每日 08:00</td>
+              <td class="cell-muted">—</td>
+              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
+              <td><span class="gen-status is-success">成功 <span class="gen-status__time">10-18 08:00</span></span></td>
+              <td><span class="tpl-row-actions">
+                <button class="ac-btn ac-btn--text">编辑</button>
+                <button class="ac-btn ac-btn--text">立即生成</button>
+                <button class="ac-btn ac-btn--text">生成记录</button>
+              </span></td>
+            </tr>
+            <tr>
               <td><span class="ac-tag is-proj-a">文档一致性校验</span></td>
               <td class="cell-muted">示例项目A</td>
               <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
@@ -366,7 +381,7 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
       </div>
 
       <div class="tpl-pagination">
-        <span>共 5 条</span>
+        <span>共 6 条</span>
       </div>
     </section>
 
@@ -399,14 +414,14 @@ body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
             <div class="ac-select__trigger" style="width:96px"><span class="ac-select__value">周日</span><span class="ac-select__arrow">▾</span></div>
             <input class="ac-input__inner" style="width:96px" value="20:00" aria-label="时间" />
           </div>
-          <div class="ac-form-item__tip">东八区；到点自动创建生成任务</div>
+          <div class="ac-form-item__tip">东八区；周期：每日 / 每周 / 每月，每日仅选时间；到点自动创建生成任务</div>
         </div>
       </div>
       <div class="ac-form-item">
         <span class="ac-form-item__label">类型参数</span>
         <div class="ac-form-item__control">
           <input class="ac-input__inner" placeholder="研发周报无类型参数" disabled />
-          <div class="ac-form-item__tip">一致性校验：回看天数；项目进度报告：统计周期（周 / 月）</div>
+          <div class="ac-form-item__tip">一致性校验：回看天数；项目进度报告：统计周期（周 / 月）；研发周报与研发日报无类型参数</div>
         </div>
       </div>
       <div class="ac-form-item">
