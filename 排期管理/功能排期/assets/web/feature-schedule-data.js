@@ -1,11 +1,12 @@
 /* 功能排期原型共用演示数据：工作台与卡片详情页读写同一份虚构样例，按浏览器会话保存，关闭页签或「重置演示数据」后恢复初始样例 */
 (function () {
   'use strict';
-  const KEY = 'fs.demo.v2';
+  const KEY = 'fs.demo.v3';
   const TODAY = '2026-10-17';
   const NOW = '2026-10-17 18:00';
   const ME = '张三';
   const USERS = ['张三', '李四', '王五', '赵六', '钱七', '孙八'];
+  const PROJECT_COLORS = ['blue', 'cyan', 'purple', 'gold', 'magenta', 'orangered'];
   const LOG_LABEL = { CREATED: '创建卡片', EDITED: '编辑', SCHEDULED: '排期', UNSCHEDULED: '取消排期', RESCHEDULED: '调整排期', TAKEN: '领取开发', RELEASED: '释放开发', MARKED_DONE: '标记完成', REVERTED: '回退', DELETED: '删除' };
 
   /* 云效组织内研发仓的演示快照：仓信息（名称 / 默认分支 / 分支）以云效 Codeup 为真源，页面经云效 API 实时获取 */
@@ -91,9 +92,22 @@
       mk({ no: 'FS-20261006-002', title: 'skills 仓采集日志汇总', repo: 'busyming-skills-common', commit: '5e6f7a8', nature: 'TECH', createdAt: '2026-10-06 15:00' }),
       mk({ no: 'FS-20260920-003', title: '门店档案字段补录', owner: '孙八', createdAt: '2026-09-20 09:00' }),
       mk({ no: 'FS-20260918-001', title: '要货单默认仓库', owner: '钱七', module: 'storeorder', contact: '门店运营·陈一', createdAt: '2026-09-18 16:25' }),
+      mk({ no: 'FS-20261016-012', title: '采集任务告警阈值说明', owner: '王五', repo: 'busyming-skills-devops', module: 'devops', nature: 'TECH', createdAt: '2026-10-16 18:20' }),
+      mk({ no: 'FS-20261015-012', title: 'OCSS 商城订单导出字段', owner: '孙八', repo: 'busyming-skills-ydtj', module: 'order', contact: '商城运营·吴二', createdAt: '2026-10-15 18:40' }),
+      mk({ no: 'FS-20261014-010', title: '公共组件版本说明', owner: '钱七', repo: 'busyming-skills-common', module: 'reference', createdAt: '2026-10-14 19:10' }),
+      mk({ no: 'FS-20261013-009', title: '采集日志字段说明', owner: '王五', repo: 'busyming-skills-common', module: 'devops', nature: 'TECH', createdAt: '2026-10-13 18:15' }),
       mk({ no: 'FS-20261016-028', title: '入库契约两处落地登记', owner: '孙八', status: 'NON_FEATURE', module: 'reference', createdAt: '2026-10-16 15:25' }),
       mk({ no: 'FS-20261016-029', title: '出库契约三处落地登记', owner: '孙八', status: 'NON_FEATURE', module: 'reference', createdAt: '2026-10-16 15:25' }),
+      mk({ no: 'FS-20261016-030', title: '接口字段命名对齐说明', owner: '钱七', repo: 'busyming-skills-common', status: 'NON_FEATURE', module: 'docs', createdAt: '2026-10-16 16:10' }),
+      mk({ no: 'FS-20261016-031', title: '排期看板交互说明补充', owner: '孙八', status: 'NON_FEATURE', module: 'schedule', createdAt: '2026-10-16 16:25' }),
+      mk({ no: 'FS-20261015-009', title: '云效分支规范补录', owner: '钱七', repo: 'busyming-skills-ydtj', status: 'NON_FEATURE', module: 'docs', createdAt: '2026-10-15 17:40' }),
+      mk({ no: 'FS-20261015-010', title: '采集任务日志字段说明', owner: '孙八', repo: 'busyming-skills-devops', status: 'NON_FEATURE', module: 'devops', createdAt: '2026-10-15 18:05' }),
+      mk({ no: 'FS-20261014-006', title: '旧版菜单名称清理', owner: '钱七', status: 'NON_FEATURE', createdAt: '2026-10-14 16:20' }),
+      mk({ no: 'FS-20261013-005', title: '技术方案目录归档', owner: '孙八', repo: 'busyming-skills-common', status: 'NON_FEATURE', createdAt: '2026-10-13 15:35' }),
+      mk({ no: 'FS-20261012-008', title: '接口示例脱敏整理', owner: '钱七', repo: 'ocss-mall-admin', status: 'NON_FEATURE', module: 'docs', createdAt: '2026-10-12 14:10' }),
       mk({ no: 'FS-20261011-007', title: 'changelog 补录', status: 'NON_FEATURE', createdAt: '2026-10-11 18:02' }),
+      mk({ no: 'FS-20261010-009', title: '术语表统稿', owner: '孙八', status: 'NON_FEATURE', module: 'docs', createdAt: '2026-10-10 11:25' }),
+      mk({ no: 'FS-20261009-007', title: '部署说明勘误', owner: '钱七', repo: 'busyming-skills-devops', status: 'NON_FEATURE', createdAt: '2026-10-09 09:50' }),
     ];
     cards.forEach((c) => {
       if (!c.commit) c.commit = pseudoHash(c.no);
@@ -110,10 +124,10 @@
     return {
       cards,
       projects: [
-        { id: 'p1', name: '零食王国', harness: 'busyming-skills', repos: ['busyming-snackingdom-web', 'busyming-snackingdom-app'], enabled: true, note: '门店 ERP 主线' },
-        { id: 'p2', name: 'OCSS 商城', harness: 'busyming-skills-ydtj', repos: ['ocss-mall-admin'], enabled: true, note: '' },
-        { id: 'p4', name: '公共组件', harness: 'busyming-skills-common', repos: [], enabled: true, note: '暂无独立代码服务仓' },
-        { id: 'p3', name: '研发运维工具', harness: 'busyming-skills-devops', repos: ['busyming-snackingdom-devops', 'busyming-legacy-tools'], enabled: false, note: '已并入零食王国' },
+        { id: 'p1', name: '零食王国', harness: 'busyming-skills', repos: ['busyming-snackingdom-web', 'busyming-snackingdom-app'], enabled: true, color: 'blue', note: '门店 ERP 主线' },
+        { id: 'p2', name: 'OCSS 商城', harness: 'busyming-skills-ydtj', repos: ['ocss-mall-admin'], enabled: true, color: 'cyan', note: '' },
+        { id: 'p4', name: '公共组件', harness: 'busyming-skills-common', repos: [], enabled: true, color: 'purple', note: '暂无独立代码服务仓' },
+        { id: 'p3', name: '研发运维工具', harness: 'busyming-skills-devops', repos: ['busyming-snackingdom-devops', 'busyming-legacy-tools'], enabled: false, color: 'gold', note: '已并入零食王国' },
       ],
       release: ['2026-10-15', '2026-10-29'],
     };
@@ -136,7 +150,7 @@
   }
 
   window.FS_DEMO = {
-    TODAY, NOW, ME, USERS, LOG_LABEL, REPOS, COMMITS, makeLog, mk, load,
+    TODAY, NOW, ME, USERS, PROJECT_COLORS, LOG_LABEL, REPOS, COMMITS, makeLog, mk, load,
     save: (db) => session.set(KEY, JSON.stringify(db)),
     reset: () => session.del(KEY),
     stash: (k, v) => session.set(k, JSON.stringify(v)),

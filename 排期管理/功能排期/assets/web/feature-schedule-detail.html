@@ -220,7 +220,7 @@
   const DEMO_CARDS = [
     ['FS-20261016-009', '合并卡 · 开发中'],
     ['FS-20261010-005', '子卡 · 只读'],
-    ['FS-20261017-003', '待开发 · 缺业务对接人'],
+    ['FS-20261017-003', '待开发 · 待排期'],
     ['FS-20261014-003', '待开发 · 已被需求单关联'],
     ['FS-20261008-002', '开发中 · 已延期'],
     ['FS-20261012-001', '开发完成 · 已关联 commit'],
@@ -244,9 +244,9 @@
   const isDelayed = (c) => (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && !!c.start && endOf(c) < TODAY_S;
   const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
   const isRO = (c) => !!c.parent || !PERM.EDIT;
-  const needContact = (c) => !c.req && c.nature !== 'TECH' && !String(c.contact || '').trim();
   const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.harness === repo); return p ? p.name : '未归属项目'; };
   const projectEntryOf = (repo) => PROJECTS.find((x) => x.enabled && x.harness === repo) || null;
+  const projectColorOf = (repo) => { const p = projectEntryOf(repo); return p && p.color ? p.color : 'default'; };
   const days = (c) => span(c.start, endOf(c)) + 1;
   const rangeText = (a, b) => (a === b ? a : a + ' ~ ' + b);
   const addLog = (c, type, detail) => c.logs.unshift(D.makeLog(type, detail, ME, NOW_S));
@@ -260,6 +260,7 @@
   const icon = (name) => `<span class="ac-icon" data-ac="AcIcon" data-name="${name}" data-size="sm"></span>`;
   const txt = (html, cls) => `<span data-ac="AcTypographyText" class="ac-typo-text${cls ? ' ' + cls : ''}"><span class="ac-typo-text__body">${html}</span></span>`;
   const tag = (text, color, pre, size) => `<span data-ac="AcTag" class="ac-tag ac-tag--${size || 'mini'} ac-tag--${color || 'default'} is-filled">${pre || ''}<span class="ac-tag__text">${esc(text)}</span></span>`;
+  const projectTag = (c, size) => tag(projectOf(c.repo), projectColorOf(c.repo), icon('tag'), size || 'small');
   const badge = (st) => `<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--status" data-status="${ST[st].badge}"><span class="ac-badge__dot"></span><span class="ac-badge__text">${esc(ST[st].label)}</span></span>`;
   const emptyHtml = (desc, extra) => `<div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__image"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div><div class="ac-empty__description">${esc(desc)}</div>${extra ? '<div class="ac-empty__footer">' + extra + '</div>' : ''}</div>`;
   const alertHtml = (type, text, action) => `<div class="ac-alert ac-alert--${type}" data-ac="AcAlert" role="alert"><div class="ac-alert__icon">${{ info: 'ℹ', success: '✓', warning: '⚠', error: '⊘', normal: '●' }[type]}</div><div class="ac-alert__body"><div class="ac-alert__content">${esc(text)}</div></div>${action ? '<div class="ac-alert__action">' + action + '</div>' : ''}</div>`;
@@ -290,7 +291,8 @@
     const tags = [tag(ST[st].label, ST[st].tag, '', 'small')];
     if (c.merged) tags.push(tag('合并卡 · ' + c.children.length + ' 项', 'primary', icon('link'), 'small'));
     if (c.parent) tags.push(tag('子卡', 'default', icon('link'), 'small'));
-    tags.push(tag(c.module, 'blue', '', 'small'));
+    tags.push(projectTag(c));
+    tags.push(tag(c.module, 'default', '', 'small'));
     if (c.nature === 'TECH') tags.push(tag('技术支持', 'purple', '', 'small'));
     $('#pageTags').innerHTML = tags.join('');
     document.title = c.no + ' ' + c.title + ' · 卡片详情 · 功能排期 · 鸣鸣很忙';
@@ -300,7 +302,6 @@
     if (c.parent) list.push(alertHtml('info', '当前隶属合并卡 ' + c.parent + '，状态、排期与开发人由合并卡控制，本页只读', btn('查看合并卡', `data-open-card="${c.parent}"`, 'sm text')));
     if (c.status === 'NON_FEATURE') list.push(alertHtml('warning', '该卡片为非需求改动：不进入待排期池与月历，不参与排期、领取与完成'));
     if (isDelayed(c)) list.push(alertHtml('warning', '已延期：排期截止 ' + endOf(c) + '，当前仍为「' + ST[c.status].label + '」，已超出 ' + span(endOf(c), TODAY_S) + ' 天'));
-    if (!c.parent && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && needContact(c)) list.push(alertHtml('normal', '排期写入前需补录业务对接人（未被需求单关联的业务功能卡）', PERM.EDIT ? btn('去补录', 'data-act="editContact"', 'sm text') : ''));
     $('#alertBox').innerHTML = list.join('');
     $('#alertBox').hidden = !list.length;
   }
@@ -317,7 +318,7 @@
     if (c.parent) sub.push('随合并卡 ' + c.parent + ' 流转');
     $('#lifeSub').textContent = sub.join(' · ');
   }
-  const kpi = (label, value, unit, foot, tone, isMono) => `<div class="tpl-kpi${tone ? ' is-' + tone : ''}"><div class="tpl-kpi__head"><span class="tpl-kpi__dot${tone && tone !== 'info' ? ' is-' + tone : ''}"></span><span class="tpl-kpi__label">${label}</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value${isMono ? ' mono' : ''}">${esc(value)}</span>${unit ? '<span class="tpl-kpi__unit">' + unit + '</span>' : ''}</div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">${esc(foot)}</span></div></div>`;
+  const kpi = (label, value, unit, foot, tone, isMono, raw) => `<div class="tpl-kpi${tone ? ' is-' + tone : ''}"><div class="tpl-kpi__head"><span class="tpl-kpi__dot${tone && tone !== 'info' ? ' is-' + tone : ''}"></span><span class="tpl-kpi__label">${label}</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value${isMono ? ' mono' : ''}">${raw ? value : esc(value)}</span>${unit ? '<span class="tpl-kpi__unit">' + unit + '</span>' : ''}</div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">${esc(foot)}</span></div></div>`;
   function renderKpi(c) {
     const nf = c.status === 'NON_FEATURE';
     const late = isDelayed(c);
@@ -327,7 +328,7 @@
     const working = c.status === 'IN_PROGRESS' || c.status === 'DONE';
     const dev = kpi('开发人', working && c.dev ? c.dev : '—', '', working && c.takenAt ? '领取于 ' + mdt(c.takenAt) : nf ? '不参与领取' : '待领取', 'info');
     const done = kpi('完成 commit', String(c.done.length), '个', c.status === 'DONE' ? (c.doneAt ? '完成于 ' + mdt(c.doneAt) : '已完成') : nf ? '不参与完成' : '开发完成后可关联', 'success', true);
-    const fourth = c.merged ? kpi('子卡', String(c.children.length), '张', '同模块 ' + c.module, '', true) : kpi('所属项目', projectOf(c.repo), '', '按源仓 ' + c.repo + ' 解析', '');
+    const fourth = c.merged ? kpi('子卡', String(c.children.length), '张', '同模块 ' + c.module, '', true) : kpi('所属项目', projectTag(c), '', '按源仓 ' + c.repo + ' 解析', '', false, true);
     $('#kpiGrid').innerHTML = sched + dev + done + fourth;
   }
 
@@ -344,16 +345,16 @@
     const nf = c.status === 'NON_FEATURE';
     const owner = esc(c.owner) + (c.ownerUnmatched ? ' ' + tag('未匹配系统用户', 'warning') : '');
     let contact = esc(c.contact);
-    if (!c.contact) contact = c.req ? muted('未填写，以需求单提交人 ' + c.req + ' 兜底') : nf || c.nature === 'TECH' ? '—' : txt('未填写，排期写入前需补录', 'ac-typo-text--warning');
+    if (!c.contact) contact = c.req ? muted('未填写，以需求单提交人 ' + c.req + ' 兜底') : nf || c.nature === 'TECH' ? '—' : muted('未填写');
     const source = c.merged ? muted('合并卡（无源仓）') : esc((repoOf(c.repo) || { name: c.repo }).name) + ' ' + muted(c.repo);
     const info = [
       desc('卡片编号', mono(c.no)),
       desc('标题', esc(c.title)),
       desc('负责人', owner),
-      desc('来源模块', tag(c.module, 'blue')),
+      desc('来源模块', tag(c.module, 'default')),
       desc('需求性质', NATURE_LABEL[c.nature]),
       desc('业务对接人', contact),
-      desc('所属项目', esc(projectOf(c.repo))),
+      desc('所属项目', projectTag(c)),
       desc('源代码仓', source),
       desc('源 commit', c.merged ? '—' : mono(String(c.commit).slice(0, 7))),
       desc('创建时间', mono(c.createdAt)),
@@ -380,7 +381,7 @@
     const rows = c.children.map((no) => ({ ch: byNo(no), snap: c.snaps[no] || {} })).filter((x) => x.ch).sort((a, b) => ((a.snap.at || '') < (b.snap.at || '') ? 1 : -1));
     const head = `<div class="tpl-toolbar"><span class="tpl-toolbar__title">子卡明细</span><div class="tpl-toolbar__right"><span class="u-sub">子卡状态、排期与开发人随合并卡扩散；合并前快照用于解散恢复</span></div></div>`;
     if (!rows.length) return `<div class="tpl-section">${head}${emptyHtml('合并卡暂无子卡')}</div>`;
-    const body = rows.map((x) => `<tr><td><span class="ac-link mono" role="link" tabindex="0" data-open-card="${x.ch.no}">${esc(x.ch.no)}</span></td><td class="u-wrap">${esc(x.ch.title)}</td><td>${tag(x.ch.module, 'blue')}</td><td>${esc(x.ch.owner)}</td><td>${badge(x.snap.status || 'PENDING')}</td><td class="mono">${esc(x.snap.start || '未排期')}</td><td class="mono">${esc(x.snap.at || '—')}</td><td><div class="ac-row-actions" data-ac="AcRowActions">${rowBtn('查看', `data-open-card="${x.ch.no}"`)}</div></td></tr>`).join('');
+    const body = rows.map((x) => `<tr><td><span class="ac-link mono" role="link" tabindex="0" data-open-card="${x.ch.no}">${esc(x.ch.no)}</span></td><td class="u-wrap">${esc(x.ch.title)}</td><td>${tag(x.ch.module, 'default')}</td><td>${esc(x.ch.owner)}</td><td>${badge(x.snap.status || 'PENDING')}</td><td class="mono">${esc(x.snap.start || '未排期')}</td><td class="mono">${esc(x.snap.at || '—')}</td><td><div class="ac-row-actions" data-ac="AcRowActions">${rowBtn('查看', `data-open-card="${x.ch.no}"`)}</div></td></tr>`).join('');
     return `<div class="tpl-section">${head}<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>子卡编号</th><th class="u-wrap">标题</th><th>来源模块</th><th>提交人</th><th>合并前状态</th><th>合并前排期日</th><th>并入时间</th><th>操作</th></tr></thead><tbody>${body}</tbody></table></div></div>`;
   }
   function commitsHtml(c) {
@@ -620,7 +621,7 @@
     }${
       formItem('需求性质', radioGroup('nature', d.nature, [['BIZ', '业务功能'], ['TECH', '技术支持']], nf), { help: '技术支持指技术类、非功能性改动，如文档补录、参数说明、性能优化、工具脚本、changelog' })
     }${
-      formItem('业务对接人', inputHtml('contact', d.contact, c.req ? '可手工填写，留空时以需求单提交人兜底' : '排期写入前需补录', { max: 64, disabled: nf }), { help: c.req ? 'REQ 单提交人：' + c.req : '', helpId: 'helpContact' })
+      formItem('业务对接人', inputHtml('contact', d.contact, c.req ? '可手工填写，留空时以需求单提交人兜底' : '请输入业务对接人（选填）', { max: 64, disabled: nf }), { help: c.req ? 'REQ 单提交人：' + c.req : '', helpId: 'helpContact' })
     }</div>`;
   }
   function openEdit(focus) {
@@ -674,14 +675,12 @@
     const end = SC.end || SC.start;
     const picked = SC.start ? '已选：' + rangeText(SC.start, end) + ' · 共 ' + (span(SC.start, end) + 1) + ' 天' + (SC.picking ? '，可再点选结束日期' : '') : '点选开始日期与结束日期；单日排期只点一次';
     $('#scheduleBody').innerHTML = (SC.err ? alertHtml('error', SC.err) : '')
-      + (SC.need ? alertHtml('warning', '该卡片未被需求单关联且为业务功能，排期写入前需补录业务对接人') : '')
-      + `<div>${muted(now)}</div>` + calHtml() + `<div>${SC.start ? txt(esc(picked), 'is-bold') : muted(picked)}</div>`
-      + (SC.need ? `<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('业务对接人', inputHtml('scContact', SC.contact, '请输入业务对接人', { max: 64 }), { required: true, helpId: 'helpScContact' })}</div>` : '');
+      + `<div>${muted(now)}</div>` + calHtml() + `<div>${SC.start ? txt(esc(picked), 'is-bold') : muted(picked)}</div>`;
   }
   function openSchedule() {
     const c = card();
     const keep = c.start && c.start >= TODAY_S;
-    SC = { start: keep ? c.start : null, end: keep ? endOf(c) : null, picking: false, view: pd((keep ? c.start : TODAY_S).slice(0, 8) + '01'), need: needContact(c), contact: '', err: '' };
+    SC = { start: keep ? c.start : null, end: keep ? endOf(c) : null, picking: false, view: pd((keep ? c.start : TODAY_S).slice(0, 8) + '01'), err: '' };
     renderSchedule();
     showLayer('scheduleModal');
   }
@@ -698,10 +697,8 @@
     SC.err = !start ? '请选择排期日期' : start < TODAY_S ? '不可将卡片改期到今天之前' : end < start ? '结束日期不能早于开始日期' : '';
     if (SC.err) { renderSchedule(); return; }
     if (start === c.start && end === endOf(c)) { toast('排期没有变化', 'info'); return; }
-    if (SC.need && !SC.contact.trim()) { setHelp('helpScContact', '排期写入前请先补录业务对接人'); return; }
     busy(el, true);
     await wait();
-    if (SC.need) { c.contact = SC.contact.trim(); addLog(c, 'EDITED', '业务对接人：空 → ' + c.contact); }
     const before = c.start;
     c.start = start;
     c.end = end;
@@ -970,7 +967,6 @@
     closeFloats();
     const fn = {
       edit: () => openEdit(),
-      editContact: () => openEdit('contact'),
       schedule: openSchedule,
       unschedule: () => unscheduleCard(el),
       commits: () => openDone('commits'),
@@ -1080,7 +1076,6 @@
     if (f === 'title') hint('helpTitle', el.value.length >= 30 ? '标题最长 30 字符' : '');
     return true;
   });
-  on('input', '[data-field="scContact"]', (e, el) => { SC.contact = el.value; syncCount(el); setHelp('helpScContact', ''); return true; });
   on('input', '[data-field="branch"]', (e, el) => { DN.branch = el.value.trim(); store.set('fs.branch.' + DN.repo, DN.branch); $('#commitList').innerHTML = commitListHtml(); return true; });
   on('input', '[data-field="commitQ"]', (e, el) => { DN.q = el.value; $('#commitList').innerHTML = commitListHtml(); return true; });
   on('input', '[data-field="logQ"]', (e, el) => { S.logQ = el.value; $('#logList').innerHTML = logListHtml(card()); return true; });

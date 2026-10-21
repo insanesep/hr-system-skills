@@ -7,7 +7,7 @@
 | 类型 | 编码 | 名称 | 控制的操作 |
 |------|------|------|-----------|
 | 菜单 | `devhubFeatureSchedule` | 功能排期管理 | 访问研发排期工作台与卡片详情页；菜单位于「研发 / 研发管理」，路由 `/subapp/devhub/feature-schedule` |
-| 按钮 | `devhubFeatureScheduleEdit` | 功能排期编辑 | 拖拽排期与改期、右键快捷改期、补录业务对接人、详情页编辑卡片信息与调整排期、移回待排期、领取与取消领取、开发完成后关联与移除完成 commit、移入与恢复非需求改动、批量移入、合并与解散、新建卡片、项目配置维护 |
+| 按钮 | `devhubFeatureScheduleEdit` | 功能排期编辑 | 拖拽排期与改期、右键快捷改期、详情页编辑卡片信息与调整排期、移回待排期、领取与取消领取、开发完成后关联与移除完成 commit、移入与恢复非需求改动、批量移入、合并与解散、新建卡片、项目配置维护 |
 | 按钮 | `devhubFeatureScheduleDelete` | 功能排期删除 | 删除卡片，含删除合并卡 |
 | 按钮 | `devhubFeatureScheduleMarkDone` | 功能排期标记完成 | 标记完成、回退，以及列表视图行内快捷操作（领取 / 完成 / 回退） |
 | 按钮 | `devhubFeatureScheduleReleaseDay` | 功能排期切换发版日 | 点击日历空白处切换发版日标记 |

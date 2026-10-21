@@ -12,6 +12,13 @@
   两页共用 feature-schedule-data.js 的会话内演示数据。演示基准日 2026-10-17，数据为虚构样例。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
+<style>
+  /* 非需求改动弹层固定高度：设计系统 AcModal 仅提供视口级 max-height，暂无固定高度属性 */
+  .fs-nf-modal { height: min(640px, calc(100vh - 140px)); display: flex; flex-direction: column; }
+  .fs-nf-modal .ac-modal__body { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
+  .fs-nf-modal .ac-modal__footer { flex: 0 0 auto; }
+  .fs-nf-modal .ac-modal__footer[hidden] { display: none; }
+</style>
 </head>
 <body>
 <nav class="web-nav">
@@ -86,7 +93,7 @@
           </div>
         </div>
         <div class="tpl-section" id="poolList"></div>
-        <button class="ac-btn ac-btn--block" type="button" id="poolMoreBtn" hidden>加载更多</button>
+        <div class="tpl-section" id="poolPager"></div>
       </div>
     </aside>
     <div class="tpl-dual__main">
@@ -164,9 +171,10 @@
 <div class="ac-modal" data-ac="AcModal" id="nfModal" hidden>
   <div class="ac-modal__mask" data-close="nfModal"></div>
   <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="600">
+    <div class="ac-modal__panel fs-nf-modal" data-width="600">
       <div class="ac-modal__header"><div class="ac-modal__title">非需求改动</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="nfModal">×</button></div>
       <div class="ac-modal__body" id="nfModalBody"></div>
+      <div class="ac-modal__footer" id="nfModalFooter" hidden></div>
     </div>
   </div>
 </div>
@@ -178,17 +186,6 @@
       <div class="ac-modal__header"><div class="ac-modal__title" id="projectModalTitle">项目配置</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="projectModal">×</button></div>
       <div class="ac-modal__body"><div class="tpl-section" id="projectModalBody"></div></div>
       <div class="ac-modal__footer" id="projectModalFooter"></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="contactModal" hidden>
-  <div class="ac-modal__mask" data-close="contactModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="480">
-      <div class="ac-modal__header"><div class="ac-modal__title">补录业务对接人</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="contactModal">×</button></div>
-      <div class="ac-modal__body"><div class="tpl-section" id="contactBody"></div></div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="contactModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="contactOkBtn">保存并排期</button></div>
     </div>
   </div>
 </div>
@@ -289,7 +286,10 @@
     mode: null,
     selected: new Set(),
     mergeModule: null,
-    poolLimit: 6,
+    poolPage: 1,
+    poolSize: 10,
+    nfPage: 1,
+    nfSize: 10,
     sort: { key: 'start', dir: 'asc' },
     drag: null,
   };
@@ -298,7 +298,7 @@
   const CTX = D.unstash('fs.ctx');
   if (CTX) {
     const toSet = (a) => (a ? new Set(a) : null);
-    Object.assign(S, { view: CTX.view, y: CTX.y, m: CTX.m, weekStart: pd(CTX.weekStart), search: CTX.search, poolLimit: CTX.poolLimit, sort: CTX.sort });
+    Object.assign(S, { view: CTX.view, y: CTX.y, m: CTX.m, weekStart: pd(CTX.weekStart), search: CTX.search, poolPage: CTX.poolPage || 1, poolSize: [10, 20, 50].includes(CTX.poolSize) ? CTX.poolSize : 10, sort: CTX.sort });
     S.f = { onlyMine: CTX.f.onlyMine, status: new Set(CTX.f.status), owner: new Set(CTX.f.owner), module: new Set(CTX.f.module), repo: toSet(CTX.f.repo), project: toSet(CTX.f.project) };
   }
 
@@ -312,9 +312,10 @@
   const isDelayed = (c) => delayCtx() && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && !!c.start && endOf(c) < TODAY_S;
   const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
   const isLocked = (c) => c.status === 'DONE' || c.status === 'NON_FEATURE' || !!c.parent;
-  const needContact = (c) => !c.req && c.nature !== 'TECH' && !String(c.contact || '').trim();
   const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.harness === repo); return p ? p.name : '未归属项目'; };
   const projectEntryOf = (repo) => PROJECTS.find((x) => x.enabled && x.harness === repo) || null;
+  const projectColorOf = (repo) => { const p = projectEntryOf(repo); return p && p.color ? p.color : 'default'; };
+  const projectColorByName = (name) => { const p = PROJECTS.find((x) => x.enabled && x.name === name); return p && p.color ? p.color : 'default'; };
   const sourceRepos = () => PROJECTS.filter((p) => p.enabled && repoOf(p.harness)).map((p) => p.harness);
   const projectOptions = () => PROJECTS.filter((p) => p.enabled).map((p) => p.name).concat('未归属项目');
   const subset = (set, all) => !!set && set.size > 0 && set.size < all.length;
@@ -336,7 +337,7 @@
     const hay = (c.title + ' ' + c.content + ' ' + c.no + ' ' + c.owner).toLowerCase();
     return t.every((k) => hay.includes(k));
   }
-  const poolAll = () => CARDS.filter((c) => alive(c) && !c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, { pool: true })).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  const poolAll = () => CARDS.filter((c) => alive(c) && !c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, { pool: true })).sort((a, b) => (a.createdAt === b.createdAt ? (a.no < b.no ? 1 : -1) : (a.createdAt < b.createdAt ? 1 : -1)));
   const poolVisible = () => poolAll().filter((c) => hitOf(c) !== false);
   const calCards = () => CARDS.filter((c) => alive(c) && c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, {}));
   const cardsOn = (k, list) => list.filter((c) => c.start <= k && endOf(c) >= k);
@@ -357,6 +358,28 @@
   const icon = (name) => `<span class="ac-icon" data-ac="AcIcon" data-name="${name}" data-size="sm"></span>`;
   const txt = (html, cls) => `<span data-ac="AcTypographyText" class="ac-typo-text${cls ? ' ' + cls : ''}"><span class="ac-typo-text__body">${html}</span></span>`;
   const tag = (text, color, pre) => `<span data-ac="AcTag" class="ac-tag ac-tag--mini ac-tag--${color || 'default'} is-filled">${pre || ''}<span class="ac-tag__text">${esc(text)}</span></span>`;
+  const projectTag = (c) => tag(projectOf(c.repo), projectColorOf(c.repo), icon('tag'));
+  function pageItems(cur, pages) {
+    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
+    const picked = [...new Set([1, pages, cur - 1, cur, cur + 1])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
+    const out = [];
+    picked.forEach((n, i) => { if (i && n - picked[i - 1] > 1) out.push('…'); out.push(n); });
+    return out;
+  }
+  function pagerHtml(total, page, size, o) {
+    const opt = o || {};
+    const pages = Math.max(1, Math.ceil(total / size));
+    const cur = Math.min(Math.max(1, page), pages);
+    const unit = opt.unit || '张';
+    const sizes = [10, 20, 50].map((n) => `<li class="ac-pagination__page-size-option${n === size ? ' is-selected' : ''}" data-page-size-option="${n}" data-size="${n}">${n} 条/页</li>`).join('');
+    const sizeSel = `<span class="ac-pagination__page-size"><span class="ac-pagination__page-size-trigger" role="button" tabindex="0"><span class="ac-pagination__page-size-value">${size} 条/页</span><span class="ac-pagination__page-size-arrow">▾</span></span><ul class="ac-pagination__page-size-panel" hidden>${sizes}</ul></span>`;
+    if (pages <= 1) return `<div class="ac-pagination${opt.compact ? ' ac-pagination--mini' : ''}" data-ac="AcPagination" data-total="${total}" data-current="1" data-page-size="${size}">${txt('共 ' + total + ' ' + unit, 'ac-typo-text--secondary')}${sizeSel}</div>`;
+    const nums = pageItems(cur, pages).map((n) => (n === '…'
+      ? '<span class="ac-pagination__ellipsis">…</span>'
+      : `<button class="ac-btn ac-pagination__btn${n === cur ? ' is-active' : ''}" type="button" data-page="${n}" aria-label="第 ${n} 页"${n === cur ? ' aria-current="page"' : ''}>${n}</button>`)).join('');
+    const jumper = opt.jumper ? '<span class="ac-pagination__jumper">跳至<input class="ac-pagination__jumper-input" type="text" inputmode="numeric" aria-label="跳转页码" name="page" data-page-jump />页</span>' : '';
+    return `<div class="ac-pagination${opt.compact ? ' ac-pagination--mini' : ''}" data-ac="AcPagination" data-total="${total}" data-current="${cur}" data-page-size="${size}">${txt('共 ' + total + ' ' + unit, 'ac-typo-text--secondary')}<button class="ac-btn ac-pagination__btn ac-pagination__btn--nav" type="button" data-page-step="prev" aria-label="上一页"${cur <= 1 ? ' disabled' : ''}>‹</button><span class="ac-pagination__pages">${nums}</span><button class="ac-btn ac-pagination__btn ac-pagination__btn--nav" type="button" data-page-step="next" aria-label="下一页"${cur >= pages ? ' disabled' : ''}>›</button>${jumper}${sizeSel}</div>`;
+  }
   const badge = (st, label) => `<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--status" data-status="${ST[st].badge}"><span class="ac-badge__dot"></span>${label === false ? '' : '<span class="ac-badge__text">' + esc(label || ST[st].label) + '</span>'}</span>`;
   const checkbox = (on, disabled, label, attrs) => `<span class="ac-checkbox${on === 'mixed' ? ' is-indeterminate' : on ? ' is-checked' : ''}${disabled ? ' is-disabled' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-ac="AcCheckbox" data-size="medium" data-shape="square"${attrs || ''}><span class="ac-checkbox__box">${on === 'mixed' ? '<span class="ac-checkbox__dash"></span>' : '<span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span>'}</span>${label ? '<span class="ac-checkbox__label">' + label + '</span>' : ''}</span>`;
   const emptyHtml = (desc, extra) => `<div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__image"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div><div class="ac-empty__description">${esc(desc)}</div>${extra ? '<div class="ac-empty__footer">' + extra + '</div>' : ''}</div>`;
@@ -393,7 +416,7 @@
     const lock = c.status === 'DONE' ? ' ' + icon('lock') : '';
     const devT = c.dev && (c.status === 'IN_PROGRESS' || c.status === 'DONE') ? ' ' + tag(c.dev, 'default', icon('user')) : '';
     const mergeT = c.merged ? ' ' + tag(c.children.length + ' 项', 'primary') : '';
-    let rows = `<div>${badge(st)} ${txt(esc(c.no), mCls)}${lock}</div><div>${txt(esc(c.owner), mCls)} ${tag(c.module, dim ? 'default' : 'blue')}${devT}${mergeT}</div>`;
+    let rows = `<div>${badge(st)} ${txt(esc(c.no), mCls)}${lock}</div><div>${txt(esc(c.owner), mCls)} ${projectTag(c)} ${tag(c.module, 'default')}${devT}${mergeT}</div>`;
     if (ctx === 'pool') rows += `<div>${icon('time')} ${txt(esc(c.createdAt), mCls)} ${relTag(c)}</div>`;
     return `<div data-ac="AcCard" class="ac-card ac-card--small is-bordered is-hoverable" data-card="${c.no}" data-ctx="${ctx}" draggable="${dragFlag()}" tabindex="0"><div class="ac-card__body">${titleRow}${rows}</div></div>`;
   }
@@ -401,18 +424,22 @@
     const hit = hitOf(c);
     const box = boxCtx().includes('month') ? checkbox(S.selected.has(c.no), !eligible(c, 'month')) : '';
     const cls = ((hit ? 'is-mark' : '') + (hit === false ? ' is-disabled' : '')).trim();
-    return `<span class="ac-calendar__event" data-card="${c.no}" data-ctx="month" draggable="${dragFlag()}" tabindex="0">${box}${badge(dispStatus(c), false)}<span class="ac-calendar__ev-text">${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), cls)}</span><span>${esc(c.owner)}</span></span>`;
+    return `<span class="ac-calendar__event" data-card="${c.no}" data-ctx="month" draggable="${dragFlag()}" tabindex="0">${box}${badge(dispStatus(c), false)}<span class="ac-calendar__ev-text">${projectTag(c)} ${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), cls)}</span><span>${esc(c.owner)}</span></span>`;
   }
 
   /* ---------- 待排期池 ---------- */
   function renderPool() {
     const list = poolVisible();
-    $('#poolCount').textContent = list.length;
-    $('#poolExpandCount').textContent = list.length;
-    $('#poolList').innerHTML = list.length
-      ? list.slice(0, S.poolLimit).map((c) => cardHtml(c, 'pool')).join('')
+    const total = list.length;
+    const pages = Math.max(1, Math.ceil(total / S.poolSize));
+    if (S.poolPage > pages) S.poolPage = pages;
+    const start = (S.poolPage - 1) * S.poolSize;
+    $('#poolCount').textContent = total;
+    $('#poolExpandCount').textContent = total;
+    $('#poolList').innerHTML = total
+      ? list.slice(start, start + S.poolSize).map((c) => cardHtml(c, 'pool')).join('')
       : S.f.onlyMine ? emptyHtml('没有由你提交的卡片', txt('关闭『只看自己』可查看全部', 'ac-typo-text--secondary')) : emptyHtml('待排期池已清空');
-    $('#poolMoreBtn').hidden = list.length <= S.poolLimit;
+    $('#poolPager').innerHTML = total ? pagerHtml(total, S.poolPage, S.poolSize, { compact: true, unit: '张' }) : '';
     $('#batchBtn').hidden = !PERM.EDIT;
     $('#batchBtn').textContent = S.mode === 'batch' ? '退出批量' : '批量';
   }
@@ -475,14 +502,14 @@
       return (x < y ? -1 : x > y ? 1 : 0) * (dir === 'asc' ? 1 : -1);
     });
     const th = (k, label) => `<th class="is-sortable${sk === k ? ' is-' + dir : ''}" data-sort="${k}">${label}</th>`;
-    const head = `<th class="u-wrap">任务</th><th>编号</th><th>模块</th><th>提交人</th><th>开发人</th>${th('start', '开始')}<th>截止</th><th>状态</th>${th('createdAt', '创建时间')}<th>操作</th>`;
+    const head = `<th class="u-wrap">任务</th><th>编号</th><th>项目</th><th>模块</th><th>提交人</th><th>开发人</th>${th('start', '开始')}<th>截止</th><th>状态</th>${th('createdAt', '创建时间')}<th>操作</th>`;
     const body = rows.length
       ? rows.map((c) => {
           const hit = hitOf(c);
           const dim = hit === false ? ' is-disabled' : '';
-          return `<tr data-row="${c.no}"><td class="u-wrap">${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), ((hit ? 'is-mark' : '') + dim).trim())}</td><td>${txt(esc(c.no), 'ac-typo-text--secondary' + dim)}</td><td>${tag(c.module, 'blue')}</td><td>${esc(c.owner)}</td><td>${esc(c.dev || '—')}</td><td>${c.start}</td><td>${endOf(c)}</td><td>${badge(dispStatus(c))}</td><td>${esc(c.createdAt)}</td><td>${rowAction(c)}</td></tr>`;
+          return `<tr data-row="${c.no}"><td class="u-wrap">${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), ((hit ? 'is-mark' : '') + dim).trim())}</td><td>${txt(esc(c.no), 'ac-typo-text--secondary' + dim)}</td><td>${projectTag(c)}</td><td>${tag(c.module, 'default')}</td><td>${esc(c.owner)}</td><td>${esc(c.dev || '—')}</td><td>${c.start}</td><td>${endOf(c)}</td><td>${badge(dispStatus(c))}</td><td>${esc(c.createdAt)}</td><td>${rowAction(c)}</td></tr>`;
         }).join('')
-      : `<tr><td colspan="10">${emptyHtml('本月暂无已排期的卡片')}</td></tr>`;
+      : `<tr><td colspan="11">${emptyHtml('本月暂无已排期的卡片')}</td></tr>`;
     $('#listView').innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
     return rows;
   }
@@ -564,6 +591,14 @@
     renderZero(shown);
     renderMode();
     fitToolbar();
+  }
+  function resetPool(opts) {
+    S.poolPage = 1;
+    if (opts && opts.exitMode && S.mode) {
+      S.mode = null;
+      S.selected.clear();
+      S.mergeModule = null;
+    }
   }
 
   /* ---------- 弹窗与反馈 ---------- */
@@ -707,7 +742,7 @@
   function goDetail(no) {
     const f = S.f;
     const arr = (x) => (x ? [...x] : null);
-    D.stash('fs.ctx', { view: S.view, y: S.y, m: S.m, weekStart: ds(S.weekStart), search: S.search, poolLimit: S.poolLimit, sort: S.sort, f: { onlyMine: f.onlyMine, status: [...f.status], owner: [...f.owner], module: [...f.module], repo: arr(f.repo), project: arr(f.project) } });
+    D.stash('fs.ctx', { view: S.view, y: S.y, m: S.m, weekStart: ds(S.weekStart), search: S.search, poolPage: S.poolPage, poolSize: S.poolSize, sort: S.sort, f: { onlyMine: f.onlyMine, status: [...f.status], owner: [...f.owner], module: [...f.module], repo: arr(f.repo), project: arr(f.project) } });
     persist();
     location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
   }
@@ -719,35 +754,10 @@
   }
   const spread = (c) => (c.merged ? '，扩散至 ' + c.children.length + ' 张子卡' : '');
   function setHelp(id, msg) { const el = $('#' + id); if (!el) return; el.textContent = msg; el.classList.toggle('is-error', !!msg); }
-  let CT = null;
-  function openContact(c, start, end) {
-    CT = { no: c.no, start, end };
-    const rows = [['卡片', c.no + ' ' + c.title], ['目标排期', start + (end !== start ? ' ~ ' + end : '')]];
-    $('#contactBody').innerHTML = alertHtml('warning', '该卡片未被需求单关联且为业务功能，排期写入前需补录业务对接人')
-      + `<div data-ac="AcDescriptions" class="ac-descriptions ac-descriptions--medium ac-descriptions--layout-horizontal"><dl class="ac-descriptions__list">${rows.map((p) => `<div class="ac-descriptions__pair"><dt class="ac-descriptions__label">${p[0]}<span class="ac-descriptions__colon">:</span></dt><dd class="ac-descriptions__value">${esc(p[1])}</dd></div>`).join('')}</dl></div>`
-      + `<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('业务对接人', inputHtml('ctContact', '', '请输入业务对接人', { max: 64 }), { required: true, helpId: 'helpCtContact' })}</div>`;
-    showLayer('contactModal');
-    setTimeout(() => { const el = $('#contactModal [data-field="ctContact"]'); if (el) el.focus(); }, 60);
-  }
-  async function saveContact(btn) {
-    const c = byNo(CT.no);
-    const v = ($('#contactModal [data-field="ctContact"]').value || '').trim();
-    if (!v) { setHelp('helpCtContact', '排期写入前请先补录业务对接人'); return; }
-    busy(btn, true);
-    await wait();
-    c.contact = v;
-    addLog(c, 'EDITED', '业务对接人：空 → ' + v);
-    const { start, end } = CT;
-    busy(btn, false);
-    CT = null;
-    hideLayer('contactModal');
-    await applySchedule(c, start, end, { msg: '已补录业务对接人，' + (c.start ? '改期到 ' : '排期到 ') + md(start) });
-  }
   async function applySchedule(c, start, end, o) {
     const opt = o || {};
     if (start < TODAY_S) { toast('不可将卡片改期到今天之前', 'error'); return false; }
     if (c.start === start && endOf(c) === end) return false;
-    if (needContact(c)) { openContact(c, start, end); return false; }
     markLoading(c.no);
     await wait();
     const before = c.start;
@@ -769,6 +779,7 @@
     c.end = null;
     addLog(c, 'UNSCHEDULED', '取消排期：' + before + spread(c));
     diffuse(c, ['start', 'end']);
+    S.poolPage = 1;
     toast('已移回待排期');
     renderAll();
     if (OPEN.has('dayModal')) renderDayModal();
@@ -925,16 +936,24 @@
     CARDS.push(c);
     busy(btn, false);
     hideLayer('newCardModal');
+    S.poolPage = 1;
     toast('已生成卡片 ' + no + '，落入待排期池');
     renderAll();
   }
 
   /* ---------- 非需求改动与项目配置 ---------- */
   function renderNF() {
-    const list = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-    $('#nfModalBody').innerHTML = list.length
-      ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((c) => `<div class="ac-list-item ac-list-item--medium is-clickable" role="listitem" tabindex="0" data-open-card="${c.no}"><div class="ac-list-item__main"><div>${txt(esc(c.title), 'is-bold')} ${tag('非需求改动', 'warning')}</div><div>${txt(esc(c.no + ' · ' + c.owner + ' · ' + c.createdAt), 'ac-typo-text--secondary')}</div></div></div>`).join('')}</div></div>`
+    const all = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').sort((a, b) => (a.createdAt === b.createdAt ? (a.no < b.no ? 1 : -1) : (a.createdAt < b.createdAt ? 1 : -1)));
+    const total = all.length;
+    const pages = Math.max(1, Math.ceil(total / S.nfSize));
+    if (S.nfPage > pages) S.nfPage = pages;
+    const start = (S.nfPage - 1) * S.nfSize;
+    const list = all.slice(start, start + S.nfSize);
+    $('#nfModalBody').innerHTML = total
+      ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((c) => `<div class="ac-list-item ac-list-item--medium is-clickable" role="listitem" tabindex="0" data-open-card="${c.no}"><div class="ac-list-item__main"><div>${txt(esc(c.title), 'is-bold')} ${tag('非需求改动', 'warning')} ${projectTag(c)}</div><div>${txt(esc(c.no + ' · ' + c.owner + ' · ' + c.createdAt), 'ac-typo-text--secondary')}</div></div></div>`).join('')}</div></div>`
       : emptyHtml('暂无非需求改动卡片');
+    $('#nfModalFooter').hidden = !total;
+    $('#nfModalFooter').innerHTML = total ? `<div id="nfPager">${pagerHtml(total, S.nfPage, S.nfSize, { unit: '条', jumper: true })}</div>` : '';
   }
   const PJ = { view: 'list', edit: null, draft: null, base: '', err: '' };
   const pjDirty = () => PJ.view === 'form' && JSON.stringify(PJ.draft) !== PJ.base;
@@ -950,7 +969,7 @@
     const foot = $('#projectModalFooter');
     if (PJ.view === 'list') {
       $('#projectModalTitle').textContent = '项目配置';
-      body.innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>项目名称</th><th>harness 工程</th><th class="u-wrap">代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>${PROJECTS.map((p) => { const h = repoOf(p.harness); return `<tr><td>${esc(p.name)}</td><td>${h ? esc(h.name) + ' ' + txt(esc(p.harness), 'ac-typo-text--secondary') : esc(p.harness) + ' ' + tag('云效侧失效', 'default')}</td><td class="u-wrap">${p.repos.length ? p.repos.map((r) => (repoOf(r) ? tag(r, 'blue') : tag(r + '（云效侧失效）', 'default'))).join(' ') : '—'}</td><td>${p.enabled ? badge('DONE', '启用') : badge('PENDING', '停用')}</td><td>${PERM.EDIT ? `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-edit="${p.id}"><span class="ac-btn__label">编辑</span></button><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-toggle="${p.id}"><span class="ac-btn__label">${p.enabled ? '停用' : '启用'}</span></button></div>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>`;
+      body.innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>项目名称</th><th>harness 工程</th><th class="u-wrap">代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>${PROJECTS.map((p) => { const h = repoOf(p.harness); return `<tr><td>${tag(p.name, p.color || 'default')}</td><td>${h ? esc(h.name) + ' ' + txt(esc(p.harness), 'ac-typo-text--secondary') : esc(p.harness) + ' ' + tag('云效侧失效', 'default')}</td><td class="u-wrap">${p.repos.length ? p.repos.map((r) => (repoOf(r) ? tag(r, 'blue') : tag(r + '（云效侧失效）', 'default'))).join(' ') : '—'}</td><td>${p.enabled ? badge('DONE', '启用') : badge('PENDING', '停用')}</td><td>${PERM.EDIT ? `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-edit="${p.id}"><span class="ac-btn__label">编辑</span></button><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-toggle="${p.id}"><span class="ac-btn__label">${p.enabled ? '停用' : '启用'}</span></button></div>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>`;
       foot.innerHTML = (PERM.EDIT ? '<button class="ac-btn ac-btn--primary" type="button" data-pj-new>新建项目</button>' : '') + '<button class="ac-btn" type="button" data-close="projectModal">关闭</button>';
       return;
     }
@@ -964,7 +983,7 @@
       const on = d.repos.includes(r.repo);
       return `<div>${checkbox(on, !!t && !on, esc(r.name) + ' ' + txt(esc(r.repo), 'ac-typo-text--secondary') + (t ? ' ' + tag('已归属 ' + t.name, 'default') : ''), ' data-pj-repo="' + r.repo + '"')}</div>`;
     }).join('') + d.repos.filter((r) => !repoOf(r)).map((r) => `<div>${checkbox(true, true, txt(esc(r) + '（云效侧失效，映射失效）', 'ac-typo-text--secondary is-disabled'))}</div>`).join('');
-    body.innerHTML = `${PJ.err ? alertHtml('error', PJ.err) : ''}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('项目名称', inputHtml('pjName', d.name, '请填写项目名称'), { required: true, helpId: 'helpPjName' })}${formItem('harness 工程', selectHtml('pjHarness', d.harness, harnessOpts, '请选择 harness 工程'), { required: true, helpId: 'helpPjHarness', help: '项目的需求 / 文档真源工程，从云效研发仓中单选' })}${formItem('代码服务仓', `<div class="ac-checkbox-group">${checks}</div>`, { helpId: 'helpPjRepos', help: '选填；候选为云效研发仓，被其他启用中项目占用的仓不可选' })}${formItem('状态', radioGroup('pjEnabled', d.enabled ? 'on' : 'off', [['on', '启用'], ['off', '停用']]), { required: true })}${formItem('备注', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="pjNote" rows="2">${esc(d.note)}</textarea></div>`)}</div>`;
+    body.innerHTML = `${PJ.err ? alertHtml('error', PJ.err) : ''}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('项目名称', inputHtml('pjName', d.name, '请填写项目名称', { max: 12 }), { required: true, helpId: 'helpPjName' })}${formItem('harness 工程', selectHtml('pjHarness', d.harness, harnessOpts, '请选择 harness 工程'), { required: true, helpId: 'helpPjHarness', help: '项目的需求 / 文档真源工程，从云效研发仓中单选' })}${formItem('代码服务仓', `<div class="ac-checkbox-group">${checks}</div>`, { helpId: 'helpPjRepos', help: '选填；候选为云效研发仓，被其他启用中项目占用的仓不可选' })}${formItem('状态', radioGroup('pjEnabled', d.enabled ? 'on' : 'off', [['on', '启用'], ['off', '停用']]), { required: true })}${formItem('备注', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="pjNote" rows="2">${esc(d.note)}</textarea></div>`)}</div>`;
     foot.innerHTML = '<button class="ac-btn" type="button" data-pj-back>返回列表</button><button class="ac-btn ac-btn--primary" type="button" data-pj-save>保存</button>';
   }
   async function saveProject(btn) {
@@ -973,7 +992,7 @@
     const harness = d.harness;
     const live = d.repos.filter((r) => repoOf(r));
     PJ.err = '';
-    setHelp('helpPjName', !name ? '请填写项目名称' : d.enabled && PROJECTS.some((p) => p.enabled && p.id !== PJ.edit && p.name === name) ? '项目名称「' + name + '」已被启用中项目占用' : '');
+    setHelp('helpPjName', !name ? '请填写项目名称' : name.length > 12 ? '项目名称最长 12 字' : d.enabled && PROJECTS.some((p) => p.enabled && p.id !== PJ.edit && p.name === name) ? '项目名称「' + name + '」已被启用中项目占用' : '');
     setHelp('helpPjHarness', harness ? '' : '请选择 harness 工程');
     if ($$('#projectModal .ac-form-item__help.is-error').length) return;
     const takenBy = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && (p.harness === repo || p.repos.includes(repo)));
@@ -983,7 +1002,7 @@
     await wait();
     const data = { name, harness, repos: d.repos.slice(), enabled: d.enabled, note: d.note };
     if (PJ.edit) Object.assign(PROJECTS.find((p) => p.id === PJ.edit), data);
-    else PROJECTS.push(Object.assign({ id: 'p' + (PROJECTS.length + 1) }, data));
+    else PROJECTS.push(Object.assign({ id: 'p' + (PROJECTS.length + 1), color: D.PROJECT_COLORS[PROJECTS.length % D.PROJECT_COLORS.length] }, data));
     PJ.view = 'list';
     toast('项目已保存，卡片归属已按新映射重新解析');
     renderProjects();
@@ -1027,14 +1046,17 @@
     if (subset(f.repo, repos)) f.repo.forEach((v) => chips.push(['repo', v, '仓库：' + v]));
     if (subset(f.project, projects)) f.project.forEach((v) => chips.push(['project', v, '项目：' + v]));
     f.module.forEach((v) => chips.push(['module', v, '模块：' + v]));
-    const chipsHtml = chips.length ? chips.map((x) => `<span data-ac="AcTag" class="ac-tag ac-tag--small ac-tag--primary is-filled is-closable"><span class="ac-tag__text">${esc(x[2])}</span><button class="ac-btn ac-tag__close" type="button" aria-label="移除条件" data-chip-group="${x[0]}" data-chip-value="${esc(x[1])}">×</button></span>`).join(' ') : txt('未设置筛选条件', 'ac-typo-text--secondary');
+    const chipsHtml = chips.length ? chips.map((x) => {
+      const color = x[0] === 'project' ? projectColorByName(x[1]) : 'primary';
+      return `<span data-ac="AcTag" class="ac-tag ac-tag--small ac-tag--${color} is-filled is-closable"><span class="ac-tag__text">${esc(x[2])}</span><button class="ac-btn ac-tag__close" type="button" aria-label="移除条件" data-chip-group="${x[0]}" data-chip-value="${esc(x[1])}">×</button></span>`;
+    }).join(' ') : txt('未设置筛选条件', 'ac-typo-text--secondary');
     const group = (key, title, opts, withAll) => {
       const set = groupSet(f, key, opts.map((o) => o[0]));
       const allOn = set.size === opts.length;
       const head = withAll ? `<div>${checkbox(allOn ? true : set.size ? 'mixed' : false, false, '全部', ' data-fd-all="' + key + '"')}</div><hr class="ac-divider" />` : '';
-      return section(title, head + opts.map((o) => `<div>${checkbox(set.has(o[0]), false, esc(o[1]), ' data-fd-group="' + key + '" data-fd-value="' + esc(o[0]) + '"')}</div>`).join(''));
+      return section(title, head + opts.map((o) => `<div>${checkbox(set.has(o[0]), false, o[2] || esc(o[1]), ' data-fd-group="' + key + '" data-fd-value="' + esc(o[0]) + '"')}</div>`).join(''));
     };
-    $('#fdContent').innerHTML = `<div class="tpl-section"><div><button class="ac-btn ac-switch${S.f.onlyMine ? ' is-checked' : ''}" type="button" role="switch" aria-checked="${S.f.onlyMine}" data-ac="AcSwitch" data-size="medium" data-shape="rounded" id="onlyMineSwitch"><span class="ac-switch__thumb"></span></button> ${txt('只看自己', 'is-bold')} ${txt('即时生效：只显示提交人或开发人为当前用户的卡片', 'ac-typo-text--secondary')}</div>${section('已选条件', '<div>' + chipsHtml + '</div>')}${group('status', '状态', STAT_KEYS.map((k) => [k, STAT_LABEL[k]]))}${group('owner', '负责人', owners.map((o) => [o, o]))}${group('repo', 'skills 仓库', repos.map((r) => [r, r]), true)}${group('project', '项目', projects.map((p) => [p, p]), true)}${group('module', '模块', modules.map((m) => [m, m]))}</div>`;
+    $('#fdContent').innerHTML = `<div class="tpl-section"><div><button class="ac-btn ac-switch${S.f.onlyMine ? ' is-checked' : ''}" type="button" role="switch" aria-checked="${S.f.onlyMine}" data-ac="AcSwitch" data-size="medium" data-shape="rounded" id="onlyMineSwitch"><span class="ac-switch__thumb"></span></button> ${txt('只看自己', 'is-bold')} ${txt('即时生效：只显示提交人或开发人为当前用户的卡片', 'ac-typo-text--secondary')}</div>${section('已选条件', '<div>' + chipsHtml + '</div>')}${group('status', '状态', STAT_KEYS.map((k) => [k, STAT_LABEL[k]]))}${group('owner', '负责人', owners.map((o) => [o, o]))}${group('repo', 'skills 仓库', repos.map((r) => [r, r]), true)}${group('project', '项目', projects.map((p) => [p, p, tag(p, p === '未归属项目' ? 'default' : projectColorByName(p))]), true)}${group('module', '模块', modules.map((m) => [m, m]))}</div>`;
   }
   function toggleGroup(key, value) {
     const f = S.draft;
@@ -1076,7 +1098,6 @@
     if (id === 'filterDrawer') S.draft = null;
     if (id === 'projectModal') PJ.view = 'list';
     if (id === 'dayModal') DAY = null;
-    if (id === 'contactModal') CT = null;
     hideLayer(id);
   }
   async function pjBack() {
@@ -1094,7 +1115,7 @@
     d.onlyMine = S.f.onlyMine;
     S.f = d;
     S.draft = null;
-    S.poolLimit = 6;
+    resetPool({ exitMode: true });
     busy(btn, false);
     hideLayer('filterDrawer');
     renderAll();
@@ -1102,7 +1123,6 @@
   function step(n) {
     if (S.view === 'week') S.weekStart = addDays(S.weekStart, 7 * n);
     else { const d = new Date(S.y, S.m + n, 1); S.y = d.getFullYear(); S.m = d.getMonth(); }
-    S.poolLimit = 6;
     renderAll();
   }
   function goToday() {
@@ -1117,7 +1137,7 @@
     if (FLOATS.has($('#ctxMenu'))) { closeFloat($('#ctxMenu')); return; }
     if (!$('#popconfirm').hidden) { settlePop(false); return; }
     if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
-    const modal = ['contactModal', 'mergeModal', 'newCardModal', 'nfModal', 'projectModal', 'dayModal'].find((id) => OPEN.has(id));
+    const modal = ['mergeModal', 'newCardModal', 'nfModal', 'projectModal', 'dayModal'].find((id) => OPEN.has(id));
     if (modal) { requestClose(modal); return; }
     if (FLOATS.size) { closeFloats(); return; }
     if (OPEN.has('filterDrawer')) { requestClose('filterDrawer'); return; }
@@ -1153,6 +1173,13 @@
       if (t && (el.contains(t) || (owner && owner.contains(t)))) return;
       closeFloat(el);
     });
+    if (!(t && t.closest('.ac-pagination__page-size'))) {
+      $$('.ac-pagination__page-size.is-open').forEach((x) => {
+        x.classList.remove('is-open');
+        const panel = x.querySelector('.ac-pagination__page-size-panel');
+        if (panel) panel.hidden = true;
+      });
+    }
     return false;
   });
   on('focusin', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.add('is-focused'); return true; });
@@ -1203,7 +1230,7 @@
   on('click', '[data-stat]', (e, el) => {
     const k = el.dataset.stat;
     if (S.f.status.has(k)) S.f.status.delete(k); else S.f.status.add(k);
-    S.poolLimit = 6;
+    resetPool({ exitMode: true });
     renderAll();
     return true;
   });
@@ -1232,23 +1259,84 @@
     closeFloats();
     if (k === 'merge') startMode('merge');
     if (k === 'density') { S.density = el.dataset.density; store.set('fs.density', S.density); renderAll(); }
-    if (k === 'nonfeature') { renderNF(); showLayer('nfModal'); }
+    if (k === 'nonfeature') { S.nfPage = 1; renderNF(); showLayer('nfModal'); }
     if (k === 'projects') { PJ.view = 'list'; renderProjects(); showLayer('projectModal'); }
     return true;
   });
   on('click', '#poolCollapseBtn', () => { S.poolCollapsed = true; store.set('fs.poolCollapsed', '1'); renderAll(); return true; });
   on('click', '#poolExpandBtn', () => { S.poolCollapsed = false; store.set('fs.poolCollapsed', '0'); renderAll(); return true; });
   on('click', '#batchBtn', () => { if (S.mode === 'batch') exitMode(); else startMode('batch'); return true; });
-  on('click', '#poolMoreBtn', () => { S.poolLimit += 6; renderPool(); return true; });
+  function pagerRoot(el) { return el.closest('#poolPager') || el.closest('#nfPager'); }
+  function pagerApply(root, page, size) {
+    if (root.id === 'poolPager') {
+      if (page) S.poolPage = page;
+      if (size) { S.poolSize = size; S.poolPage = 1; }
+      renderPool();
+    } else {
+      if (page) S.nfPage = page;
+      if (size) { S.nfSize = size; S.nfPage = 1; }
+      renderNF();
+    }
+  }
+  on('click', '[data-page]', (e, el) => {
+    const root = pagerRoot(el);
+    if (!root) return false;
+    pagerApply(root, Number(el.dataset.page));
+    return true;
+  });
+  on('click', '[data-page-step]', (e, el) => {
+    const root = pagerRoot(el);
+    if (!root) return false;
+    const box = el.closest('[data-ac="AcPagination"]');
+    const total = Number(box.dataset.total);
+    const size = Number(box.dataset.pageSize);
+    const pages = Math.max(1, Math.ceil(total / size));
+    const cur = Number(box.dataset.current);
+    pagerApply(root, el.dataset.pageStep === 'prev' ? Math.max(1, cur - 1) : Math.min(pages, cur + 1));
+    return true;
+  });
+  on('click', '[data-page-size-option]', (e, el) => {
+    const root = pagerRoot(el);
+    if (!root) return false;
+    pagerApply(root, null, Number(el.dataset.pageSizeOption));
+    return true;
+  });
+  on('click', '.ac-pagination__page-size-trigger', (e, el) => {
+    const box = el.closest('.ac-pagination__page-size');
+    if (!box) return false;
+    const panel = box.querySelector('.ac-pagination__page-size-panel');
+    const open = panel.hidden;
+    $$('.ac-pagination__page-size.is-open').forEach((x) => {
+      x.classList.remove('is-open');
+      const p = x.querySelector('.ac-pagination__page-size-panel');
+      if (p) p.hidden = true;
+    });
+    box.classList.toggle('is-open', open);
+    panel.hidden = !open;
+    return true;
+  });
+  function jumpPager(input) {
+    const root = pagerRoot(input);
+    if (!root) return;
+    const box = input.closest('[data-ac="AcPagination"]');
+    const pages = Math.max(1, Math.ceil(Number(box.dataset.total) / Number(box.dataset.pageSize)));
+    const n = Math.min(pages, Math.max(1, Number(input.value) || 1));
+    pagerApply(root, n);
+  }
+  on('keydown', '[data-page-jump]', (e, el) => {
+    if (e.key !== 'Enter') return false;
+    jumpPager(el);
+    return true;
+  });
+  on('focusout', '[data-page-jump]', (e, el) => { if (el.value) jumpPager(el); return true; });
   on('click', '#modeCancelBtn', () => { exitMode(); return true; });
   on('click', '#modeOkBtn', (e, el) => { if (el.disabled) return true; if (S.mode === 'merge') openMergeModal([...S.selected]); else batchToNF(); return true; });
   on('click', '#mergeOkBtn', (e, el) => { createMerge(el); return true; });
   on('click', '#newCardOkBtn', (e, el) => { createCard(el); return true; });
   on('click', '[data-nc-pick]', (e, el) => { NC.pick = el.dataset.ncPick; setHelp('helpNcCommit', ''); $('#ncList').innerHTML = ncListHtml(); return true; });
-  on('click', '#clearFiltersBtn', () => { S.f = newFilter(); renderAll(); return true; });
-  on('click', '#clearSearchBtn', () => { S.search = ''; $('#searchInput').value = ''; renderAll(); return true; });
+  on('click', '#clearFiltersBtn', () => { S.f = newFilter(); resetPool({ exitMode: true }); renderAll(); return true; });
+  on('click', '#clearSearchBtn', () => { S.search = ''; $('#searchInput').value = ''; resetPool({ exitMode: true }); renderAll(); return true; });
   on('click', '[data-more]', (e, el) => { DAY = el.dataset.more; renderDayModal(); showLayer('dayModal'); return true; });
-  on('click', '#contactOkBtn', (e, el) => { saveContact(el); return true; });
   on('click', '#protoBtn', (e, el) => {
     const m = $('#protoMenu');
     if (FLOATS.has(m)) { closeFloat(m); return true; }
@@ -1265,7 +1353,7 @@
   });
   on('click', '[data-open-card]', (e, el) => { goDetail(el.dataset.openCard); return true; });
 
-  on('click', '#onlyMineSwitch', () => { S.f.onlyMine = !S.f.onlyMine; if (S.draft) S.draft.onlyMine = S.f.onlyMine; S.poolLimit = 6; renderFilter(); renderAll(); return true; });
+  on('click', '#onlyMineSwitch', () => { S.f.onlyMine = !S.f.onlyMine; if (S.draft) S.draft.onlyMine = S.f.onlyMine; resetPool({ exitMode: true }); renderFilter(); renderAll(); return true; });
   on('click', '[data-fd-all]', (e, el) => {
     const key = el.dataset.fdAll;
     const all = key === 'repo' ? sourceRepos() : projectOptions();
@@ -1281,7 +1369,7 @@
     return true;
   });
   on('click', '#fdOkBtn', (e, el) => { applyFilterDraft(el); return true; });
-  on('click', '#fdResetBtn', () => { S.f = newFilter(); S.draft = newFilter(); S.poolLimit = 6; renderFilter(); renderAll(); toast('已重置筛选', 'info'); return true; });
+  on('click', '#fdResetBtn', () => { S.f = newFilter(); S.draft = newFilter(); resetPool({ exitMode: true }); renderFilter(); renderAll(); toast('已重置筛选', 'info'); return true; });
 
   on('click', '[data-pj-new]', () => { openProjectForm(); return true; });
   on('click', '[data-pj-edit]', (e, el) => { openProjectForm(el.dataset.pjEdit); return true; });
@@ -1309,13 +1397,7 @@
   });
   on('click', '.ac-calendar__cell[data-drop]', (e, cell) => { toggleRelease(cell.dataset.date, cell); return true; });
 
-  on('input', '#searchInput', (e, el) => { S.search = el.value; S.poolLimit = 6; renderAll(); return true; });
-  on('input', '#contactModal [data-field="ctContact"]', (e, el) => {
-    const cnt = el.closest('.ac-input').querySelector('[data-count]');
-    if (cnt) cnt.textContent = el.value.length + '/64';
-    setHelp('helpCtContact', '');
-    return true;
-  });
+  on('input', '#searchInput', (e, el) => { S.search = el.value; resetPool({ exitMode: true }); renderAll(); return true; });
   on('input', '#mergeModal [data-field="mergeTitle"]', (e, el) => {
     const cnt = el.closest('.ac-input').querySelector('[data-count]');
     if (cnt) cnt.textContent = el.value.length + '/30';
@@ -1374,7 +1456,6 @@
   on('dragend', null, () => { S.drag = null; markDrop(null); return false; });
 
   on('keydown', '#mergeModal [data-field="mergeTitle"]', (e) => { if (e.key !== 'Enter') return false; createMerge($('#mergeOkBtn')); return true; });
-  on('keydown', '#contactModal [data-field="ctContact"]', (e) => { if (e.key !== 'Enter') return false; saveContact($('#contactOkBtn')); return true; });
   on('keydown', '[data-card], [data-stat], [data-more], [data-nc-pick], [data-open-card], [data-fd-group], [data-fd-all], [data-pj-repo], [data-radio], #protoResetBtn, .ac-select__trigger', (e, el) => {
     if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== el) return false;
     e.preventDefault();
