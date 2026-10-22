@@ -1,528 +1,219 @@
-<!doctype html>
-<html lang="zh-CN" data-theme="light">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Qoder 用量分析 · App · Token管理</title>
-  <link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css">
-  <style>
-    /* 页面级布局适配（仅消费 --ac-* 变量，不改写组件类）：浮层收进手机框、透视表列数与首列冻结、图例色点 */
-    .ac-filter-sheet.qusage-sheet { position: absolute; inset: 0; z-index: var(--ac-z-modal); }
-    .qusage-sheet .ac-filter-sheet__panel { max-height: 80%; }
-    .qusage-cols-3 { grid-template-columns: minmax(var(--ac-space-16), 1.1fr) repeat(2, minmax(var(--ac-space-16), 1fr)); }
-    .qusage-cols-4 { grid-template-columns: minmax(var(--ac-space-16), 1.1fr) repeat(3, minmax(var(--ac-space-16), 1fr)); }
-    .qusage-cols-5 { grid-template-columns: minmax(var(--ac-space-16), 1.1fr) repeat(4, minmax(var(--ac-space-16), 1fr)); }
-    .qusage-cols-6 { grid-template-columns: minmax(var(--ac-space-16), 1.1fr) repeat(5, minmax(var(--ac-space-16), 1fr)); }
-    .qusage-cols-7 { grid-template-columns: minmax(var(--ac-space-16), 1.1fr) repeat(6, minmax(var(--ac-space-16), 1fr)); }
-    .qusage-freeze .tpl-data-table__cell:first-child { position: sticky; left: 0; background: var(--ac-bg-1); z-index: var(--ac-z-dropdown); }
-    .qusage-legend { display: flex; flex-wrap: wrap; gap: var(--ac-space-2); }
-    .qusage-legend__item { display: inline-flex; align-items: center; gap: var(--ac-space-1); color: var(--ac-text-3); font-size: var(--ac-fs-sm); }
-    .qusage-legend__dot { display: inline-block; width: var(--ac-space-2); height: var(--ac-space-2); border-radius: 50%; }
-    .qusage-x { display: flex; gap: var(--ac-space-1); font-family: var(--ac-ff-mono); font-size: var(--ac-fs-sm); color: var(--ac-text-3); }
-    .qusage-x > span { flex: 1; min-width: 0; text-align: center; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
-    .qusage-btns { display: flex; gap: var(--ac-space-2); }
-    .qusage-btns .ac-button { flex: 1; }
-    .qusage-member { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); }
-    .qusage-member__label { color: var(--ac-text-3); font-size: var(--ac-fs-sm); }
-    .qusage-dept { display: flex; gap: var(--ac-space-2); flex-wrap: wrap; justify-content: flex-end; }
-    .qusage-toast-layer { position: absolute; left: 0; right: 0; top: var(--ac-space-16); display: flex; justify-content: center; z-index: var(--ac-z-toast); pointer-events: none; }
-    .qusage-toast-layer .ac-toast { pointer-events: auto; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>用量分析 · Token管理 · 鸣鸣很忙 App</title>
+<!--
+  Token管理 · Qoder 用量分析（App 端 · 页面类型 dashboard · 静态原型，Mock）
+  路由 /rnd/qoder-usage · 权限编码 devhubAppQoderUsage / devhubAppQoderUsageM
+  导航方式：Push（首页工作台「Qoder 用量分析」图标进入）；返回：导航栏返回按钮 / 手势返回（只读页无脏数据）
+  业务规则真源：references/business-rule.md；页面元素与 Web 端一致，仅做移动端布局适配（KPI 2 列网格等）
+  缺口标注：
+    G1 移动端组件库（registry/prototype.json platform=mobile）未登记表格组件 → 两张透视表按硬约束 Q 停止生成，页内以缺口说明占位
+    G2 templates/mobile/templates.css 无 .tpl-chart 图表占位骨架类 → 图表区以 tpl-card + 文字占位呈现
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/NavBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tabs.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Button.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Alert.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tag.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
 </head>
 <body>
-<!--
-  页面：App Qoder 用量分析（dashboard） · 菜单 devhubAppQoderUsage / 独占 devhubAppQoderUsageM
-  依据：references/app-ui.md「### Qoder 用量分析」
-  整页范例：busyming-skills-design/mobile/templates/dashboard.html
-  DOM 依据：busyming-skills-design/.skills/page-blueprint/skeletons/app/dashboard-mobile.tsx.tpl
-  口径真源：references/business-rule.md（§1 筛选与 31 天上限 / §2 KPI 与周环比 / §3-§4 透视表 / §6 堆叠图 / §7 三态）
--->
-<section class="tpl-page" id="page">
-  <div class="tpl-panel">
-    <div class="app-phone">
-      <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
-      <div class="app-screen">
+<div class="tpl-app">
+  <div class="busy-navbar">
+    <div class="busy-navbar__bar">
+      <span class="busy-navbar__side" id="backBtn"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></span>
+      <span class="busy-navbar__title">用量分析</span>
+      <span class="busy-navbar__side busy-navbar__side--right"></span>
+    </div>
+  </div>
 
-        <!-- 顶部导航栏：返回 + 标题（只读页，无右侧操作） -->
-        <div class="ac-nav-bar is-bordered" data-ac="AcNavBar">
-          <span class="ac-nav-bar__side"><button class="ac-btn ac-nav-bar__action" type="button" aria-label="返回" data-act="back"><span class="ac-icon" data-ac="AcIcon" data-name="left"></span></button></span>
-          <span class="ac-nav-bar__center"><strong class="ac-nav-bar__title">用量分析</strong></span>
-          <span class="ac-nav-bar__side ac-nav-bar__side--right"></span>
-        </div>
-
-        <div class="app-screen__content app-screen__content--flush">
-          <!-- 下拉刷新（点击指示器模拟下拉手势） -->
-          <div class="ac-pull-refresh" data-ac="AcPullRefresh" id="pull" data-pull-text="下拉刷新" data-loading-text="刷新中…" data-success-text="刷新成功">
-            <span class="ac-pull-refresh__indicator" role="button" tabindex="0" data-act="refresh"><span class="ac-pull-refresh__spinner"></span><span class="ac-pull-refresh__text" id="pullText">下拉刷新（点击模拟下拉）</span></span>
-            <div class="ac-pull-refresh__content">
-              <div class="app-screen__scroll">
-
-                <!-- 公共筛选：日期预设 + 部门单选 + 成员多选 + 查询/重置（business-rule.md §1） -->
-                <section class="ac-section is-bordered is-padded has-title" data-ac="AcSection">
-                  <div class="ac-section__header"><strong class="ac-section__title">筛选</strong><span class="ac-section__extra" id="rangeText">10-11 ~ 10-17</span></div>
-                  <div class="ac-section__body">
-                    <div class="tpl-period-switcher">
-                      <div class="tpl-period-switcher__row"><div class="tpl-period-switcher__switch" id="presetSwitch">
-                        <button class="ac-btn tpl-period-switcher__chip" type="button" data-act="preset" data-key="today">今日</button>
-                        <button class="ac-btn tpl-period-switcher__chip" type="button" data-act="preset" data-key="yesterday">昨日</button>
-                        <button class="ac-btn tpl-period-switcher__chip is-active" type="button" data-act="preset" data-key="last7">前 7 天</button>
-                        <button class="ac-btn tpl-period-switcher__chip" type="button" data-act="preset" data-key="last30">近 30 天</button>
-                        <button class="ac-btn tpl-period-switcher__chip" type="button" data-act="preset" data-key="custom">自定义</button>
-                      </div></div>
-                    </div>
-                    <div class="qusage-member">
-                      <span class="qusage-member__label">部门</span>
-                      <div class="qusage-dept" id="deptChips"></div>
-                    </div>
-                    <div class="qusage-member">
-                      <span class="qusage-member__label">成员</span>
-                      <button class="ac-btn ac-button ac-button--outline" type="button" data-ac="AcButton" data-act="member"><span class="ac-button__label" id="memberLabel">全部成员</span><span class="ac-icon" data-ac="AcIcon" data-name="right"></span></button>
-                    </div>
-                    <div class="qusage-btns">
-                      <button class="ac-btn ac-button ac-button--primary" type="button" data-ac="AcButton" data-act="query" id="queryBtn"><span class="ac-button__label">查询</span></button>
-                      <button class="ac-btn ac-button ac-button--secondary" type="button" data-ac="AcButton" data-act="reset"><span class="ac-button__label">重置</span></button>
-                    </div>
-                  </div>
-                </section>
-
-                <!-- 加载态：骨架屏 -->
-                <div class="app-stack" id="pageSkeleton" hidden>
-                  <div class="app-list-card"><div class="ac-skeleton-set" data-ac="AcSkeleton" data-loading="true" data-preset="custom" data-animated="true"><span class="ac-skeleton-block is-title"></span><span class="ac-skeleton-block is-mid"></span><span class="ac-skeleton-block is-short"></span></div></div>
-                  <div class="app-list-card"><div class="ac-skeleton-set" data-ac="AcSkeleton" data-loading="true" data-preset="custom" data-animated="true"><span class="ac-skeleton-block is-title"></span><span class="ac-skeleton-block is-mid"></span><span class="ac-skeleton-block is-mid"></span></div></div>
-                </div>
-
-                <!-- 空态 / 错误态（business-rule.md §7） -->
-                <div class="ac-empty" data-ac="AcEmpty" data-status="empty-list" id="pageEmpty" hidden>
-                  <span class="ac-empty__image"><span class="ac-icon" data-ac="AcIcon" data-name="inbox"></span></span>
-                  <strong class="ac-empty__title">暂无用量数据</strong>
-                  <span class="ac-empty__description">当前筛选范围内没有用量事件</span>
-                </div>
-                <div class="ac-empty" data-ac="AcEmpty" data-status="load-failed" id="pageError" hidden>
-                  <span class="ac-empty__image"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></span>
-                  <strong class="ac-empty__title">加载失败</strong>
-                  <span class="ac-empty__description">网络开小差了，请稍后重试</span>
-                  <span class="ac-empty__action"><button class="ac-btn ac-button" type="button" data-ac="AcButton" data-type="primary" data-status="normal" data-size="medium" data-shape="round" data-act="retry"><span class="ac-button__label">点击重试</span></button></span>
-                </div>
-
-                <div class="app-stack" id="pageContent">
-                  <!-- KPI 统计卡片（5 卡，2 列网格，第 5 卡跨满一行；business-rule.md §2） -->
-                  <div class="tpl-kpi-grid" style="grid-template-columns:repeat(2,minmax(0,1fr))" id="kpiGrid">
-                    <div class="tpl-kpi-grid__cell"><span class="tpl-kpi-grid__label">总用量</span><span class="tpl-kpi-grid__value" id="kTotal">0<small> Credits</small></span><span class="tpl-kpi-grid__foot">较上周 <span id="dTotal">—</span></span></div>
-                    <div class="tpl-kpi-grid__cell"><span class="tpl-kpi-grid__label">总请求数</span><span class="tpl-kpi-grid__value" id="kReq">0<small> 次</small></span><span class="tpl-kpi-grid__foot">较上周 <span id="dReq">—</span></span></div>
-                    <div class="tpl-kpi-grid__cell"><span class="tpl-kpi-grid__label">次均消耗</span><span class="tpl-kpi-grid__value" id="kAvg">0.0<small> Credits/次</small></span><span class="tpl-kpi-grid__foot">较上周 <span id="dAvg">—</span></span></div>
-                    <div class="tpl-kpi-grid__cell"><span class="tpl-kpi-grid__label">人均用量</span><span class="tpl-kpi-grid__value" id="kPer">0<small> Credits</small></span><span class="tpl-kpi-grid__foot">较上周 <span id="dPer">—</span></span></div>
-                    <div class="tpl-kpi-grid__cell" style="grid-column:1/-1"><span class="tpl-kpi-grid__label">活跃成员</span><span class="tpl-kpi-grid__value" id="kActive">0<small> 人</small></span><span class="tpl-kpi-grid__foot">较上周 <span id="dActive">—</span></span></div>
-                  </div>
-
-                  <!-- 日 Credits 消耗堆叠柱形图（business-rule.md §6） -->
-                  <section class="ac-section is-bordered is-padded has-title" data-ac="AcSection">
-                    <div class="ac-section__header"><strong class="ac-section__title">日 Credits 消耗趋势</strong><span class="ac-section__extra">0-1000</span></div>
-                    <div class="ac-section__body">
-                      <div class="qusage-legend" id="trendLegend"></div>
-                      <div class="ac-chart" data-ac="AcChart" data-type="bar" style="align-items:stretch">
-                        <svg viewBox="0 0 360 180" preserveAspectRatio="none" role="img" aria-label="日 Credits 消耗堆叠柱形图" id="trendSvg" style="width:100%;height:100%"></svg>
-                      </div>
-                      <div class="qusage-x" id="trendX"></div>
-                    </div>
-                  </section>
-
-                  <!-- Credits 用量透视表（成员 × 日期，business-rule.md §3） -->
-                  <section class="ac-section is-bordered is-padded has-title" data-ac="AcSection">
-                    <div class="ac-section__header"><strong class="ac-section__title">Credits 用量透视表</strong><span class="ac-section__extra">成员 × 日期 · Credits</span></div>
-                    <div class="ac-section__body">
-                      <div class="tpl-data-table qusage-freeze" id="pivotDate"></div>
-                    </div>
-                  </section>
-
-                  <!-- 模型用量透视表（成员 × 模型等级，business-rule.md §4） -->
-                  <section class="ac-section is-bordered is-padded has-title" data-ac="AcSection">
-                    <div class="ac-section__header"><strong class="ac-section__title">模型用量透视表</strong><span class="ac-section__extra">成员 × 模型等级 · Credits</span></div>
-                    <div class="ac-section__body">
-                      <div class="tpl-data-table qusage-freeze" id="pivotModel"></div>
-                    </div>
-                  </section>
-                </div>
-
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 成员多选筛选面板（AcFilterSheet 底部抽屉，遮罩由组件自带） -->
-        <div data-ac="AcFilterSheet" class="ac-filter-sheet qusage-sheet" data-placement="bottom" id="memberSheet" data-act="sheet-close" hidden>
-          <section class="ac-filter-sheet__panel">
-            <header class="ac-filter-sheet__header"><h2 class="ac-filter-sheet__title">成员筛选</h2><button class="ac-btn ac-filter-sheet__close" type="button" data-act="sheet-close">关闭</button></header>
-            <div class="ac-filter-sheet__body">
-              <div class="ac-filter-sheet__group"><strong class="ac-filter-sheet__label">成员（多选，不选 = 全部成员）</strong><div class="ac-filter-sheet__chips" data-multi id="memberChips"></div></div>
-            </div>
-            <footer class="ac-filter-sheet__footer"><button class="ac-btn ac-filter-sheet__reset" type="button" data-act="member-reset">重置</button><button class="ac-btn ac-filter-sheet__ok" type="button" data-act="member-ok">确认</button></footer>
-          </section>
-        </div>
-
-        <!-- 自定义日期范围面板（预设形态扩展：开始/结束日期快选，上限 31 天） -->
-        <div data-ac="AcFilterSheet" class="ac-filter-sheet qusage-sheet" data-placement="bottom" id="dateSheet" data-act="sheet-close" hidden>
-          <section class="ac-filter-sheet__panel">
-            <header class="ac-filter-sheet__header"><h2 class="ac-filter-sheet__title">自定义日期范围</h2><button class="ac-btn ac-filter-sheet__close" type="button" data-act="sheet-close">关闭</button></header>
-            <div class="ac-filter-sheet__body">
-              <div class="ac-filter-sheet__group"><strong class="ac-filter-sheet__label">开始日期</strong><div class="ac-filter-sheet__chips" id="dateStartChips"></div></div>
-              <div class="ac-filter-sheet__group"><strong class="ac-filter-sheet__label">结束日期</strong><div class="ac-filter-sheet__chips" id="dateEndChips"></div></div>
-            </div>
-            <footer class="ac-filter-sheet__footer"><button class="ac-btn ac-filter-sheet__reset" type="button" data-act="date-reset">重置</button><button class="ac-btn ac-filter-sheet__ok" type="button" data-act="date-ok">确认</button></footer>
-          </section>
-        </div>
-
-        <!-- AcToast（页面内反馈层） -->
-        <div class="qusage-toast-layer" id="toastLayer" hidden><div class="ac-toast" data-ac="AcToast" data-type="success" role="status" id="toastBox"><span class="ac-toast__icon"><span class="ac-icon" data-ac="AcIcon" data-name="check-one" data-size="xl" id="toastIcon"></span></span><span class="ac-toast__text" id="toastText"></span></div></div>
+  <div class="tpl-app__scroll">
+    <!-- Mock 状态演示（原型用） -->
+    <span class="u-muted">Mock 状态演示（原型用）</span>
+    <div class="busy-tabs busy-tabs--tag" id="stateSwitch">
+      <div class="busy-tabs__list">
+        <span class="busy-tabs__item busy-tabs__item--active"><span class="busy-tabs__title">数据</span></span>
+        <span class="busy-tabs__item"><span class="busy-tabs__title">名单为空</span></span>
+        <span class="busy-tabs__item"><span class="busy-tabs__title">空态</span></span>
+        <span class="busy-tabs__item"><span class="busy-tabs__title">错误态</span></span>
       </div>
     </div>
 
-    <nav class="proto-bar tpl-quick-tags" aria-label="原型页面">
-      <a class="ac-btn tpl-quick-tags__item" href="../web/qoder-usage-analysis.html">Web 用量分析</a>
-      <a class="ac-btn tpl-quick-tags__item is-used" href="qoder-usage-analysis.html" aria-current="page">App 用量分析</a>
-    </nav>
-    <nav class="proto-bar tpl-quick-tags" aria-label="演示场景" id="sceneBar">
-      <a class="ac-btn tpl-quick-tags__item is-used" href="#scene=default" data-scene="default">默认（前 7 天）</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=member" data-scene="member">成员筛选</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=dept" data-scene="dept">部门筛选</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=empty" data-scene="empty">空态</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=loading" data-scene="loading">加载态</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=error" data-scene="error">错误态</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=op-fail" data-scene="op-fail">查询失败</a>
-      <a class="ac-btn tpl-quick-tags__item" href="#scene=over-range" data-scene="over-range">超 31 天拦截</a>
-    </nav>
+    <!-- 公共筛选（驱动全部视图；日期为预设形态，元素与 Web 对齐） -->
+    <div class="tpl-card">
+      <span class="u-muted">统计日期（默认前 7 天 · 自定义跨度上限 31 天，超出拦截提示）</span>
+      <div class="busy-tabs busy-tabs--tag" id="datePreset">
+        <div class="busy-tabs__list">
+          <span class="busy-tabs__item"><span class="busy-tabs__title">今日</span></span>
+          <span class="busy-tabs__item"><span class="busy-tabs__title">昨日</span></span>
+          <span class="busy-tabs__item busy-tabs__item--active"><span class="busy-tabs__title">前 7 天</span></span>
+          <span class="busy-tabs__item"><span class="busy-tabs__title">近 30 天</span></span>
+          <span class="busy-tabs__item"><span class="busy-tabs__title">自定义</span></span>
+        </div>
+      </div>
+      <span class="u-muted">部门</span>
+      <div class="busy-tabs busy-tabs--tag" id="deptTabs">
+        <div class="busy-tabs__list">
+          <span class="busy-tabs__item busy-tabs__item--active"><span class="busy-tabs__title">全部</span></span>
+          <span class="busy-tabs__item"><span class="busy-tabs__title">数字化中心</span></span>
+          <span class="busy-tabs__item"><span class="busy-tabs__title">创新业务部</span></span>
+        </div>
+      </div>
+      <span class="u-muted">统计范围</span>
+      <div class="busy-tabs busy-tabs--tag" id="scopeTabs">
+        <div class="busy-tabs__list">
+          <span class="busy-tabs__item busy-tabs__item--active"><span class="busy-tabs__title">研发团队</span></span>
+          <span class="busy-tabs__item"><span class="busy-tabs__title">全部成员</span></span>
+        </div>
+      </div>
+      <div class="tpl-form-cell" id="memberPicker">
+        <span class="tpl-form-cell__label">成员（多选）</span>
+        <span class="tpl-form-cell__control">全部 12 人<span class="tpl-form-cell__arrow">›</span></span>
+      </div>
+      <span class="u-muted">不选 = 当前部门 ∩ 统计范围交集内全部成员 · 切换部门或统计范围将清空已选成员并重查</span>
+      <button class="adm-button adm-button-default adm-button-fill-none busy-button busy-button--primary busy-button--medium busy-button--block" type="button" id="btnQuery">查 询</button>
+      <button class="adm-button adm-button-default adm-button-fill-none busy-button busy-button--secondary busy-button--medium busy-button--block" type="button" id="btnReset">重 置</button>
+    </div>
+
+    <!-- 研发团队范围下名单为空或名单内无 Qoder 成员时展示（business-rule.md §1） -->
+    <div class="busy-alert busy-alert--warning" id="rosterHint" hidden>
+      <span class="busy-alert__icon-wrap"><svg class="busy-alert__icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-1.5 0v-4zM8 11.9a.95.95 0 1 1 0-1.9.95.95 0 0 1 0 1.9z"/></svg></span>
+      <div class="busy-alert__content">
+        <div class="busy-alert__header"><span class="busy-alert__title">研发团队人员范围为空或名单内无 Qoder 成员，请到「报告配置 → 人员范围」维护</span></div>
+      </div>
+    </div>
+
+    <!-- KPI 统计卡片（2 列网格；口径 business-rule.md §2，与 Web 一致） -->
+    <div class="tpl-kpi-grid">
+      <div class="tpl-kpi">
+        <span class="tpl-kpi__label">总用量（Credits）</span>
+        <span class="tpl-kpi__value u-mono">3,501</span>
+        <span class="tpl-kpi__foot">周环比 <span class="tpl-kpi__delta is-up">+12.4%</span></span>
+      </div>
+      <div class="tpl-kpi">
+        <span class="tpl-kpi__label">总请求数（次）</span>
+        <span class="tpl-kpi__value u-mono">1,206</span>
+        <span class="tpl-kpi__foot">周环比 <span class="tpl-kpi__delta is-up">+8.1%</span></span>
+      </div>
+      <div class="tpl-kpi">
+        <span class="tpl-kpi__label">次均消耗（Credits/次）</span>
+        <span class="tpl-kpi__value u-mono">2.9</span>
+        <span class="tpl-kpi__foot">周环比 <span class="tpl-kpi__delta is-up">+3.6%</span></span>
+      </div>
+      <div class="tpl-kpi">
+        <span class="tpl-kpi__label">人均用量（Credits）</span>
+        <span class="tpl-kpi__value u-mono">318</span>
+        <span class="tpl-kpi__foot">周环比 <span class="tpl-kpi__delta is-up">+22.6%</span></span>
+      </div>
+      <div class="tpl-kpi">
+        <span class="tpl-kpi__label">活跃成员（人）</span>
+        <span class="tpl-kpi__value u-mono">11</span>
+        <span class="tpl-kpi__foot">周环比 <span class="tpl-kpi__delta is-down">-8.3%</span></span>
+      </div>
+    </div>
+
+    <!-- 日 Credits 消耗堆叠柱形图卡片（规则 business-rule.md §6；图例换行排列） -->
+    <div class="tpl-card">
+      <div class="tpl-section__head">日 Credits 消耗趋势</div>
+      <div data-view="data">
+        <div>
+          <span class="busy-tag busy-tag--primary busy-tag--tint"><span class="busy-tag__content">旗舰 MAX</span></span>
+          <span class="busy-tag busy-tag--success busy-tag--tint"><span class="busy-tag__content">高级</span></span>
+          <span class="busy-tag busy-tag--warning busy-tag--tint"><span class="busy-tag__content">基础</span></span>
+          <span class="busy-tag busy-tag--default busy-tag--tint"><span class="busy-tag__content">其他</span></span>
+        </div>
+        <p class="u-muted">堆叠柱形图占位：每日一根堆叠柱、按模型分类分段堆叠（未识别归入「其他」并置最顶层，固定灰色），Y 轴刻度 0–1000，X 轴为筛选期内每日日期（2026-10-14 ~ 2026-10-20）。静态原型不引图表库，生产落地使用 ECharts 封装；移动端暂无 .tpl-chart 图表占位骨架类（缺口 G2）。</p>
+      </div>
+      <div class="tpl-empty" data-view="empty" hidden>
+        <span class="tpl-empty__icon">☁</span>
+        <span class="tpl-empty__desc">暂无用量数据</span>
+      </div>
+      <div data-view="error" hidden>
+        <div class="busy-alert busy-alert--danger">
+          <span class="busy-alert__icon-wrap"><svg class="busy-alert__icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-1.5 0v-4zM8 11.9a.95.95 0 1 1 0-1.9.95.95 0 0 1 0 1.9z"/></svg></span>
+          <div class="busy-alert__content">
+            <div class="busy-alert__header"><span class="busy-alert__title">用量数据加载失败，请重试</span></div>
+          </div>
+        </div>
+        <button class="adm-button adm-button-default adm-button-fill-none busy-button busy-button--emphasis busy-button--medium busy-button--block demo-retry" type="button">重 试</button>
+      </div>
+    </div>
+    <!-- Credits 用量透视表卡片：成员 × 日期（横向滚动 + 首列冻结为生产要求） -->
+    <div class="tpl-card">
+      <div class="tpl-section__head">Credits 用量透视表<span class="tpl-section__extra">成员 × 日期 · Credits</span></div>
+      <p class="u-muted">缺口 G1：移动端组件库（registry platform=mobile）未登记表格组件，按硬约束 Q 停止生成本区块，待 busyming-skills-design 按 platform-guidelines §4 补齐移动端表格组件后生成（横向滚动 + 首列成员冻结）。列 = 成员 | 日期列（按天升序）| 合计，行按成员期间合计降序 + 合计行；交互与口径同 Web 端透视表。</p>
+    </div>
+
+    <!-- 模型用量透视表卡片：成员 × 模型等级 -->
+    <div class="tpl-card">
+      <div class="tpl-section__head">模型用量透视表<span class="tpl-section__extra">成员 × 模型等级 · Credits</span></div>
+      <p class="u-muted">同上缺口 G1：移动端表格组件缺失。列 = 成员 | 模型等级列（按合计降序，「未标注」排最后）| 合计，数值保留两位小数；每成员一行 + 合计行；交互与口径同 Web 端透视表。</p>
+    </div>
+
+    <p class="u-muted">静态原型 · Mock 演示数据（2026-10-14 ~ 2026-10-20，前 7 天不含今天）· 未连接真实后端 · 加载态生产实现为品牌 Loading 动效，本原型以按钮 loading 演示查询链路 · 下拉刷新为手势交互，静态页以「查询」演示同一刷新链路</p>
   </div>
-</section>
+</div>
 
-<script src="../../../../../busyming-skills-design/mobile/styles/manifest.js"></script>
-<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
 <script>
-(function () {
-  'use strict';
-  var page = document.getElementById('page');
-  function $(s) { return page.querySelector(s); }
-  function $$(s, root) { return Array.prototype.slice.call((root || page).querySelectorAll(s)); }
-
-  /* ---------- 演示数据（与 Web 端同口径，虚构） ---------- */
-  var MEMBERS = ['张悦', '李思远', '黄磊', '王倩', '孙浩'];
-  var BASE = { '张悦': 210, '李思远': 170, '黄磊': 120, '王倩': 85, '孙浩': 55 };
-  /* 部门单选：全部（默认）/ 数字化中心 / 创新业务部；成员归属为演示虚构映射（真源为组织主数据，见 business-rule.md §1） */
-  var DEPTS = ['全部', '数字化中心', '创新业务部'];
-  var DEPT = { '张悦': '数字化中心', '李思远': '数字化中心', '黄磊': '数字化中心', '王倩': '创新业务部', '孙浩': '创新业务部' };
-  var TIERS = ['旗舰 MAX', '高级', '基础', '其他'];
-  var TIER_LABEL = ['旗舰 MAX', '高级', '基础', '未标注'];
-  var TIER_COLOR = ['var(--ac-primary-5)', 'var(--ac-warning-5)', 'var(--ac-success-5)', 'var(--ac-fill-4)'];
-  var SHARE = [0.55, 0.30, 0.12, 0.03];
-  var TODAY = '2026-10-18';
-  var DEFAULT_RANGE = ['2026-10-11', '2026-10-17'];
-  var MAX_SPAN = 31;
-
-  function h(s) { var x = 7; for (var i = 0; i < s.length; i++) x = (x * 31 + s.charCodeAt(i)) % 9973; return x; }
-  function r2(n) { return Math.round(n * 100) / 100; }
-  function dAdd(ds, n) { var d = new Date(ds + 'T00:00:00'); d.setDate(d.getDate() + n); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
-  function dList(a, b) { var out = []; var d = a; while (d <= b) { out.push(d); d = dAdd(d, 1); } return out; }
-  function dDiff(a, b) { return Math.round((new Date(b + 'T00:00:00') - new Date(a + 'T00:00:00')) / 86400000); }
-  function tierVal(m, d, t) {
-    var v = BASE[m] * SHARE[t] * (0.72 + (h(m + d + t) % 56) / 100);
-    if (m === '王倩' && d === '2026-10-14' && t === 3) v = -6.5;
-    return r2(v);
-  }
-  function daySum(m, d) { var s = 0; for (var t = 0; t < 4; t++) s += tierVal(m, d, t); return r2(s); }
-  function cellInt(m, d) { return Math.round(daySum(m, d)); }
-  function reqSum(m, a, b) { var s = 0; dList(a, b).forEach(function (d) { s += Math.round(daySum(m, d) / 13) + h(m + d) % 4; }); return s; }
-  function creditSum(m, a, b) { var s = 0; dList(a, b).forEach(function (d) { s += cellInt(m, d); }); return s; }
-  function wow(a, b) { return [dAdd(a, -7), dAdd(b, -7)]; }
-  function delta(cur, prev) {
-    if (prev === 0) return '—';
-    var v = (cur - prev) / Math.abs(prev) * 100;
-    if (Math.abs(v) < 0.05) return '—';
-    return v > 0 ? '<span class="tpl-delta-badge tpl-delta-badge--up">↑ ' + v.toFixed(1) + '%</span>' : '<span class="tpl-delta-badge tpl-delta-badge--down">↓ ' + Math.abs(v).toFixed(1) + '%</span>';
-  }
-
-  var SCENES = { 'default': {}, 'member': { members: ['张悦', '李思远'] }, 'dept': { dept: '创新业务部' }, 'empty': { empty: true }, 'loading': { loading: true }, 'error': { err: true }, 'op-fail': { fail: true }, 'over-range': { over: true } };
-  var S = null;
-  var staged = { range: null, dept: '全部', members: [], customStart: null, customEnd: null };
-
-  /* 成员可选清单 = 当前部门 ∩ 统计范围；成员筛选为空 = 交集内全部成员（business-rule.md §1） */
-  function deptMembersOf(dept) { return dept === '全部' ? MEMBERS.slice() : MEMBERS.filter(function (m) { return DEPT[m] === dept; }); }
-  function selMembers() {
-    var pool = deptMembersOf(S.dept);
-    var sel = S.members.filter(function (m) { return pool.indexOf(m) >= 0; });
-    return sel.length ? sel : pool;
-  }
-
-  /* ---------- AcToast ---------- */
-  var toastLayer = $('#toastLayer'), toastBox = $('#toastBox'), toastIcon = $('#toastIcon'), toastText = $('#toastText'), toastTimer = null;
-  var TOAST_ICON = { success: 'check-one', error: 'close-one', warning: 'attention', loading: 'loading-one', info: 'info' };
-  function toast(msg, type, ms) {
-    type = type || 'success';
-    toastBox.setAttribute('data-type', type);
-    toastIcon.setAttribute('data-name', TOAST_ICON[type] || 'info');
-    toastText.textContent = msg;
-    toastLayer.hidden = false;
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { toastLayer.hidden = true; }, ms || (type === 'error' ? 3000 : 2000));
-  }
-
-  /* ---------- 渲染 ---------- */
-  function kpiData(a, b) {
-    var ms = selMembers(), total = 0, req = 0, active = 0;
-    ms.forEach(function (m) { var c = creditSum(m, a, b); total += c; req += reqSum(m, a, b); if (c > 0) active++; });
-    return { total: total, req: req, avg: req ? total / req : 0, per: active ? Math.round(total / active) : 0, active: active };
-  }
-  function setKpi(id, v, unit) { $(id).innerHTML = v + '<small> ' + unit + '</small>'; }
-  function renderKpi() {
-    var cur = kpiData(S.range[0], S.range[1]); var p = wow(S.range[0], S.range[1]); var prev = kpiData(p[0], p[1]);
-    setKpi('#kTotal', cur.total.toLocaleString('zh-CN'), 'Credits');
-    setKpi('#kReq', cur.req.toLocaleString('zh-CN'), '次');
-    setKpi('#kAvg', cur.avg.toFixed(1), 'Credits/次');
-    setKpi('#kPer', cur.per.toLocaleString('zh-CN'), 'Credits');
-    setKpi('#kActive', String(cur.active), '人');
-    $('#dTotal').outerHTML = '<span id="dTotal">' + delta(cur.total, prev.total) + '</span>';
-    $('#dReq').outerHTML = '<span id="dReq">' + delta(cur.req, prev.req) + '</span>';
-    $('#dAvg').outerHTML = '<span id="dAvg">' + delta(cur.avg, prev.avg) + '</span>';
-    $('#dPer').outerHTML = '<span id="dPer">' + delta(cur.per, prev.per) + '</span>';
-    $('#dActive').outerHTML = '<span id="dActive">' + delta(cur.active, prev.active) + '</span>';
-  }
-  function renderTrend() {
-    $('#trendLegend').innerHTML = TIERS.map(function (t, i) {
-      return '<span class="qusage-legend__item"><i class="qusage-legend__dot" style="background:' + TIER_COLOR[i] + '"></i>' + t + '</span>';
-    }).join('');
-    var days = dList(S.range[0], S.range[1]); var ms = selMembers();
-    var n = days.length; var pad = 6; var cw = (360 - pad * 2) / n; var w = Math.min(cw * 0.6, 28);
-    var yBase = 168; var scale = (yBase - 8) / 1000;
-    var out = '';
-    days.forEach(function (d, i) {
-      var x = pad + cw * (i + 0.5) - w / 2; var yCur = yBase;
-      TIERS.forEach(function (t, ti) {
-        var v = 0; ms.forEach(function (m) { v += tierVal(m, d, ti); }); v = r2(v);
-        if (v === 0) return;
-        var hgt = Math.abs(v) * scale;
-        if (v > 0) yCur -= hgt;
-        var tip = d + ' · ' + t + '：' + v.toFixed(2) + ' Credits';
-        out += '<rect x="' + x.toFixed(1) + '" y="' + yCur.toFixed(1) + '" width="' + w.toFixed(1) + '" height="' + hgt.toFixed(1) + '" fill="' + TIER_COLOR[ti] + '"><title>' + tip + '</title></rect>';
-        if (v < 0) yCur += hgt;
-      });
+/* Mock 交互：分段选择互斥 / 状态演示切换 / 查询·重置·重试的 loading→成功链路（查询成功后静默刷新、停留本页） */
+function bindTabs(id, onChange) {
+  var g = document.getElementById(id);
+  if (!g) return;
+  g.querySelectorAll('.busy-tabs__item').forEach(function (item) {
+    item.addEventListener('click', function () {
+      g.querySelectorAll('.busy-tabs__item').forEach(function (i) { i.classList.remove('busy-tabs__item--active'); });
+      item.classList.add('busy-tabs__item--active');
+      if (onChange) { onChange(Array.prototype.indexOf.call(g.querySelectorAll('.busy-tabs__item'), item)); }
     });
-    $('#trendSvg').innerHTML = out;
-    $('#trendX').innerHTML = days.map(function (d) { return '<span>' + d.slice(5) + '</span>'; }).join('');
-  }
-  function memberCols() {
-    return selMembers().sort(function (x, y) { return creditSum(y, S.range[0], S.range[1]) - creditSum(x, S.range[0], S.range[1]); });
-  }
-  function renderPivotDate() {
-    var days = dList(S.range[0], S.range[1]); var ms = memberCols();
-    /* 成员 × 日期（§3）：行=成员按期间合计降序，列=日期按天升序；列数随天数变化，列宽内联生成 */
-    var cols = 'grid-template-columns:minmax(var(--ac-space-16),1.1fr) repeat(' + (days.length + 1) + ',minmax(var(--ac-space-16),1fr))';
-    var html = '<div class="tpl-data-table__row tpl-data-table__head" style="' + cols + '"><span class="tpl-data-table__cell">成员</span>' + days.map(function (d) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + d.slice(5) + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">合计</span></div>';
-    var colTot = days.map(function () { return 0; }); var grand = 0;
-    ms.forEach(function (m) {
-      var row = 0;
-      html += '<div class="tpl-data-table__row" style="' + cols + '"><span class="tpl-data-table__cell">' + m + '</span>' + days.map(function (d, i) { var v = cellInt(m, d); colTot[i] += v; row += v; return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN') + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num"><strong>' + row.toLocaleString('zh-CN') + '</strong></span></div>';
-      grand += row;
-    });
-    html += '<div class="tpl-data-table__row tpl-data-table__row--total" style="' + cols + '"><span class="tpl-data-table__cell">合计</span>' + colTot.map(function (v) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN') + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + grand.toLocaleString('zh-CN') + '</span></div>';
-    $('#pivotDate').innerHTML = html;
-  }
-  function renderPivotModel() {
-    var ms = memberCols();
-    var colSum = TIERS.map(function (t, ti) { var s = 0; ms.forEach(function (m) { dList(S.range[0], S.range[1]).forEach(function (d) { s += tierVal(m, d, ti); }); }); return r2(s); });
-    var order = [0, 1, 2].sort(function (a, b) { return colSum[b] - colSum[a]; }); order.push(3);
-    var ncol = order.length + 2;
-    var html = '<div class="tpl-data-table__row tpl-data-table__head qusage-cols-' + ncol + '"><span class="tpl-data-table__cell">成员</span>' + order.map(function (ti) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + TIER_LABEL[ti] + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">合计</span></div>';
-    var colTot = order.map(function () { return 0; }); var grand = 0;
-    ms.forEach(function (m) {
-      var row = 0;
-      html += '<div class="tpl-data-table__row qusage-cols-' + ncol + '"><span class="tpl-data-table__cell">' + m + '</span>' + order.map(function (ti, ci) {
-        var s = 0; dList(S.range[0], S.range[1]).forEach(function (d) { s += tierVal(m, d, ti); }); s = r2(s);
-        colTot[ci] = r2(colTot[ci] + s); row = r2(row + s);
-        return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + s.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>';
-      }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num"><strong>' + row.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</strong></span></div>';
-      grand = r2(grand + row);
-    });
-    html += '<div class="tpl-data-table__row tpl-data-table__row--total qusage-cols-' + ncol + '"><span class="tpl-data-table__cell">合计</span>' + colTot.map(function (v) { return '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + v.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span>'; }).join('') + '<span class="tpl-data-table__cell tpl-data-table__cell--num">' + grand.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + '</span></div>';
-    $('#pivotModel').innerHTML = html;
-  }
-  function renderAll() { renderKpi(); renderTrend(); renderPivotDate(); renderPivotModel(); }
-
-  /* ---------- 视图状态 ---------- */
-  function showOnly(which) {
-    $('#pageSkeleton').hidden = which !== 'skeleton';
-    $('#pageEmpty').hidden = which !== 'empty';
-    $('#pageError').hidden = which !== 'error';
-    $('#pageContent').hidden = which !== 'content';
-  }
-  function fmtRange(r) { return r[0].slice(5).replace('-', '-') + ' ~ ' + r[1].slice(5); }
-  function syncFilterView() {
-    $('#rangeText').textContent = fmtRange(staged.range);
-    $('#memberLabel').textContent = staged.members.length ? staged.members.join('、') : '全部成员';
-    $$('#presetSwitch .tpl-period-switcher__chip').forEach(function (c) {
-      c.classList.toggle('is-active', c.getAttribute('data-key') === staged.preset);
-    });
-    $$('#deptChips .tpl-period-switcher__chip').forEach(function (c) {
-      c.classList.toggle('is-active', c.getAttribute('data-value') === staged.dept);
-    });
-    $$('#memberChips .ac-filter-sheet__chip').forEach(function (c) {
-      c.classList.toggle('is-active', staged.members.indexOf(c.getAttribute('data-value')) >= 0);
-    });
-  }
-  var PRESETS = {
-    today: function () { return [TODAY, TODAY]; },
-    yesterday: function () { var y = dAdd(TODAY, -1); return [y, y]; },
-    last7: function () { return [dAdd(TODAY, -7), dAdd(TODAY, -1)]; },
-    last30: function () { return [dAdd(TODAY, -30), dAdd(TODAY, -1)]; }
-  };
-
-  /* ---------- 筛选面板（成员 / 自定义日期） ---------- */
-  function openSheet(which) {
-    closeSheets();
-    $('#' + which + 'Sheet').hidden = false;
-  }
-  function closeSheets() {
-    ['member', 'date'].forEach(function (w) {
-      $('#' + w + 'Sheet').hidden = true;
-    });
-  }
-  $('#deptChips').innerHTML = DEPTS.map(function (d) {
-    return '<button class="ac-btn tpl-period-switcher__chip" type="button" data-value="' + d + '" data-act="dept">' + d + '</button>';
-  }).join('');
-  function renderMemberChips() {
-    $('#memberChips').innerHTML = deptMembersOf(staged.dept).map(function (m) {
-      return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + m + '" data-act="member-chip">' + m + '</button>';
-    }).join('');
-  }
-  var RECENT = dList(dAdd(TODAY, -31), TODAY);
-  $('#dateStartChips').innerHTML = RECENT.map(function (d) { return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + d + '" data-act="date-start">' + d.slice(5) + '</button>'; }).join('');
-  $('#dateEndChips').innerHTML = RECENT.map(function (d) { return '<button class="ac-btn ac-filter-sheet__chip" type="button" data-value="' + d + '" data-act="date-end">' + d.slice(5) + '</button>'; }).join('');
-  function syncDateChips() {
-    $$('#dateStartChips .ac-filter-sheet__chip').forEach(function (c) { c.classList.toggle('is-active', c.getAttribute('data-value') === staged.customStart); });
-    $$('#dateEndChips .ac-filter-sheet__chip').forEach(function (c) { c.classList.toggle('is-active', c.getAttribute('data-value') === staged.customEnd); });
-  }
-
-  /* ---------- 查询 / 重置 / 下拉刷新 / 重试 ---------- */
-  var queryTimer = null;
-  function doQuery() {
-    if (S.over) { toast('日期范围不能超过 31 天', 'error'); return; }
-    if (S.fail && !S.failed) {
-      S.failed = true;
-      toast('查询失败，请重试', 'error');
-      return;
-    }
-    S.range = staged.range.slice();
-    S.dept = staged.dept;
-    S.members = staged.members.slice();
-    showOnly('skeleton');
-    clearTimeout(queryTimer);
-    queryTimer = setTimeout(function () {
-      renderAll();
-      showOnly(S.empty ? 'empty' : 'content');
-    }, 600);
-  }
-  function doReset() {
-    staged = { preset: 'last7', range: DEFAULT_RANGE.slice(), dept: '全部', members: [], customStart: null, customEnd: null };
-    renderMemberChips();
-    syncFilterView();
-    toast('已恢复默认筛选');
-    doQuery();
-  }
-  function refresh() {
-    var pull = $('#pull'), text = $('#pullText');
-    if (pull.classList.contains('is-refreshing')) return;
-    pull.classList.add('is-refreshing');
-    text.textContent = pull.getAttribute('data-loading-text');
-    setTimeout(function () {
-      pull.classList.remove('is-refreshing');
-      if (S.errRefresh) { toast('刷新失败，请重试', 'error'); text.textContent = pull.getAttribute('data-pull-text'); return; }
-      pull.classList.add('is-success');
-      text.textContent = pull.getAttribute('data-success-text');
-      if (!S.empty) renderAll();
-      setTimeout(function () { pull.classList.remove('is-success'); text.textContent = '下拉刷新（点击模拟下拉）'; }, 900);
-    }, 900);
-  }
-
-  /* ---------- 动作分发 ---------- */
-  function onClick(e) {
-    var el = e.target.closest('[data-act]');
-    if (!el || el.disabled) return;
-    var act = el.getAttribute('data-act');
-    if (act === 'back') { toast('返回工作台', 'info'); }
-    else if (act === 'refresh') { refresh(); }
-    else if (act === 'retry') { S.err = false; S.failed = false; doQuery(); }
-    else if (act === 'query') { doQuery(); }
-    else if (act === 'reset') { doReset(); }
-    else if (act === 'preset') {
-      var key = el.getAttribute('data-key');
-      staged.preset = key;
-      if (PRESETS[key]) staged.range = PRESETS[key]();
-      syncFilterView();
-      if (key === 'custom') { staged.customStart = staged.range[0]; staged.customEnd = staged.range[1]; syncDateChips(); openSheet('date'); }
-    }
-    else if (act === 'member') { renderMemberChips(); syncFilterView(); openSheet('member'); }
-    else if (act === 'dept') {
-      var dv = el.getAttribute('data-value');
-      if (dv !== staged.dept) {
-        staged.dept = dv; staged.members = [];              /* 切换部门：清空已选成员并按新部门重查（app-ui.md 操作反馈） */
-        renderMemberChips(); syncFilterView();
-        doQuery();
-      }
-    }
-    else if (act === 'sheet-close') {
-      if (el.classList.contains('qusage-sheet') && e.target !== el) return;
-      closeSheets();
-    }
-    else if (act === 'member-chip') {
-      var v = el.getAttribute('data-value');
-      if (staged.members.indexOf(v) >= 0) staged.members = staged.members.filter(function (m) { return m !== v; });
-      else staged.members = staged.members.concat([v]);
-      syncFilterView();
-    }
-    else if (act === 'member-reset') { staged.members = []; syncFilterView(); }
-    else if (act === 'member-ok') { closeSheets(); }
-    else if (act === 'date-start') { staged.customStart = el.getAttribute('data-value'); syncDateChips(); }
-    else if (act === 'date-end') { staged.customEnd = el.getAttribute('data-value'); syncDateChips(); }
-    else if (act === 'date-reset') { staged.customStart = null; staged.customEnd = null; syncDateChips(); }
-    else if (act === 'date-ok') {
-      if (!staged.customStart || !staged.customEnd) { toast('请选择开始与结束日期', 'warning'); return; }
-      var a = staged.customStart, b = staged.customEnd;
-      if (b < a) { var tmp = a; a = b; b = tmp; }
-      if (dDiff(a, b) + 1 > MAX_SPAN) { toast('日期范围不能超过 31 天', 'error'); return; }
-      staged.range = [a, b];
-      closeSheets();
-      syncFilterView();
-    }
-  }
-
-  /* ---------- 事件屏蔽与 Esc（防浮层变透明拦截层） ---------- */
-  ['click', 'dblclick', 'keydown', 'focus', 'blur', 'input', 'change', 'pointerdown'].forEach(function (type) {
-    window.addEventListener(type, function (e) {
-      if (type === 'keydown' && e.key === 'Escape') { e.stopPropagation(); closeSheets(); return; }
-      var t = e.target;
-      if (!t || !t.closest || !page.contains(t)) return;
-      e.stopPropagation();
-      if (type === 'click') onClick(e);
-      if (type === 'keydown' && (e.key === 'Enter' || e.key === ' ') && t.matches('[role="button"]')) { e.preventDefault(); t.click(); }
-    }, true);
   });
-
-  /* ---------- 演示场景 ---------- */
-  function applyScene(scene) {
-    if (!SCENES[scene]) scene = 'default';
-    var sc = SCENES[scene];
-    S = { scene: scene, range: DEFAULT_RANGE.slice(), dept: sc.dept || '全部', members: (sc.members || []).slice(), empty: !!sc.empty, err: !!sc.err, fail: !!sc.fail, over: !!sc.over, failed: false, errRefresh: scene === 'error' };
-    staged = { preset: 'last7', range: DEFAULT_RANGE.slice(), dept: sc.dept || '全部', members: (sc.members || []).slice(), customStart: null, customEnd: null };
-    clearTimeout(queryTimer);
-    closeSheets();
-    renderMemberChips();
-    syncFilterView();
-    $$('#sceneBar .tpl-quick-tags__item').forEach(function (a) { a.classList.toggle('is-used', a.getAttribute('data-scene') === scene); });
-    if (scene === 'loading') { showOnly('skeleton'); return; }
-    if (S.err) { showOnly('error'); return; }
-    renderAll();
-    showOnly(S.empty ? 'empty' : 'content');
-  }
-  function sceneFromHash() { var m = /scene=([\w-]+)/.exec(location.hash); return m ? m[1] : 'default'; }
-  window.addEventListener('hashchange', function () { applyScene(sceneFromHash()); });
-  applyScene(sceneFromHash());
-})();
+}
+function fakeLoading(btn) {
+  btn.classList.add('busy-button--loading');
+  btn.classList.add('busy-button--disabled');
+  setTimeout(function () {
+    btn.classList.remove('busy-button--loading');
+    btn.classList.remove('busy-button--disabled');
+  }, 600);
+}
+var stateByIndex = ['data', 'roster', 'empty', 'error'];
+function setState(s) {
+  var view = (s === 'roster') ? 'empty' : s;
+  document.getElementById('rosterHint').hidden = (s !== 'roster');
+  document.querySelectorAll('[data-view]').forEach(function (el) {
+    el.hidden = (el.getAttribute('data-view') !== view);
+  });
+}
+function resetTabs(id, activeIdx) {
+  var g = document.getElementById(id);
+  g.querySelectorAll('.busy-tabs__item').forEach(function (i, idx) { i.classList.toggle('busy-tabs__item--active', idx === activeIdx); });
+}
+bindTabs('datePreset');
+/* 切换部门 / 统计范围：清空已选成员并重查（app-ui.md 操作反馈清单） */
+bindTabs('deptTabs', function () { fakeLoading(document.getElementById('btnQuery')); });
+bindTabs('scopeTabs', function () { fakeLoading(document.getElementById('btnQuery')); });
+bindTabs('stateSwitch', function (idx) { setState(stateByIndex[idx]); });
+document.getElementById('btnQuery').addEventListener('click', function () { fakeLoading(this); });
+document.getElementById('btnReset').addEventListener('click', function () {
+  resetTabs('datePreset', 2);
+  resetTabs('deptTabs', 0);
+  resetTabs('scopeTabs', 0);
+  resetTabs('stateSwitch', 0);
+  setState('data');
+  fakeLoading(document.getElementById('btnQuery'));
+});
+/* 错误态重试：loading 后回到数据态（演示 失败反馈 + 重试 闭环） */
+document.querySelectorAll('.demo-retry').forEach(function (btn) {
+  btn.addEventListener('click', function () {
+    fakeLoading(this);
+    setTimeout(function () { resetTabs('stateSwitch', 0); setState('data'); }, 600);
+  });
+});
+/* 导航栏返回：Push 页返回首页工作台 */
+document.getElementById('backBtn').addEventListener('click', function () { history.back(); });
 </script>
 </body>
 </html>

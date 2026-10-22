@@ -33,8 +33,8 @@ metadata:
 | 业务规则 | [references/business-rule.md](references/business-rule.md) | 筛选与日期约束、KPI 口径、透视表规则、堆叠图规则、三态 | 本模块 |
 | Web 页面 | [references/web-ui.md](references/web-ui.md) | Web 端页面元信息、导航、操作反馈、三态 | 本模块 |
 | App 页面 | [references/app-ui.md](references/app-ui.md) | App 端页面元信息、导航、操作反馈、三态 | 本模块 |
-| 页面模板 | [web/templates](../../../busyming-skills-design/web/templates/) · [mobile/templates](../../../busyming-skills-design/mobile/templates/) | 页面类型取值与整页范例 | busyming-skills-design |
-| 原型样式入口 | [web](../../../busyming-skills-design/web/styles/design-system.css) · [mobile](../../../busyming-skills-design/mobile/styles/design-system.css) 的 design-system.css | 原型唯一样式入口与组件类 | busyming-skills-design |
+| 页面模板 | [templates/web](../../../busyming-skills-design/templates/web/) · [templates/mobile](../../../busyming-skills-design/templates/mobile/) | 页面类型取值与整页范例 | busyming-skills-design |
+| 原型样式入口 | Web：[pc.css](../../../busyming-skills-design/components/web/tokens/pc.css) → convert-el-plus.css → ep-base-shim.css → [templates.css](../../../busyming-skills-design/templates/web/templates.css)；App：[mobile.css](../../../busyming-skills-design/components/mobile/tokens/mobile.css) → docs-site/demos/mobile/css 组件 CSS → [templates.css](../../../busyming-skills-design/templates/mobile/templates.css) | 原型样式链与组件类 | busyming-skills-design |
 | Qoder Teams OpenAPI | 公共仓未迁入真源（busyming-skills-common 的 api 目录仅有占位） | 用量数据来源与时间范围硬约束 | busyming-skills-common |
 | 统计人员范围 | 报告配置 → 统计人员范围（研发报告子域） | 研发团队名单，Token 管理默认按此范围统计 | busyming-skills-devops |
 
