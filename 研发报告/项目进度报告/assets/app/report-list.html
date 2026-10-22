@@ -1,246 +1,238 @@
-<!doctype html>
-<!--
-  项目进度报告 · 报告列表（App 端原型）
-  ================================================================
-  规格真源：../../references/mobile-ui.md §报告列表
-  DOM 范本：.agents/skills/page-blueprint/skeletons/app/list-page.tsx.tpl
-  Token   ：.agents/skills/page-blueprint/tokens/app.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>项目进度报告 · App</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>项目进度报告 · App 原型</title>
+<!--
+  项目进度报告 · 报告列表（App 查阅端 · 静态原型，数据为 Mock）
+  页面描述真源：../../references/mobile-ui.md#报告列表 ｜ 页面路由 /rnd-report/progress/home（Push 进入）
+  页面类型：列表页（项目筛选 + 周分组卡片流）｜ 骨架依据：busyming-skills-design/templates/mobile/list.html
+  布局流：busy-navbar（返回 + 标题 + 搜索图标）→ busy-searchbar（点击图标展开）→ chip 横滑行（busy-tabs--tag）
+    → 周分组卡片流（周标签 + 齐全度徽标 + 报告卡 / 未入库占位卡）→ 上拉加载指示
+  权限：菜单 devhubAppProjectProgressReport；App 端不提供立即生成 / 补传入口（未入库占位卡不可点）
+  Mock 演示基准日：2026-09-06（周日）；启用项目 devops / store-yh，齐全度分母 = 2 + 1（_all 汇总项）= 3
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/NavBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/SearchBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tabs.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tag.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Button.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Skeleton.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Toast.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
 <style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/app.css，值不得改动）
-   ========================================================================== */
-:root{
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-6:#F53F3F;
-  --ac-success-1:#E8FFEA; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-7:#D25F00;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-2:#F2F3F5;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB;
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px; --ac-space-5:20px;
-  --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04);
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:16px;
-  --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-z-toast:1100;
-}
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:1.5;
-  max-width:420px;margin:0 auto;min-height:100vh}
-
-/* 顶部导航栏 */
-.ac-navbar{height:48px;display:flex;align-items:center;padding:0 var(--ac-space-4);
-  background:var(--ac-bg-1);position:sticky;top:0;z-index:10;box-shadow:var(--ac-shadow-1)}
-.ac-navbar-back{font-size:22px;color:var(--ac-text-2);padding:var(--ac-space-2)}
-.ac-navbar-title{flex:1;text-align:center;font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold)}
-.ac-navbar-action{font-size:18px;color:var(--ac-text-2);padding:var(--ac-space-2)}
-
-/* 搜索条 */
-.ac-searchbar{display:none;align-items:center;gap:var(--ac-space-2);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-bg-1)}
-.ac-searchbar.is-open{display:flex}
-.ac-input__inner{flex:1;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:none;border-radius:var(--ac-radius-full);font-size:var(--ac-fs-md);outline:none}
-.ac-searchbar__cancel{color:var(--ac-text-2);font-size:var(--ac-fs-md)}
-
-/* 项目筛选 chip 横滑行 */
-.chip-row{display:flex;gap:var(--ac-space-2);overflow-x:auto;
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-bg-1);
-  box-shadow:var(--ac-shadow-1)}
-.ac-chip{flex-shrink:0;height:28px;padding:0 var(--ac-space-3);display:inline-flex;align-items:center;
-  border-radius:var(--ac-radius-full);background:var(--ac-fill-2);
-  color:var(--ac-text-2);font-size:var(--ac-fs-sm)}
-.ac-chip.is-active{background:var(--ac-primary-6);color:var(--ac-text-white)}
-
-.tpl-page{padding:var(--ac-space-3) var(--ac-space-4) var(--ac-space-8);
-  display:flex;flex-direction:column;gap:var(--ac-space-3)}
-
-/* 周分组 */
-.week-group{display:flex;flex-direction:column;gap:var(--ac-space-2)}
-.week-group__head{display:flex;align-items:center;gap:var(--ac-space-2);padding:var(--ac-space-1) 0}
-.week-group__title{font-weight:var(--ac-fw-semibold)}
-.week-group__range{font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
-.week-group__badge{margin-left:auto;font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
-  padding:0 var(--ac-space-2);height:20px;display:inline-flex;align-items:center;border-radius:var(--ac-radius-full)}
-.week-group__badge.is-full{background:var(--ac-success-1);color:var(--ac-success-7)}
-.week-group__badge.is-partial{background:var(--ac-warning-1);color:var(--ac-warning-7)}
-
-/* 报告卡片：徽标独占一行 + 标题整行 */
-.ac-card{background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  padding:var(--ac-space-3);box-shadow:var(--ac-shadow-1)}
-.ac-card-top{display:flex;flex-direction:column;gap:var(--ac-space-1)}
-.ac-card-title{font-weight:var(--ac-fw-medium);line-height:1.4;
-  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
-.ac-card-meta{display:flex;align-items:center;gap:var(--ac-space-3);margin-top:var(--ac-space-2);
-  font-size:var(--ac-fs-xs);color:var(--ac-text-3)}
-.ac-card-meta__ver{font-family:var(--ac-ff-mono)}
-.ac-card.is-missing{background:var(--ac-fill-2);box-shadow:none}
-.ac-card.is-missing .ac-card-title{color:var(--ac-text-4)}
-.mono{font-family:var(--ac-ff-mono)}
-.ac-pill{display:inline-flex;align-items:center;height:20px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-full);font-size:var(--ac-fs-xs);align-self:flex-start}
-.ac-pill.is-progress{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
-.ac-pill.is-missing{background:var(--ac-border-2);color:var(--ac-text-3)}
-
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity .15s;z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
+/* ===== 页面级扩展类（项目进度报告 · App 列表）：行内样式收口 ===== */
+.rpt-nav-icon { cursor: pointer; }
+.rpt-chips { background: var(--busy-bg-deep); }
+.busy-tabs--tag .rpt-chips__list { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0; }
+.busy-tabs--tag .rpt-chip { padding: 4px 12px; border-radius: 4px; flex-shrink: 0; }
+.rpt-skeleton { display: flex; flex-direction: column; gap: 12px; }
+.rpt-skeleton__item { height: 96px; width: 100%; }
+.rpt-week-list { display: flex; flex-direction: column; gap: 12px; }
+.rpt-load-more { text-align: center; padding: 12px 0; color: var(--busy-text-tertiary); font-size: var(--busy-font-size-sm); cursor: pointer; }
+.rpt-toast { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; pointer-events: none; background: transparent; }
+.rpt-toast .adm-toast-main { display: inline-block; }
+.rpt-toast .adm-toast-main-text { display: block; }
+.tpl-doc-card--missing { opacity: .55; }
+.tpl-doc-card--link { text-decoration: none; color: inherit; }
+.rpt-card__project { font-size: var(--busy-font-size-sm); }
+.rpt-card__state { font-size: var(--busy-font-size-md); }
+.rpt-card__title { font-size: var(--busy-font-size-md); line-height: var(--busy-line-height-md); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rpt-week-group { display: flex; flex-direction: column; gap: 8px; }
+.rpt-week-group__head { display: flex; align-items: center; justify-content: space-between; }
+.rpt-week-group__label { font-size: var(--busy-font-size-md); }
 </style>
 </head>
 <body>
-
-<div class="ac-navbar">
-  <span class="ac-navbar-back" onclick="acToast('返回工作台')">‹</span>
-  <div class="ac-navbar-title">项目进度报告</div>
-  <span class="ac-navbar-action" id="searchToggle" aria-label="搜索">⌕</span>
-</div>
-
-<div class="ac-searchbar" id="searchbar">
-  <input class="ac-input__inner" placeholder="按报告标题搜索" id="searchInput">
-  <span class="ac-searchbar__cancel" id="searchCancel">取消</span>
-</div>
-
-<!-- 项目筛选 chip 横滑行 -->
-<div class="chip-row" id="chipRow">
-  <span class="ac-chip is-active">全部</span>
-  <span class="ac-chip">示例项目A</span>
-  <span class="ac-chip">示例项目B</span>
-</div>
-
-<section class="tpl-page">
-
-  <!-- 第 36 周 -->
-  <div class="week-group">
-    <div class="week-group__head">
-      <span class="week-group__title">第 36 周</span>
-      <span class="week-group__range">08-31 ~ 09-06</span>
-      <span class="week-group__badge is-full">2/2</span>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-progress">项目进度</span>
-        <span class="ac-card-title">项目进度报告（示例项目A） - 2026-08-31</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-31</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-progress">项目进度</span>
-        <span class="ac-card-title">项目进度报告（示例项目B） - 2026-08-31</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-31</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
+<div class="tpl-app">
+  <!-- 顶部导航栏：标题 + 右侧搜索图标（点击展开搜索输入框）；返回 → 工作台 -->
+  <div class="busy-navbar">
+    <div class="busy-navbar__bar">
+      <a class="busy-navbar__side" href="#" title="返回工作台（原型占位）"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></a>
+      <span class="busy-navbar__title">项目进度报告</span>
+      <span class="busy-navbar__side busy-navbar__side--right rpt-nav-icon" id="searchToggle"><svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
     </div>
   </div>
 
-  <!-- 第 35 周（示例项目B待补） -->
-  <div class="week-group">
-    <div class="week-group__head">
-      <span class="week-group__title">第 35 周</span>
-      <span class="week-group__range">08-24 ~ 08-30</span>
-      <span class="week-group__badge is-partial">1/2</span>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-progress">项目进度</span>
-        <span class="ac-card-title">项目进度报告（示例项目A） - 2026-08-24</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-24</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
+  <div class="tpl-app__scroll">
+    <!-- 搜索框（默认收起；按标题模糊匹配，确认后过滤卡片流，跨周分组保留） -->
+    <div class="busy-searchbar" id="searchbar" hidden>
+      <div class="busy-searchbar__row">
+        <div class="busy-searchbar__field">
+          <span class="busy-searchbar__leading"><svg class="busy-searchbar__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <input class="busy-searchbar__input" placeholder="搜索报告标题" id="searchInput">
+        </div>
       </div>
     </div>
-    <div class="ac-card is-missing">
-      <div class="ac-card-top">
-        <span class="ac-pill is-missing">项目进度</span>
-        <span class="ac-card-title">未入库 · 示例项目B</span>
+
+    <!-- 项目筛选 chip 横滑行：全部 + 全部项目汇总（_all 固定第二位）+ 各启用项目（选项来自报告项目配置生效数据） -->
+    <div class="busy-tabs busy-tabs--tag rpt-chips" id="projectChips">
+      <div class="busy-tabs__list rpt-chips__list">
+        <span class="busy-tabs__item busy-tabs__item--active rpt-chip" data-project="all"><span class="busy-tabs__title">全部</span></span>
+        <span class="busy-tabs__item rpt-chip" data-project="_all"><span class="busy-tabs__title">全部项目汇总</span></span>
+        <span class="busy-tabs__item rpt-chip" data-project="devops"><span class="busy-tabs__title">研发效能平台</span></span>
+        <span class="busy-tabs__item rpt-chip" data-project="store-yh"><span class="busy-tabs__title">门店要货</span></span>
       </div>
     </div>
+
+    <!-- 列表骨架屏（项目筛选 / 标题搜索 loading 演示；DOM 对齐 Skeleton/demos.json stage） -->
+    <div id="skeleton" class="rpt-skeleton" hidden>
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated rpt-skeleton__item"></span>
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated rpt-skeleton__item"></span>
+    </div>
+
+    <!-- 周分组卡片流（按所属周倒序；本周行仅周日当天起展示，由后端 week-index 收口） -->
+    <div id="weekList" class="rpt-week-list"></div>
+
+    <!-- 空态：筛选无结果 -->
+    <div class="tpl-empty" id="emptyState" hidden>
+      <div class="tpl-empty__icon">☁</div>
+      <div class="tpl-empty__desc">该条件下暂无报告</div>
+    </div>
+
+    <!-- 上拉加载：滚动到底部且仍有更早周次 → 底部加载指示器 → 追加更早周分组（失败 AcToast error + 保留重试入口） -->
+    <div id="loadMore" class="rpt-load-more">上拉加载更早周次（点击演示）</div>
   </div>
+</div>
 
-  <!-- 第 34 周 -->
-  <div class="week-group">
-    <div class="week-group__head">
-      <span class="week-group__title">第 34 周</span>
-      <span class="week-group__range">08-17 ~ 08-23</span>
-      <span class="week-group__badge is-full">2/2</span>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-progress">项目进度</span>
-        <span class="ac-card-title">项目进度报告（示例项目A） - 2026-08-17</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-17</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
-    </div>
-    <div class="ac-card" onclick="location.href='./report-detail.html'">
-      <div class="ac-card-top">
-        <span class="ac-pill is-progress">项目进度</span>
-        <span class="ac-card-title">项目进度报告（示例项目B） - 2026-08-17</span>
-      </div>
-      <div class="ac-card-meta">
-        <span class="mono">08-17</span>
-        <span>服务端生成</span>
-        <span class="ac-card-meta__ver">v1</span>
-      </div>
-    </div>
-  </div>
-
-</section>
-
-<div class="ac-toast" id="acToast"></div>
+<!-- Toast 宿主（BusyToast：DOM 对齐 adm-toast 真源 .adm-toast-mask.busy-toast > .adm-toast-main） -->
+<div id="toastHost"></div>
 
 <script>
-(function () {
-  /* ── 搜索条 ── */
-  var bar = document.getElementById('searchbar');
-  document.getElementById('searchToggle').addEventListener('click', function () { bar.classList.toggle('is-open'); });
-  document.getElementById('searchCancel').addEventListener('click', function () { bar.classList.remove('is-open'); });
+/* ================= Mock 数据（与 Web 端同源；齐全度分母 = 启用项目数 + 1 汇总项 = 3） ================= */
+var PROJECT_NAMES = { '_all': '全部项目汇总', 'devops': '研发效能平台', 'store-yh': '门店要货' };
+var WEEKS = [
+  { id: 'w36', label: '第 36 周 · 08-31~09-06', total: 3 },
+  { id: 'w35', label: '第 35 周 · 08-24~08-30', total: 3 },
+  { id: 'w34', label: '第 34 周 · 08-17~08-23', total: 3 }
+];
+var REPORTS = [
+  { week: 'w36', project: '_all', title: '项目进度报告（全部项目） - 2026-09-06', reportDate: '2026-09-06', source: '服务端生成', version: 'v1' },
+  { week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-09-06', reportDate: '2026-09-06', source: '服务端生成', version: 'v1' },
+  { week: 'w36', project: 'store-yh', missing: true },
+  { week: 'w35', project: '_all', title: '项目进度报告（全部项目） - 2026-08-30', reportDate: '2026-08-30', source: '服务端生成', version: 'v1' },
+  { week: 'w35', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-30', reportDate: '2026-08-30', source: '服务端生成', version: 'v2' },
+  { week: 'w35', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-30', reportDate: '2026-08-30', source: '推送上报', version: 'v1' },
+  { week: 'w34', project: '_all', title: '项目进度报告（全部项目） - 2026-08-23', reportDate: '2026-08-23', source: '服务端生成', version: 'v1' },
+  { week: 'w34', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-23', reportDate: '2026-08-23', source: '服务端生成', version: 'v1' },
+  { week: 'w34', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-23', reportDate: '2026-08-23', source: '手动补传', version: 'v1' }
+];
+var state = { project: 'all', keyword: '', loadedWeeks: 2 }; /* 首屏加载最近 2 个周分组，上拉追加 */
 
-  /* ── 项目筛选 chip ── */
-  document.querySelectorAll('#chipRow .ac-chip').forEach(function (chip) {
-    chip.addEventListener('click', function () {
-      document.querySelectorAll('#chipRow .ac-chip').forEach(function (c) { c.classList.remove('is-active'); });
-      chip.classList.add('is-active');
-      acToast('已筛选：' + chip.textContent);
-    });
+function toast(text) {
+  var el = document.createElement('div');
+  el.className = 'adm-toast-mask busy-toast rpt-toast';
+  el.innerHTML = '<div class="adm-toast-main"><span class="adm-toast-main-text">' + text + '</span></div>';
+  var host = document.getElementById('toastHost');
+  host.innerHTML = ''; host.appendChild(el);
+  setTimeout(function () { el.remove(); }, 1800);
+}
+/* ================= 渲染：周分组卡片流 ================= */
+function cardHtml(r) {
+  if (r.missing) {
+    /* 未入库占位卡：灰显、标注项目名、不可点、无立即生成 / 补传入口 */
+    return '<div class="tpl-doc-card tpl-doc-card--missing">' +
+      '<div class="tpl-doc-card__head"><span class="busy-tag busy-tag--default busy-tag--tint"><span class="busy-tag__content">项目进度</span></span>' +
+      '<span class="u-muted rpt-card__project">' + PROJECT_NAMES[r.project] + '</span></div>' +
+      '<div class="u-muted rpt-card__state">本周报告未入库</div>' +
+      '<div class="tpl-doc-card__foot"><span>未入库</span><span class="u-muted">待生成</span></div>' +
+    '</div>';
+  }
+  return '<a class="tpl-doc-card tpl-doc-card--link" href="report-detail.html">' +
+    '<div class="tpl-doc-card__head"><span class="busy-tag busy-tag--primary busy-tag--tint"><span class="busy-tag__content">项目进度</span></span>' +
+    '<span class="u-muted rpt-card__project">' + PROJECT_NAMES[r.project] + '</span></div>' +
+    '<div class="u-strong rpt-card__title">' + r.title + '</div>' +
+    '<div class="tpl-doc-card__foot"><span class="u-mono">' + r.reportDate + ' · ' + r.source + ' · ' + r.version + '</span><b>阅读 ›</b></div>' +
+  '</a>';
+}
+function filtered() {
+  return REPORTS.filter(function (r) {
+    if (state.project !== 'all' && r.project !== state.project) return false;
+    if (state.keyword && (r.missing || r.title.indexOf(state.keyword) === -1)) return false;
+    return true;
   });
+}
+function render() {
+  var data = filtered();
+  var html = '';
+  WEEKS.slice(0, state.loadedWeeks).forEach(function (w) {
+    var rows = data.filter(function (r) { return r.week === w.id; });
+    if (!rows.length) return;
+    var got = {}; rows.forEach(function (r) { if (!r.missing) got[r.project] = 1; });
+    var gotCount = Object.keys(got).length;
+    var full = gotCount >= w.total;
+    /* 齐全度徽标：2/2 绿 / 1/2 橙（此处分母 3） */
+    var badge = full
+      ? '<span class="busy-tag busy-tag--success busy-tag--tint"><span class="busy-tag__content">' + gotCount + '/' + w.total + '</span></span>'
+      : '<span class="busy-tag busy-tag--warning busy-tag--tint"><span class="busy-tag__content">' + gotCount + '/' + w.total + '</span></span>';
+    html += '<div class="rpt-week-group">' +
+      '<div class="rpt-week-group__head">' +
+      '<span class="u-strong rpt-week-group__label">' + w.label + '</span>' + badge + '</div>' +
+      rows.map(cardHtml).join('') +
+    '</div>';
+  });
+  document.getElementById('weekList').innerHTML = html;
+  document.getElementById('emptyState').hidden = html !== '';
+  document.getElementById('loadMore').hidden = state.loadedWeeks >= WEEKS.length;
+}
+function withSkeleton(fn) {
+  document.getElementById('weekList').hidden = true;
+  document.getElementById('skeleton').hidden = false;
+  setTimeout(function () {
+    document.getElementById('skeleton').hidden = true;
+    document.getElementById('weekList').hidden = false;
+    fn();
+  }, 400);
+}
+render();
 
-  /* ── toast ── */
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
-  };
-})();
+/* ================= 项目筛选（点 chip → 骨架屏 → 卡片流按项目过滤，周分组保留；失败 AcToast error） ================= */
+document.querySelectorAll('#projectChips .busy-tabs__item').forEach(function (chip) {
+  chip.addEventListener('click', function () {
+    document.querySelectorAll('#projectChips .busy-tabs__item').forEach(function (x) { x.classList.remove('busy-tabs__item--active'); });
+    chip.classList.add('busy-tabs__item--active');
+    state.project = chip.getAttribute('data-project');
+    withSkeleton(render);
+  });
+});
+
+/* ================= 标题搜索（导航栏搜索图标展开输入框；输入确认 → 骨架屏 → 匹配结果） ================= */
+document.getElementById('searchToggle').addEventListener('click', function () {
+  var bar = document.getElementById('searchbar');
+  bar.hidden = !bar.hidden;
+  if (!bar.hidden) document.getElementById('searchInput').focus();
+});
+document.getElementById('searchInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') { state.keyword = this.value.trim(); withSkeleton(render); }
+});
+document.getElementById('searchInput').addEventListener('input', function () {
+  if (!this.value.trim()) { state.keyword = ''; withSkeleton(render); }
+});
+
+/* ================= 上拉加载（点击演示：底部加载指示器 → 追加更早周分组；失败 toast + 保留重试入口） ================= */
+document.getElementById('loadMore').addEventListener('click', function () {
+  var el = this;
+  el.innerHTML = '加载中…';
+  setTimeout(function () {
+    state.loadedWeeks = WEEKS.length;
+    render();
+    toast('已加载更早周次');
+  }, 500);
+});
+
+/* ================= 下拉刷新（列表顶部下拉 → 刷新指示器 → 列表刷新至最新；原型以注释声明，手势由生产 WebView 容器承接） ================= */
+var startY = 0;
+document.querySelector('.tpl-app__scroll').addEventListener('touchstart', function (e) {
+  if (window.scrollY === 0) startY = e.touches[0].clientY;
+}, { passive: true });
+document.querySelector('.tpl-app__scroll').addEventListener('touchend', function (e) {
+  if (startY && e.changedTouches[0].clientY - startY > 80 && window.scrollY === 0) {
+    withSkeleton(render); toast('已刷新至最新');
+  }
+  startY = 0;
+}, { passive: true });
 </script>
 </body>
 </html>

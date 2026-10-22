@@ -1,704 +1,555 @@
-<!doctype html>
-<!--
-  项目进度报告 · 报告列表页（Web 端原型）
-  ================================================================
-  规格真源：../../references/web-ui.md §报告列表
-  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl（Tab 形态）
-            拓扑 = .tpl-page > [筛选 .tpl-panel] > .tpl-kpi-grid > [表格 .tpl-panel]
-            表格 panel 节奏 = .tpl-tabs → .tpl-toolbar → 内容 → .tpl-pagination
-  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>项目进度报告 · 报告列表</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报告列表 · 项目进度报告 · 鸣鸣很忙</title>
+<!--
+  项目进度报告 · 报告列表（Web 管理端 · 静态原型，数据为 Mock）
+  页面描述真源：../../references/web-ui.md#报告列表 ｜ 页面路由 /rnd-report/progress/list
+  页面类型：列表页（Tab 双视角）｜ 骨架依据：busyming-skills-design/templates/web/order-list.html（list 页型族）
+  布局流：页头（手动补传）→ 筛选卡（项目/统计周期/发报日期范围/关键词）→ KPI 区 ×4
+    → 表格卡（busy-tabs[按周索引(默认)|按项目分组] → 周/项目手风琴组 + 齐全度徽标 + busy-table + busy-empty）
+  浮层：手动补传弹窗（busy-dialog + Upload 拖拽区 + 文件名识别提示条）/ 立即生成确认框（MessageBox 形态）
+  权限：路由 devhubProjectProgressReport；按钮 devhubReportUpload（补传）、devhubReportTrigger（立即生成）——原型全量展示，生产按权限点控制可见性
+  Mock 演示基准日：2026-09-06（周日，本周行自周日起展示）；启用项目 2 个（devops / store-yh），齐全度分母 = 2 + 1（_all 汇总项）= 3
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
 <style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
-   ========================================================================== */
-:root{
-  /* palette */
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  /* semantic */
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
-  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
-  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
-  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
-  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
-  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
-  /* spacing */
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
-  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
-  /* radius */
-  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  /* shadow */
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
-  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  /* typography */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
-  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
-  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index */
-  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
-}
-
-/* ==========================================================================
-   基础版式
-   ========================================================================== */
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
-.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
-.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
-.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
-.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
-.web-nav__spacer{flex:1}
-
-.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
-  display:flex;flex-direction:column;gap:var(--ac-space-4)}
-
-/* ===== 筛选区 ===== */
-.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
-.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
-.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.tpl-filter__control{flex:1;min-width:0;position:relative}
-.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
-
-/* ===== 控件 ===== */
-.ac-input__inner{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-input__inner::placeholder{color:var(--ac-color-text-3)}
-.ac-input__inner:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-.ac-range{display:flex;align-items:center;gap:var(--ac-space-2);height:32px;
-  padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm)}
-.ac-range input{flex:1;min-width:0;border:none;background:transparent;outline:none;
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-range__sep{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
-  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
-  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-select__trigger:hover{background:var(--ac-fill-3)}
-.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-
-/* ===== 按钮 ===== */
-.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
-  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
-  background:var(--ac-bg-1);color:var(--ac-color-text-1);
-  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;text-decoration:none;
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-btn:hover{background:var(--ac-fill-1)}
-.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
-.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
-  color:var(--ac-primary-6)}
-.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
-.ac-btn--text.is-plain{color:var(--ac-color-text-2)}
-
-/* ===== KPI 统计卡 ===== */
-.tpl-kpi-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:var(--ac-space-4)}
-.tpl-kpi{background:var(--ac-bg-1);border:1px solid var(--ac-border-1);
-  border-radius:var(--ac-radius-sm);padding:var(--ac-space-4) var(--ac-space-5);
-  display:flex;flex-direction:column;gap:var(--ac-space-2)}
-.tpl-kpi__head{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-kpi__dot{width:6px;height:6px;border-radius:var(--ac-radius-full);background:var(--ac-color-text-3)}
-.tpl-kpi__dot.is-primary{background:var(--ac-palette-blue-6)}
-.tpl-kpi__dot.is-success{background:var(--ac-color-success)}
-.tpl-kpi__dot.is-warning{background:var(--ac-color-warning)}
-.tpl-kpi__label{font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.tpl-kpi__hint{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);cursor:help}
-.tpl-kpi__value-row{display:flex;align-items:baseline;gap:var(--ac-space-1)}
-.tpl-kpi__value{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-5xl);
-  font-weight:var(--ac-fw-semibold);line-height:var(--ac-lh-tight);color:var(--ac-color-text-1)}
-.tpl-kpi__suffix{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.tpl-kpi__foot{min-height:20px;display:flex;align-items:center;gap:var(--ac-space-1);
-  font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== Tab / 工具栏 ===== */
-.tpl-tabs{display:flex;align-items:center;gap:var(--ac-space-6);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  border-bottom:1px solid var(--ac-border-2)}
-.tpl-tabs__tab{padding:var(--ac-space-3) 0;margin-bottom:-1px;cursor:pointer;
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2);border-bottom:2px solid transparent}
-.tpl-tabs__tab:hover{color:var(--ac-color-text-1)}
-.tpl-tabs__tab.is-active{color:var(--ac-primary-6);font-weight:var(--ac-fw-medium);
-  border-bottom-color:var(--ac-primary-6)}
-.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
-.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
-.tpl-toolbar__right{display:flex;align-items:center;gap:var(--ac-space-2)}
-.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
-.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== 分组手风琴（周索引 / 项目分组共用） ===== */
-.week-group,.proj-group{border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);overflow:hidden}
-.week-group + .week-group,.proj-group + .proj-group{margin-top:var(--ac-space-3)}
-.week-group__head,.proj-group__head{display:flex;align-items:center;gap:var(--ac-space-3);
-  padding:var(--ac-space-3) var(--ac-space-4);background:var(--ac-fill-1);cursor:pointer}
-.week-group__arrow,.proj-group__arrow{color:var(--ac-color-text-3);font-size:var(--ac-fs-xs);
-  transition:transform var(--ac-duration-fast) var(--ac-easing-standard)}
-.week-group.is-open .week-group__arrow,.proj-group.is-open .proj-group__arrow{transform:rotate(90deg)}
-.week-group__title,.proj-group__title{font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
-.week-group__range,.proj-group__range{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.proj-group__key{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.week-group__badge,.proj-group__badge{margin-left:auto;font-family:var(--ac-ff-mono);font-size:var(--ac-fs-xs);
-  padding:0 var(--ac-space-2);height:22px;display:inline-flex;align-items:center;
-  border-radius:var(--ac-radius-full)}
-.week-group__badge.is-full{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
-.week-group__badge.is-partial{background:var(--ac-color-warning-1);color:var(--ac-color-warning-7)}
-.proj-group__badge{background:var(--ac-fill-2);color:var(--ac-color-text-2)}
-.week-group__body,.proj-group__body{display:none}
-.week-group.is-open .week-group__body,.proj-group.is-open .proj-group__body{display:block}
-
-/* 组内报告行：标题 | 项目 | 周期 | 发报日 | 来源 | 版本 | 大小 | 入库时间 | 操作 */
-.report-row{display:grid;
-  grid-template-columns:minmax(0,1fr) 84px 48px 64px 88px 44px 68px 112px 132px;
-  gap:var(--ac-space-3);align-items:center;
-  padding:var(--ac-space-3) var(--ac-space-4);border-top:1px solid var(--ac-border-1);
-  font-size:var(--ac-fs-md)}
-.report-row--proj{grid-template-columns:minmax(0,1fr) 48px 64px 88px 44px 68px 112px 132px}
-.report-row:hover{background:var(--ac-fill-1)}
-.report-row.is-missing{color:var(--ac-color-text-3)}
-.report-row.is-missing:hover{background:transparent}
-.report-row__main{display:flex;align-items:center;gap:var(--ac-space-2);min-width:0}
-.report-row__title{overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--ac-color-text-1)}
-.report-row.is-missing .report-row__title{color:var(--ac-color-text-3)}
-.cell-muted{color:var(--ac-color-text-3)}
-.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
-.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3)}
-
-/* ===== 标签 ===== */
-.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap;flex-shrink:0}
-.ac-tag.is-progress{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
-.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
-
-/* ===== 分页 ===== */
-.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
-  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-
-/* ===== 弹窗（手动补传） ===== */
-.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);
-  z-index:var(--ac-z-modal);align-items:center;justify-content:center}
-.ac-modal-mask.is-open{display:flex}
-.ac-modal{width:520px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  box-shadow:var(--ac-shadow-3)}
-.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
-  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
-.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold)}
-.ac-modal__close{border:none;background:transparent;font-size:var(--ac-fs-lg);
-  color:var(--ac-color-text-3);cursor:pointer}
-.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
-  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
-.ac-form-item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
-.ac-form-item__label{flex-shrink:0;width:76px;text-align:right;line-height:32px;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.ac-form-item__label .req{color:var(--ac-color-danger)}
-.ac-form-item__control{flex:1;min-width:0}
-.ac-form-item__tip{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.ac-alert{padding:var(--ac-space-3) var(--ac-space-4);border-radius:var(--ac-radius-sm);
-  font-size:var(--ac-fs-sm)}
-.ac-alert.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
-.ac-upload{border:1px dashed var(--ac-border-3);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-4);text-align:center;color:var(--ac-color-text-3);
-  font-size:var(--ac-fs-md);cursor:pointer}
-.ac-upload:hover{border-color:var(--ac-primary-6);color:var(--ac-primary-6)}
-.ac-upload__file{margin-top:var(--ac-space-2);font-family:var(--ac-ff-mono);
-  font-size:var(--ac-fs-sm);color:var(--ac-color-text-1)}
-
-/* ===== toast ===== */
-.ac-toast{position:fixed;top:64px;left:50%;transform:translateX(-50%);
-  padding:var(--ac-space-2) var(--ac-space-4);background:var(--ac-text-1);color:var(--ac-text-white);
-  border-radius:var(--ac-radius-sm);font-size:var(--ac-fs-md);
-  opacity:0;pointer-events:none;transition:opacity var(--ac-duration-fast);z-index:var(--ac-z-toast)}
-.ac-toast.is-show{opacity:.92}
-
-@media (max-width:1280px){
-  .tpl-kpi-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-}
+/* ===== 页面级扩展类（项目进度报告 · 报告列表）：行内样式收口；无 token 的展示档尺寸沿用设计仓 px 先例 ===== */
+.tpl-kpi__value--date { font-size: 22px; }
+.tpl-loading { display: flex; align-items: center; justify-content: center; gap: 8px; padding: 40px 0; color: var(--busy-text-tertiary); }
+.tpl-dialog--md { width: 560px; }
+.tpl-dialog--sm { width: 400px; }
+.tpl-dialog__body--stack { display: flex; flex-direction: column; gap: 4px; }
+.tpl-dialog__body--row { display: flex; gap: 10px; align-items: flex-start; }
+.tpl-dialog__icon--warning { color: var(--busy-color-warning); flex-shrink: 0; margin-top: 1px; }
+.tpl-toast-host { position: fixed; top: 16px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 3000; pointer-events: none; }
+.tpl-select-pop { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: var(--busy-bg-color-overlay); }
+.tpl-section__head--fold { cursor: pointer; user-select: none; justify-content: flex-start; }
+.tpl-section__fold-icon { color: var(--busy-text-tertiary); font-size: var(--busy-font-size-extra-small); }
+.tpl-section__body { margin-top: 8px; }
+.tpl-row--missing { color: var(--busy-text-quaternary); }
+.progress-upload__dropzone { border: 1px dashed var(--busy-border-strong); border-radius: 8px; padding: 26px; text-align: center; background: var(--busy-bg-subtle); cursor: pointer; }
+.progress-upload__icon { font-size: 26px; color: var(--busy-text-placeholder); }
+.progress-upload__hint { color: var(--busy-text-primary); }
+.progress-upload__hint em { color: var(--busy-color-primary); font-style: normal; }
+.progress-upload__tip { font-size: var(--busy-font-size-extra-small); color: var(--busy-text-tertiary); margin-top: 4px; }
+.progress-upload__file { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--busy-border-color-light); border-radius: 6px; font-size: var(--busy-font-size-small); color: var(--busy-text-secondary); margin-top: 8px; }
+.progress-upload__file-ok { margin-left: auto; color: var(--busy-color-success); }
+.progress-upload__file-remove { cursor: pointer; }
+.progress-upload__recognize { width: 100%; box-sizing: border-box; }
 </style>
 </head>
 <body>
-<div class="tpl-layout">
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / <b>项目进度报告</b></span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">管理员</span>
+</nav>
 
-  <!-- 顶部导航：页面身份由 Layout 承担 -->
-  <nav class="web-nav">
-    <span class="web-nav__logo">鸣鸣很忙</span>
-    <span class="web-nav__crumb">研发 / 研发报告 / <b>项目进度报告</b></span>
-    <span class="web-nav__spacer"></span>
-    <span class="web-nav__crumb">管理员</span>
-  </nav>
-
-  <section class="tpl-page">
-
-    <!-- ① 筛选 panel -->
-    <div class="tpl-panel">
-      <form class="tpl-filter ac-form" onsubmit="return false">
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">项目</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
-          </div>
-        </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">统计周期</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
-          </div>
-        </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">发报日期</span>
-          <div class="tpl-filter__control">
-            <div class="ac-range">
-              <input class="ac-input__inner" value="2026-08-01" aria-label="开始日期" />
-              <span class="ac-range__sep">至</span>
-              <input class="ac-input__inner" value="2026-08-31" aria-label="结束日期" />
-            </div>
-          </div>
-        </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">关键词</span>
-          <div class="tpl-filter__control">
-            <input class="ac-input__inner" placeholder="按报告标题模糊搜索" />
-          </div>
-        </div>
-        <div class="tpl-filter__actions">
-          <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按当前条件查询')">查询</button>
-          <button type="button" class="ac-btn" onclick="acToast('已恢复默认筛选（近 90 天）')">重置</button>
-        </div>
-      </form>
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">项目进度报告</h1>
+      <div class="tpl-page-subtitle">项目 × 周期（周/月）双维索引 ·  Mock 演示基准日 2026-09-06（周日），数据为虚构样例</div>
     </div>
+    <div class="tpl-page-head__actions">
+      <!-- 手动补传：兜底入库通道，按钮权限 devhubReportUpload -->
+      <button class="busy-button" type="button" data-perm="devhubReportUpload" id="btnUpload"><span>手动补传</span></button>
+    </div>
+  </div>
 
-    <!-- ② KPI 统计卡区 -->
-    <div class="tpl-kpi-grid">
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-success"></span>
-          <span class="tpl-kpi__label">本周已入库</span>
-          <span class="tpl-kpi__hint" title="当前自然周每个启用项目应入库 1 份">?</span>
+  <!-- 筛选卡 -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">项目</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-select="project"><div class="busy-input"><input readonly value="全部" id="selProject"></div><span class="busy-select__caret">▾</span></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">2/2</span><span class="tpl-kpi__suffix">项</span></div>
-        <div class="tpl-kpi__foot">第 36 周已齐全 · 启用项目 2 个</div>
       </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-primary"></span>
-          <span class="tpl-kpi__label">累计报告</span>
-          <span class="tpl-kpi__hint" title="已入库项目进度报告总数（按项目 × 发报日计，不含历史版本）">?</span>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">统计周期</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-select="period"><div class="busy-input"><input readonly value="全部" id="selPeriod"></div><span class="busy-select__caret">▾</span></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">24</span><span class="tpl-kpi__suffix">份</span></div>
-        <div class="tpl-kpi__foot">自 2026-05 起归档</div>
       </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot"></span>
-          <span class="tpl-kpi__label">最近发报日</span>
-          <span class="tpl-kpi__hint" title="最近一次报告入库对应的发报日">?</span>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">发报日期</div>
+        <div class="busy-form-item__content">
+          <div class="busy-date-editor busy-range-editor busy-input"><input readonly placeholder="开始日期 ~ 结束日期" id="selRange"></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value" style="font-size:var(--ac-fs-3xl)">08-31</span><span class="tpl-kpi__suffix">2026</span></div>
-        <div class="tpl-kpi__foot">服务端生成落库</div>
       </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head">
-          <span class="tpl-kpi__dot is-warning"></span>
-          <span class="tpl-kpi__label">历史版本</span>
-          <span class="tpl-kpi__hint" title="重复入库产生的历史版本总数，可在详情页回溯">?</span>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">关键词</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input placeholder="报告标题模糊查询" id="kwInput"></div>
         </div>
-        <div class="tpl-kpi__value-row"><span class="tpl-kpi__value">1</span><span class="tpl-kpi__suffix">版</span></div>
-        <div class="tpl-kpi__foot">修正重发留痕</div>
+      </div>
+      <div class="tpl-filter__actions">
+        <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查 询</span></button>
+        <button class="busy-button" type="button" id="btnReset"><span>重 置</span></button>
       </div>
     </div>
+  </div>
 
-    <!-- ③ 表格 panel：Tab 双视角 -->
-    <div class="tpl-panel">
-      <div class="tpl-tabs">
-        <div class="tpl-tabs__tab is-active" data-tab="week">按周索引</div>
-        <div class="tpl-tabs__tab" data-tab="proj">按项目分组</div>
-      </div>
+  <!-- KPI 区（筛选后 / 表格前；取数跟随筛选） -->
+  <div class="tpl-kpi-grid">
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">本周已入库</span><span class="tpl-kpi__hint" title="分母 = 启用项目数 + 1 个 _all 汇总项">?</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiWeek">2/3</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">2026 年第 36 周（08-31 ~ 09-06）</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">累计报告</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value">26</span><span class="tpl-kpi__unit">份</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">含全部项目汇总（_all）</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">最近发报日</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value tpl-kpi__value--date u-mono">2026-09-06</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">服务端定时生成（每周日 07:00）</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">历史版本总数</span><span class="tpl-kpi__hint" title="同报告项同发报日重复入库产生旧版本，可溯">?</span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value">4</span><span class="tpl-kpi__unit">版</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">详情页可下拉回溯</span></div>
+    </div>
+  </div>
 
-      <div class="tpl-toolbar">
-        <div class="tpl-toolbar__left">
-          <span class="tpl-toolbar__title">项目进度报告索引</span>
-          <span class="tpl-toolbar__meta">周归属按发报日所在自然周（周一为起点）计算 · 齐全度按启用项目 + 汇总项（_all）统计</span>
-        </div>
-        <div class="tpl-toolbar__right">
-          <button type="button" class="ac-btn ac-btn--primary" data-upload-open>+ 手动补传</button>
-        </div>
-      </div>
+  <!-- 主体区：Tab 双视角表格卡 -->
+  <div class="tpl-panel">
+    <div class="busy-tabs" id="viewTabs">
+      <div class="busy-tabs__item is-active" data-view="week">按周索引</div>
+      <div class="busy-tabs__item" data-view="project">按项目分组</div>
+    </div>
 
-      <!-- Tab1：按周索引 -->
-      <div data-tabpanel="week">
+    <!-- 表格 loading 遮罩（查询 / 切视角演示） -->
+    <div id="tableLoading" class="tpl-loading" hidden>
+      <span class="busy-button__loading"></span><span>加载中…</span>
+    </div>
 
-        <!-- 第 36 周（当前周，齐全） -->
-        <div class="week-group is-open">
-          <div class="week-group__head" data-week-toggle>
-            <span class="week-group__arrow">▶</span>
-            <span class="week-group__title">2026 年第 36 周</span>
-            <span class="week-group__range">08-31 ~ 09-06</span>
-            <span class="week-group__badge is-full">3/3</span>
-          </div>
-          <div class="week-group__body">
-            <div class="report-row">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（全部项目） - 2026-08-31">项目进度报告（全部项目） - 2026-08-31</span>
-              </div>
-              <span><span class="ac-tag is-weekly">全部项目汇总</span></span>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-31</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">52.4KB</span>
-              <span class="cell-muted">08-31 20:02</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260831__all.md')">获取原件</button>
-              </span>
-            </div>
-            <div class="report-row">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目A） - 2026-08-31">项目进度报告（示例项目A） - 2026-08-31</span>
-              </div>
-              <span>示例项目A</span>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-31</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">38.6KB</span>
-              <span class="cell-muted">08-31 20:10</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260831_proj-a.md')">获取原件</button>
-              </span>
-            </div>
-            <div class="report-row">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目B） - 2026-08-31">项目进度报告（示例项目B） - 2026-08-31</span>
-              </div>
-              <span>示例项目B</span>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-31</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">35.1KB</span>
-              <span class="cell-muted">08-31 21:05</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260831_proj-b.md')">获取原件</button>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 第 35 周（示例项目B待补） -->
-        <div class="week-group is-open">
-          <div class="week-group__head" data-week-toggle>
-            <span class="week-group__arrow">▶</span>
-            <span class="week-group__title">2026 年第 35 周</span>
-            <span class="week-group__range">08-24 ~ 08-30</span>
-            <span class="week-group__badge is-partial">1/2 待补</span>
-          </div>
-          <div class="week-group__body">
-            <div class="report-row">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目A） - 2026-08-24">项目进度报告（示例项目A） - 2026-08-24</span>
-              </div>
-              <span>示例项目A</span>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-24</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">40.2KB</span>
-              <span class="cell-muted">08-24 20:08</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260824_proj-a.md')">获取原件</button>
-              </span>
-            </div>
-            <div class="report-row is-missing">
-              <div class="report-row__main">
-                <span class="ac-tag is-default">项目进度</span>
-                <span class="report-row__title">未入库</span>
-              </div>
-              <span>示例项目B</span>
-              <span class="cell-muted">周</span>
-              <span class="cell-muted">—</span>
-              <span class="cell-muted">—</span>
-              <span class="cell-muted">—</span>
-              <span class="cell-muted">—</span>
-              <span class="cell-muted">—</span>
-              <span class="tpl-row-actions">
-                <button type="button" class="ac-btn ac-btn--text" onclick="acToast('已创建生成任务：示例项目B · 统计窗口 2026-08-17 ~ 2026-08-23')">立即生成</button>
-                <button type="button" class="ac-btn ac-btn--text is-plain" data-upload-open data-preset="示例项目B · 第 35 周（发报日 2026-08-24）">补传</button>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 第 34 周（收起态） -->
-        <div class="week-group">
-          <div class="week-group__head" data-week-toggle>
-            <span class="week-group__arrow">▶</span>
-            <span class="week-group__title">2026 年第 34 周</span>
-            <span class="week-group__range">08-17 ~ 08-23</span>
-            <span class="week-group__badge is-full">2/2</span>
-          </div>
-          <div class="week-group__body">
-            <div class="report-row">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目A） - 2026-08-17">项目进度报告（示例项目A） - 2026-08-17</span>
-              </div>
-              <span>示例项目A</span>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-17</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">36.8KB</span>
-              <span class="cell-muted">08-17 20:06</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260817_proj-a.md')">获取原件</button>
-              </span>
-            </div>
-            <div class="report-row">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目B） - 2026-08-17">项目进度报告（示例项目B） - 2026-08-17</span>
-              </div>
-              <span>示例项目B</span>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-17</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">33.4KB</span>
-              <span class="cell-muted">08-17 21:02</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260817_proj-b.md')">获取原件</button>
-              </span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <!-- Tab2：按项目分组 -->
-      <div data-tabpanel="proj" hidden>
-
-        <!-- 示例项目A -->
-        <div class="proj-group is-open">
-          <div class="proj-group__head" data-proj-toggle>
-            <span class="proj-group__arrow">▶</span>
-            <span class="proj-group__title">示例项目A</span>
-            <span class="proj-group__key">proj-a</span>
-            <span class="proj-group__badge">2 份</span>
-          </div>
-          <div class="proj-group__body">
-            <div class="report-row report-row--proj">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目A） - 2026-08-31">项目进度报告（示例项目A） - 2026-08-31</span>
-              </div>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-31</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">38.6KB</span>
-              <span class="cell-muted">08-31 20:10</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260831_proj-a.md')">获取原件</button>
-              </span>
-            </div>
-            <div class="report-row report-row--proj">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目A） - 2026-08-24">项目进度报告（示例项目A） - 2026-08-24</span>
-              </div>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-24</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">40.2KB</span>
-              <span class="cell-muted">08-24 20:08</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260824_proj-a.md')">获取原件</button>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 示例项目B -->
-        <div class="proj-group is-open">
-          <div class="proj-group__head" data-proj-toggle>
-            <span class="proj-group__arrow">▶</span>
-            <span class="proj-group__title">示例项目B</span>
-            <span class="proj-group__key">proj-b</span>
-            <span class="proj-group__badge">1 份</span>
-          </div>
-          <div class="proj-group__body">
-            <div class="report-row report-row--proj">
-              <div class="report-row__main">
-                <span class="ac-tag is-progress">项目进度</span>
-                <span class="report-row__title" title="项目进度报告（示例项目B） - 2026-08-31">项目进度报告（示例项目B） - 2026-08-31</span>
-              </div>
-              <span class="cell-muted">周</span>
-              <span class="cell-mono">08-31</span>
-              <span class="cell-muted">服务端生成</span>
-              <span class="cell-mono">v1</span>
-              <span class="cell-muted">35.1KB</span>
-              <span class="cell-muted">08-31 21:05</span>
-              <span class="tpl-row-actions">
-                <a class="ac-btn ac-btn--text" href="./report-detail.html">查看</a>
-                <button type="button" class="ac-btn ac-btn--text is-plain" onclick="acToast('已开始下载 progress_20260831_proj-b.md')">获取原件</button>
-              </span>
-            </div>
-          </div>
-        </div>
-
-        <div class="tpl-pagination">
-          <span>共 24 条</span>
-        </div>
+    <!-- Tab1：按周索引（默认）——周分组手风琴，按所属周倒序 -->
+    <div id="weekView">
+      <div class="tpl-section" id="weekGroups"></div>
+      <!-- 空态：筛选无结果 -->
+      <div class="busy-empty" id="weekEmpty" hidden>
+        <div class="busy-empty__image">☁</div>
+        <div>该条件下暂无报告</div>
       </div>
     </div>
-  </section>
-</div>
 
-<!-- 手动补传弹窗 -->
-<div class="ac-modal-mask" id="uploadModal">
-  <div class="ac-modal">
-    <div class="ac-modal__head">
-      <span class="ac-modal__title">手动补传 · 项目进度报告</span>
-      <button type="button" class="ac-btn ac-btn--text ac-modal__close" data-upload-close>✕</button>
-    </div>
-    <div class="ac-modal__body">
-      <div class="ac-alert is-success" id="uploadHint">已按文件名识别：项目 示例项目A · 发报日 2026-08-31</div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>项目</span>
-        <div class="ac-form-item__control">
-          <div class="ac-select__trigger">
-            <span class="ac-select__value">示例项目A</span>
-            <span class="ac-select__arrow">▾</span>
-          </div>
-          <div class="ac-form-item__tip">必选，仅可选择启用中的项目映射</div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>发报日</span>
-        <div class="ac-form-item__control">
-          <input class="ac-input__inner" value="2026-08-31" aria-label="发报日" />
-          <div class="ac-form-item__tip">不可晚于今天</div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><span class="req">*</span>报告文件</span>
-        <div class="ac-form-item__control">
-          <div class="ac-upload" onclick="acToast('原型演示：打开文件选择器（仅 .md，≤2MB）')">
-            点击选择或拖拽 .md 文件到此处
-            <div class="ac-upload__file">progress_20260831_proj-a.md · 38.6KB</div>
-          </div>
-        </div>
+    <!-- Tab2：按项目分组——「全部项目汇总」组固定最前，组内按发报日倒序 -->
+    <div id="projectView" hidden>
+      <div class="tpl-section" id="projectGroups"></div>
+      <div class="busy-empty" id="projectEmpty" hidden>
+        <div class="busy-empty__image">☁</div>
+        <div>该条件下暂无报告</div>
       </div>
     </div>
-    <div class="ac-modal__foot">
-      <button type="button" class="ac-btn" data-upload-close>取消</button>
-      <button type="button" class="ac-btn ac-btn--primary" data-upload-submit>确认补传</button>
+  </div>
+</section>
+
+<!-- 手动补传弹窗（BusyDialog；发报日不可晚于今天；文件仅 .md ≤2MB） -->
+<div class="ds-mask" id="uploadDialog" hidden>
+  <div class="busy-dialog tpl-dialog--md" role="dialog" aria-modal="true">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">手动补传</span><button class="busy-dialog__close" data-close="uploadDialog">✕</button></div>
+    <div class="busy-dialog__body tpl-dialog__body--stack">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">项目</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-select="uploadProject"><div class="busy-input"><input readonly placeholder="请选择项目" id="upProject"></div><span class="busy-select__caret">▾</span></div>
+          <div class="busy-form-item__error" id="upProjectErr" hidden>请选择项目</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">发报日</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-select="uploadDate"><div class="busy-input"><input readonly placeholder="选择发报日（不可晚于今天）" id="upDate"></div><span class="busy-select__caret">📅</span></div>
+          <div class="busy-form-item__error" id="upDateErr" hidden>发报日不可晚于今天</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">报告文件</div>
+        <div class="busy-form-item__content">
+          <!-- BusyUpload drag 形态（DOM 对齐 Upload/demos.json stage） -->
+          <div id="dropZone" class="progress-upload__dropzone">
+            <div class="progress-upload__icon">⬆</div>
+            <div class="progress-upload__hint">将文件拖到此处，或<em>点击上传</em></div>
+            <div class="progress-upload__tip">仅支持 .md（UTF-8），单文件不超过 2MB</div>
+          </div>
+          <input type="file" id="fileInput" accept=".md" hidden>
+          <div id="fileItem" class="progress-upload__file" hidden>
+            📄 <span id="fileName">progress_20260906_devops.md</span><span class="progress-upload__file-ok">✓ 已选择</span><span class="progress-upload__file-remove" id="fileRemove">✕</span>
+          </div>
+          <div class="busy-form-item__error" id="upFileErr" hidden>仅支持 Markdown 文件，且大小不超过 2MB</div>
+        </div>
+      </div>
+      <!-- 文件名识别提示条：按 progress_yyyyMMdd_<项目key>.md 自动识别（汇总为 __all） -->
+      <div class="busy-message busy-message--success progress-upload__recognize" id="recognizeOk" hidden>已按文件名识别：项目 <b id="recogProject">研发效能平台</b> · 发报日 <b class="u-mono" id="recogDate">2026-09-06</b></div>
+      <div class="busy-message busy-message--warning progress-upload__recognize" id="recognizeFail" hidden>文件名无法识别，请手动指定项目与发报日</div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="uploadDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" id="uploadSubmit"><span>确认补传</span></button>
     </div>
   </div>
 </div>
 
-<div class="ac-toast" id="acToast"></div>
+<!-- 立即生成确认框（BusyMessageBox 形态：二次确认统计窗口） -->
+<div class="ds-mask" id="triggerDialog" hidden>
+  <div class="busy-dialog tpl-dialog--sm" role="dialog" aria-modal="true">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">立即生成</span><button class="busy-dialog__close" data-close="triggerDialog">✕</button></div>
+    <div class="busy-dialog__body tpl-dialog__body--row">
+      <svg class="tpl-dialog__icon--warning" width="18" height="18" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-1.5 0v-4zM8 11.9a.95.95 0 1 1 0-1.9.95.95 0 0 1 0 1.9z"/></svg>
+      <span id="triggerText">将为项目「门店要货」创建生成任务，统计窗口：2026-08-31 ~ 2026-09-06（第 36 周）。</span>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="triggerDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" id="triggerOk"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast 宿主（BusyMessage 命令式反馈） -->
+<div id="toastHost" class="tpl-toast-host"></div>
 
 <script>
-(function () {
-  /* ── Tab 切换 ── */
-  document.querySelectorAll('.tpl-tabs__tab').forEach(function (tab) {
-    tab.addEventListener('click', function () {
-      document.querySelectorAll('.tpl-tabs__tab').forEach(function (t) { t.classList.remove('is-active'); });
-      tab.classList.add('is-active');
-      var key = tab.dataset.tab;
-      document.querySelectorAll('[data-tabpanel]').forEach(function (p) {
-        p.hidden = p.dataset.tabpanel !== key;
-      });
-    });
-  });
+/* ================= Mock 数据（真实页面替换为接口数据；演示基准日 2026-09-06 周日） ================= */
+var PROJECTS = [
+  { key: '_all', name: '全部项目汇总' },
+  { key: 'devops', name: '研发效能平台' },
+  { key: 'store-yh', name: '门店要货' }
+];
+/* 周索引口径（共享 business-rule.md §2）：按所属周倒序；组内 _all 固定最前，其余按项目 key 字典序；本周行仅周日起展示 */
+var WEEKS = [
+  { id: 'w36', label: '2026 年第 36 周（08-31 ~ 09-06）' },
+  { id: 'w35', label: '2026 年第 35 周（08-24 ~ 08-30）' },
+  { id: 'w34', label: '2026 年第 34 周（08-17 ~ 08-23）' }
+];
+var REPORTS = [
+  { id: 'r3601', week: 'w36', project: '_all', title: '项目进度报告（全部项目） - 2026-09-06', period: '周', reportDate: '2026-09-06', source: '服务端生成', version: 'v1', size: '48.2 KB', archivedAt: '2026-09-06 07:30' },
+  { id: 'r3602', week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-09-06', period: '周', reportDate: '2026-09-06', source: '服务端生成', version: 'v1', size: '36.5 KB', archivedAt: '2026-09-06 07:26' },
+  /* 同报告项同周两条：月报按发报日归入所属自然周（business-rule §9「同一周两条独立报告」） */
+  { id: 'r3603', week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-31', period: '月', reportDate: '2026-08-31', source: '服务端生成', version: 'v2', size: '52.1 KB', archivedAt: '2026-08-31 08:10' },
+  { id: 'w36-store', week: 'w36', project: 'store-yh', missing: true },
+  { id: 'r3501', week: 'w35', project: '_all', title: '项目进度报告（全部项目） - 2026-08-30', period: '周', reportDate: '2026-08-30', source: '服务端生成', version: 'v1', size: '45.9 KB', archivedAt: '2026-08-30 07:31' },
+  { id: 'r3502', week: 'w35', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-30', period: '周', reportDate: '2026-08-30', source: '服务端生成', version: 'v2', size: '34.8 KB', archivedAt: '2026-09-01 10:02' },
+  { id: 'r3503', week: 'w35', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-30', period: '周', reportDate: '2026-08-30', source: '推送上报', version: 'v1', size: '28.4 KB', archivedAt: '2026-08-30 09:15' },
+  { id: 'r3401', week: 'w34', project: '_all', title: '项目进度报告（全部项目） - 2026-08-23', period: '周', reportDate: '2026-08-23', source: '服务端生成', version: 'v1', size: '44.1 KB', archivedAt: '2026-08-23 07:29' },
+  { id: 'r3402', week: 'w34', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-23', period: '周', reportDate: '2026-08-23', source: '服务端生成', version: 'v1', size: '33.6 KB', archivedAt: '2026-08-23 07:25' },
+  { id: 'r3403', week: 'w34', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-23', period: '周', reportDate: '2026-08-23', source: '手动补传', version: 'v1', size: '27.9 KB', archivedAt: '2026-08-24 14:40' }
+];
+var state = { view: 'week', project: '全部', period: '全部', keyword: '' };
+var collapsed = {};
 
-  /* ── 分组手风琴（周索引 / 项目分组） ── */
-  document.querySelectorAll('[data-week-toggle],[data-proj-toggle]').forEach(function (head) {
-    head.addEventListener('click', function () {
-      var group = head.closest('.week-group') || head.closest('.proj-group');
-      group.classList.toggle('is-open');
-    });
+/* ================= 工具 ================= */
+function toast(text, type) {
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + (type || 'success');
+  el.textContent = text;
+  document.getElementById('toastHost').appendChild(el);
+  setTimeout(function () { el.remove(); }, 2600);
+}
+function projectName(key) { var p = PROJECTS.filter(function (x) { return x.key === key; })[0]; return p ? p.name : key; }
+function periodTag(p) { return p === '月' ? '<span class="busy-tag busy-tag--warning is-plain">月</span>' : '<span class="busy-tag is-plain">周</span>'; }
+function rowOf(r, withProject) {
+  if (r.missing) {
+    /* 未入库行：灰显 + 立即生成（devhubReportTrigger）/ 补传（devhubReportUpload），受按钮权限控制 */
+    return '<tr class="tpl-row--missing">' +
+      '<td><span class="busy-tag">项目进度</span> <span class="u-muted">' + projectName(r.project) + ' 本周报告</span></td>' +
+      (withProject ? '<td>' + projectName(r.project) + '</td>' : '') +
+      '<td>周</td><td class="u-mono">—</td><td><span class="busy-tag busy-tag--info is-plain">未入库</span></td><td class="u-mono">—</td><td class="u-mono">—</td><td class="u-mono">—</td>' +
+      '<td><div class="tpl-row-actions">' +
+      '<button class="busy-button is-link" data-perm="devhubReportTrigger" data-trigger="' + r.project + '"><span>立即生成</span></button>' +
+      '<button class="busy-button is-link" data-perm="devhubReportUpload" data-upload="' + r.project + '"><span>补传</span></button>' +
+      '</div></td></tr>';
+  }
+  return '<tr>' +
+    '<td><span class="busy-tag">项目进度</span> <a href="report-detail.html">' + r.title + '</a></td>' +
+    (withProject ? '<td>' + (r.project === '_all' ? '<span class="busy-tag busy-tag--info is-plain">全部项目汇总</span>' : projectName(r.project)) + '</td>' : '') +
+    '<td>' + periodTag(r.period) + '</td>' +
+    '<td class="u-mono">' + r.reportDate + '</td>' +
+    '<td>' + r.source + '</td>' +
+    '<td class="u-mono">' + r.version + '</td>' +
+    '<td class="u-mono">' + r.size + '</td>' +
+    '<td class="u-mono">' + r.archivedAt + '</td>' +
+    '<td><div class="tpl-row-actions">' +
+    '<a href="report-detail.html"><button class="busy-button is-link"><span>查看</span></button></a>' +
+    '<button class="busy-button is-link" data-download="' + r.id + '"><span>获取原件</span></button>' +
+    '</div></td></tr>';
+}
+function filtered() {
+  return REPORTS.filter(function (r) {
+    if (state.project !== '全部') {
+      var key = state.project === '全部项目汇总' ? '_all' : (PROJECTS.filter(function (p) { return p.name === state.project; })[0] || {}).key;
+      if (r.project !== key) return false;
+    }
+    if (!r.missing && state.period !== '全部' && r.period !== state.period) return false;
+    if (state.keyword && !r.missing && r.title.indexOf(state.keyword) === -1) return false;
+    if (state.keyword && r.missing) return false;
+    return true;
   });
+}
+function headHtml(withProject) {
+  return '<thead><tr><th>报告标题</th>' + (withProject ? '<th>项目</th>' : '') +
+    '<th class="u-center">统计周期</th><th>发报日</th><th>来源</th><th class="u-center">版本</th><th class="u-right">文件大小</th><th>入库时间</th><th>操作</th></tr></thead>';
+}
+function groupHead(id, titleHtml, open) {
+  return '<div class="tpl-section__head tpl-section__head--fold" data-fold="' + id + '">' +
+    '<span class="tpl-section__fold-icon">' + (open ? '▾' : '▸') + '</span>' + titleHtml + '</div>';
+}
+/* ================= 渲染：Tab1 按周索引 ================= */
+function renderWeek() {
+  var data = filtered();
+  var html = '';
+  WEEKS.forEach(function (w) {
+    var rows = data.filter(function (r) { return r.week === w.id; });
+    if (!rows.length) return;
+    var stored = rows.filter(function (r) { return !r.missing; });
+    /* 齐全度 = 已入库报告项 / 应入库报告项（去重项目），缺项标「待补」 */
+    var got = {}; stored.forEach(function (r) { got[r.project] = 1; });
+    var gotCount = Object.keys(got).length;
+    var full = gotCount >= 3;
+    var badge = full
+      ? '<span class="busy-tag busy-tag--success">' + gotCount + '/3</span>'
+      : '<span class="busy-tag busy-tag--warning">' + gotCount + '/3 待补</span>';
+    var open = collapsed[w.id] !== true;
+    html += '<div>' + groupHead(w.id, '<span>' + w.label + '</span>' + badge, open) +
+      '<div class="tpl-section__body" data-fold-body="' + w.id + '"' + (open ? '' : ' hidden') + '>' +
+      '<table class="busy-table">' + headHtml(true) + '<tbody>' +
+      rows.map(function (r) { return rowOf(r, true); }).join('') +
+      '</tbody></table></div></div>';
+  });
+  document.getElementById('weekGroups').innerHTML = html;
+  document.getElementById('weekEmpty').hidden = html !== '';
+}
+/* ================= 渲染：Tab2 按项目分组（_all 固定最前，组内发报日倒序；列缺「项目」） ================= */
+function renderProject() {
+  var data = filtered().filter(function (r) { return !r.missing; });
+  var html = '';
+  PROJECTS.forEach(function (p) {
+    var rows = data.filter(function (r) { return r.project === p.key; })
+      .sort(function (a, b) { return a.reportDate < b.reportDate ? 1 : -1; });
+    if (!rows.length) return;
+    var id = 'p-' + p.key;
+    var open = collapsed[id] !== true;
+    html += '<div>' + groupHead(id, '<span>' + p.name + '</span><span class="u-muted u-mono">' + p.key + '</span><span class="busy-tag busy-tag--info is-plain">' + rows.length + ' 份</span>', open) +
+      '<div class="tpl-section__body" data-fold-body="' + id + '"' + (open ? '' : ' hidden') + '>' +
+      '<table class="busy-table">' + headHtml(false) + '<tbody>' +
+      rows.map(function (r) { return rowOf(r, false); }).join('') +
+      '</tbody></table></div></div>';
+  });
+  document.getElementById('projectGroups').innerHTML = html;
+  document.getElementById('projectEmpty').hidden = html !== '';
+}
+function renderAll() { renderWeek(); renderProject(); bindRowActions(); }
 
-  /* ── 手动补传弹窗 ── */
-  var modal = document.getElementById('uploadModal');
-  document.querySelectorAll('[data-upload-open]').forEach(function (btn) {
-    btn.addEventListener('click', function () {
-      var preset = btn.getAttribute('data-preset');
-      document.getElementById('uploadHint').textContent = preset
-        ? '已预填：' + preset + '（按周索引缺失行带入）'
-        : '已按文件名识别：项目 示例项目A · 发报日 2026-08-31';
-      modal.classList.add('is-open');
-    });
+/* ================= 行内操作 ================= */
+function bindRowActions() {
+  document.querySelectorAll('[data-download]').forEach(function (b) {
+    b.onclick = function () {
+      /* 获取原件：按钮 loading → 浏览器下载原始 .md；失败 toast error + 按钮恢复 */
+      b.classList.add('is-disabled'); b.innerHTML = '<span class="busy-button__loading"></span><span>获取中</span>';
+      setTimeout(function () {
+        var r = REPORTS.filter(function (x) { return x.id === b.getAttribute('data-download'); })[0];
+        var md = '# ' + r.title + '\n\n> 统计区间：2026-08-31（周一）~ 2026-09-06（周日）\n\n（Mock 原始文件）\n';
+        var a = document.createElement('a');
+        a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
+        a.download = 'progress_' + r.reportDate.replace(/-/g, '') + '_' + r.project + '.md';
+        a.click(); URL.revokeObjectURL(a.href);
+        b.classList.remove('is-disabled'); b.innerHTML = '<span>获取原件</span>';
+        toast('已开始下载原始 .md 文件');
+      }, 600);
+    };
   });
-  document.querySelectorAll('[data-upload-close]').forEach(function (btn) {
-    btn.addEventListener('click', function () { modal.classList.remove('is-open'); });
+  document.querySelectorAll('[data-trigger]').forEach(function (b) {
+    b.onclick = function () {
+      document.getElementById('triggerText').textContent =
+        '将为项目「' + projectName(b.getAttribute('data-trigger')) + '」创建生成任务，统计窗口：2026-08-31 ~ 2026-09-06（第 36 周）。';
+      document.getElementById('triggerDialog').hidden = false;
+    };
   });
-  document.querySelector('[data-upload-submit]').addEventListener('click', function () {
-    modal.classList.remove('is-open');
-    acToast('补传成功，已生成 v1');
+  document.querySelectorAll('[data-upload]').forEach(function (b) {
+    b.onclick = function () {
+      /* 缺失行补传：弹窗打开并预填项目与发报日 */
+      openUpload(projectName(b.getAttribute('data-upload')), '2026-09-06');
+    };
   });
+}
+/* ================= 双视角 Tab 切换（表格 loading → 切换视角，停留） ================= */
+document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (x) { x.classList.remove('is-active'); });
+    t.classList.add('is-active');
+    state.view = t.getAttribute('data-view');
+    var loading = document.getElementById('tableLoading');
+    document.getElementById('weekView').hidden = true; document.getElementById('projectView').hidden = true;
+    loading.hidden = false;
+    setTimeout(function () {
+      loading.hidden = true;
+      document.getElementById('weekView').hidden = state.view !== 'week';
+      document.getElementById('projectView').hidden = state.view !== 'project';
+    }, 400);
+  });
+});
 
-  /* ── toast ── */
-  var toastTimer;
-  window.acToast = function (msg) {
-    var el = document.getElementById('acToast');
-    el.textContent = msg;
-    el.classList.add('is-show');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(function () { el.classList.remove('is-show'); }, 1800);
-  };
-})();
+/* ================= 手风琴组头展开/收起 ================= */
+document.body.addEventListener('click', function (e) {
+  var head = e.target.closest('[data-fold]');
+  if (!head) return;
+  var id = head.getAttribute('data-fold');
+  collapsed[id] = !collapsed[id];
+  var body = document.querySelector('[data-fold-body="' + id + '"]');
+  if (body) body.hidden = collapsed[id];
+  head.querySelector('span').textContent = collapsed[id] ? '▸' : '▾';
+});
+
+/* ================= 查询 / 重置（表格 loading → 列表刷新，停留；失败 toast error + 按钮恢复） ================= */
+document.getElementById('btnQuery').addEventListener('click', function () {
+  state.keyword = document.getElementById('kwInput').value.trim();
+  var loading = document.getElementById('tableLoading');
+  document.getElementById('weekView').hidden = true; document.getElementById('projectView').hidden = true;
+  loading.hidden = false;
+  setTimeout(function () {
+    loading.hidden = true; renderAll();
+    document.getElementById('weekView').hidden = state.view !== 'week';
+    document.getElementById('projectView').hidden = state.view !== 'project';
+    toast('查询完成');
+  }, 500);
+});
+document.getElementById('btnReset').addEventListener('click', function () {
+  state = { view: state.view, project: '全部', period: '全部', keyword: '' };
+  document.getElementById('selProject').value = '全部';
+  document.getElementById('selPeriod').value = '全部';
+  document.getElementById('selRange').value = '';
+  document.getElementById('kwInput').value = '';
+  renderAll();
+  toast('筛选条件已重置', 'info');
+});
+
+/* ================= 下拉选择（BusySelect 静态演示：项目 / 统计周期 / 补传项目 / 补传发报日） ================= */
+var SELECT_OPTS = {
+  project: ['全部', '全部项目汇总', '研发效能平台', '门店要货'],
+  period: ['全部', '周', '月'],
+  uploadProject: ['全部项目汇总', '研发效能平台', '门店要货'],
+  uploadDate: ['2026-09-06', '2026-08-30', '2026-08-23']
+};
+var SELECT_TARGET = { project: 'selProject', period: 'selPeriod', uploadProject: 'upProject', uploadDate: 'upDate' };
+document.querySelectorAll('.busy-select[data-select]').forEach(function (sel) {
+  var key = sel.getAttribute('data-select');
+  var dd = document.createElement('div');
+  dd.className = 'busy-select-dropdown tpl-select-pop';
+  dd.hidden = true;
+  SELECT_OPTS[key].forEach(function (opt) {
+    var item = document.createElement('div');
+    item.className = 'busy-select-dropdown__item';
+    item.textContent = opt;
+    item.onclick = function (ev) {
+      ev.stopPropagation();
+      document.getElementById(SELECT_TARGET[key]).value = opt;
+      if (key === 'project') state.project = opt;
+      if (key === 'period') state.period = opt;
+      dd.hidden = true;
+    };
+    dd.appendChild(item);
+  });
+  sel.appendChild(dd);
+  sel.querySelector('.busy-input').addEventListener('click', function (ev) {
+    ev.stopPropagation();
+    document.querySelectorAll('.busy-select-dropdown').forEach(function (d) { if (d !== dd) d.hidden = true; });
+    dd.hidden = !dd.hidden;
+  });
+});
+document.addEventListener('click', function () {
+  document.querySelectorAll('.busy-select-dropdown').forEach(function (d) { d.hidden = true; });
+});
+
+/* ================= 手动补传弹窗（表单链路：初态预填 → 校验 → loading → 成功关弹窗刷新 / 失败保留） ================= */
+var uploadBtn = document.getElementById('btnUpload');
+function openUpload(project, date) {
+  document.getElementById('upProject').value = project || '';
+  document.getElementById('upDate').value = date || '';
+  ['upProjectErr', 'upDateErr', 'upFileErr', 'recognizeOk', 'recognizeFail', 'fileItem'].forEach(function (id) { document.getElementById(id).hidden = true; });
+  document.getElementById('uploadDialog').hidden = false;
+}
+uploadBtn.addEventListener('click', function () { openUpload('', ''); });
+/* 模拟点选文件：合规文件名走识别成功；演示失败可改文件名（见注释） */
+document.getElementById('dropZone').addEventListener('click', function () { document.getElementById('fileInput').click(); });
+document.getElementById('fileInput').addEventListener('change', function (e) {
+  var f = e.target.files[0]; if (!f) return;
+  var ok = /^progress_\d{8}(_[a-z0-9-]+|__all)\.md$/.test(f.name) && f.size <= 2 * 1024 * 1024;
+  document.getElementById('fileItem').hidden = false;
+  document.getElementById('fileName').textContent = f.name;
+  if (ok) {
+    var m = f.name.match(/^progress_(\d{4})(\d{2})(\d{2})_(.+)\.md$/);
+    var date = m[1] + '-' + m[2] + '-' + m[3];
+    var key = m[4] === '_all' ? '_all' : m[4];
+    document.getElementById('recogProject').textContent = projectName(key);
+    document.getElementById('recogDate').textContent = date;
+    document.getElementById('recognizeOk').hidden = false;
+    document.getElementById('recognizeFail').hidden = true;
+    document.getElementById('upProject').value = projectName(key);
+    document.getElementById('upDate').value = date;
+    document.getElementById('upFileErr').hidden = true;
+  } else {
+    document.getElementById('recognizeOk').hidden = true;
+    document.getElementById('recognizeFail').hidden = false;
+    if (!/\.md$/.test(f.name) || f.size > 2 * 1024 * 1024) document.getElementById('upFileErr').hidden = false;
+  }
+});
+document.getElementById('fileRemove').addEventListener('click', function () {
+  document.getElementById('fileItem').hidden = true;
+  document.getElementById('fileInput').value = '';
+});
+document.getElementById('uploadSubmit').addEventListener('click', function () {
+  var p = document.getElementById('upProject').value;
+  var d = document.getElementById('upDate').value;
+  var hasFile = !document.getElementById('fileItem').hidden;
+  document.getElementById('upProjectErr').hidden = !!p;
+  document.getElementById('upDateErr').hidden = !!d && d <= '2026-09-06';
+  document.getElementById('upFileErr').hidden = hasFile;
+  if (!p || !d || d > '2026-09-06' || !hasFile) { toast('请完善补传信息（项目 / 发报日 / 文件）', 'error'); return; }
+  var btn = this;
+  btn.classList.add('is-disabled'); btn.innerHTML = '<span class="busy-button__loading"></span><span>提交中</span>';
+  setTimeout(function () {
+    btn.classList.remove('is-disabled'); btn.innerHTML = '<span>确认补传</span>';
+    document.getElementById('uploadDialog').hidden = true;
+    /* 成功去向：toast「补传成功，已生成 v{N}」→ 关弹窗并刷新列表 */
+    toast('补传成功，已生成 v2');
+    renderAll();
+  }, 800);
+});
+
+/* ================= 立即生成确认（二次确认统计窗口 → loading → toast + 去向） ================= */
+document.getElementById('triggerOk').addEventListener('click', function () {
+  var btn = this;
+  btn.classList.add('is-disabled'); btn.innerHTML = '<span class="busy-button__loading"></span><span>创建中</span>';
+  setTimeout(function () {
+    btn.classList.remove('is-disabled'); btn.innerHTML = '<span>确 定</span>';
+    document.getElementById('triggerDialog').hidden = true;
+    /* 成功去向：toast「已创建生成任务」→ 跳转「报告配置 › 报告触发配置 · 生成记录」（跨模块页面，原型以文案显式声明） */
+    toast('已创建生成任务，可前往 报告配置 › 报告触发配置 · 生成记录 查看进度');
+  }, 800);
+});
+
+/* 遮罩点击空白 / Esc 关闭弹层 */
+document.querySelectorAll('.ds-mask').forEach(function (m) {
+  m.addEventListener('click', function (e) { if (e.target === m) m.hidden = true; });
+});
+document.querySelectorAll('[data-close]').forEach(function (b) {
+  b.addEventListener('click', function () { document.getElementById(b.getAttribute('data-close')).hidden = true; });
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') document.querySelectorAll('.ds-mask').forEach(function (m) { m.hidden = true; });
+});
+renderAll();
 </script>
 </body>
 </html>
