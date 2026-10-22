@@ -1,204 +1,157 @@
-<!doctype html>
-<html lang="zh-CN" data-theme="light">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1" />
-<title>研发周报 · 报告列表 · App 原型</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>研发周报 · 人员产出报告 · App</title>
 <!--
-  人员产出报告（研发周报）· 报告列表（App 查阅端原型）
-  页面描述真源：../../references/mobile-ui.md §报告列表 ｜ 页面类型 list（分组卡片流）
-  整页范例：busyming-skills-design/mobile/templates/list.html ｜ DOM 依据：skeletons/app/list-page.tsx.tpl
-  结构：ac-nav-bar（返回 + 研发周报 + 搜索图标）→ 可展开 ac-search-bar → 按所属周倒序的周分组卡片流
-       （周标签 + 齐全度徽标 + 报告卡片 / 未入库占位卡）→ 加载更多
-  菜单权限：M:RND:MEMBER_OUTPUT_REPORT（仅授管理层与研发负责人）。
-  下拉刷新 / 上拉加载更多：手势在原型中以「加载更多」按钮与说明承载；本周行仅周日当天起展示。
-  演示基准日 2026-10-18（周日，第 42 周）；数据为虚构样例。
-  proto-bar 与「三态演示」仅为原型页间互联与状态演示，不属于 App 真实 UI。
+  人员产出报告 · 报告列表（App 查阅端 · 仅研发周报 · 静态原型，数据为 Mock）
+  页面对象定义：references/mobile-ui.md「报告列表」
+  布局流：busy-navbar（返回 + 标题「研发周报」+ 右侧搜索图标，点击展开 SearchBar）
+    → 按所属周倒序的周分组卡片流（周标签 + 齐全度徽标；报告卡 = 标题/发报日/来源/版本号）
+    → 未入库周灰显「未入库」占位卡（不可点）→ 空态 / 上拉加载提示。
+  导航方式：Push（工作台「研发周报」入口进入）；返回 = 导航栏返回 / 手势返回 → 工作台。
+  Mock 日期基准：今天 = 2026-10-21（周三）；本周 W43 周中不展示，最晚展示上周 W42（与 Web 同口径，后端 week-index 收口）。
 -->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css" />
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/NavBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/SearchBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tag.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Button.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Toast.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Skeleton.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
+<style>
+/* 页面级扩展类（仅定位与尺寸，色值/字号/圆角全部消费 --busy-* token） */
+.tpl-col-gap { display: flex; flex-direction: column; gap: 12px; }
+.tpl-skel-line { height: 18px; width: 50%; }
+.tpl-skel-block { height: 96px; width: 100%; }
+.tpl-load-more { text-align: center; font-size: var(--busy-font-size-xs); padding: 4px 0; }
+.tpl-week-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
+.tpl-week-head__label { font-size: var(--busy-font-size-base); }
+.tpl-doc-card--link { text-decoration: none; color: inherit; }
+.tpl-doc-card__no--clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tpl-doc-card--disabled { opacity: .55; }
+.tpl-toast-float { position: fixed; top: 48px; left: 50%; transform: translateX(-50%); z-index: 3000; display: inline-flex; padding: 10px 16px; border-radius: var(--busy-button-radius-large); }
+</style>
 </head>
 <body>
-<section class="tpl-page">
-<div class="tpl-panel">
-<div class="app-phone">
-  <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
-  <div class="app-screen">
-    <header class="ac-nav-bar">
-      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="返回工作台"><span class="ac-icon" data-icon="back"></span></span>
-      <strong class="ac-nav-bar__title">研发周报</strong>
-      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="搜索" id="searchToggle"><span class="ac-icon" data-icon="search"></span></span>
-    </header>
-    <div class="app-screen__content app-screen__content--flush">
-      <!-- 搜索：点导航栏搜索图标展开，按报告标题模糊匹配 -->
-      <div style="padding:var(--ac-space-3) var(--ac-space-3) 0" id="searchWrap" hidden>
-        <div class="ac-search-bar" id="searchBar">
-          <span class="ac-icon" data-icon="search"></span>
-          <input class="ac-search-bar__input" id="searchInput" placeholder="按报告标题搜索" />
-          <span class="ac-search-bar__clear" id="searchCancel" role="button" tabindex="0">取消</span>
-        </div>
-      </div>
-
-      <div class="app-stack" style="padding:var(--ac-space-3)" id="listHost">
-
-        <!-- 第 42 周（本周 · 待补；周日当天起展示） -->
-        <div class="ac-cell-group" data-week="42">
-          <div class="ac-cell-group__title app-row app-row--between">
-            <span>第 42 周 · 10-12~10-18</span>
-            <span class="ac-tag ac-tag--warning">0/1</span>
-          </div>
-          <!-- 未入库占位卡：不可点 -->
-          <div class="tpl-doc-card" aria-disabled="true">
-            <div class="tpl-doc-card__head"><span class="tpl-doc-card__no">研发周报</span><span class="ac-tag ac-tag--outline">未入库</span></div>
-            <div class="tpl-doc-card__foot"><span>服务端生成或手动补传后归档</span><span></span></div>
-          </div>
-        </div>
-
-        <!-- 第 41 周（齐全） -->
-        <div class="ac-cell-group" data-week="41">
-          <div class="ac-cell-group__title app-row app-row--between">
-            <span>第 41 周 · 10-05~10-11</span>
-            <span class="ac-tag ac-tag--success">1/1</span>
-          </div>
-          <div class="tpl-doc-card" role="button" tabindex="0" data-go="report-detail.html" data-title="研发周报 - 2026-10-11">
-            <div class="tpl-doc-card__head"><span class="tpl-doc-card__no">研发周报 - 2026-10-11</span><span class="ac-tag ac-tag--primary">v2</span></div>
-            <div class="tpl-doc-card__body">
-              <div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value mono">2026-10-11</div></div>
-              <div><div class="tpl-doc-card__label">来源</div><div class="tpl-doc-card__value">手动补传</div></div>
-            </div>
-            <div class="tpl-doc-card__foot"><span>入库 10-12 09:40</span><span>查看详情 ›</span></div>
-          </div>
-        </div>
-
-        <!-- 第 40 周 -->
-        <div class="ac-cell-group" data-week="40">
-          <div class="ac-cell-group__title app-row app-row--between">
-            <span>第 40 周 · 09-28~10-04</span>
-            <span class="ac-tag ac-tag--success">1/1</span>
-          </div>
-          <div class="tpl-doc-card" role="button" tabindex="0" data-go="report-detail.html" data-title="研发周报 - 2026-10-04">
-            <div class="tpl-doc-card__head"><span class="tpl-doc-card__no">研发周报 - 2026-10-04</span><span class="ac-tag ac-tag--primary">v1</span></div>
-            <div class="tpl-doc-card__body">
-              <div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value mono">2026-10-04</div></div>
-              <div><div class="tpl-doc-card__label">来源</div><div class="tpl-doc-card__value">服务端生成</div></div>
-            </div>
-            <div class="tpl-doc-card__foot"><span>入库 10-04 20:02</span><span>查看详情 ›</span></div>
-          </div>
-        </div>
-
-        <!-- 第 39 周 -->
-        <div class="ac-cell-group" data-week="39">
-          <div class="ac-cell-group__title app-row app-row--between">
-            <span>第 39 周 · 09-21~09-27</span>
-            <span class="ac-tag ac-tag--success">1/1</span>
-          </div>
-          <div class="tpl-doc-card" role="button" tabindex="0" data-go="report-detail.html" data-title="研发周报 - 2026-09-27">
-            <div class="tpl-doc-card__head"><span class="tpl-doc-card__no">研发周报 - 2026-09-27</span><span class="ac-tag ac-tag--primary">v1</span></div>
-            <div class="tpl-doc-card__body">
-              <div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value mono">2026-09-27</div></div>
-              <div><div class="tpl-doc-card__label">来源</div><div class="tpl-doc-card__value">推送上报</div></div>
-            </div>
-            <div class="tpl-doc-card__foot"><span>入库 09-28 08:15</span><span>查看详情 ›</span></div>
-          </div>
-        </div>
-
-      </div>
-      <div class="ac-load-more" id="loadMore" role="button" tabindex="0">加载更多</div>
+<div class="tpl-app">
+  <div class="busy-navbar">
+    <div class="busy-navbar__bar">
+      <span class="busy-navbar__side" id="navBack"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></span>
+      <span class="busy-navbar__title">研发周报</span>
+      <span class="busy-navbar__side busy-navbar__side--right" id="navSearch"><svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
     </div>
   </div>
-</div>
+
+  <div class="tpl-app__scroll">
+    <!-- 搜索（点导航栏搜索图标展开；输入确认 = 标题模糊匹配，跨周分组保留） -->
+    <div id="searchWrap" hidden>
+      <div class="busy-searchbar">
+        <div class="busy-searchbar__row">
+          <div class="busy-searchbar__field">
+            <span class="busy-searchbar__leading"><svg class="busy-searchbar__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+            <input class="busy-searchbar__input" id="searchInput" placeholder="按报告标题搜索">
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 骨架屏（搜索 / 下拉刷新 loading） -->
+    <div id="skeleton" hidden class="tpl-col-gap">
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-line"></span>
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-block"></span>
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-line"></span>
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-block"></span>
+    </div>
+
+    <div id="groupList" class="tpl-col-gap"></div>
+
+    <div class="tpl-empty" id="emptyState" hidden>
+      <div class="tpl-empty__icon">☁</div>
+      <div class="tpl-empty__desc">该条件下暂无报告<br>可调整搜索关键词</div>
+    </div>
+
+    <div class="u-muted tpl-load-more" id="loadMore">上拉加载更早周次 · 下拉可刷新（Mock）</div>
+  </div>
 </div>
 
-<!-- 原型页间互联与三态演示（非 App 真实 UI） -->
-<nav class="proto-bar">
-  <b>报告列表</b> ·
-  <a class="ac-link" href="report-detail.html">报告详情</a>
-  ｜三态演示：
-  <a class="ac-link" href="#" data-demo="normal" onclick="return false">正常</a> ·
-  <a class="ac-link" href="#" data-demo="skeleton" onclick="return false">骨架</a> ·
-  <a class="ac-link" href="#" data-demo="empty" onclick="return false">空态</a> ·
-  <a class="ac-link" href="#" data-demo="error" onclick="return false">错误</a>
-</nav>
-</section>
-
-<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
 <script>
-(function () {
-  var $ = function (s, r) { return (r || document).querySelector(s); };
-  var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+/* ================= Mock 数据（App 仅研发周报；周索引口径与 Web 一致） ================= */
+var WEEKS = [
+  { key: 'w42', label: '第 42 周 · 10-12~10-18', badge: '1/1', badgeCls: 'busy-tag--success', report: { title: '研发周报 · 2026 年第 42 周（10-12 ~ 10-18）', date: '2026-10-18', source: '服务端生成', ver: 'v2' } },
+  { key: 'w41', label: '第 41 周 · 10-05~10-11', badge: '1/1', badgeCls: 'busy-tag--success', report: { title: '研发周报 · 2026 年第 41 周（10-05 ~ 10-11）', date: '2026-10-11', source: '服务端生成', ver: 'v1' } },
+  { key: 'w40', label: '第 40 周 · 09-28~10-04', badge: '0/1', badgeCls: 'busy-tag--warning', report: null },
+  { key: 'w39', label: '第 39 周 · 09-21~09-27', badge: '1/1', badgeCls: 'busy-tag--success', report: { title: '研发周报 · 2026 年第 39 周（09-21 ~ 09-27）', date: '2026-09-27', source: '手动补传', ver: 'v3' } }
+];
 
-  function toast(text) {
-    var layer = document.createElement('div');
-    layer.className = 'ac-toast-layer';
-    layer.innerHTML = '<div class="ac-toast" data-ac="AcToast" data-type="success" role="status"><span class="ac-toast__text"></span></div>';
-    layer.querySelector('.ac-toast__text').textContent = text;
-    document.body.appendChild(layer);
-    setTimeout(function () { layer.remove(); }, 2400);
-  }
+function toast(text) {
+  var el = document.createElement('div');
+  el.className = 'busy-toast tpl-toast-float';
+  el.textContent = text;
+  document.body.appendChild(el);
+  setTimeout(function () { el.remove(); }, 1800);
+}
 
-  /* ── 搜索展开 / 取消 ── */
-  var searchWrap = $('#searchWrap');
-  $('#searchToggle').addEventListener('click', function () {
-    searchWrap.hidden = !searchWrap.hidden;
-    if (!searchWrap.hidden) $('#searchInput').focus();
-  });
-  $('#searchCancel').addEventListener('click', function () {
-    searchWrap.hidden = true;
-    $('#searchInput').value = '';
-    filterList('');
-  });
-  $('#searchInput').addEventListener('input', function (e) {
-    filterList(e.target.value.trim());
-  });
-  /* 标题模糊匹配：不匹配的报告卡隐藏，跨周分组保留；整组无卡则整组隐藏 */
-  function filterList(kw) {
-    $$('.tpl-doc-card[data-title]').forEach(function (card) {
-      card.hidden = kw && card.getAttribute('data-title').indexOf(kw) === -1;
-    });
-    $$('.ac-cell-group[data-week]').forEach(function (group) {
-      var visible = $$('.tpl-doc-card', group).some(function (c) { return !c.hidden; });
-      group.hidden = kw && !visible;
-    });
-  }
-
-  /* ── 卡片跳转 ── */
-  $('#listHost').addEventListener('click', function (e) {
-    var card = e.target.closest('[data-go]');
-    if (card) location.href = card.getAttribute('data-go');
-  });
-
-  /* ── 加载更多（上拉加载手势的按钮承载）── */
-  $('#loadMore').addEventListener('click', function () {
-    $('#loadMore').textContent = '没有更多了';
-  });
-
-  /* ── 三态演示（原型专用）── */
-  function skeletonHtml() {
-    return Array.from({ length: 3 }).map(function () {
-      return '<div class="tpl-doc-card"><div class="ac-skeleton"><div class="ac-skeleton--line ac-skeleton--line-sm"></div><div class="ac-skeleton--line"></div><div class="ac-skeleton--line ac-skeleton--line-sm"></div></div></div>';
-    }).join('');
-  }
-  document.querySelector('.proto-bar').addEventListener('click', function (e) {
-    var a = e.target.closest('[data-demo]');
-    if (!a) return;
-    var d = a.getAttribute('data-demo');
-    var host = $('#listHost');
-    if (d === 'skeleton') {
-      host.innerHTML = skeletonHtml();
-      $('#loadMore').textContent = '';
-    } else if (d === 'empty') {
-      host.innerHTML = '<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">该条件下暂无报告</div></div>';
-      $('#loadMore').textContent = '';
-    } else if (d === 'error') {
-      host.innerHTML = '<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">加载失败</div><div class="ac-empty__description"><a class="ac-link" href="#" onclick="return false" data-retry>点击重试</a></div></div>';
-      $('#loadMore').textContent = '';
+function render(kw) {
+  var list = document.getElementById('groupList');
+  var html = '';
+  var hit = 0;
+  WEEKS.forEach(function (w) {
+    var showReport = w.report && (!kw || w.report.title.indexOf(kw) >= 0);
+    var showMissing = !w.report && !kw; /* 搜索时未入库占位卡不参与匹配 */
+    if (!showReport && !showMissing) return;
+    hit++;
+    html += '<div class="tpl-week-head">' +
+      '<span class="u-strong tpl-week-head__label">' + w.label + '</span>' +
+      '<span class="busy-tag ' + w.badgeCls + ' busy-tag--tint"><span class="busy-tag__content">' + w.badge + '</span></span></div>';
+    if (w.report) {
+      var r = w.report;
+      html += '<a class="tpl-doc-card tpl-doc-card--link" href="report-detail.html">' +
+        '<div class="tpl-doc-card__head"><span class="tpl-doc-card__no tpl-doc-card__no--clamp">' + r.title + '</span></div>' +
+        '<div class="tpl-doc-card__body">' +
+          '<div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value u-mono">' + r.date + '</div></div>' +
+          '<div><div class="tpl-doc-card__label">版本号</div><div class="tpl-doc-card__value u-mono">' + r.ver + '</div></div>' +
+        '</div>' +
+        '<div class="tpl-doc-card__foot"><span>来源：' + r.source + '</span><b>查看 ›</b></div>' +
+      '</a>';
     } else {
-      location.reload();
+      /* 未入库周：灰显占位卡，不可点（App 端不提供立即生成/补传） */
+      html += '<div class="tpl-doc-card tpl-doc-card--disabled">' +
+        '<div class="tpl-doc-card__head"><span class="tpl-doc-card__no u-muted">研发周报</span><span class="busy-tag busy-tag--default"><span class="busy-tag__content">未入库</span></span></div>' +
+        '<div class="tpl-doc-card__foot"><span>该周报告未入库，请在 Web 端处理</span></div>' +
+      '</div>';
     }
   });
-  $('#listHost').addEventListener('click', function (e) {
-    if (e.target.closest('[data-retry]')) { location.reload(); }
-  });
-})();
+  list.innerHTML = html;
+  document.getElementById('emptyState').hidden = hit > 0;
+}
+
+/* 搜索：确认输入 → 骨架屏 → 结果刷新 */
+var searchTimer = null;
+document.getElementById('navSearch').addEventListener('click', function () {
+  var w = document.getElementById('searchWrap');
+  w.hidden = !w.hidden;
+  if (!w.hidden) document.getElementById('searchInput').focus();
+});
+document.getElementById('searchInput').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  document.getElementById('skeleton').hidden = false;
+  document.getElementById('groupList').hidden = true;
+  var kw = this.value.trim();
+  clearTimeout(searchTimer);
+  searchTimer = setTimeout(function () {
+    document.getElementById('skeleton').hidden = true;
+    document.getElementById('groupList').hidden = false;
+    render(kw);
+  }, 400);
+});
+
+/* 返回工作台（Push 来源页；原型以 toast 声明去向） */
+document.getElementById('navBack').addEventListener('click', function () { toast('返回工作台（Mock）'); });
+
+render('');
 </script>
 </body>
 </html>
