@@ -1,0 +1,10 @@
+schema_version: 1
+module_path: ops_management/black_lamp_factory
+title: 黑灯工厂工单管理
+scope:
+    - 运维管理/黑灯工厂管理/
+source_files: []
+depends_on: []
+related_to:
+    - path: ops_management/error_log_management
+    - path: schedule_management/requirement_management

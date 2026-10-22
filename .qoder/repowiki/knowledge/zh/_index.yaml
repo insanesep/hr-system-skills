@@ -1,0 +1,171 @@
+# 知识卡导出索引文件
+schema_version: 1
+locale: zh-CN
+branch: master
+nodes_managed: true
+exported_at: "2026-10-21T07:45:27Z"
+modules:
+    "":
+        dir_name: 鸣鸣很忙产研 Harness（需求-排期-报告-成本-运维）
+        title: 鸣鸣很忙产研 Harness（需求-排期-报告-成本-运维）
+        scope:
+            - .gitignore
+            - AGENTS.md
+        source_files: []
+        children:
+            - cost_management
+            - dev_reports
+            - ops_management
+            - schedule_management
+        depends_on: []
+        related_to: []
+    cost_management:
+        dir_name: 成本管理（研发 Token_功能使用_项目费用）
+        title: 成本管理（研发 Token/功能使用/项目费用）
+        scope:
+            - 成本管理/
+        source_files: []
+        children:
+            - cost_management/feature_usage_management
+            - cost_management/project_cost_management
+        depends_on: []
+        related_to: []
+    cost_management/feature_usage_management:
+        dir_name: 功能使用情况管理（埋点流水、打标与报表）
+        title: 功能使用情况管理（埋点流水、打标与报表）
+        scope:
+            - 成本管理/功能使用情况管理/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    cost_management/project_cost_management:
+        dir_name: 项目成本管理（研发费用单据与品牌分摊）
+        title: 项目成本管理（研发费用单据与品牌分摊）
+        scope:
+            - 成本管理/项目成本管理/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to: []
+    dev_reports:
+        dir_name: 研发报告子域（Skill 驱动的多维度报告集合）
+        title: 研发报告子域（Skill 驱动的多维度报告集合）
+        scope:
+            - 研发报告/
+        source_files: []
+        children:
+            - dev_reports/document_consistency_report
+            - dev_reports/personnel_output_report
+            - dev_reports/project_progress_report
+            - dev_reports/report_configuration
+        depends_on: []
+        related_to: []
+    dev_reports/document_consistency_report:
+        dir_name: 文档一致性报告
+        title: 文档一致性报告
+        scope:
+            - 研发报告/文档一致性报告/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: dev_reports/report_configuration
+    dev_reports/personnel_output_report:
+        dir_name: 人员产出报告（研发周报_日报）
+        title: 人员产出报告（研发周报/日报）
+        scope:
+            - 研发报告/人员产出报告/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: dev_reports/report_configuration
+            - path: schedule_management/feature_schedule
+    dev_reports/project_progress_report:
+        dir_name: 项目进度报告 Skill 与 UI 原型
+        title: 项目进度报告 Skill 与 UI 原型
+        scope:
+            - 研发报告/项目进度报告/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: dev_reports/report_configuration
+    dev_reports/report_configuration:
+        dir_name: 研发报告子域共享配置中心
+        title: 研发报告子域共享配置中心
+        scope:
+            - 研发报告/报告配置/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: dev_reports/document_consistency_report
+            - path: dev_reports/personnel_output_report
+            - path: dev_reports/project_progress_report
+    ops_management:
+        dir_name: 运维管理（DevOps 运维能力域）
+        title: 运维管理（DevOps 运维能力域）
+        scope:
+            - 运维管理/
+        source_files: []
+        children:
+            - ops_management/black_lamp_factory
+            - ops_management/error_log_management
+        depends_on: []
+        related_to: []
+    ops_management/black_lamp_factory:
+        dir_name: 黑灯工厂工单管理
+        title: 黑灯工厂工单管理
+        scope:
+            - 运维管理/黑灯工厂管理/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: ops_management/error_log_management
+            - path: schedule_management/requirement_management
+    ops_management/error_log_management:
+        dir_name: 错误日志管理（日志异常报表）
+        title: 错误日志管理（日志异常报表）
+        scope:
+            - 运维管理/错误日志管理/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: ops_management/black_lamp_factory
+    schedule_management:
+        dir_name: 排期管理（需求→排期→发布）
+        title: 排期管理（需求→排期→发布）
+        scope:
+            - 排期管理/
+        source_files: []
+        children:
+            - schedule_management/feature_schedule
+            - schedule_management/requirement_management
+        depends_on: []
+        related_to: []
+    schedule_management/feature_schedule:
+        dir_name: 功能排期（研发排期工作台）
+        title: 功能排期（研发排期工作台）
+        scope:
+            - 排期管理/功能排期/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: dev_reports/personnel_output_report
+            - path: schedule_management/requirement_management
+    schedule_management/requirement_management:
+        dir_name: 需求管理（排期前置审批与分流中枢）
+        title: 需求管理（排期前置审批与分流中枢）
+        scope:
+            - 排期管理/需求管理/
+        source_files: []
+        children: []
+        depends_on: []
+        related_to:
+            - path: ops_management/black_lamp_factory
+            - path: schedule_management/feature_schedule

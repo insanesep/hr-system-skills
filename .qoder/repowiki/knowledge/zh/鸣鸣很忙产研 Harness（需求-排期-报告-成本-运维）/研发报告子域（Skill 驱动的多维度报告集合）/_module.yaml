@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: dev_reports
+title: 研发报告子域（Skill 驱动的多维度报告集合）
+scope:
+    - 研发报告/
+source_files: []
+depends_on: []
+related_to: []

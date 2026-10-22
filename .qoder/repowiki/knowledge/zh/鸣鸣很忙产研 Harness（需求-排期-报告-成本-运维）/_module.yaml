@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: ""
+title: 鸣鸣很忙产研 Harness（需求-排期-报告-成本-运维）
+scope:
+    - .gitignore
+    - AGENTS.md
+source_files: []
+depends_on: []
+related_to: []

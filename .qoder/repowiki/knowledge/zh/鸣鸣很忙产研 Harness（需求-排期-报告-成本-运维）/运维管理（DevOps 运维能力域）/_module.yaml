@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: ops_management
+title: 运维管理（DevOps 运维能力域）
+scope:
+    - 运维管理/
+source_files: []
+depends_on: []
+related_to: []

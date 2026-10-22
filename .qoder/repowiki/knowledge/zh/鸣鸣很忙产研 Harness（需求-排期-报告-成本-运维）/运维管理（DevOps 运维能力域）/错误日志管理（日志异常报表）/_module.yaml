@@ -1,0 +1,9 @@
+schema_version: 1
+module_path: ops_management/error_log_management
+title: 错误日志管理（日志异常报表）
+scope:
+    - 运维管理/错误日志管理/
+source_files: []
+depends_on: []
+related_to:
+    - path: ops_management/black_lamp_factory

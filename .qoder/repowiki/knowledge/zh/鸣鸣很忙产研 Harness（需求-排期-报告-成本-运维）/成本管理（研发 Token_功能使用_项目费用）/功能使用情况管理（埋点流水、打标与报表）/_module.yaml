@@ -1,0 +1,8 @@
+schema_version: 1
+module_path: cost_management/feature_usage_management
+title: 功能使用情况管理（埋点流水、打标与报表）
+scope:
+    - 成本管理/功能使用情况管理/
+source_files: []
+depends_on: []
+related_to: []
