@@ -57,7 +57,7 @@
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <h1 class="tpl-page-title">人员产出报告</h1>
-      <div class="tpl-page-subtitle">研发周报按周复盘（双端可查）、研发日报当日实时快照（仅 Web）；人员维度仅统计「报告配置 → 统计人员范围」启用名单（Mock 演示数据）</div>
+      <div class="tpl-page-subtitle">研发周报按周复盘（双端可查）、研发日报前一自然日快照（仅 Web）；人员维度仅统计「报告配置 → 统计人员范围」启用名单（Mock 演示数据）</div>
     </div>
     <div class="tpl-page-head__tags">
       <span class="busy-tag busy-tag--info is-plain">仅管理层与研发负责人可见</span>
@@ -250,13 +250,13 @@ var REPORTS = {
     pagerTotal: '共 42 条'
   },
   daily: {
-    kpi: { cycleLabel: '今日已入库', cycleValue: '1/1', cycleFoot: '当日实时窗口，数据持续产生中', total: 18, latest: '2026-10-21', versions: 2 },
+    kpi: { cycleLabel: '今日已入库', cycleValue: '1/1', cycleFoot: '统计前一自然日，当日数据持续产生中', total: 18, latest: '2026-10-21', versions: 2 },
     viewLabel: '按日索引',
     groups: [
-      { key: 'd21', label: '2026-10-21 周三', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd21', title: '研发日报 · 2026-10-21', date: '2026-10-21', week: '', source: '服务端生成', ver: 'v1', size: '36 KB', time: '2026-10-21 10:02' } },
-      { key: 'd20', label: '2026-10-20 周二', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd20', title: '研发日报 · 2026-10-20', date: '2026-10-20', week: '', source: '推送上报', ver: 'v1', size: '34 KB', time: '2026-10-20 22:41' } },
-      { key: 'd19', label: '2026-10-19 周一', badge: '0/1 待补', badgeCls: 'busy-tag--warning', report: null, genWindow: '2026-10-19 00:00 至生成时（当日实时截断）', genLabel: '2026-10-19', prefillDate: '2026-10-19' },
-      { key: 'd18', label: '2026-10-18 周日', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd18', title: '研发日报 · 2026-10-18', date: '2026-10-18', week: '', source: '服务端生成', ver: 'v2', size: '38 KB', time: '2026-10-18 22:03' } }
+      { key: 'd21', label: '2026-10-21 周三', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd21', title: '研发日报 · 2026-10-21', date: '2026-10-21', week: '', source: '服务端生成', ver: 'v1', size: '36 KB', time: '2026-10-22 09:12' } },
+      { key: 'd20', label: '2026-10-20 周二', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd20', title: '研发日报 · 2026-10-20', date: '2026-10-20', week: '', source: '推送上报', ver: 'v1', size: '34 KB', time: '2026-10-21 09:31' } },
+      { key: 'd19', label: '2026-10-19 周一', badge: '0/1 待补', badgeCls: 'busy-tag--warning', report: null, genWindow: '2026-10-19 00:00 至 24:00（前一自然日）', genLabel: '2026-10-19', prefillDate: '2026-10-19' },
+      { key: 'd18', label: '2026-10-18 周日', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd18', title: '研发日报 · 2026-10-18', date: '2026-10-18', week: '', source: '服务端生成', ver: 'v2', size: '38 KB', time: '2026-10-19 09:05' } }
     ],
     detailCols: ['发报日期', '报告标题', '来源', '版本', '文件大小', '入库时间', '操作'],
     pagerTotal: '共 18 条'

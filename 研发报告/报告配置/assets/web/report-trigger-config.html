@@ -493,7 +493,7 @@ function bindConfigEvents() {
       if (!r.manual) { toast('error', '该报告项未开启手动触发'); return; }
       if (r.last && r.last.status === 'RUNNING') { toast('error', '该报告项存在进行中任务，请等待完成'); return; }
       /* ② 二次确认（确认报告项与统计窗口）→ ③ 按钮 loading → ④ toast → ⑤ 打开生成记录抽屉 */
-      var win = r.type === 'DAILY_DEV' ? '2026-10-20 ~ 2026-10-20（当日实时）' : '2026-10-12 ~ 2026-10-18';
+      var win = r.type === 'DAILY_DEV' ? '2026-10-19 00:00 ~ 24:00（前一自然日）' : '2026-10-12 ~ 2026-10-18';
       confirmAction('立即生成', '确认为「' + itemName(r) + '」创建生成任务？统计窗口：' + win + '。', function () {
         b.classList.add('is-disabled');
         setTimeout(function () {
