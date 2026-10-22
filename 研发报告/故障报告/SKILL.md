@@ -30,9 +30,9 @@ metadata:
 | 业务规则 | [references/business-rule.md](references/business-rule.md) | 名词约定、业务流程、定级、状态机、复盘时限与高亮、删除与证据约束、权限编码 | 本模块 |
 | 数据定义 | [references/data.md](references/data.md) | 故障单、运维证据关联、复盘记录、改进措施的字段口径与实体关系 | 本模块 |
 | Web 页面 | [references/web-ui.md](references/web-ui.md) | 故障列表、登记 / 编辑弹窗、故障详情的区块元素、导航关系、操作反馈与表单校验 | 本模块 |
-| 页面模板 | [order-list.html](../../../busyming-skills-design/web/templates/order-list.html) | 故障列表 `order-list` 的整页范例 | busyming-skills-design |
-| 页面模板 | [order-detail.html](../../../busyming-skills-design/web/templates/order-detail.html) | 故障详情 `order-detail` 的整页范例 | busyming-skills-design |
-| 原型样式入口 | [design-system.css](../../../busyming-skills-design/web/styles/design-system.css) | 原型唯一样式入口与组件类 | busyming-skills-design |
+| 页面模板 | [order-list.html](../../../busyming-skills-design/templates/web/order-list.html) | 故障列表 `order-list` 的整页范例 | busyming-skills-design |
+| 页面模板 | [order-detail.html](../../../busyming-skills-design/templates/web/order-detail.html) | 故障详情 `order-detail` 的整页范例 | busyming-skills-design |
+| 原型样式链 | [templates.css](../../../busyming-skills-design/templates/web/templates.css) + [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css) | 原型样式链：components/web/tokens/pc.css → docs-site/demos/pc/css/convert-el-plus.css → docs-site/ep-base-shim.css → templates/web/templates.css（`--busy-*` Token 与 `busy-*` / `.tpl-*` 组件类） | busyming-skills-design |
 | 错误日志管理 | [SKILL.md](../../运维管理/错误日志管理/SKILL.md) | 故障证据来源（错误日志指纹报表项引用） | busyming-skills-devops |
 | 服务器监控 | [SKILL.md](../../运维管理/服务器监控/SKILL.md) | 故障证据来源（异常快照引用） | busyming-skills-devops |
 | 黑灯工厂管理 | [SKILL.md](../../运维管理/黑灯工厂管理/SKILL.md) | 故障证据来源（工单引用）；自动化修复闭环与人工故障复盘的分工边界 | busyming-skills-devops |

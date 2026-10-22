@@ -1,806 +1,913 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>故障详情 · 故障报告 · 鸣鸣很忙</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>故障详情 · 故障报告 · Web 原型</title>
 <!--
-  故障报告 · 故障详情页（Web 原型）
-  页面描述真源：../../references/web-ui.md#故障详情 ｜ 页面类型 order-detail（操作型）
-  整页范例：busyming-skills-design/web/templates/order-detail.html ｜ DOM 依据：skeletons/web/detail-page.vue.tpl
-  区块：页头（返回 + 标题 + 定级 / 状态 Tag + 编辑）→ 逾期未复盘警示 → 信息头 → 处置过程（时间线 + 追加）
-       → 运维证据关联（卡片 + 跳转溯源）→ 复盘区（时间线 / 根因 / 改进措施 checklist）→ 沉底操作栏（按状态机流转）。
-  样式只引用 design-system.css，控件取 busyming-skills-design/web/components 的组件 DOM；交互由页内脚本承接，
-  runtime.js 只负责图标注入。导航栏「原型页面」切换页面与四种故障状态演示。演示基准日 2026-10-18，数据为虚构样例。
+  故障报告 · 故障详情（页型 order-detail · 操作型，状态操作沉底操作栏 · 静态原型 Mock，Mock 今天 = 2026-10-21）
+  需求真源：references/web-ui.md「故障详情」、references/business-rule.md §4 状态机 / §5 时限高亮 / §6 约束
+  骨架依据：busyming-skills-design/templates/web/order-detail.html（.tpl-* 骨架类保留）
+  组件清单（registry/prototype.json · platform=pc 逐条核对）：
+    Button / Steps(busy-steps 生命周期) / Descriptions(busy-descriptions 信息头) / Tag(定级/状态/证据类型) /
+    Table(busy-table--border 证据与改进措施) / Checkbox(措施完成勾选) / Radio(证据类型/定级) /
+    DateTimePicker(时间触发器) / SimpleUserSelector(负责人) / BusyInput / Form(busy-form-item 校验) /
+    Dialog(busy-dialog 编辑/打回/添加证据) / MessageBox(标记恢复/闭环/移除/脏离开确认) / Message(busy-message) / Empty(busy-empty)
+  布局流：页头（返回 + 标题 + 定级/状态 Tag + 编辑）→ 生命周期 busy-steps（登记→处理→复盘→闭环）
+    → 逾期未复盘警示（P1/P2 恢复超 3 个工作日）→ 信息头 → 处置过程记录（倒序时间线 + 追加）
+    → 运维证据关联区（跳转溯源 · 只读引用不回写）→ 复盘区（时间线四段 / 根因 / 改进措施 checklist / 打回记录）
+    → 沉底操作栏（按状态机：标记已恢复 / 提交复盘 / 打回 / 闭环确认 / 闭环只读）
+  演示：导航栏可切换 处理中 / 待复盘 / 复盘中 / 已闭环 四种状态，全页区块随状态联动。
+  样式链偏差说明：为承载弹窗遮罩引入 docs-site/site.css 的 .ds-mask（组件 demos.json stage 真源同款遮罩类）；
+    证据区「卡片列表」因骨架无卡片容器类，以 busy-table--border 列表呈现同等元素（类型 Tag / 摘要 / 跳转溯源 / 移除）。
 -->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级模板扩展类：toast 顶部定位（尺寸收进 tpl- 类，不写行内 style） */
+  .tpl-toast-fixed { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 3000; }
+</style>
 </head>
 <body>
-<nav class="web-nav">
-  <span class="web-nav__logo">鸣鸣很忙</span>
-  <span class="web-nav__crumb">研发 / 研发报告 / <a class="ac-link is-hoverable" data-ac="AcLink" href="fault-list.html"><span class="ac-link__label">故障报告</span></a> / <b>故障详情</b></span>
-  <span class="web-nav__spacer"></span>
-  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
-    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
-    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
-      <div class="ac-dropdown-group-title">故障报告 · Web 2 页</div>
-      <a class="ac-dropdown-item" role="menuitem" href="fault-list.html">故障列表</a>
-      <a class="ac-dropdown-item is-active" role="menuitem" href="fault-detail.html">故障详情</a>
-      <div class="ac-dropdown-divider"></div>
-      <div class="ac-dropdown-group-title">演示状态（状态机四态）</div>
-      <div class="ac-dropdown-item" role="menuitem" tabindex="0" data-demo-st="处理中">处理中（可标记恢复）</div>
-      <div class="ac-dropdown-item" role="menuitem" tabindex="0" data-demo-st="待复盘">待复盘（逾期未复盘警示）</div>
-      <div class="ac-dropdown-item" role="menuitem" tabindex="0" data-demo-st="复盘中">复盘中（默认 · 含打回记录）</div>
-      <div class="ac-dropdown-item" role="menuitem" tabindex="0" data-demo-st="已闭环">已闭环（全页只读）</div>
-    </div>
-  </div>
-  <span class="web-nav__crumb">刘操</span>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / 故障报告 / <b>故障详情</b></span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">原型页面：</span>
+  <a href="fault-list.html"><button class="busy-button busy-button--small" type="button"><span>故障列表</span></button></a>
+  <span class="tpl-nav__crumb">· 状态演示：</span>
+  <button class="busy-button busy-button--small" type="button" data-state="processing"><span>处理中</span></button>
+  <button class="busy-button busy-button--small busy-button--primary" type="button" data-state="pending"><span>待复盘</span></button>
+  <button class="busy-button busy-button--small" type="button" data-state="reviewing"><span>复盘中</span></button>
+  <button class="busy-button busy-button--small" type="button" data-state="closed"><span>已闭环</span></button>
+  <span class="tpl-nav__crumb">研发 · 王倩</span>
 </nav>
 
 <section class="tpl-page tpl-page--with-actionbar">
-
-  <!-- 页头：返回 + 标题 + 定级 / 状态 Tag + 编辑 -->
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
-      <a class="ac-link u-sm" href="fault-list.html"><span class="ac-icon" data-ac="AcIcon" data-name="left"></span> 返回故障列表</a>
-      <h1 class="tpl-page-title">库存报表口径错误</h1>
+      <a class="tpl-page-head__back" href="fault-list.html" id="backLink">‹ 返回故障列表</a>
+      <h1 class="tpl-page-title"><span id="dTitle">订单履约网关 504 大面积超时</span> <span class="u-mono u-sub" id="dId">F-20261015-001</span></h1>
       <div class="tpl-page-head__tags">
-        <span class="ac-tag ac-tag--orange" data-ac="AcTag">P2 严重</span>
-        <span class="ac-tag ac-tag--purple" data-ac="AcTag" id="stTag">复盘中</span>
+        <span class="busy-tag busy-tag--danger" id="dLevelTag">P1 重大</span>
+        <span class="busy-tag busy-tag--warning" id="dStateTag">待复盘</span>
       </div>
     </div>
     <div class="tpl-page-head__actions">
-      <button class="ac-btn" type="button" id="editBtn"><span class="ac-icon" data-ac="AcIcon" data-name="edit" data-size="sm"></span><span class="ac-btn__label">编辑</span></button>
+      <button class="busy-button" type="button" id="btnEdit" data-permission="devhubFaultEdit"><span>编辑</span></button>
     </div>
   </div>
 
-  <!-- 逾期未复盘警示（P1 / P2 恢复超 3 个工作日未复盘时出现；本例 P2 在「待复盘」演示态展示） -->
-  <div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert" id="overdueAlert" hidden>
-    <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></div>
-    <div class="ac-alert__body"><div class="ac-alert__content">逾期未复盘：P2 故障 2026-10-09 11:20 恢复，已超过 3 个工作日未完成复盘，请尽快提交复盘。</div></div>
-  </div>
-
-  <!-- ① 信息头 panel -->
+  <!-- 生命周期（状态机：处理中 → 待复盘 → 复盘中 → 已闭环） -->
   <div class="tpl-panel">
-    <div class="ac-descriptions" data-ac="AcDescriptions">
-      <div class="ac-desc-item"><span class="ac-desc-label">负责人</span><span class="ac-desc-value">王五</span></div>
-      <div class="ac-desc-item"><span class="ac-desc-label">发生时间</span><span class="ac-desc-value mono">2026-10-08 09:15</span></div>
-      <div class="ac-desc-item"><span class="ac-desc-label">发现时间</span><span class="ac-desc-value mono">2026-10-08 10:02</span></div>
-      <div class="ac-desc-item"><span class="ac-desc-label">恢复时间</span><span class="ac-desc-value mono" id="recoverVal">2026-10-09 11:20</span></div>
-      <div class="ac-desc-item"><span class="ac-desc-label">关联项目</span><span class="ac-desc-value">供应链中台</span></div>
-      <div class="ac-desc-item"><span class="ac-desc-label">登记人</span><span class="ac-desc-value">刘操 <span class="u-sub mono">2026-10-08 10:20</span></span></div>
-      <div class="ac-desc-item ac-desc-item--full"><span class="ac-desc-label">现象描述</span><span class="ac-desc-value">库存日报在库数量与库存快照不一致，差异集中在调拨在途部分</span></div>
-      <div class="ac-desc-item ac-desc-item--full"><span class="ac-desc-label">影响范围</span><span class="ac-desc-value">供应链报表组 / 采购：10-08 日报数据不可用，采购决策顺延一天</span></div>
-    </div>
+    <div class="busy-steps" id="stepsBar"></div>
   </div>
 
-  <!-- ② 处置过程 panel（倒序时间线 + 追加记录） -->
+  <!-- 逾期未复盘警示（P1 / P2 恢复超 3 个工作日未复盘，仅待复盘态显示） -->
+  <div class="busy-message busy-message--error" id="overdueBanner">⚠ 该 P1 故障恢复已超 3 个工作日仍未完成复盘，已逾期，请尽快提交复盘</div>
+
+  <!-- 信息头 -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
-      <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">处置过程</span><span class="u-sub">倒序展示，处理过程中可随时补充修订</span></div>
+      <span class="tpl-toolbar__title">故障信息</span>
+      <div class="tpl-toolbar__right"><span class="u-sub">登记人 王倩 · 登记时间 <span class="u-mono">2026-10-15 09:00</span>（留痕不可改）</span></div>
     </div>
-    <div class="ac-timeline" data-ac="AcTimeline" id="tlList">
-      <div class="ac-timeline__item">
-        <div class="ac-timeline__rail"><span class="ac-timeline__dot is-done"></span><span class="ac-timeline__line"></span></div>
-        <div class="ac-timeline__content">
-          <div class="ac-timeline__meta"><span class="mono">10-09 11:20</span> · 王五</div>
-          <div class="ac-timeline__title">口径修正补丁上线，日报与快照恢复一致；观察一昼夜无偏差，标记已恢复</div>
-        </div>
-      </div>
-      <div class="ac-timeline__item">
-        <div class="ac-timeline__rail"><span class="ac-timeline__dot"></span><span class="ac-timeline__line"></span></div>
-        <div class="ac-timeline__content">
-          <div class="ac-timeline__meta"><span class="mono">10-08 15:30</span> · 王五</div>
-          <div class="ac-timeline__title">定位为调拨在途数量被重复计入在库；临时切换报表口径为快照口径止血</div>
-        </div>
-      </div>
-      <div class="ac-timeline__item">
-        <div class="ac-timeline__rail"><span class="ac-timeline__dot"></span></div>
-        <div class="ac-timeline__content">
-          <div class="ac-timeline__meta"><span class="mono">10-08 10:02</span> · 刘操</div>
-          <div class="ac-timeline__title">报表组反馈库存日报与快照不一致，登记故障（初定 P2）并介入排查</div>
-        </div>
-      </div>
-    </div>
-    <div class="ac-input-group" id="appendBox">
-      <div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" id="appendInput" rows="2" placeholder="追加一条处置记录（时间自动取当前）"></textarea></div>
-      <span class="ac-input-group__addon"><button class="ac-btn" type="button" id="appendBtn"><span class="ac-btn__label">追加记录</span></button></span>
-    </div>
+    <table class="busy-descriptions is-border">
+      <tr>
+        <th>负责人</th><td id="dOwner">王倩</td>
+        <th>关联项目</th><td id="dProject">网关灰度发布</td>
+      </tr>
+      <tr>
+        <th>发生时间</th><td class="u-mono" id="dOccur">2026-10-15 02:13</td>
+        <th>发现时间</th><td class="u-mono" id="dFound">2026-10-15 02:31</td>
+      </tr>
+      <tr>
+        <th>恢复时间</th><td class="u-mono" id="dRecover">2026-10-15 06:40</td>
+        <th>定级口径</th><td>P1 重大：核心链路不可用或资损</td>
+      </tr>
+      <tr><th>现象描述</th><td colspan="3" id="dPhenom">履约网关 504 集中爆发，下单 / 支付回调链路不可用约 4.5 小时；监控告警 5xx 比例峰值 38%。</td></tr>
+      <tr><th>影响范围</th><td colspan="3" id="dScope">全部门店线上履约链路；无资损，约 1.2 万笔订单履约延迟。</td></tr>
+    </table>
   </div>
 
-  <!-- ③ 运维证据关联 panel（证据只读引用、不回写故障单，仅跳转溯源） -->
+  <!-- 处置过程记录（倒序时间线，未闭环可追加） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
-      <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">运维证据关联</span><span class="u-sub">证据只读引用、不回写故障单，仅跳转溯源</span></div>
-      <div class="tpl-toolbar__right"><button class="ac-btn" type="button" id="evAddBtn"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span><span class="ac-btn__label">添加关联</span></button></div>
+      <span class="tpl-toolbar__title">处置过程记录</span>
+      <div class="tpl-toolbar__right"><span class="u-sub">按时间倒序</span></div>
     </div>
-    <div class="tpl-kpi-grid" id="evGrid">
-      <div class="tpl-kpi" data-ev>
-        <div class="tpl-kpi__head"><span class="ac-tag ac-tag--red">错误日志</span><span class="tpl-toolbar__right"><button class="ac-btn ac-btn--text" type="button" data-ev-remove><span class="ac-btn__label">移除</span></button></span></div>
-        <div class="u-strong">SQL 超时与重试告警 · 37 次</div>
-        <div class="u-sub mono">指纹 FP-52D91E · 库存报表服务 · 聚合日 10-08</div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">备注：口径查询慢查询集中出现</span><button class="ac-btn ac-btn--text" type="button" data-ev-trace="错误日志管理 · 指纹报表 FP-52D91E"><span class="ac-btn__label">跳转溯源</span></button></div>
+    <div class="tpl-timeline" id="timelineList"></div>
+    <div id="appendArea">
+      <hr class="tpl-divider">
+      <div class="busy-form-item" data-field="append">
+        <div class="busy-form-item__label">追加记录</div>
+        <div class="busy-form-item__content">
+          <textarea class="busy-textarea" id="appendInput" rows="2" placeholder="记录处置动作、结论或协同信息"></textarea>
+          <div class="busy-form-item__error" hidden>请填写处置记录内容</div>
+        </div>
       </div>
-      <div class="tpl-kpi" data-ev>
-        <div class="tpl-kpi__head"><span class="ac-tag ac-tag--orange">监控快照</span><span class="tpl-toolbar__right"><button class="ac-btn ac-btn--text" type="button" data-ev-remove><span class="ac-btn__label">移除</span></button></span></div>
-        <div class="u-strong">10-08 09:15 报表任务耗时突增 8 倍</div>
-        <div class="u-sub mono">report-job-02 节点 · 库存报表服务 · 异常快照</div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">备注：与故障发生时间一致</span><button class="ac-btn ac-btn--text" type="button" data-ev-trace="服务器监控 · 异常快照 report-job-02"><span class="ac-btn__label">跳转溯源</span></button></div>
-      </div>
-      <div class="tpl-kpi" data-ev>
-        <div class="tpl-kpi__head"><span class="ac-tag ac-tag--purple">黑灯工单</span><span class="tpl-toolbar__right"><button class="ac-btn ac-btn--text" type="button" data-ev-remove><span class="ac-btn__label">移除</span></button></span></div>
-        <div class="u-strong mono">BL-20261008-11 · 已复核</div>
-        <div class="u-sub">报表口径偏差自动巡检工单 · 黑灯工厂</div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">备注：同一事件两边互相引用</span><button class="ac-btn ac-btn--text" type="button" data-ev-trace="黑灯工厂管理 · 工单 BL-20261008-11"><span class="ac-btn__label">跳转溯源</span></button></div>
+      <div class="tpl-footer-bar">
+        <button class="busy-button busy-button--primary" type="button" id="btnAppend" data-permission="devhubFaultEdit"><span>提交记录</span></button>
       </div>
     </div>
   </div>
 
-  <!-- ④ 复盘区 panel（按状态切换四种形态） -->
+  <!-- 运维证据关联区（只读引用，状态变更不回写故障单） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
-      <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">复盘</span><span class="u-sub" id="reviewMeta">提交人 王五 · 10-15 10:20 提交 · 待研发负责人确认</span></div>
-    </div>
-
-    <!-- 处理中：不展示表单 -->
-    <div class="tpl-section" data-review="处理中" hidden>
-      <div class="ac-empty" data-ac="AcEmpty" role="status">
-        <div class="ac-empty__art"></div>
-        <div class="ac-empty__title">故障恢复后进入待复盘</div>
-        <div class="ac-empty__desc">届时在此填写复盘时间线、根因与改进措施</div>
+      <span class="tpl-toolbar__title">运维证据关联</span>
+      <div class="tpl-toolbar__right">
+        <span class="u-sub">证据只读引用，不复制内容、不回写状态；点击「跳转溯源」查看来源模块详情</span>
+        <button class="busy-button" type="button" id="btnAddEvi" data-permission="devhubFaultEdit"><span>添加关联</span></button>
       </div>
     </div>
+    <table class="busy-table busy-table--border">
+      <thead>
+        <tr><th>证据类型</th><th>证据标识</th><th>摘要</th><th>备注</th><th>操作</th></tr>
+      </thead>
+      <tbody id="eviTbody"></tbody>
+    </table>
+  </div>
 
-    <!-- 待复盘 / 复盘中：复盘表单（复盘中为已提交内容，含打回记录） -->
-    <div class="tpl-section" data-review="待复盘" hidden>
+  <!-- 复盘区（待复盘 / 复盘中 = 表单；已闭环 = 只读；处理中 = 未到复盘空态） -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <span class="tpl-toolbar__title">复盘区</span>
+      <div class="tpl-toolbar__right"><span class="u-sub" id="reviewMeta"></span></div>
+    </div>
+
+    <!-- 处理中：未到复盘 -->
+    <div class="busy-empty" id="reviewEmpty" hidden>
+      <div class="busy-empty__image">☁</div>
+      <div>故障恢复并完成处置后进入复盘（发生 → 发现 → 处置 → 恢复）</div>
+    </div>
+
+    <!-- 复盘表单（待复盘 / 复盘中） -->
+    <div id="reviewForm" hidden>
+      <div class="busy-message busy-message--warning" id="rejectNote" hidden></div>
       <div class="tpl-section">
-        <div class="tpl-section__head">复盘时间线</div>
-        <div class="ac-table-wrap">
-          <table class="ac-table" id="revTableTodo">
-            <thead><tr><th>阶段</th><th>时间</th><th>说明</th></tr></thead>
-            <tbody>
-              <tr><td>发生</td><td><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" data-rev="t1" value="2026-10-08 09:15" /></div></td><td class="u-wrap"><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner" data-rev="d1" value="调拨在途口径变更随 10-07 版本带出问题" /></div></td></tr>
-              <tr><td>发现</td><td><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" data-rev="t2" value="2026-10-08 10:02" /></div></td><td class="u-wrap"><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner" data-rev="d2" value="报表组日报核对发现差异" /></div></td></tr>
-              <tr><td>处置</td><td><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" data-rev="t3" value="10-08 10:02 ~ 10-09 11:20" /></div></td><td class="u-wrap"><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner" data-rev="d3" value="口径切换止血 → 定位重复计入 → 补丁修复" /></div></td></tr>
-              <tr><td>恢复</td><td><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" data-rev="t4" value="2026-10-09 11:20" /></div></td><td class="u-wrap"><div class="ac-input" data-ac="AcInput"><input class="ac-input__inner" data-rev="d4" value="补丁上线，观察一昼夜无偏差" /></div></td></tr>
-            </tbody>
-          </table>
+        <div class="tpl-section__head">复盘时间线（各段时间 + 说明，可修订）</div>
+        <div class="busy-form-item" data-field="segOccur">
+          <div class="busy-form-item__label is-required">发生</div>
+          <div class="busy-form-item__content">
+            <div class="tpl-filter__row">
+              <div class="busy-select" data-dd="rvOccurT"><div class="busy-input"><input readonly id="rvOccurT" placeholder="时间"></div><span class="busy-select__caret">📅</span></div>
+              <div class="busy-input"><input id="rvOccurD" placeholder="发生说明"></div>
+            </div>
+            <div class="busy-form-item__error" hidden>请补齐「发生」时间与说明</div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-field="segFound">
+          <div class="busy-form-item__label is-required">发现</div>
+          <div class="busy-form-item__content">
+            <div class="tpl-filter__row">
+              <div class="busy-select" data-dd="rvFoundT"><div class="busy-input"><input readonly id="rvFoundT" placeholder="时间"></div><span class="busy-select__caret">📅</span></div>
+              <div class="busy-input"><input id="rvFoundD" placeholder="发现说明"></div>
+            </div>
+            <div class="busy-form-item__error" hidden>请补齐「发现」时间与说明</div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-field="segHandle">
+          <div class="busy-form-item__label is-required">处置</div>
+          <div class="busy-form-item__content">
+            <div class="tpl-filter__row">
+              <div class="busy-select" data-dd="rvHandleT"><div class="busy-input"><input readonly id="rvHandleT" placeholder="时间"></div><span class="busy-select__caret">📅</span></div>
+              <div class="busy-input"><input id="rvHandleD" placeholder="处置说明"></div>
+            </div>
+            <div class="busy-form-item__error" hidden>请补齐「处置」时间与说明</div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-field="segRecover">
+          <div class="busy-form-item__label is-required">恢复</div>
+          <div class="busy-form-item__content">
+            <div class="tpl-filter__row">
+              <div class="busy-select" data-dd="rvRecoverT"><div class="busy-input"><input readonly id="rvRecoverT" placeholder="时间"></div><span class="busy-select__caret">📅</span></div>
+              <div class="busy-input"><input id="rvRecoverD" placeholder="恢复说明"></div>
+            </div>
+            <div class="busy-form-item__error" hidden>请补齐「恢复」时间与说明</div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-field="root">
+          <div class="busy-form-item__label is-required">根因分析</div>
+          <div class="busy-form-item__content">
+            <textarea class="busy-textarea" id="rvRoot" rows="3" placeholder="故障根因（提交复盘时必填）"></textarea>
+            <div class="busy-form-item__error" hidden>请填写根因分析</div>
+          </div>
+        </div>
+        <div class="busy-form-item">
+          <div class="busy-form-item__label">处置回顾</div>
+          <div class="busy-form-item__content">
+            <textarea class="busy-textarea" id="rvReview" rows="2" placeholder="处置过程回顾（可空）"></textarea>
+          </div>
         </div>
       </div>
-      <div class="tpl-section" id="rootBlockTodo">
-        <div class="tpl-section__head">根因分析</div>
-        <div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" id="rootCauseTodo" rows="3" placeholder="填写根因分析（提交复盘必填）"></textarea></div>
-        <div class="ac-form-item__hint" id="rootHelpTodo"></div>
-      </div>
+      <hr class="tpl-divider">
       <div class="tpl-section">
-        <div class="tpl-section__head">改进措施 <span class="u-sub">逐项跟踪至完成，全部完成后方可闭环</span></div>
-        <div class="ac-table-wrap">
-          <table class="ac-table" id="impTableTodo">
-            <thead><tr><th>完成</th><th>改进措施</th><th>负责人</th><th>期限</th><th>完成时间</th><th>状态</th></tr></thead>
-            <tbody>
-              <tr>
-                <td><span class="ac-checkbox" data-ac="AcCheckbox" data-imp><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check-small"></span></span></span></td>
-                <td class="u-wrap">库存日报与快照增加每日自动对账与阈值告警</td><td>王五</td><td class="mono u-danger">10-16 <span class="ac-tag ac-tag--red">已逾期</span></td><td class="u-sub">—</td><td><span class="ac-tag ac-tag--orange">未完成</span></td>
-              </tr>
-              <tr>
-                <td><span class="ac-checkbox" data-ac="AcCheckbox" data-imp><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check-small"></span></span></span></td>
-                <td class="u-wrap">口径变更纳入发布 checklist，需报表与快照双侧确认</td><td>刘操</td><td class="mono">10-22</td><td class="u-sub">—</td><td><span class="ac-tag ac-tag--orange">未完成</span></td>
-              </tr>
-            </tbody>
-          </table>
+        <div class="tpl-section__head">改进措施 checklist（每条含内容 + 负责人 + 期限；逾期未完成高亮）</div>
+        <div class="busy-form-item__error" id="measureErr" hidden>改进措施至少 1 条，且每条内容 / 负责人 / 期限齐备</div>
+        <table class="busy-table busy-table--border">
+          <thead>
+            <tr><th>完成</th><th>内容</th><th>负责人</th><th>期限</th><th>完成时间</th></tr>
+          </thead>
+          <tbody id="measureTbody"></tbody>
+        </table>
+        <div class="tpl-filter__row" id="measureAddRow">
+          <div class="busy-input"><input id="mContent" placeholder="改进项描述"></div>
+          <div class="busy-select" data-dd="mOwner"><div class="busy-input"><input readonly id="mOwner" placeholder="负责人"></div><span class="busy-select__caret">▾</span></div>
+          <div class="busy-select" data-dd="mDeadline"><div class="busy-input"><input readonly id="mDeadline" placeholder="完成期限"></div><span class="busy-select__caret">📅</span></div>
+          <button class="busy-button" type="button" id="btnAddMeasure" data-permission="devhubFaultReview"><span>添加措施</span></button>
         </div>
-        <button class="ac-btn ac-btn--text" type="button" data-imp-add><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span><span class="ac-btn__label">添加措施</span></button>
       </div>
     </div>
 
-    <div class="tpl-section" data-review="复盘中">
-      <div class="ac-alert ac-alert--warning" data-ac="AcAlert" role="alert">
-        <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></div>
-        <div class="ac-alert__body"><div class="ac-alert__content">打回记录：2026-10-14 09:30 吴奥林打回 —— 复盘时间线缺少「发现」阶段的告警通道说明，已补充后重新提交。</div></div>
-      </div>
+    <!-- 复盘只读（已闭环） -->
+    <div id="reviewReadonly" hidden>
+      <div class="busy-message busy-message--warning" id="rejectNoteRO" hidden></div>
+      <table class="busy-descriptions is-border">
+        <tr><th>提交人 / 时间</th><td>王倩 · <span class="u-mono">2026-10-16 14:00</span></td><th>闭环确认</th><td>研发负责人 陈国坚 · <span class="u-mono">2026-10-20 10:00</span></td></tr>
+        <tr><th>发生</th><td colspan="3"><span class="u-mono">2026-10-15 02:13</span> · 灰度发布 v2.5.0 引入连接未释放</td></tr>
+        <tr><th>发现</th><td colspan="3"><span class="u-mono">2026-10-15 02:31</span> · 监控告警：网关 5xx 比例超阈值</td></tr>
+        <tr><th>处置</th><td colspan="3"><span class="u-mono">2026-10-15 04:05</span> · 扩容 + 限流 + 回滚至 v2.4.1</td></tr>
+        <tr><th>恢复</th><td colspan="3"><span class="u-mono">2026-10-15 06:40</span> · 核心指标恢复基线</td></tr>
+        <tr><th>根因分析</th><td colspan="3">灰度版本在异常分支未释放连接池连接，连接耗尽后网关对下游调用全部超时；回滚后恢复。</td></tr>
+        <tr><th>处置回顾</th><td colspan="3">扩容与限流及时，但根因定位耗时偏长，缺少连接池维度告警。</td></tr>
+      </table>
+      <hr class="tpl-divider">
       <div class="tpl-section">
-        <div class="tpl-section__head">复盘时间线</div>
-        <div class="ac-table-wrap">
-          <table class="ac-table">
-            <thead><tr><th>阶段</th><th>时间</th><th>说明</th></tr></thead>
-            <tbody>
-              <tr><td>发生</td><td class="mono">2026-10-08 09:15</td><td class="u-wrap">调拨在途口径变更随 10-07 版本带出问题</td></tr>
-              <tr><td>发现</td><td class="mono">2026-10-08 10:02</td><td class="u-wrap">报表组日报核对发现差异；黑灯巡检同分钟产出工单</td></tr>
-              <tr><td>处置</td><td class="mono">10-08 10:02 ~ 10-09 11:20</td><td class="u-wrap">口径切换止血 → 定位重复计入 → 补丁修复</td></tr>
-              <tr><td>恢复</td><td class="mono">2026-10-09 11:20</td><td class="u-wrap">补丁上线，观察一昼夜无偏差</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="tpl-section">
-        <div class="tpl-section__head">根因分析</div>
-        <div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" rows="3">10-07 版本调整调拨在途口径时，库存日报将在途数量重复计入在库，而快照服务未同步该口径，两侧口径分叉导致日报与快照不一致；该组合场景缺少对账用例覆盖。</textarea></div>
-      </div>
-      <div class="tpl-section">
-        <div class="tpl-section__head">改进措施 <span class="u-sub">逐项跟踪至完成，全部完成后方可闭环（当前 <span id="impProgress">0/2</span>）</span></div>
-        <div class="ac-table-wrap">
-          <table class="ac-table" id="impTable">
-            <thead><tr><th>完成</th><th>改进措施</th><th>负责人</th><th>期限</th><th>完成时间</th><th>状态</th></tr></thead>
-            <tbody>
-              <tr>
-                <td><span class="ac-checkbox" data-ac="AcCheckbox" data-imp data-imp-overdue="1"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check-small"></span></span></span></td>
-                <td class="u-wrap">库存日报与快照增加每日自动对账与阈值告警</td><td>王五</td><td class="mono u-danger">10-16 <span class="ac-tag ac-tag--red">已逾期</span></td><td class="u-sub" data-done-at>—</td><td data-imp-st><span class="ac-tag ac-tag--orange">未完成</span></td>
-              </tr>
-              <tr>
-                <td><span class="ac-checkbox" data-ac="AcCheckbox" data-imp><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check-small"></span></span></span></td>
-                <td class="u-wrap">口径变更纳入发布 checklist，需报表与快照双侧确认</td><td>刘操</td><td class="mono">10-22</td><td class="u-sub" data-done-at>—</td><td data-imp-st><span class="ac-tag ac-tag--orange">未完成</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-        <button class="ac-btn ac-btn--text" type="button" data-imp-add><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span><span class="ac-btn__label">添加措施</span></button>
-      </div>
-    </div>
-
-    <!-- 已闭环：只读展示 -->
-    <div class="tpl-section" data-review="已闭环" hidden>
-      <div class="ac-descriptions" data-ac="AcDescriptions">
-        <div class="ac-desc-item"><span class="ac-desc-label">提交人</span><span class="ac-desc-value">王五</span></div>
-        <div class="ac-desc-item"><span class="ac-desc-label">提交时间</span><span class="ac-desc-value mono">2026-10-15 10:20</span></div>
-        <div class="ac-desc-item"><span class="ac-desc-label">闭环确认</span><span class="ac-desc-value">吴奥林 <span class="u-sub mono">2026-10-17 18:02</span></span></div>
-        <div class="ac-desc-item ac-desc-item--full"><span class="ac-desc-label">打回记录</span><span class="ac-desc-value">2026-10-14 09:30 吴奥林打回：复盘时间线缺少「发现」阶段的告警通道说明（已补充并重新提交）</span></div>
-      </div>
-      <div class="tpl-section">
-        <div class="tpl-section__head">复盘时间线</div>
-        <div class="ac-table-wrap">
-          <table class="ac-table">
-            <thead><tr><th>阶段</th><th>时间</th><th>说明</th></tr></thead>
-            <tbody>
-              <tr><td>发生</td><td class="mono">2026-10-08 09:15</td><td class="u-wrap">调拨在途口径变更随 10-07 版本带出问题</td></tr>
-              <tr><td>发现</td><td class="mono">2026-10-08 10:02</td><td class="u-wrap">报表组日报核对发现差异；黑灯巡检同分钟产出工单</td></tr>
-              <tr><td>处置</td><td class="mono">10-08 10:02 ~ 10-09 11:20</td><td class="u-wrap">口径切换止血 → 定位重复计入 → 补丁修复</td></tr>
-              <tr><td>恢复</td><td class="mono">2026-10-09 11:20</td><td class="u-wrap">补丁上线，观察一昼夜无偏差</td></tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <div class="tpl-section">
-        <div class="tpl-section__head">根因分析</div>
-        <div>10-07 版本调整调拨在途口径时，库存日报将在途数量重复计入在库，而快照服务未同步该口径，两侧口径分叉导致日报与快照不一致；该组合场景缺少对账用例覆盖。</div>
-      </div>
-      <div class="tpl-section">
-        <div class="tpl-section__head">改进措施 <span class="u-sub">2/2 已全部完成</span></div>
-        <div class="ac-table-wrap">
-          <table class="ac-table">
-            <thead><tr><th>完成</th><th>改进措施</th><th>负责人</th><th>期限</th><th>完成时间</th><th>状态</th></tr></thead>
-            <tbody>
-              <tr>
-                <td><span class="ac-checkbox is-checked is-disabled" data-ac="AcCheckbox"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check-small"></span></span></span></td>
-                <td class="u-wrap">库存日报与快照增加每日自动对账与阈值告警</td><td>王五</td><td class="mono">10-16</td><td class="mono">10-16 19:40</td><td><span class="ac-tag ac-tag--green">已完成</span></td>
-              </tr>
-              <tr>
-                <td><span class="ac-checkbox is-checked is-disabled" data-ac="AcCheckbox"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check-small"></span></span></span></td>
-                <td class="u-wrap">口径变更纳入发布 checklist，需报表与快照双侧确认</td><td>刘操</td><td class="mono">10-22</td><td class="mono">10-17 11:05</td><td><span class="ac-tag ac-tag--green">已完成</span></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
+        <div class="tpl-section__head">改进措施（3/3 已完成）</div>
+        <table class="busy-table busy-table--border">
+          <thead>
+            <tr><th>完成</th><th>内容</th><th>负责人</th><th>期限</th><th>完成时间</th></tr>
+          </thead>
+          <tbody id="measureTbodyRO"></tbody>
+        </table>
       </div>
     </div>
   </div>
 
-  <!-- ⑤ 沉底操作栏（按状态机流转） -->
-  <div class="tpl-actionbar">
+  <!-- 沉底操作栏（按状态机流转；权限码标注于按钮） -->
+  <div class="tpl-actionbar tpl-actionbar--stack">
     <div class="tpl-actionbar__inner">
-      <span class="tpl-actionbar__hint" id="barHint"></span>
-      <div class="tpl-actionbar__row" data-bar="处理中" hidden>
-        <a class="ac-btn" href="fault-list.html"><span class="ac-btn__label">返回列表</span></a>
-        <button class="ac-btn ac-btn--primary" type="button" id="recoverBtn"><span class="ac-btn__label">标记已恢复</span></button>
-      </div>
-      <div class="tpl-actionbar__row" data-bar="待复盘" hidden>
-        <a class="ac-btn" href="fault-list.html"><span class="ac-btn__label">返回列表</span></a>
-        <button class="ac-btn ac-btn--primary" type="button" id="submitReviewBtn"><span class="ac-btn__label">提交复盘</span></button>
-      </div>
-      <div class="tpl-actionbar__row" data-bar="复盘中">
-        <a class="ac-btn" href="fault-list.html"><span class="ac-btn__label">返回列表</span></a>
-        <button class="ac-btn" type="button" id="rejectBtn"><span class="ac-btn__label">打回</span></button>
-        <button class="ac-btn ac-btn--primary" type="button" id="closeBtn" disabled><span class="ac-btn__label">闭环确认</span></button>
-      </div>
-      <div class="tpl-actionbar__row" data-bar="已闭环" hidden>
-        <a class="ac-btn" href="fault-list.html"><span class="ac-btn__label">返回列表</span></a>
+      <div class="tpl-actionbar__hint" id="abHint"></div>
+      <div class="tpl-actionbar__row">
+        <button class="busy-button busy-button--primary" type="button" id="btnRecover" data-permission="devhubFaultEdit" hidden><span>标记已恢复</span></button>
+        <button class="busy-button busy-button--primary" type="button" id="btnSubmitReview" data-permission="devhubFaultReview" hidden><span>提交复盘</span></button>
+        <button class="busy-button busy-button--danger is-plain" type="button" id="btnReject" data-permission="devhubFaultReview" hidden><span>打回</span></button>
+        <button class="busy-button busy-button--primary" type="button" id="btnClose" data-permission="devhubFaultClose" hidden><span>闭环确认</span></button>
       </div>
     </div>
   </div>
 </section>
 
-<!-- 编辑故障弹窗（预填全部字段） -->
-<div class="ac-modal" data-ac="AcModal" id="editModal" hidden>
-  <div class="ac-modal__mask" data-close="editModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="640">
-      <div class="ac-modal__header"><div class="ac-modal__title">编辑故障</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="editModal">×</button></div>
-      <div class="ac-modal__body">
-        <div class="ac-form ac-form--vertical" data-ac="AcForm">
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>标题</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input" data-ac="AcInput" data-size="medium"><input class="ac-input__inner" data-field="title" maxlength="50" value="库存报表口径错误" /><span class="ac-input__suffix" data-count="title">7/50</span></div></div><div class="ac-form-item__help"></div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>现象描述</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="phen" rows="3">库存日报在库数量与库存快照不一致，差异集中在调拨在途部分</textarea></div></div><div class="ac-form-item__help"></div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
-            <label class="ac-form-item__label">影响范围</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="scope" rows="2">供应链报表组 / 采购：10-08 日报数据不可用，采购决策顺延一天</textarea></div></div><div class="ac-form-item__help"></div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>定级</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
-              <div class="ac-radio-group" role="radiogroup" data-ac="AcRadioGroup" id="levelGroup">
-                <span class="ac-radio ac-radio--dot" role="radio" tabindex="0" aria-checked="false" data-ac="AcRadio" data-level="P1" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P1 重大</span></span>
-                <span class="ac-radio ac-radio--dot is-checked" role="radio" tabindex="0" aria-checked="true" data-ac="AcRadio" data-level="P2" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P2 严重</span></span>
-                <span class="ac-radio ac-radio--dot" role="radio" tabindex="0" aria-checked="false" data-ac="AcRadio" data-level="P3" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P3 一般</span></span>
-                <span class="ac-radio ac-radio--dot" role="radio" tabindex="0" aria-checked="false" data-ac="AcRadio" data-level="P4" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">P4 轻微</span></span>
-              </div>
-            </div><div class="ac-form-item__help">P1 核心链路不可用或资损；P2 主要功能受损；P3 局部影响；P4 无实质影响但需复盘</div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>发生时间</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix"><span class="ac-icon" data-ac="AcIcon" data-name="calendar" data-size="sm"></span></span><input class="ac-input__inner mono" data-field="occur" value="2026-10-08 09:15" /></div></div><div class="ac-form-item__help">DateTimePicker，不可晚于当前时间</div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
-            <label class="ac-form-item__label">发现时间</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix"><span class="ac-icon" data-ac="AcIcon" data-name="calendar" data-size="sm"></span></span><input class="ac-input__inner mono" data-field="found" value="2026-10-08 10:02" /></div></div><div class="ac-form-item__help"></div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
-            <label class="ac-form-item__label">负责人</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
-              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="人员选择，可空" data-field="mOwner" data-value="王五">
-                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single">王五</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-                <div class="ac-select__popup" hidden><ul class="ac-select__list">
-                  <li class="ac-select__option" data-value=""><span class="ac-select__option-label">暂不指定</span></li>
-                  <li class="ac-select__option" data-value="刘操"><span class="ac-select__option-label">刘操</span></li>
-                  <li class="ac-select__option is-selected" data-value="王五"><span class="ac-select__option-label">王五</span></li>
-                  <li class="ac-select__option" data-value="赵六"><span class="ac-select__option-label">赵六</span></li>
-                  <li class="ac-select__option" data-value="李四"><span class="ac-select__option-label">李四</span></li>
-                </ul></div>
-              </div>
-            </div><div class="ac-form-item__help"></div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
-            <label class="ac-form-item__label">关联项目</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
-              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="单选，可空" data-field="mProject" data-value="供应链中台">
-                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single">供应链中台</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-                <div class="ac-select__popup" hidden><ul class="ac-select__list">
-                  <li class="ac-select__option" data-value=""><span class="ac-select__option-label">不关联</span></li>
-                  <li class="ac-select__option" data-value="主站改版"><span class="ac-select__option-label">主站改版</span></li>
-                  <li class="ac-select__option" data-value="门店系统"><span class="ac-select__option-label">门店系统</span></li>
-                  <li class="ac-select__option is-selected" data-value="供应链中台"><span class="ac-select__option-label">供应链中台</span></li>
-                </ul></div>
-              </div>
-            </div><div class="ac-form-item__help"></div></div>
-          </div>
+<!-- 弹窗：标记已恢复（二次确认：确认恢复时间） -->
+<div class="ds-mask" id="recoverDialog" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="标记已恢复">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">标记已恢复</span><button class="busy-dialog__close" type="button" data-close="recoverDialog">✕</button></div>
+    <div class="busy-dialog__body">
+      <div class="busy-form-item" data-field="recTime">
+        <div class="busy-form-item__label is-required">恢复时间</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-dd="recTime"><div class="busy-input"><input readonly id="recTime" placeholder="确认恢复时间"></div><span class="busy-select__caret">📅</span></div>
+          <div class="busy-form-item__error" hidden>请确认恢复时间（不可晚于当前时间）</div>
         </div>
       </div>
-      <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" data-close="editModal"><span class="ac-btn__label">取消</span></button>
-        <button class="ac-btn ac-btn--primary" type="button" id="editModalOk"><span class="ac-btn__label">保存</span></button>
-      </div>
+      <div class="u-sub">确认后状态流转为「待复盘」，恢复时间写入故障单。</div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="recoverDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="recoverOk"><span>确 定</span></button>
     </div>
   </div>
 </div>
 
-<!-- 添加证据关联弹窗 -->
-<div class="ac-modal" data-ac="AcModal" id="evModal" hidden>
-  <div class="ac-modal__mask" data-close="evModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="520">
-      <div class="ac-modal__header"><div class="ac-modal__title">添加证据关联</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="evModal">×</button></div>
-      <div class="ac-modal__body">
-        <div class="ac-form ac-form--vertical" data-ac="AcForm">
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>证据类型</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
-              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="错误日志指纹报表项 / 服务器监控快照 / 黑灯工厂工单" data-field="evType">
-                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">错误日志指纹报表项 / 服务器监控快照 / 黑灯工厂工单</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-                <div class="ac-select__popup" hidden><ul class="ac-select__list">
-                  <li class="ac-select__option" data-value="错误日志"><span class="ac-select__option-label">错误日志指纹报表项</span></li>
-                  <li class="ac-select__option" data-value="监控快照"><span class="ac-select__option-label">服务器监控快照</span></li>
-                  <li class="ac-select__option" data-value="黑灯工单"><span class="ac-select__option-label">黑灯工厂工单</span></li>
-                </ul></div>
-              </div>
-            </div><div class="ac-form-item__help" id="evTypeHelp"></div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>证据标识</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input" data-ac="AcInput" data-size="medium"><input class="ac-input__inner mono" data-field="evKey" placeholder="粘贴证据标识或链接，如 FP-52D91E / BL-20261008-11" /></div></div><div class="ac-form-item__help" id="evKeyHelp">只读引用对应运维模块数据，不复制内容、不回写状态</div></div>
-          </div>
-          <div class="ac-form-item ac-form-item--vertical" data-ac="AcFormItem">
-            <label class="ac-form-item__label">备注</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input" data-ac="AcInput" data-size="medium"><input class="ac-input__inner" data-field="evNote" placeholder="补充该证据与故障的关联说明（可空）" /></div></div><div class="ac-form-item__help"></div></div>
-          </div>
+<!-- 弹窗：打回复盘（二次确认：填写打回原因） -->
+<div class="ds-mask" id="rejectDialog" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="打回复盘">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">打回复盘</span><button class="busy-dialog__close" type="button" data-close="rejectDialog">✕</button></div>
+    <div class="busy-dialog__body">
+      <div class="busy-form-item" data-field="rejectReason">
+        <div class="busy-form-item__label is-required">打回原因</div>
+        <div class="busy-form-item__content">
+          <textarea class="busy-textarea" id="rejectReason" rows="3" placeholder="请填写打回原因，提交人可按原因修订后重新提交"></textarea>
+          <div class="busy-form-item__error" hidden>请填写打回原因</div>
         </div>
       </div>
-      <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" data-close="evModal"><span class="ac-btn__label">取消</span></button>
-        <button class="ac-btn ac-btn--primary" type="button" id="evModalOk"><span class="ac-btn__label">确认关联</span></button>
-      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="rejectDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--danger" type="button" id="rejectOk"><span>确认打回</span></button>
     </div>
   </div>
 </div>
 
-<!-- 打回复盘弹窗 -->
-<div class="ac-modal" data-ac="AcModal" id="rejectModal" hidden>
-  <div class="ac-modal__mask" data-close="rejectModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="480">
-      <div class="ac-modal__header"><div class="ac-modal__title">打回复盘</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="rejectModal">×</button></div>
-      <div class="ac-modal__body">
-        <div class="ac-form ac-form--vertical" data-ac="AcForm">
-          <div class="ac-form-item ac-form-item--vertical is-required" data-ac="AcFormItem">
-            <label class="ac-form-item__label"><span class="ac-form-item__required">*</span>打回原因</label>
-            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" id="rejectReason" rows="3" placeholder="填写打回原因，故障将退回待复盘"></textarea></div></div><div class="ac-form-item__help" id="rejectHelp"></div></div>
+<!-- 弹窗：闭环确认（二次确认：闭环后故障单只读） -->
+<div class="ds-mask" id="closeDialog" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="闭环确认">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">闭环确认</span><button class="busy-dialog__close" type="button" data-close="closeDialog">✕</button></div>
+    <div class="busy-dialog__body">确认全部改进措施已完成并闭环？闭环后故障单转为只读，不可再编辑（审计留痕，不允许删除）。</div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="closeDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="closeOk"><span>确认闭环</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：添加证据关联（选择类型 + 粘贴证据标识 / 链接 + 备注） -->
+<div class="ds-mask" id="eviDialog" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="添加证据关联">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">添加证据关联</span><button class="busy-dialog__close" type="button" data-close="eviDialog">✕</button></div>
+    <div class="busy-dialog__body">
+      <div class="busy-form-item" data-field="eviType">
+        <div class="busy-form-item__label is-required">证据类型</div>
+        <div class="busy-form-item__content">
+          <div class="busy-radio-group" id="eviType">
+            <label class="busy-radio is-checked"><span class="busy-radio__inner"></span>错误日志指纹报表项</label>
+            <label class="busy-radio"><span class="busy-radio__inner"></span>服务器监控快照</label>
+            <label class="busy-radio"><span class="busy-radio__inner"></span>黑灯工厂工单</label>
           </div>
+          <div class="busy-form-item__error" hidden>请选择证据类型</div>
         </div>
       </div>
-      <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" data-close="rejectModal"><span class="ac-btn__label">取消</span></button>
-        <button class="ac-btn ac-btn--danger" type="button" id="rejectOkBtn"><span class="ac-btn__label">确认打回</span></button>
+      <div class="busy-form-item" data-field="eviKey">
+        <div class="busy-form-item__label is-required">证据标识</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="eviKey" placeholder="粘贴证据标识 / 链接，如 FP-a3f9c8d1"></div>
+          <div class="busy-form-item__error" hidden>请填写证据标识</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">备注</div>
+        <div class="busy-form-item__content">
+          <textarea class="busy-textarea" id="eviNote" rows="2" placeholder="证据与故障的关联说明（可空）"></textarea>
+        </div>
+      </div>
+      <div class="u-sub">证据为只读引用：来源模块状态变更不回写故障单。</div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="eviDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="eviOk"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：移除证据确认（二次确认） -->
+<div class="ds-mask" id="eviRemoveDialog" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="移除证据关联">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">移除证据关联</span><button class="busy-dialog__close" type="button" data-close="eviRemoveDialog">✕</button></div>
+    <div class="busy-dialog__body" id="eviRemoveText">确认移除该证据引用？仅移除关联，不影响来源模块数据。</div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="eviRemoveDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--danger" type="button" id="eviRemoveOk"><span>确认移除</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：复盘脏离开确认 -->
+<div class="ds-mask" id="leaveConfirm" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="离开确认">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">离开确认</span><button class="busy-dialog__close" type="button" data-close="leaveConfirm">✕</button></div>
+    <div class="busy-dialog__body">复盘内容未提交，确认离开？</div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="leaveConfirm"><span>取 消</span></button>
+      <button class="busy-button busy-button--danger" type="button" id="leaveOk"><span>确认离开</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 弹窗：编辑故障（信息头「编辑」，已闭环隐藏入口） -->
+<div class="ds-mask" id="editDialog" hidden>
+  <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="编辑故障">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">编辑故障</span><button class="busy-dialog__close" type="button" data-close="editDialog">✕</button></div>
+    <div class="busy-dialog__body">
+      <div class="busy-form-item" data-field="edTitle">
+        <div class="busy-form-item__label is-required">标题</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="edTitle" maxlength="50" placeholder="请输入故障标题（不超过 50 字）"></div>
+          <div class="busy-form-item__error" hidden>请输入故障标题（不超过 50 字）</div>
+        </div>
+      </div>
+      <div class="busy-form-item" data-field="edPhenom">
+        <div class="busy-form-item__label is-required">现象描述</div>
+        <div class="busy-form-item__content">
+          <textarea class="busy-textarea" id="edPhenom" rows="3"></textarea>
+          <div class="busy-form-item__error" hidden>请填写现象描述</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">影响范围</div>
+        <div class="busy-form-item__content"><textarea class="busy-textarea" id="edScope" rows="2"></textarea></div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">负责人</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-dd="edOwner"><div class="busy-input"><input readonly id="edOwner"></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">关联项目</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" data-dd="edProject"><div class="busy-input"><input readonly id="edProject"></div><span class="busy-select__caret">▾</span></div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
-
-<!-- 通用确认弹窗（标记已恢复 / 闭环确认） -->
-<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
-  <div class="ac-modal__mask"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="440">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="cfTitle">确认操作</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="cfCloseBtn">×</button></div>
-      <div class="ac-modal__body ac-modal__body--semantic"><span class="ac-modal__sem-icon ac-modal__sem-icon--warning">!</span><div id="cfContent"></div></div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" id="cfCancelBtn"><span class="ac-btn__label">取消</span></button><button class="ac-btn ac-btn--primary" type="button" id="cfOkBtn"><span class="ac-btn__label">确认</span></button></div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="editDialog"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="editOk"><span>保 存</span></button>
     </div>
   </div>
 </div>
-
-<!-- 证据移除二次确认（AcPopconfirm） -->
-<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
-  <div class="ac-popconfirm__inner">
-    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title">确认移除该证据引用？</div><div class="ac-popconfirm__content">仅移除关联，不影响来源模块数据</div></div></div>
-    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
-  </div>
-  <span class="ac-popconfirm__arrow"></span>
-</div>
-
-<!-- 全局提示宿主 -->
-<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
-
-<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
 <script>
-/* ==================== 基础工具（页面自管交互：body 委托 + stopPropagation） ==================== */
-const $ = (s, r) => (r || document).querySelector(s);
-const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-const esc = (s) => String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-const wait = (ms) => new Promise((r) => setTimeout(r, ms || 400));
-
-function toast(msg, type) {
-  const t = type || 'success';
-  const el = document.createElement('div');
-  el.className = 'ac-message__item is-' + t;
-  el.innerHTML = '<span class="ac-message__icon is-' + t + '">' + ({ success: '✓', error: '!', warning: '!', info: 'i' })[t] + '</span><span class="ac-message__text">' + esc(msg) + '</span>';
-  $('#toastList').appendChild(el);
-  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 240); }, 2600);
+/* ================= 通用 ================= */
+var NOW = '2026-10-21 10:00'; /* Mock 今天 = 2026-10-21（周三） */
+function toast(text, kind) {
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + (kind || 'success') + ' busy-message--custom tpl-toast-fixed';
+  el.innerHTML = '<span class="busy-message__content">' + text + '</span>';
+  document.body.appendChild(el);
+  setTimeout(function () { el.remove(); }, 2200);
 }
-function busy(btn, on) {
-  if (!btn) return;
-  btn.disabled = !!on;
-  btn.classList.toggle('is-loading', !!on);
-  const sp = btn.querySelector('.ac-btn-spin');
-  if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
-  if (!on && sp) sp.remove();
+function btnLoading(btn, on) {
+  if (on) { btn.classList.add('is-loading'); btn.disabled = true; btn.insertAdjacentHTML('afterbegin', '<span class="busy-button__loading"></span>'); }
+  else { btn.classList.remove('is-loading'); btn.disabled = false; var sp = btn.querySelector('.busy-button__loading'); if (sp) sp.remove(); }
 }
-
-/* ---------- 事件委托注册 ---------- */
-const HANDLERS = {};
-function on(type, sel, fn) { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); }
-['click', 'input', 'keydown', 'mousedown'].forEach((type) => {
-  document.body.addEventListener(type, (e) => {
-    const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
-    for (const [sel, fn] of HANDLERS[type] || []) {
-      const el = sel ? t && t.closest(sel) : t;
-      if (el && fn(e, el) === true) break;
-    }
+function open(id) { document.getElementById(id).hidden = false; }
+function close(id) { document.getElementById(id).hidden = true; }
+function attachDropdown(ddId, triggerSel, items, onPick) {
+  var trigger = document.querySelector(triggerSel);
+  if (!trigger) return;
+  var dd = document.createElement('div');
+  dd.className = 'busy-select-dropdown';
+  dd.id = ddId;
+  dd.hidden = true;
+  dd.innerHTML = items.map(function (it) { return '<div class="busy-select-dropdown__item" data-value="' + it.v + '">' + it.t + '</div>'; }).join('');
+  trigger.parentNode.appendChild(dd);
+  var input = trigger.querySelector('input');
+  trigger.addEventListener('click', function (e) {
     e.stopPropagation();
+    document.querySelectorAll('.busy-select-dropdown').forEach(function (d) { if (d.id !== ddId) d.hidden = true; });
+    dd.hidden = !dd.hidden;
+  });
+  dd.addEventListener('click', function (e) {
+    var item = e.target.closest('.busy-select-dropdown__item');
+    if (!item) return;
+    dd.querySelectorAll('.busy-select-dropdown__item').forEach(function (x) { x.classList.remove('is-selected'); });
+    item.classList.add('is-selected');
+    input.value = item.textContent;
+    dd.hidden = true;
+    if (onPick) onPick(item.getAttribute('data-value'), item.textContent);
+  });
+}
+document.addEventListener('click', function () {
+  document.querySelectorAll('.busy-select-dropdown').forEach(function (d) { d.hidden = true; });
+});
+function setErr(field, msg) {
+  var item = document.querySelector('.busy-form-item[data-field="' + field + '"]');
+  if (!item) return;
+  var err = item.querySelector('.busy-form-item__error');
+  if (msg) err.textContent = msg;
+  err.hidden = false;
+}
+function clearErr(field) {
+  var item = document.querySelector('.busy-form-item[data-field="' + field + '"]');
+  if (item) item.querySelector('.busy-form-item__error').hidden = true;
+}
+
+/* ================= Mock 数据（references/data.md 口径） ================= */
+var STATUS_TAG = { processing: 'busy-tag busy-tag--danger', pending: 'busy-tag busy-tag--warning', reviewing: 'busy-tag', closed: 'busy-tag busy-tag--success' };
+var STATUS_TXT = { processing: '处理中', pending: '待复盘', reviewing: '复盘中', closed: '已闭环' };
+var USERS = [{ v: '王倩', t: '王倩' }, { v: '李航', t: '李航' }, { v: '张敏', t: '张敏' }, { v: '陈刚', t: '陈刚' }, { v: '刘洋', t: '刘洋' }];
+var TIME_OPTS = [
+  { v: '2026-10-15 02:13', t: '2026-10-15 02:13（发生）' },
+  { v: '2026-10-15 02:31', t: '2026-10-15 02:31（发现）' },
+  { v: '2026-10-15 04:05', t: '2026-10-15 04:05（处置）' },
+  { v: '2026-10-15 06:40', t: '2026-10-15 06:40（恢复）' },
+  { v: '2026-10-21 09:30', t: '2026-10-21 09:30（此刻 · Mock）' }
+];
+var DATE_OPTS = [{ v: '2026-10-22', t: '2026-10-22' }, { v: '2026-10-29', t: '2026-10-29' }, { v: '2026-11-05', t: '2026-11-05' }];
+
+var state = 'pending';       /* processing | pending | reviewing | closed */
+var wasRejected = true;      /* 演示：该单曾被打回（10-16 16:20） */
+var reviewDirty = false;     /* 复盘表单脏标记 */
+var recoverTime = '2026-10-15 06:40';
+var rejectText = '2026-10-16 16:20 研发负责人 陈国坚 打回：根因未定位到代码级，需补充连接池泄漏点分析';
+
+var timeline = [
+  { time: '2026-10-15 06:40', user: '王倩', text: '网关回滚至稳定版本 v2.4.1，核心指标恢复基线，标记恢复。' },
+  { time: '2026-10-15 04:05', user: '李航', text: '定位到灰度节点连接池耗尽，临时扩容并对非核心链路限流。' },
+  { time: '2026-10-15 02:31', user: '王倩', text: '告警触发，确认 504 集中爆发，启动应急响应并登记故障。' }
+];
+var evidences = [
+  { type: '错误日志指纹报表项', key: 'FP-a3f9c8d1', summary: 'FeignException$ServiceUnavailable · 履约网关调用链 428 次 / 日', note: '故障时段指纹爆发与 504 峰值吻合', target: '错误日志管理' },
+  { type: '服务器监控快照', key: 'SNAP-20261015-0231', summary: 'gw-node-07 CPU 98% · 连接池活跃连接打满', note: '异常快照对应故障发生时刻', target: '服务器监控' },
+  { type: '黑灯工厂工单', key: 'BL-20261015-014', summary: '连接池自动扩容工单 · 已自动修复', note: '同一事件两边互相引用、不重复展开', target: '黑灯工厂管理' }
+];
+var measuresBase = [
+  { content: '网关连接池增加连接泄漏检测与告警', owner: '李航', deadline: '2026-10-22', done: false, doneTime: '' },
+  { content: '灰度发布流水线增加连接池指标门禁', owner: '王倩', deadline: '2026-10-29', done: false, doneTime: '' },
+  { content: '补充履约网关 5xx 应急预案并演练', owner: '张敏', deadline: '2026-10-19', done: false, doneTime: '' }
+];
+var measures = [];
+
+/* ================= 渲染 ================= */
+var STEPS = {
+  processing: [
+    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+    { t: '处理与恢复', d: '进行中 · 已记录 3 条处置', c: 'is-process' },
+    { t: '复盘', d: '待开始', c: '' },
+    { t: '闭环', d: '待开始', c: '' }
+  ],
+  pending: [
+    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+    { t: '处理与恢复', d: '已恢复 10-15 06:40', c: 'is-finish' },
+    { t: '复盘', d: '待提交复盘 · 已逾期', c: 'is-process' },
+    { t: '闭环', d: '待开始', c: '' }
+  ],
+  reviewing: [
+    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+    { t: '处理与恢复', d: '已恢复 10-15 06:40', c: 'is-finish' },
+    { t: '复盘', d: '已提交 10-16 14:00 · 待研发负责人确认', c: 'is-process' },
+    { t: '闭环', d: '待全部措施完成', c: '' }
+  ],
+  closed: [
+    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+    { t: '处理与恢复', d: '已恢复 10-15 06:40', c: 'is-finish' },
+    { t: '复盘', d: '已提交 10-16 14:00', c: 'is-finish' },
+    { t: '闭环', d: '陈国坚 · 10-20 10:00 闭环确认', c: 'is-finish' }
+  ]
+};
+var HINTS = {
+  processing: '当前状态：处理中。故障恢复后点「标记已恢复」记录恢复时间，状态流转为待复盘。',
+  pending: '当前状态：待复盘（P1 恢复超 3 个工作日未复盘，已逾期）。请完善复盘时间线 / 根因 / 改进措施后提交复盘。',
+  reviewing: '当前状态：复盘中。研发负责人可「打回」（填写原因）；全部改进措施完成后「闭环确认」（闭环后单据只读）。',
+  closed: '故障已闭环，单据只读（审计留痕，不允许删除）；可经「原型页面」返回故障列表。'
+};
+function isOverdue(m) { return !m.done && m.deadline < '2026-10-21'; }
+
+function renderSteps() {
+  document.getElementById('stepsBar').innerHTML = STEPS[state].map(function (s, i) {
+    var icon = s.c === 'is-finish' ? '✓' : String(i + 1);
+    return '<div class="busy-step ' + s.c + '"><span class="busy-step__icon">' + icon + '</span>' +
+      '<div><div class="busy-step__title">' + s.t + '</div><div class="busy-step__desc u-mono">' + s.d + '</div></div>' +
+      (i < 3 ? '<span class="busy-step__line"></span>' : '') + '</div>';
+  }).join('');
+}
+function renderTimeline() {
+  document.getElementById('timelineList').innerHTML = timeline.map(function (r, i) {
+    return '<div class="tpl-timeline__item"><span class="tpl-timeline__dot ' + (i === 0 ? 'is-primary' : '') + '"></span>' +
+      '<div class="tpl-timeline__content"><div class="tpl-timeline__title">' + r.text + '</div>' +
+      '<div class="tpl-timeline__meta u-mono">' + r.user + ' · ' + r.time + '</div></div></div>';
+  }).join('');
+}
+function renderEvidences() {
+  var editable = state !== 'closed';
+  document.getElementById('eviTbody').innerHTML = evidences.map(function (e, i) {
+    return '<tr><td><span class="busy-tag busy-tag--info is-plain">' + e.type + '</span></td>' +
+      '<td class="u-mono">' + e.key + '</td><td>' + e.summary + '</td><td>' + (e.note || '<span class="u-muted">—</span>') + '</td>' +
+      '<td><div class="tpl-row-actions">' +
+      '<button class="busy-button is-link" type="button" data-trace="' + i + '"><span>跳转溯源</span></button>' +
+      (editable ? '<button class="busy-button busy-button--danger is-link" type="button" data-remove="' + i + '" data-permission="devhubFaultEdit"><span>移除</span></button>' : '') +
+      '</div></td></tr>';
+  }).join('');
+  document.getElementById('btnAddEvi').hidden = !editable;
+  document.querySelectorAll('[data-trace]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var e = evidences[Number(b.getAttribute('data-trace'))];
+      toast('原型：跳转「' + e.target + '」查看 ' + e.key + '（跨模块溯源，证据只读引用）', 'info');
+    });
+  });
+  document.querySelectorAll('[data-remove]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      removeIdx = Number(b.getAttribute('data-remove'));
+      document.getElementById('eviRemoveText').textContent = '确认移除证据「' + evidences[removeIdx].key + '」的引用？仅移除关联，不影响来源模块数据。';
+      open('eviRemoveDialog');
+    });
+  });
+}
+function measureRow(m, i, readonly) {
+  var cb = readonly
+    ? '<label class="busy-checkbox is-checked is-disabled"><span class="busy-checkbox__inner"></span></label>'
+    : '<label class="busy-checkbox' + (m.done ? ' is-checked' : '') + '" data-mcheck="' + i + '"><span class="busy-checkbox__inner"></span></label>';
+  var deadline = isOverdue(m)
+    ? '<span class="u-danger u-strong u-mono">' + m.deadline + '</span> <span class="busy-tag busy-tag--danger busy-tag--small">已逾期</span>'
+    : '<span class="u-mono">' + m.deadline + '</span>';
+  return '<tr><td>' + cb + '</td><td>' + m.content + '</td><td>' + m.owner + '</td><td>' + deadline + '</td>' +
+    '<td class="u-mono">' + (m.done ? m.doneTime : '<span class="u-muted">—</span>') + '</td></tr>';
+}
+function renderMeasures() {
+  document.getElementById('measureTbody').innerHTML = measures.map(function (m, i) { return measureRow(m, i, false); }).join('');
+  document.getElementById('measureTbodyRO').innerHTML = measures.map(function (m, i) { return measureRow(m, i, true); }).join('');
+  var done = measures.filter(function (m) { return m.done; }).length;
+  document.getElementById('reviewMeta').textContent = '改进措施完成度 ' + done + '/' + measures.length;
+  document.querySelectorAll('[data-mcheck]').forEach(function (c) {
+    c.addEventListener('click', function () { toggleMeasure(Number(c.getAttribute('data-mcheck'))); });
+  });
+  /* 闭环确认前置：全部措施完成才可用，否则置灰 */
+  var btn = document.getElementById('btnClose');
+  var allDone = measures.length > 0 && done === measures.length;
+  btn.disabled = !allDone;
+  btn.classList.toggle('is-disabled', !allDone);
+  btn.title = allDone ? '' : '存在未完成改进措施，不可闭环';
+}
+function toggleMeasure(i) {
+  var m = measures[i];
+  m.done = !m.done;
+  m.doneTime = m.done ? NOW : '';
+  reviewDirty = true;
+  renderMeasures();
+  toast(m.done ? '已标记完成' : '已取消完成标记', m.done ? 'success' : 'info');
+}
+
+/* 状态渲染（导航栏四态演示 + 状态操作后的原地刷新） */
+function renderState() {
+  document.getElementById('dStateTag').className = STATUS_TAG[state];
+  document.getElementById('dStateTag').textContent = STATUS_TXT[state];
+  document.getElementById('dRecover').textContent = (state === 'processing') ? '—' : recoverTime;
+  document.getElementById('overdueBanner').hidden = state !== 'pending';
+  document.getElementById('btnEdit').hidden = state === 'closed';
+  document.getElementById('appendArea').hidden = state === 'closed';
+  document.getElementById('abHint').textContent = HINTS[state];
+  document.getElementById('btnRecover').hidden = state !== 'processing';
+  document.getElementById('btnSubmitReview').hidden = state !== 'pending';
+  document.getElementById('btnReject').hidden = state !== 'reviewing';
+  document.getElementById('btnClose').hidden = state !== 'reviewing';
+  /* 复盘区三形态 */
+  document.getElementById('reviewEmpty').hidden = state !== 'processing';
+  document.getElementById('reviewForm').hidden = !(state === 'pending' || state === 'reviewing');
+  document.getElementById('reviewReadonly').hidden = state !== 'closed';
+  /* 打回记录（曾被打回即展示） */
+  var showReject = wasRejected && state !== 'processing';
+  var rn = document.getElementById('rejectNote');
+  rn.hidden = !showReject;
+  rn.textContent = '⚠ ' + rejectText;
+  var rnro = document.getElementById('rejectNoteRO');
+  rnro.hidden = !(wasRejected && state === 'closed');
+  rnro.textContent = '⚠ ' + rejectText;
+  /* 复盘表单初态：时间线带入发生 / 发现 / 处置 / 恢复时间，可修订 */
+  if (state === 'pending' || state === 'reviewing') {
+    document.getElementById('rvOccurT').value = '2026-10-15 02:13';
+    document.getElementById('rvFoundT').value = '2026-10-15 02:31';
+    document.getElementById('rvHandleT').value = '2026-10-15 04:05';
+    document.getElementById('rvRecoverT').value = recoverTime;
+  }
+  /* 措施数据按演示状态 */
+  measures = measuresBase.map(function (m) { return { content: m.content, owner: m.owner, deadline: m.deadline, done: m.done, doneTime: m.doneTime }; });
+  if (state === 'pending') measures = measures.slice(0, 2);
+  if (state === 'reviewing') { measures[0].done = true; measures[0].doneTime = '2026-10-19 15:22'; }
+  if (state === 'closed') { measures.forEach(function (m, i) { m.done = true; m.doneTime = ['2026-10-19 15:22', '2026-10-20 09:12', '2026-10-19 18:40'][i]; }); }
+  reviewDirty = false;
+  renderSteps(); renderTimeline(); renderEvidences(); renderMeasures();
+  /* 导航栏演示按钮高亮 */
+  document.querySelectorAll('.tpl-nav [data-state]').forEach(function (b) {
+    b.classList.toggle('busy-button--primary', b.getAttribute('data-state') === state);
+  });
+}
+</script>
+
+<script>
+/* ================= 下拉挂载 ================= */
+attachDropdown('rvOccurT', '[data-dd="rvOccurT"]', TIME_OPTS, function () { clearErr('segOccur'); reviewDirty = true; });
+attachDropdown('rvFoundT', '[data-dd="rvFoundT"]', TIME_OPTS, function () { clearErr('segFound'); reviewDirty = true; });
+attachDropdown('rvHandleT', '[data-dd="rvHandleT"]', TIME_OPTS, function () { clearErr('segHandle'); reviewDirty = true; });
+attachDropdown('rvRecoverT', '[data-dd="rvRecoverT"]', TIME_OPTS, function () { clearErr('segRecover'); reviewDirty = true; });
+attachDropdown('mOwner', '[data-dd="mOwner"]', USERS);
+attachDropdown('mDeadline', '[data-dd="mDeadline"]', DATE_OPTS);
+attachDropdown('recTime', '[data-dd="recTime"]', TIME_OPTS, function () { clearErr('recTime'); });
+attachDropdown('edOwner', '[data-dd="edOwner"]', USERS);
+attachDropdown('edProject', '[data-dd="edProject"]', [
+  { v: '网关灰度发布', t: '网关灰度发布' }, { v: '会员积分重构', t: '会员积分重构' },
+  { v: '要货导出优化', t: '要货导出优化' }, { v: '商品图床迁移', t: '商品图床迁移' }
+]);
+
+/* ================= 状态演示切换 ================= */
+document.querySelectorAll('.tpl-nav [data-state]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    state = b.getAttribute('data-state');
+    renderState();
+    toast('已切换演示状态：' + STATUS_TXT[state], 'info');
   });
 });
 
-/* ---------- 浮层 ---------- */
-const OPEN = new Set();
-function showLayer(id) {
-  const el = $('#' + id);
-  clearTimeout(el.leaveTimer);
-  el.inert = false; el.hidden = false; void el.offsetWidth;
-  el.classList.add('is-open'); OPEN.add(id);
-}
-function hideLayer(id) {
-  const el = $('#' + id);
-  if (el.hidden || !el.classList.contains('is-open')) return;
-  OPEN.delete(id); el.classList.remove('is-open'); el.inert = true;
-  el.leaveTimer = setTimeout(() => { el.hidden = true; el.inert = false; }, Number(el.getAttribute('data-ds-leave')) || 320);
-}
-
-/* ---------- AcSelect 页面自管 ---------- */
-function closeSelect(root) { root.classList.remove('is-open'); const p = $('.ac-select__popup', root); if (p) p.hidden = true; }
-function closeAllSelects(keep) { $$('.ac-select.is-open').forEach((s) => { if (s !== keep) closeSelect(s); }); }
-function selectVal(root) { return root.getAttribute('data-value') || ''; }
-function setSelect(root, v) {
-  root.setAttribute('data-value', v);
-  const single = $('.ac-select__single', root);
-  const opt = $(`.ac-select__option[data-value="${CSS.escape(v)}"]`, root);
-  single.textContent = opt ? $('.ac-select__option-label', opt).textContent.trim() : (root.getAttribute('data-placeholder') || '请选择');
-  single.classList.toggle('is-placeholder', !opt || !v);
-  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', o.getAttribute('data-value') === v));
-}
-
-/* ---------- 通用确认弹窗 ---------- */
-let cfResolve = null;
-function askConfirm(title, content, okText, danger) {
-  $('#cfTitle').textContent = title;
-  $('#cfContent').textContent = content;
-  $('#cfOkBtn').querySelector('.ac-btn__label').textContent = okText || '确认';
-  $('#cfOkBtn').className = 'ac-btn ' + (danger ? 'ac-btn--danger' : 'ac-btn--primary');
-  showLayer('confirmModal');
-  return new Promise((r) => { cfResolve = r; });
-}
-function settleConfirm(v) {
-  if (!cfResolve) return;
-  const r = cfResolve; cfResolve = null;
-  hideLayer('confirmModal'); r(v);
-}
-
-/* ---------- 证据移除 AcPopconfirm ---------- */
-let popResolve = null;
-function askPop(anchor) {
-  const p = $('#popconfirm');
-  p.hidden = false;
-  const r = anchor.getBoundingClientRect();
-  p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
-  p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
-  return new Promise((res) => { popResolve = res; });
-}
-function settlePop(v) {
-  if (!popResolve) return;
-  const r = popResolve; popResolve = null;
-  if (!v) $('#popconfirm').hidden = true;
-  r(v);
-}
-const popOpen = () => !$('#popconfirm').hidden;
-
-/* ==================== 状态机演示（处理中 → 待复盘 → 复盘中 → 已闭环） ==================== */
-const ST_TAG_CLS = { 处理中: 'ac-tag ac-tag--blue', 待复盘: 'ac-tag ac-tag--orange', 复盘中: 'ac-tag ac-tag--purple', 已闭环: 'ac-tag ac-tag--green' };
-const BAR_HINT = {
-  处理中: '状态机：处理中 → 待复盘 → 复盘中 → 已闭环；标记恢复后进入待复盘，P1 / P2 恢复后 3 个工作日内须完成复盘',
-  待复盘: '提交复盘前请确认时间线、根因与改进措施齐备',
-  复盘中: '全部改进措施完成后可闭环；研发负责人可打回至待复盘',
-  已闭环: '故障已闭环，全页只读；复盘与改进措施沉淀为复盘资产',
-};
-const REVIEW_META = {
-  待复盘: '复盘表单填写中，提交后由研发负责人确认',
-  复盘中: '提交人 王五 · 10-15 10:20 提交 · 待研发负责人确认',
-  已闭环: '王五 10-15 10:20 提交 · 吴奥林 10-17 18:02 确认闭环',
-};
-let ST = '复盘中';
-function setState(st) {
-  ST = st;
-  const tag = $('#stTag');
-  tag.className = ST_TAG_CLS[st];
-  tag.textContent = st;
-  $('#recoverVal').innerHTML = st === '处理中' ? '<span class="u-sub">—</span>' : '2026-10-09 11:20';
-  $('#overdueAlert').hidden = st !== '待复盘';
-  $('#editBtn').hidden = st === '已闭环';
-  $('#appendBox').hidden = st === '已闭环';
-  $('#evAddBtn').hidden = st === '已闭环';
-  $$('#evGrid [data-ev-remove]').forEach((b) => { b.hidden = st === '已闭环'; });
-  $$('[data-review]').forEach((el) => { el.hidden = el.dataset.review !== st; });
-  if (REVIEW_META[st]) $('#reviewMeta').textContent = REVIEW_META[st];
-  $$('[data-bar]').forEach((el) => { el.hidden = el.dataset.bar !== st; });
-  $('#barHint').textContent = BAR_HINT[st];
-  $('#protoMenu').hidden = true; $('#protoDd').classList.remove('is-open');
-  window.scrollTo(0, 0);
-}
-
-/* ---------- 编辑故障弹窗 ---------- */
-on('click', '#editBtn', () => { showLayer('editModal'); return true; });
-on('click', '#levelGroup .ac-radio', (e, el) => {
-  $$('#levelGroup .ac-radio').forEach((r) => { r.classList.remove('is-checked'); r.setAttribute('aria-checked', 'false'); });
-  el.classList.add('is-checked'); el.setAttribute('aria-checked', 'true');
-  return true;
+/* ================= 通用关闭 / Esc ================= */
+document.querySelectorAll('[data-close]').forEach(function (b) {
+  b.addEventListener('click', function () { close(b.getAttribute('data-close')); });
 });
-on('click', '#editModalOk', async (e, el) => {
-  busy(el, true); await wait(); busy(el, false);
-  hideLayer('editModal');
-  toast('已保存修订');
-  return true;
+document.querySelectorAll('.ds-mask').forEach(function (m) {
+  m.addEventListener('click', function (e) { if (e.target === m) close(m.id); });
+});
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  var opened = Array.prototype.filter.call(document.querySelectorAll('.ds-mask'), function (m) { return !m.hidden; });
+  if (opened.length) close(opened[opened.length - 1].id);
 });
 
-/* ---------- 处置过程追加 ---------- */
-on('click', '#appendBtn', async (e, el) => {
-  const input = $('#appendInput');
-  const text = input.value.trim();
-  if (!text) { toast('请先填写处置记录内容', 'warning'); input.focus(); return true; }
-  busy(el, true); await wait(); busy(el, false);
-  const item = document.createElement('div');
-  item.className = 'ac-timeline__item';
-  item.innerHTML = '<div class="ac-timeline__rail"><span class="ac-timeline__dot is-current"></span><span class="ac-timeline__line"></span></div>'
-    + '<div class="ac-timeline__content"><div class="ac-timeline__meta"><span class="mono">10-18 09:30</span> · 刘操</div>'
-    + '<div class="ac-timeline__title">' + esc(text) + '</div></div>';
-  const first = $('#tlList .ac-timeline__item');
-  $('#tlList').insertBefore(item, first);
-  input.value = '';
-  toast('已追加处置记录');
-  return true;
+/* ================= 复盘表单脏标记 ================= */
+['rvOccurD', 'rvFoundD', 'rvHandleD', 'rvRecoverD', 'rvRoot', 'rvReview'].forEach(function (id) {
+  document.getElementById(id).addEventListener('input', function () { reviewDirty = true; });
 });
 
-/* ---------- 运维证据：添加 / 移除 / 溯源 ---------- */
-const EV_TAG = { 错误日志: 'red', 监控快照: 'orange', 黑灯工单: 'purple' };
-on('click', '#evAddBtn', () => { showLayer('evModal'); return true; });
-on('click', '#evModalOk', async (e, el) => {
-  const type = selectVal($('[data-field="evType"]'));
-  const key = $('[data-field="evKey"]').value.trim();
-  if (!type || !key) {
-    $('#evTypeHelp').textContent = type ? '' : '请选择证据类型';
-    $('#evKeyHelp').textContent = key ? '只读引用对应运维模块数据，不复制内容、不回写状态' : '请粘贴证据标识或链接';
-    toast('证据类型与标识必填', 'error');
-    return true;
+/* ================= 追加处置记录（未闭环） ================= */
+document.getElementById('btnAppend').addEventListener('click', function () {
+  var v = document.getElementById('appendInput').value.trim();
+  if (!v) { setErr('append'); toast('请填写处置记录内容', 'error'); return; }
+  clearErr('append');
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    timeline.unshift({ time: NOW.slice(0, 16), user: '王倩', text: v });
+    document.getElementById('appendInput').value = '';
+    renderTimeline();
+    toast('已追加处置记录');
+  }, 600);
+});
+document.getElementById('appendInput').addEventListener('input', function () { clearErr('append'); });
+
+/* ================= 证据：添加 / 移除 ================= */
+document.getElementById('btnAddEvi').addEventListener('click', function () {
+  document.getElementById('eviKey').value = '';
+  document.getElementById('eviNote').value = '';
+  clearErr('eviKey');
+  open('eviDialog');
+});
+document.querySelector('#eviType').addEventListener('click', function (e) {
+  var r = e.target.closest('.busy-radio'); if (!r) return;
+  document.querySelectorAll('#eviType .busy-radio').forEach(function (x) { x.classList.remove('is-checked'); });
+  r.classList.add('is-checked'); clearErr('eviType');
+});
+document.getElementById('eviOk').addEventListener('click', function () {
+  var typeEl = document.querySelector('#eviType .busy-radio.is-checked');
+  var key = document.getElementById('eviKey').value.trim();
+  if (!typeEl) { setErr('eviType'); return; }
+  if (!key) { setErr('eviKey'); toast('请填写证据标识', 'error'); return; }
+  if (evidences.some(function (e) { return e.key === key; })) { setErr('eviKey', '该证据已关联，请勿重复添加'); toast('该证据已关联，请勿重复添加', 'error'); return; }
+  clearErr('eviKey');
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    evidences.push({ type: typeEl.textContent.trim(), key: key, summary: key + '（Mock 摘要）', note: document.getElementById('eviNote').value.trim(), target: '来源模块' });
+    close('eviDialog'); renderEvidences();
+    toast('已关联证据');
+  }, 600);
+});
+var removeIdx = -1;
+document.getElementById('eviRemoveOk').addEventListener('click', function () {
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    if (removeIdx >= 0) evidences.splice(removeIdx, 1);
+    close('eviRemoveDialog'); renderEvidences();
+    toast('已移除关联');
+  }, 500);
+});
+
+/* ================= 添加改进措施 ================= */
+document.getElementById('btnAddMeasure').addEventListener('click', function () {
+  var content = document.getElementById('mContent').value.trim();
+  var owner = document.getElementById('mOwner').value.trim();
+  var deadline = document.getElementById('mDeadline').value.trim();
+  if (!content || !owner || !deadline) {
+    document.getElementById('measureErr').hidden = false;
+    toast('改进措施需内容 / 负责人 / 期限齐备', 'error');
+    return;
   }
-  busy(el, true); await wait(); busy(el, false);
-  const note = $('[data-field="evNote"]').value.trim();
-  const card = document.createElement('div');
-  card.className = 'tpl-kpi';
-  card.setAttribute('data-ev', '');
-  card.innerHTML = '<div class="tpl-kpi__head"><span class="ac-tag ac-tag--' + EV_TAG[type] + '">' + esc(type) + '</span><span class="tpl-toolbar__right"><button class="ac-btn ac-btn--text" type="button" data-ev-remove><span class="ac-btn__label">移除</span></button></span></div>'
-    + '<div class="u-strong mono">' + esc(key) + '</div>'
-    + '<div class="u-sub">新关联证据 · 2026-10-18</div>'
-    + '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">' + esc(note ? '备注：' + note : '备注：—') + '</span><button class="ac-btn ac-btn--text" type="button" data-ev-trace="新关联证据 ' + esc(key) + '"><span class="ac-btn__label">跳转溯源</span></button></div>';
-  $('#evGrid').appendChild(card);
-  hideLayer('evModal');
-  toast('已关联证据');
-  return true;
+  document.getElementById('measureErr').hidden = true;
+  measures.push({ content: content, owner: owner, deadline: deadline, done: false, doneTime: '' });
+  document.getElementById('mContent').value = '';
+  document.getElementById('mOwner').value = '';
+  document.getElementById('mDeadline').value = '';
+  reviewDirty = true;
+  renderMeasures();
+  toast('已添加改进措施');
 });
-on('click', '[data-ev-remove]', async (e, el) => {
-  const card = el.closest('[data-ev]');
-  if (!(await askPop(el))) return true;
-  busy($('#pcOkBtn'), true); await wait(); busy($('#pcOkBtn'), false);
-  $('#popconfirm').hidden = true;
-  card.remove();
-  toast('已移除关联');
-  return true;
-});
-on('click', '[data-ev-trace]', (e, el) => { toast('跳转溯源：' + el.dataset.evTrace, 'info'); return true; });
 
-/* ---------- 改进措施勾选与闭环可用性 ---------- */
-function syncImpProgress() {
-  const boxes = $$('#impTable [data-imp]');
-  const done = boxes.filter((b) => b.classList.contains('is-checked')).length;
-  $('#impProgress').textContent = done + '/' + boxes.length;
-  const all = boxes.length > 0 && done === boxes.length;
-  $('#closeBtn').disabled = !all;
-  $('#barHint').textContent = all ? '全部改进措施已完成，可发起闭环确认；闭环后故障单只读' : BAR_HINT[ST] + '（当前 ' + done + '/' + boxes.length + '）';
-}
-on('click', '[data-imp]', (e, el) => {
-  const on = !el.classList.contains('is-checked');
-  el.classList.toggle('is-checked', on);
-  const tr = el.closest('tr');
-  const doneAt = $('[data-done-at]', tr);
-  const stCell = $('[data-imp-st]', tr);
-  if (doneAt) doneAt.textContent = on ? '10-18 09:30' : '—';
-  if (stCell) stCell.innerHTML = on ? '<span class="ac-tag ac-tag--green">已完成</span>' : '<span class="ac-tag ac-tag--orange">未完成</span>';
-  syncImpProgress();
-  toast(on ? '已标记完成' : '已取消完成标记');
-  return true;
+/* ================= 状态操作（沉底操作栏，五阶段反馈链） ================= */
+/* 标记已恢复：处理中 → 待复盘（二次确认：确认恢复时间） */
+document.getElementById('btnRecover').addEventListener('click', function () {
+  document.getElementById('recTime').value = '2026-10-15 06:40';
+  clearErr('recTime');
+  open('recoverDialog');
 });
-on('click', '[data-imp-add]', () => { toast('原型演示：新增一条改进措施（内容 + 负责人 + 期限）', 'info'); return true; });
+document.getElementById('recoverOk').addEventListener('click', function () {
+  var t = document.getElementById('recTime').value.trim();
+  if (!t || t > NOW) { setErr('recTime'); toast('请确认恢复时间（不可晚于当前时间）', 'error'); return; }
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    recoverTime = t; state = 'pending';
+    close('recoverDialog'); renderState();
+    toast('已标记恢复，进入待复盘');
+  }, 700);
+});
 
-/* ---------- 状态操作：标记恢复 / 提交复盘 / 打回 / 闭环确认 ---------- */
-on('click', '#recoverBtn', async (e, el) => {
-  if (!(await askConfirm('标记已恢复', '将以当前时间记录恢复时间，故障进入待复盘。确认标记？', '确认恢复', false))) return true;
-  busy(el, true); await wait(); busy(el, false);
-  toast('已标记恢复，进入待复盘');
-  setState('待复盘');
-  return true;
-});
-on('click', '#submitReviewBtn', async (e, el) => {
-  const root = $('#rootCauseTodo');
-  if (!root.value.trim()) {
-    $('#rootHelpTodo').textContent = '请填写根因分析';
-    $('#rootBlockTodo').classList.add('is-error');
-    $('#rootBlockTodo').scrollIntoView({ block: 'center', behavior: 'smooth' });
-    toast('时间线 / 根因 / 改进措施未齐备：请先填写根因分析', 'error');
-    return true;
+/* 提交复盘：待复盘 → 复盘中（集中校验 + 定位首个缺失项） */
+document.getElementById('btnSubmitReview').addEventListener('click', function () {
+  var firstErr = null;
+  [['segOccur', 'rvOccurT', 'rvOccurD'], ['segFound', 'rvFoundT', 'rvFoundD'], ['segHandle', 'rvHandleT', 'rvHandleD'], ['segRecover', 'rvRecoverT', 'rvRecoverD']].forEach(function (seg) {
+    var ok = document.getElementById(seg[1]).value.trim() && document.getElementById(seg[2]).value.trim();
+    if (!ok) { setErr(seg[0]); firstErr = firstErr || seg[0]; } else clearErr(seg[0]);
+  });
+  if (!document.getElementById('rvRoot').value.trim()) { setErr('root'); firstErr = firstErr || 'root'; } else clearErr('root');
+  var mOk = measures.length >= 1 && measures.every(function (m) { return m.content && m.owner && m.deadline; });
+  document.getElementById('measureErr').hidden = mOk;
+  if (!mOk && !firstErr) firstErr = 'measure';
+  if (firstErr) {
+    var target = firstErr === 'measure'
+      ? document.getElementById('measureErr')
+      : document.querySelector('.busy-form-item[data-field="' + firstErr + '"]');
+    target.scrollIntoView({ block: 'center', behavior: 'smooth' });
+    toast('复盘内容未齐备：请完善时间线 / 根因 / 改进措施', 'error');
+    return;
   }
-  busy(el, true); await wait(); busy(el, false);
-  toast('复盘已提交，等待研发负责人确认');
-  setState('复盘中');
-  return true;
-});
-on('click', '#rejectBtn', () => { $('#rejectReason').value = ''; $('#rejectHelp').textContent = ''; showLayer('rejectModal'); return true; });
-on('click', '#rejectOkBtn', async (e, el) => {
-  if (!$('#rejectReason').value.trim()) { $('#rejectHelp').textContent = '请填写打回原因'; toast('请填写打回原因', 'error'); return true; }
-  busy(el, true); await wait(); busy(el, false);
-  hideLayer('rejectModal');
-  toast('已打回，待重新复盘');
-  setState('待复盘');
-  return true;
-});
-on('click', '#closeBtn', async (e, el) => {
-  if (el.disabled) return true;
-  if (!(await askConfirm('闭环确认', '闭环后故障单转为只读，复盘与改进措施沉淀为复盘资产。确认闭环？', '确认闭环', false))) return true;
-  busy(el, true); await wait(); busy(el, false);
-  toast('故障已闭环');
-  setState('已闭环');
-  return true;
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    state = 'reviewing'; renderState();
+    toast('复盘已提交，等待研发负责人确认');
+  }, 800);
 });
 
-/* ---------- proto-bar ---------- */
-on('click', '#protoBtn', () => {
-  const menu = $('#protoMenu');
-  const willOpen = menu.hidden;
-  menu.hidden = !willOpen;
-  $('#protoDd').classList.toggle('is-open', willOpen);
-  return true;
+/* 打回：复盘中 → 待复盘（二次确认：填写打回原因） */
+document.getElementById('btnReject').addEventListener('click', function () {
+  document.getElementById('rejectReason').value = '';
+  clearErr('rejectReason');
+  open('rejectDialog');
 });
-on('click', '[data-demo-st]', (e, el) => { setState(el.dataset.demoSt); toast('演示状态：' + el.dataset.demoSt, 'info'); return true; });
+document.getElementById('rejectOk').addEventListener('click', function () {
+  var reason = document.getElementById('rejectReason').value.trim();
+  if (!reason) { setErr('rejectReason'); toast('请填写打回原因', 'error'); return; }
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    wasRejected = true;
+    rejectText = '2026-10-21 10:00 研发负责人 陈国坚 打回：' + reason;
+    state = 'pending';
+    close('rejectDialog'); renderState();
+    toast('已打回，待重新复盘');
+  }, 700);
+});
 
-/* ---------- 通用关闭 ---------- */
-on('click', '[data-close]', (e, el) => { hideLayer(el.dataset.close); return true; });
-on('click', '#cfOkBtn', () => { settleConfirm(true); return true; });
-on('click', '#cfCancelBtn', () => { settleConfirm(false); return true; });
-on('click', '#cfCloseBtn', () => { settleConfirm(false); return true; });
-on('click', '#pcOkBtn', () => { settlePop(true); return true; });
-on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
+/* 闭环确认：复盘中且全部措施完成 → 已闭环（二次确认） */
+document.getElementById('btnClose').addEventListener('click', function () {
+  if (this.disabled) { toast('存在未完成改进措施，不可闭环', 'error'); return; }
+  open('closeDialog');
+});
+document.getElementById('closeOk').addEventListener('click', function () {
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    state = 'closed';
+    close('closeDialog'); renderState();
+    toast('故障已闭环');
+  }, 700);
+});
 
-/* ---------- AcSelect ---------- */
-on('click', '.ac-select .ac-select__trigger', (e, el) => {
-  const root = el.closest('.ac-select');
-  if (root.classList.contains('is-disabled')) return true;
-  const willOpen = !root.classList.contains('is-open');
-  closeAllSelects(root);
-  root.classList.toggle('is-open', willOpen);
-  $('.ac-select__popup', root).hidden = !willOpen;
-  return true;
+/* ================= 编辑故障（信息头操作；成功 → 关弹窗并刷新信息头） ================= */
+document.getElementById('btnEdit').addEventListener('click', function () {
+  document.getElementById('edTitle').value = document.getElementById('dTitle').textContent;
+  document.getElementById('edPhenom').value = document.getElementById('dPhenom').textContent;
+  document.getElementById('edScope').value = document.getElementById('dScope').textContent;
+  document.getElementById('edOwner').value = document.getElementById('dOwner').textContent;
+  document.getElementById('edProject').value = document.getElementById('dProject').textContent;
+  clearErr('edTitle'); clearErr('edPhenom');
+  open('editDialog');
 });
-on('click', '.ac-select .ac-select__option', (e, el) => {
-  const root = el.closest('.ac-select');
-  setSelect(root, el.getAttribute('data-value'));
-  closeSelect(root);
-  return true;
+document.getElementById('editOk').addEventListener('click', function () {
+  var title = document.getElementById('edTitle').value.trim();
+  var phenom = document.getElementById('edPhenom').value.trim();
+  var ok = true;
+  if (!title || title.length > 50) { setErr('edTitle'); ok = false; }
+  if (!phenom) { setErr('edPhenom'); ok = false; }
+  if (!ok) { toast('提交失败：请完善必填项', 'error'); return; }
+  var btn = this; btnLoading(btn, true);
+  setTimeout(function () {
+    btnLoading(btn, false);
+    document.getElementById('dTitle').textContent = title;
+    document.getElementById('dPhenom').textContent = phenom;
+    document.getElementById('dScope').textContent = document.getElementById('edScope').value.trim() || '—';
+    document.getElementById('dOwner').textContent = document.getElementById('edOwner').value.trim() || '—';
+    document.getElementById('dProject').textContent = document.getElementById('edProject').value.trim() || '—';
+    close('editDialog');
+    toast('已保存修订');
+  }, 700);
 });
-on('mousedown', null, (e, t) => {
-  if (popOpen() && !(t && t.closest('#popconfirm'))) settlePop(false);
-  $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
-  const menu = $('#protoMenu');
-  if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
-  return false;
-});
-on('keydown', null, (e) => {
-  if (e.key !== 'Escape') return false;
-  if (popOpen()) { settlePop(false); return true; }
-  if ($$('.ac-select.is-open').length) { closeAllSelects(); return true; }
-  if (OPEN.has('confirmModal')) { settleConfirm(false); return true; }
-  const top = ['rejectModal', 'evModal', 'editModal'].find((id) => OPEN.has(id));
-  if (top) { hideLayer(top); return true; }
-  const menu = $('#protoMenu');
-  if (!menu.hidden) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); return true; }
-  return false;
-});
-on('keydown', '.ac-radio, .ac-select__trigger', (e, el) => {
-  if (e.key !== 'Enter' && e.key !== ' ') return false;
-  e.preventDefault(); el.click(); return true;
-});
-on('input', '#rootCauseTodo', (e, el) => {
-  if (el.value.trim()) { $('#rootHelpTodo').textContent = ''; $('#rootBlockTodo').classList.remove('is-error'); }
-  return true;
-});
-on('focusin', '.ac-input__inner, .ac-input__textarea', (e, el) => { const b = el.closest('.ac-input'); if (b) b.classList.add('is-focused'); return true; });
-on('focusout', '.ac-input__inner, .ac-input__textarea', (e, el) => { const b = el.closest('.ac-input'); if (b) b.classList.remove('is-focused'); return true; });
 
-setState(new URLSearchParams(location.search).get('st') || '复盘中');
+/* ================= 复盘脏离开守卫 ================= */
+function guardLeave(e) {
+  if (reviewDirty && (state === 'pending' || state === 'reviewing')) {
+    e.preventDefault();
+    open('leaveConfirm');
+  }
+}
+document.getElementById('backLink').addEventListener('click', guardLeave);
+document.querySelector('.tpl-nav a[href="fault-list.html"]').addEventListener('click', guardLeave);
+document.getElementById('leaveOk').addEventListener('click', function () {
+  close('leaveConfirm');
+  location.href = 'fault-list.html';
+});
+
+renderState();
 </script>
 </body>
 </html>
