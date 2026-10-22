@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>调用审计 · MCP接入管理</title>
+<!--
+  需求真源：busyming-skills-devops/平台能力/MCP接入管理/references/web-ui.md「调用审计」
+           + audit-rules.md（记录范围 §1、结果与原因枚举 §2、汇总口径 §4、导出 §5）、permission-rules.md §1、devtool-rules.md §2.1（业务域）/ §3（日志检索）
+  页型：report（DOM 结构依据 busyming-skills-design/templates/web/report.html）
+  静态原型：Mock 数据，刷新即重置；未连接业务系统。权限：路由 devhubMcpAudit，导出按钮 devhubMcpAuditExport。
+  目标对象：SLS 为「Project/日志库」，ARMS 为应用名称，数据库为「实例 / 库 / 表」；业务系统领域不记录业务域与目标对象。
+  摘要：数据库调用展示「语句摘要」，SLS 日志检索展示「检索条件摘要」，字面量值均已替换为 ?（audit-rules.md §1）。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/字号一律消费 var(--busy-*) */
+  .tpl-nav a { color: var(--busy-color-white); }
+  .tpl-nav a.is-current { font-weight: 600; text-decoration: underline; }
+  .page-nav-links { display: flex; gap: 12px; min-width: 0; overflow-x: auto; white-space: nowrap; }
+  .page-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+  .page-overlay--drawer { justify-content: flex-end; align-items: stretch; padding: 0; border-radius: 0; }
+  .page-drawer { position: relative; width: 560px; max-width: 100%; height: 100%; margin-left: 0; }
+  .page-drawer .busy-drawer__header { margin-bottom: 0; padding: 16px 20px; }
+  .page-drawer .busy-drawer__body { display: block; flex: 1; padding: 0 20px 20px; overflow: auto; }
+  .page-drawer-close { margin-left: auto; }
+  .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 400; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .page-message-host .busy-message { position: static; }
+  .page-code { margin: 0; padding: 12px 16px; max-height: 280px; overflow: auto; white-space: pre-wrap; word-break: break-all; background: var(--busy-fill-color-light); font-size: var(--busy-font-size-small); border-radius: var(--busy-border-radius-base); color: var(--busy-text-primary); }
+  .page-desc-label { width: 120px; }
+  .page-select-wrap { position: relative; }
+  .page-select-pop { position: absolute; left: 0; right: 0; top: 100%; z-index: 50; }
+  .page-tip { position: relative; display: inline-flex; }
+  .page-tip > .busy-tooltip { position: absolute; bottom: calc(100% + 8px); left: 50%; transform: translateX(-50%); z-index: 300; display: none; width: max-content; white-space: nowrap; }
+  .page-tip.is-tip-on:hover > .busy-tooltip { display: inline-block; }
+  .page-tip > .busy-button.is-disabled { pointer-events: none; }
+  .page-radio-buttons { gap: 0; }
+  .page-filter-range { grid-column: span 3; }
+  .page-filter-range .busy-form-item__label { width: 110px; }
+  .page-filter-range .busy-date-editor { flex: 0 0 360px; }
+  .page-table-scroll { overflow-x: auto; }
+  .page-table-scroll .busy-table td, .page-table-scroll .busy-table th { white-space: nowrap; }
+  .page-loading-cell { padding: 32px 0 !important; }
+  .busy-button__loading.page-inline-loading { display: inline-block; vertical-align: middle; margin-right: 6px; }
+  .page-drawer-section { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  .page-pager button { min-width: 32px; }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 平台能力 / <a href="token-list.html">MCP接入管理</a> / <b>调用审计</b></span>
+  <span class="page-nav-links">
+    <a class="tpl-nav__crumb" href="token-list.html">我的令牌</a>
+    <a class="tpl-nav__crumb" href="token-form.html">生成令牌</a>
+    <a class="tpl-nav__crumb" href="token-detail.html">令牌详情</a>
+    <a class="tpl-nav__crumb" href="grant-list.html">权限分配</a>
+    <a class="tpl-nav__crumb" href="grant-form.html">分配权限</a>
+    <a class="tpl-nav__crumb" href="service-list.html">MCP 服务目录</a>
+    <a class="tpl-nav__crumb" href="devtool-resources.html">研发工具资源</a>
+    <a class="tpl-nav__crumb" href="datasource-list.html">数据源管理</a>
+    <a class="tpl-nav__crumb" href="datasource-detail.html">数据源详情</a>
+    <a class="tpl-nav__crumb is-current" href="call-audit.html" aria-current="page">调用审计</a>
+  </span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">张研发（Mock）</span>
+</nav>
+
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">调用审计</h1>
+      <div class="tpl-page-subtitle">Mock 数据，刷新即重置；调用时间范围可直接编辑（改为跨度超过 31 天可演示查询置灰）</div>
+    </div>
+  </div>
+
+  <!-- 筛选区 -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="busy-form-item tpl-filter__item--wide page-filter-range">
+        <div class="busy-form-item__label">调用时间范围</div>
+        <div class="busy-form-item__content">
+          <div class="tpl-filter__row">
+            <div class="busy-date-editor busy-range-editor busy-input"><input id="fRange" aria-label="调用时间范围"></div>
+            <div class="busy-radio-group page-radio-buttons" id="rangeQuick">
+              <label class="busy-radio-button" data-value="1"><span class="busy-radio-button__inner">今天</span></label>
+              <label class="busy-radio-button is-checked" data-value="7"><span class="busy-radio-button__inner">近 7 天</span></label>
+              <label class="busy-radio-button" data-value="31"><span class="busy-radio-button__inner">近 31 天</span></label>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">持有人</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select-wrap" data-select="fHolder" id="holderSelect"><div class="busy-input"><input readonly placeholder="全部" value=""></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">令牌</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="fToken" placeholder="名称 / 前缀"></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">领域</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select-wrap" data-select="fDomain"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">业务域</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select-wrap" data-select="fBizDomain"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">服务</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select-wrap" data-select="fService"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">调用结果</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select-wrap" data-select="fResult"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">原因</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select-wrap" data-select="fReason"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
+        </div>
+      </div>
+      <div class="tpl-filter__actions">
+        <span class="page-tip" id="queryTip">
+          <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查询</span></button>
+          <span class="busy-tooltip" role="tooltip">时间跨度不超过 31 天</span>
+        </span>
+        <button class="busy-button" type="button" id="btnReset"><span>重置</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 汇总区（口径见 audit-rules.md §4） -->
+  <div class="tpl-kpi-grid" id="kpiGrid">
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">调用次数</span><span class="page-tip is-tip-on"><span class="tpl-kpi__hint">?</span><span class="busy-tooltip" role="tooltip">筛选范围内调用记录条数</span></span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" data-kpi="total">0</span><span class="tpl-kpi__unit">次</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">成功率</span><span class="page-tip is-tip-on"><span class="tpl-kpi__hint">?</span><span class="busy-tooltip" role="tooltip">结果为「成功」的条数 ÷ 调用次数</span></span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" data-kpi="rate">0</span><span class="tpl-kpi__unit">%</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">拒绝次数</span><span class="page-tip is-tip-on"><span class="tpl-kpi__hint">?</span><span class="busy-tooltip" role="tooltip">结果为「拒绝」的条数</span></span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" data-kpi="rejected">0</span><span class="tpl-kpi__unit">次</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">活跃令牌数</span><span class="page-tip is-tip-on"><span class="tpl-kpi__hint">?</span><span class="busy-tooltip" role="tooltip">筛选范围内有调用记录的令牌去重数</span></span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" data-kpi="tokens">0</span><span class="tpl-kpi__unit">个</span></div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">数据库查询次数</span><span class="page-tip is-tip-on"><span class="tpl-kpi__hint">?</span><span class="busy-tooltip" role="tooltip">领域为数据库的调用条数</span></span></div>
+      <div class="tpl-kpi__number"><span class="tpl-kpi__value" data-kpi="db">0</span><span class="tpl-kpi__unit">次</span></div>
+    </div>
+  </div>
+
+  <!-- 明细区 -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <span class="tpl-toolbar__title">调用明细</span>
+      <div class="tpl-toolbar__right">
+        <span class="page-tip" id="exportTip">
+          <button class="busy-button" type="button" id="btnExport"><span>导出</span></button>
+          <span class="busy-tooltip" role="tooltip">结果超过 10 万行，请缩小时间范围</span>
+        </span>
+      </div>
+    </div>
+    <div class="page-table-scroll">
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>调用时间</th><th>持有人</th><th>令牌</th><th>客户端</th><th>领域</th><th>业务域</th><th>服务</th><th>工具</th><th>目标对象</th>
+            <th>调用结果</th><th>原因</th><th class="u-right">返回行数</th><th>脱敏</th><th class="u-right">耗时</th><th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="auditBody"></tbody>
+      </table>
+    </div>
+    <div class="busy-empty" id="auditEmpty" hidden>
+      <div class="busy-empty__image">∅</div>
+      <div class="busy-empty__description">当前条件下暂无调用记录</div>
+    </div>
+    <div class="tpl-table-foot">
+      <div class="busy-pagination page-pager" id="pager"></div>
+    </div>
+  </div>
+</section>
+
+<!-- 调用详情抽屉 -->
+<div class="page-overlay page-overlay--drawer busy-overlay-demo" id="detailOverlay" hidden>
+  <div class="busy-drawer page-drawer" role="dialog" aria-labelledby="detailTitle">
+    <div class="busy-drawer__header">
+      <span class="busy-drawer__title" id="detailTitle">调用详情</span>
+      <button class="busy-button is-link page-drawer-close" type="button" id="btnDetailClose" aria-label="关闭"><span>×</span></button>
+    </div>
+    <div class="busy-drawer__body">
+      <table class="busy-descriptions is-border" id="detailDesc"></table>
+      <div class="page-drawer-section" id="detailSqlSection" hidden>
+        <div class="tpl-section__head" id="detailSqlHead">语句摘要</div>
+        <pre class="page-code" id="detailSql"></pre>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-message-host" id="messageHost"></div>
+
+<script>
+/* ================= Mock 数据（刷新即重置） ================= */
+var MOCK_NOW = new Date(2026, 9, 21, 10, 30, 0);
+/* 导出可用性判定用的结果总数：为 null 时取当前筛选条数；设为 > 100000 的数值可演示导出置灰 */
+var MOCK_RESULT_TOTAL = null;
+var EXPORT_LIMIT = 100000;
+var MOCK_USERS = ['张研发', '李产品', '王运维', '赵实施'];
+var MOCK_SERVICES = ['商品中心', '门店中心', '营运中心', 'SLS 日志检索', 'ARMS 应用监控', '数据库只读查询'];
+/* 业务域枚举：devtool-rules.md §2.1 */
+var BIZ_DOMAINS = ['商品', '采购', '营运', '门店', '客服', '系统', '库存', '要货', '产研', '公共'];
+/* 原因枚举：audit-rules.md §2 */
+var REJECT_REASONS = ['令牌无效', '超出调用频率', '服务或工具已停用', '超出令牌授权范围', '超出分配范围', '业务系统拒绝', '查询条件超限', '非只读语句', '引用未授权表'];
+var FAIL_REASONS = ['目标不可用', '查询超时', '目标执行错误'];
+/* reason 为枚举；reasonText 为原样透传文案（业务系统拒绝 / 目标执行错误）
+   bizDomain / target：研发工具、数据库领域记录；target 为 SLS「Project/日志库」、ARMS 应用或「实例 / 库 / 表」
+   rows：数据库结果行数 / SLS 日志条数；truncated：结果被截断（数据库）或不完整（日志检索）；masked：是否命中脱敏
+   sql：数据库语句摘要；cond：SLS 检索条件摘要（字面量值均已替换为 ?） */
+var MOCK_RECORDS = [
+  { id: 'CR202610211012050001', time: '2026-10-21 10:12:05.218', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '研发工具', bizDomain: '门店', service: 'SLS 日志检索', tool: 'sls.search_logs', target: 'mmhm-store-prod/store-gateway-access', result: '成功', reason: '', rows: 100, truncated: true, masked: true, cost: 412,
+    cond: '关键字：trace_id: ? and request_uri: ?\n时间范围：2026-10-21 09:00:00 ~ 2026-10-21 10:00:00（1 小时）\n日志级别：ERROR' },
+  { id: 'CR202610210958410002', time: '2026-10-21 09:58:41.003', holder: '李产品', tokenName: '商品数据助手', prefix: 'mmp_K9d3…', client: 'Claude Code', domain: '业务系统', service: '商品中心', tool: 'goods.query_sku', result: '成功', reason: '', cost: 586 },
+  { id: 'CR202610210930120003', time: '2026-10-21 09:30:12.550', holder: '王运维', tokenName: 'DBA 巡检', prefix: 'mmp_Zx81…', client: 'Cursor', domain: '数据库', bizDomain: '门店', service: '数据库只读查询', tool: 'db.query', target: 'order-prod-ro / order_db / t_order', result: '成功', reason: '', rows: 1000, truncated: true, masked: true, cost: 2140,
+    sql: 'SELECT order_no, member_phone, pay_amount\nFROM t_order\nWHERE store_id = ? AND created_at >= ?\nORDER BY created_at DESC' },
+  { id: 'CR202610210847150016', time: '2026-10-21 08:47:15.402', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '研发工具', bizDomain: '门店', service: 'ARMS 应用监控', tool: 'arms.query_trace', target: 'store-service', result: '成功', reason: '', cost: 732 },
+  { id: 'CR202610201822400004', time: '2026-10-20 18:22:40.117', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '数据库', bizDomain: '营运', service: '数据库只读查询', tool: 'db.query', target: 'member-prod-ro / member_db / t_member_info', result: '拒绝', reason: '引用未授权表', rows: 0, truncated: false, masked: false, cost: 3,
+    sql: 'SELECT m.member_id, m.mobile, p.points\nFROM t_member_info m\nJOIN t_member_points p ON p.member_id = m.member_id\nWHERE m.member_id = ?' },
+  { id: 'CR202610201605090005', time: '2026-10-20 16:05:09.880', holder: '王运维', tokenName: 'DBA 巡检', prefix: 'mmp_Zx81…', client: 'Cursor', domain: '数据库', bizDomain: '门店', service: '数据库只读查询', tool: 'db.query', target: 'order-prod-ro / order_db / t_order_item', result: '失败', reason: '查询超时', rows: 0, truncated: false, masked: false, cost: 10003,
+    sql: 'SELECT sku_code, SUM(qty) AS total_qty\nFROM t_order_item\nWHERE created_at BETWEEN ? AND ?\nGROUP BY sku_code' },
+  { id: 'CR202610201436180017', time: '2026-10-20 14:36:18.775', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '研发工具', bizDomain: '门店', service: 'SLS 日志检索', tool: 'sls.search_logs', target: 'mmhm-store-prod/store-gateway-access', result: '拒绝', reason: '查询条件超限', cost: 2,
+    cond: '关键字：user_id: ?\n时间范围：2026-10-18 14:00:00 ~ 2026-10-20 14:00:00（48 小时）\n日志级别：全部' },
+  { id: 'CR202610201147330006', time: '2026-10-20 11:47:33.402', holder: '赵实施', tokenName: '门店巡检脚本', prefix: 'mmp_P2c7…', client: 'Claude Code', domain: '数据库', bizDomain: '门店', service: '数据库只读查询', tool: 'db.query', target: 'store-test / store_db / t_store', result: '拒绝', reason: '非只读语句', rows: 0, truncated: false, masked: false, cost: 2,
+    sql: 'UPDATE t_store\nSET status = ?\nWHERE store_id = ?' },
+  { id: 'CR202610191736520018', time: '2026-10-19 17:36:52.130', holder: '王运维', tokenName: 'DBA 巡检', prefix: 'mmp_Zx81…', client: 'Cursor', domain: '数据库', bizDomain: '产研', service: '数据库只读查询', tool: 'db.query', target: 'devhub-prod / devhub / mcp_token', result: '拒绝', reason: '超出分配范围', rows: 0, truncated: false, masked: false, cost: 3,
+    sql: 'SELECT token_name, holder_id, expire_at\nFROM mcp_token\nWHERE status = ?' },
+  { id: 'CR202610191513200007', time: '2026-10-19 15:13:20.661', holder: '', tokenName: '', prefix: 'mmp_Qw0e…', client: 'Cursor', domain: '研发工具', service: 'SLS 日志检索', tool: 'sls.search_logs', result: '拒绝', reason: '令牌无效', cost: 1 },
+  { id: 'CR202610191402580008', time: '2026-10-19 14:02:58.090', holder: '李产品', tokenName: '商品数据助手', prefix: 'mmp_K9d3…', client: 'Claude Code', domain: '业务系统', service: '商品中心', tool: 'goods.query_price', result: '拒绝', reason: '超出调用频率', cost: 1 },
+  { id: 'CR202610181041160009', time: '2026-10-18 10:41:16.274', holder: '李产品', tokenName: '商品数据助手', prefix: 'mmp_K9d3…', client: 'Claude Code', domain: '业务系统', service: '门店中心', tool: 'store.query_store', result: '拒绝', reason: '业务系统拒绝', reasonText: '无该门店数据权限', cost: 96 },
+  { id: 'CR202610171730450010', time: '2026-10-17 17:30:45.912', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '研发工具', bizDomain: '门店', service: 'ARMS 应用监控', tool: 'arms.query_trace', target: 'store-service', result: '失败', reason: '目标不可用', cost: 5001 },
+  { id: 'CR202610160912030011', time: '2026-10-16 09:12:03.447', holder: '赵实施', tokenName: '门店巡检脚本', prefix: 'mmp_P2c7…', client: 'Claude Code', domain: '业务系统', service: '营运中心', tool: 'ops.query_task', result: '拒绝', reason: '超出令牌授权范围', cost: 2 },
+  { id: 'CR202610152008190012', time: '2026-10-15 20:08:19.335', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '研发工具', bizDomain: '门店', service: 'SLS 日志检索', tool: 'sls.get_log_context', target: 'mmhm-store-prod/store-gateway-access', result: '成功', reason: '', rows: 20, truncated: false, masked: false, cost: 238,
+    cond: '关键字：trace_id: ?\n时间范围：2026-10-15 19:50:00 ~ 2026-10-15 20:10:00（20 分钟）\n日志级别：全部' },
+  { id: 'CR202610101506220013', time: '2026-10-10 15:06:22.781', holder: '王运维', tokenName: 'DBA 巡检', prefix: 'mmp_Zx81…', client: 'Cursor', domain: '数据库', bizDomain: '门店', service: '数据库只读查询', tool: 'db.describe_table', target: 'order-prod-ro / order_db / t_order', result: '成功', reason: '', rows: 24, truncated: false, masked: false, cost: 88,
+    sql: 'DESCRIBE t_order' },
+  { id: 'CR202610031120070014', time: '2026-10-03 11:20:07.512', holder: '张研发', tokenName: 'SLS 排障', prefix: 'mmp_7Hq2…', client: 'Qoder', domain: '研发工具', bizDomain: '商品', service: 'SLS 日志检索', tool: 'sls.search_logs', target: 'mmhm-goods-prod/goods-center-app', result: '成功', reason: '', rows: 56, truncated: false, masked: true, cost: 377,
+    cond: '关键字：sku_code: ?\n时间范围：2026-10-03 08:00:00 ~ 2026-10-03 11:00:00（3 小时）\n日志级别：WARN' },
+  { id: 'CR202609250843590015', time: '2026-09-25 08:43:59.006', holder: '李产品', tokenName: '商品数据助手', prefix: 'mmp_K9d3…', client: 'Claude Code', domain: '业务系统', service: '商品中心', tool: 'goods.query_sku', result: '失败', reason: '目标执行错误', reasonText: '商品中心返回 500：内部错误', cost: 1320 }
+];
+var PAGE_SIZE = 10;
+
+/* ================= 页面状态 ================= */
+var state = { list: [], page: 1, holder: '' };
+
+/* ================= 工具函数 ================= */
+function esc(s) { return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function fmtDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function fmtNum(n) { return Number(n).toLocaleString('en-US'); }
+function showMessage(type, text) {
+  var host = document.getElementById('messageHost');
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  var span = document.createElement('span');
+  span.className = 'busy-message__content';
+  span.textContent = text;
+  el.appendChild(span);
+  host.appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+function setLoading(btn, on) {
+  if (on) {
+    btn.setAttribute('data-html', btn.innerHTML);
+    btn.innerHTML = '<span class="busy-button__loading"></span><span>' + esc(btn.textContent.trim()) + '</span>';
+    btn.disabled = true;
+  } else {
+    btn.innerHTML = btn.getAttribute('data-html');
+    btn.disabled = false;
+  }
+}
+function setDisabled(btn, disabled) {
+  btn.disabled = disabled;
+  btn.classList.toggle('is-disabled', disabled);
+}
+function reasonLabel(r) {
+  if (!r.reason) return '—';
+  return r.reasonText ? r.reason + '：' + r.reasonText : r.reason;
+}
+function isDb(r) { return r.domain === '数据库'; }
+function isDevtool(r) { return r.domain === '研发工具'; }
+
+/* ================= 选择器（busy-select 展开下拉；持有人为 UserSelector 收起态） ================= */
+var SELECT_OPTIONS = {
+  fHolder: function () { return ['全部'].concat(MOCK_USERS); },
+  fDomain: function () { return ['全部', '业务系统', '研发工具', '数据库']; },
+  fBizDomain: function () { return ['全部'].concat(BIZ_DOMAINS); },
+  fService: function () { return ['全部'].concat(MOCK_SERVICES); },
+  fResult: function () { return ['全部', '成功', '拒绝', '失败']; },
+  fReason: function () { return ['全部'].concat(REJECT_REASONS, FAIL_REASONS); }
+};
+function closeAllSelects() {
+  document.querySelectorAll('.page-select-pop').forEach(function (p) { p.parentNode.removeChild(p); });
+}
+function initSelects() {
+  document.querySelectorAll('[data-select]').forEach(function (sel) {
+    sel.addEventListener('click', function (e) {
+      e.stopPropagation();
+      var existing = sel.querySelector('.busy-select-dropdown');
+      closeAllSelects();
+      if (existing) return;
+      var name = sel.getAttribute('data-select');
+      var input = sel.querySelector('input');
+      var current = input.value || '全部';
+      var pop = document.createElement('div');
+      pop.className = 'busy-select-dropdown page-select-pop';
+      SELECT_OPTIONS[name]().forEach(function (opt) {
+        var it = document.createElement('div');
+        it.className = 'busy-select-dropdown__item' + (opt === current ? ' is-selected' : '');
+        it.textContent = opt;
+        it.addEventListener('click', function (ev) {
+          ev.stopPropagation();
+          input.value = (name === 'fHolder' && opt === '全部') ? '' : opt;
+          closeAllSelects();
+        });
+        pop.appendChild(it);
+      });
+      sel.appendChild(pop);
+    });
+  });
+  document.addEventListener('click', closeAllSelects);
+}
+function selectValue(name) { var v = document.querySelector('[data-select="' + name + '"] input').value; return v || '全部'; }
+function setSelect(name, v) { document.querySelector('[data-select="' + name + '"] input').value = v; }
+
+/* ================= 时间范围（DateTimePicker，最长跨度 31 天） ================= */
+function quickRange(days) {
+  var end = new Date(MOCK_NOW.getTime());
+  var start = new Date(MOCK_NOW.getTime());
+  start.setDate(start.getDate() - (days - 1));
+  return fmtDate(start) + ' 00:00:00 ~ ' + fmtDate(end) + ' 23:59:59';
+}
+function parseDateTime(s) {
+  var m = s.trim().match(/^(\d{4})-(\d{2})-(\d{2})(?:\s+(\d{2}):(\d{2})(?::(\d{2}))?)?$/);
+  if (!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+}
+function parseRange() {
+  var parts = document.getElementById('fRange').value.split('~');
+  if (parts.length !== 2) return null;
+  var s = parseDateTime(parts[0]); var e = parseDateTime(parts[1]);
+  if (!s || !e || e < s) return null;
+  return { start: s, end: e };
+}
+function checkRange() {
+  var r = parseRange();
+  var overSpan = !!r && (r.end - r.start) > 31 * 24 * 3600 * 1000;
+  setDisabled(document.getElementById('btnQuery'), !r || overSpan);
+  document.getElementById('queryTip').classList.toggle('is-tip-on', overSpan);
+}
+function bindQuick() {
+  var items = document.querySelectorAll('#rangeQuick .busy-radio-button');
+  items.forEach(function (item) {
+    item.addEventListener('click', function () {
+      items.forEach(function (i) { i.classList.remove('is-checked'); });
+      item.classList.add('is-checked');
+      document.getElementById('fRange').value = quickRange(parseInt(item.getAttribute('data-value'), 10));
+      checkRange();
+    });
+  });
+  document.getElementById('fRange').addEventListener('input', function () {
+    items.forEach(function (i) { i.classList.remove('is-checked'); });
+    checkRange();
+  });
+}
+
+/* ================= 查询 ================= */
+function recordTime(r) {
+  var m = r.time.match(/^(\d{4})-(\d{2})-(\d{2}) (\d{2}):(\d{2}):(\d{2})/);
+  return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5], +m[6]);
+}
+function filterRecords() {
+  var range = parseRange();
+  var holder = selectValue('fHolder');
+  var kw = document.getElementById('fToken').value.trim().toLowerCase();
+  var domain = selectValue('fDomain');
+  var bizDomain = selectValue('fBizDomain');
+  var service = selectValue('fService');
+  var result = selectValue('fResult');
+  var reason = selectValue('fReason');
+  return MOCK_RECORDS.filter(function (r) {
+    var t = recordTime(r);
+    if (range && (t < range.start || t > range.end)) return false;
+    if (holder !== '全部' && r.holder !== holder) return false;
+    if (kw && (r.tokenName + ' ' + r.prefix).toLowerCase().indexOf(kw) < 0) return false;
+    if (domain !== '全部' && r.domain !== domain) return false;
+    if (bizDomain !== '全部' && r.bizDomain !== bizDomain) return false;
+    if (service !== '全部' && r.service !== service) return false;
+    if (result !== '全部' && r.result !== result) return false;
+    if (reason !== '全部' && r.reason !== reason) return false;
+    return true;
+  });
+}
+
+/* ================= 汇总（audit-rules.md §4） ================= */
+function renderKpi(list) {
+  var total = list.length;
+  var success = list.filter(function (r) { return r.result === '成功'; }).length;
+  var rejected = list.filter(function (r) { return r.result === '拒绝'; }).length;
+  var tokenSet = {};
+  list.forEach(function (r) { tokenSet[r.prefix] = true; });
+  var db = list.filter(isDb).length;
+  setKpi('total', fmtNum(total));
+  setKpi('rate', total ? (success / total * 100).toFixed(1) : '0');
+  setKpi('rejected', fmtNum(rejected));
+  setKpi('tokens', fmtNum(Object.keys(tokenSet).length));
+  setKpi('db', fmtNum(db));
+}
+function setKpi(key, html) { document.querySelector('[data-kpi="' + key + '"]').innerHTML = html; }
+function kpiLoading() {
+  document.querySelectorAll('[data-kpi]').forEach(function (el) { el.innerHTML = '<span class="busy-button__loading page-inline-loading"></span>'; });
+}
+
+/* ================= 明细表 ================= */
+var RESULT_TAG = { '成功': 'busy-tag--success', '拒绝': 'busy-tag--warning', '失败': 'busy-tag--danger' };
+function tokenCell(r) {
+  var name = r.tokenName ? '<a href="token-detail.html">' + esc(r.tokenName) + '</a>' : '<span class="u-muted">—</span>';
+  return name + '<div class="u-sub u-mono">' + esc(r.prefix) + '</div>';
+}
+/* 返回行数：数据库结果行数 / SLS 日志条数；截断（数据库）或不完整（日志检索）时带「已截断」 */
+function rowsCell(r) {
+  if (r.rows == null) return '—';
+  return fmtNum(r.rows) + (r.truncated ? ' <span class="busy-tag busy-tag--warning is-plain">已截断</span>' : '');
+}
+function maskCell(r) {
+  if (r.masked == null) return '—';
+  return r.masked ? '<span class="busy-tag busy-tag--info">命中脱敏</span>' : '<span class="u-muted">未命中</span>';
+}
+function renderTable() {
+  var list = state.list;
+  var pages = Math.max(1, Math.ceil(list.length / PAGE_SIZE));
+  if (state.page > pages) state.page = pages;
+  var slice = list.slice((state.page - 1) * PAGE_SIZE, state.page * PAGE_SIZE);
+  document.getElementById('auditBody').innerHTML = slice.map(function (r) {
+    var idx = MOCK_RECORDS.indexOf(r);
+    return '<tr>' +
+      '<td class="u-mono">' + r.time + '</td>' +
+      '<td>' + (r.holder ? esc(r.holder) : '—') + '</td>' +
+      '<td>' + tokenCell(r) + '</td>' +
+      '<td>' + esc(r.client || '—') + '</td>' +
+      '<td>' + r.domain + '</td>' +
+      '<td>' + (r.bizDomain ? esc(r.bizDomain) : '—') + '</td>' +
+      '<td>' + esc(r.service) + '</td>' +
+      '<td class="u-mono">' + esc(r.tool) + '</td>' +
+      '<td class="u-mono">' + (r.target ? esc(r.target) : '—') + '</td>' +
+      '<td><span class="busy-tag ' + RESULT_TAG[r.result] + '">' + r.result + '</span></td>' +
+      '<td>' + esc(reasonLabel(r)) + '</td>' +
+      '<td class="u-right u-mono">' + rowsCell(r) + '</td>' +
+      '<td>' + maskCell(r) + '</td>' +
+      '<td class="u-right u-mono">' + fmtNum(r.cost) + ' ms</td>' +
+      '<td><div class="tpl-row-actions"><button class="busy-button is-link" type="button" data-detail="' + idx + '"><span>详情</span></button></div></td>' +
+      '</tr>';
+  }).join('');
+  document.getElementById('auditEmpty').hidden = list.length > 0;
+  renderPager(pages);
+  updateExport();
+}
+function renderPager(pages) {
+  var html = '<span class="u-muted">共 ' + state.list.length + ' 条</span>' +
+    '<button type="button" data-page="prev"' + (state.page <= 1 ? ' disabled' : '') + '>‹</button>';
+  for (var p = 1; p <= pages; p++) {
+    html += '<button type="button" data-page="' + p + '"' + (p === state.page ? ' class="is-active"' : '') + '>' + p + '</button>';
+  }
+  html += '<button type="button" data-page="next"' + (state.page >= pages ? ' disabled' : '') + '>›</button>';
+  document.getElementById('pager').innerHTML = html;
+}
+document.getElementById('pager').addEventListener('click', function (e) {
+  var b = e.target.closest('button[data-page]');
+  if (!b || b.disabled) return;
+  var v = b.getAttribute('data-page');
+  if (v === 'prev') state.page--; else if (v === 'next') state.page++; else state.page = parseInt(v, 10);
+  renderTable();
+});
+
+/* ================= 导出（audit-rules.md §5：≤ 10 万行，异步任务） ================= */
+function resultTotal() { return MOCK_RESULT_TOTAL != null ? MOCK_RESULT_TOTAL : state.list.length; }
+function updateExport() {
+  var total = resultTotal();
+  var over = total > EXPORT_LIMIT;
+  setDisabled(document.getElementById('btnExport'), total === 0 || over);
+  document.getElementById('exportTip').classList.toggle('is-tip-on', over);
+}
+document.getElementById('btnExport').addEventListener('click', function () {
+  var btn = this;
+  if (btn.disabled) return;
+  setLoading(btn, true);
+  setTimeout(function () {
+    setLoading(btn, false);
+    updateExport();
+    showMessage('success', '导出任务已提交，可在导入导出任务中下载');
+  }, 800);
+});
+
+/* ================= 调用详情抽屉 ================= */
+function openDetail(r) {
+  var withTarget = isDb(r) || isDevtool(r);
+  var rows = [
+    ['记录 ID', r.id],
+    ['调用时间', r.time],
+    ['持有人', r.holder || '—'],
+    ['令牌名称', r.tokenName || '—'],
+    ['令牌前缀', r.prefix],
+    ['客户端', r.client || '—'],
+    ['领域', r.domain]
+  ];
+  if (withTarget) rows.push(['业务域', r.bizDomain || '—']);
+  rows.push(['服务', r.service]);
+  rows.push(['工具', r.tool]);
+  if (withTarget) rows.push(['目标对象', r.target || '—']);
+  rows.push(['调用结果', '<span class="busy-tag ' + RESULT_TAG[r.result] + '">' + r.result + '</span>', true]);
+  rows.push(['原因', reasonLabel(r)]);
+  if (isDb(r) || r.rows != null) {
+    rows.push(['返回行数', r.rows == null ? '—' : fmtNum(r.rows)]);
+    rows.push(['是否截断', r.truncated ? '<span class="busy-tag busy-tag--warning is-plain">已截断</span>' : '否', !!r.truncated]);
+    rows.push(['是否命中脱敏', r.masked ? '<span class="busy-tag busy-tag--info">命中脱敏</span>' : '否', !!r.masked]);
+  }
+  rows.push(['耗时', fmtNum(r.cost) + ' ms']);
+  document.getElementById('detailDesc').innerHTML = rows.map(function (x) {
+    return '<tr><th class="page-desc-label">' + x[0] + '</th><td class="u-mono">' + (x[2] ? x[1] : esc(x[1])) + '</td></tr>';
+  }).join('');
+  /* 数据库查询 → 语句摘要；日志检索 → 检索条件摘要（字面量值均已替换为 ?） */
+  var summary = isDb(r) ? (r.sql || '') : (r.cond || '');
+  document.getElementById('detailSqlSection').hidden = !summary;
+  document.getElementById('detailSqlHead').textContent = isDb(r) ? '语句摘要' : '检索条件摘要';
+  document.getElementById('detailSql').textContent = summary;
+  document.getElementById('detailOverlay').hidden = false;
+}
+document.getElementById('auditBody').addEventListener('click', function (e) {
+  var b = e.target.closest('button[data-detail]');
+  if (b) openDetail(MOCK_RECORDS[parseInt(b.getAttribute('data-detail'), 10)]);
+});
+document.getElementById('btnDetailClose').addEventListener('click', function () { document.getElementById('detailOverlay').hidden = true; });
+document.getElementById('detailOverlay').addEventListener('click', function (e) { if (e.target === this) this.hidden = true; });
+
+/* ================= 查询 / 重置 ================= */
+function runQuery(btn) {
+  if (btn) setLoading(btn, true);
+  kpiLoading();
+  document.getElementById('auditEmpty').hidden = true;
+  document.getElementById('auditBody').innerHTML = '<tr><td colspan="15" class="u-center u-muted page-loading-cell"><span class="busy-button__loading page-inline-loading"></span>加载中…</td></tr>';
+  setTimeout(function () {
+    if (btn) setLoading(btn, false);
+    state.list = filterRecords();
+    state.page = 1;
+    renderKpi(state.list);
+    renderTable();
+    checkRange();
+  }, 600);
+}
+document.getElementById('btnQuery').addEventListener('click', function () {
+  if (this.disabled) return;
+  runQuery(this);
+});
+function resetFilters() {
+  document.getElementById('fRange').value = quickRange(7);
+  document.querySelectorAll('#rangeQuick .busy-radio-button').forEach(function (i) { i.classList.toggle('is-checked', i.getAttribute('data-value') === '7'); });
+  setSelect('fHolder', '');
+  document.getElementById('fToken').value = '';
+  setSelect('fDomain', '全部'); setSelect('fBizDomain', '全部'); setSelect('fService', '全部'); setSelect('fResult', '全部'); setSelect('fReason', '全部');
+  checkRange();
+}
+document.getElementById('btnReset').addEventListener('click', function () { resetFilters(); runQuery(null); });
+
+/* ================= 初始化 ================= */
+initSelects();
+bindQuick();
+resetFilters();
+state.list = filterRecords();
+renderKpi(state.list);
+renderTable();
+</script>
+</body>
+</html>

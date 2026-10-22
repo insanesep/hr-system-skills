@@ -1,0 +1,827 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>权限分配 · MCP接入管理 · 静态原型</title>
+<!--
+  MCP接入管理 · 权限分配（archive-list · 静态原型，Mock 数据，刷新即重置）
+  需求真源：references/web-ui.md「权限分配」；规则：references/permission-rules.md §2、references/audit-rules.md §6、references/devtool-rules.md §2.1
+  权限：路由与按钮 devhubMcpGrant（分配权限、批量分配、变更记录）；当前用户「李管理」为权限管理员
+  布局流：页头（标题 + 批量分配）→ 筛选卡 → 表格卡（批量条 → busy-table → 分页）
+  浮层：变更记录抽屉（tpl-timeline）、Message 轻提示
+  DOM 骨架依据：busyming-skills-design/templates/web/archive-list.html
+  URL 约定（Mock）：?resource=<资源名称> 由研发工具资源页「已分配人数」带入分配对象筛选；?fail=1 演示查询 / 变更记录加载失败
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/字号一律消费 var(--busy-*) */
+  .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }
+  .page-nav-links { display: flex; align-items: center; gap: 12px; white-space: nowrap; overflow-x: auto; }
+  .tpl-filter .busy-form-item { margin-bottom: 0; }
+  .page-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+  .page-overlay--top { z-index: 300; }
+  .page-overlay--drawer { justify-content: flex-end; align-items: stretch; padding: 0; border-radius: 0; }
+  .page-drawer { position: relative; width: 560px; max-width: 100%; height: 100%; min-height: 100vh; }
+  .page-drawer .busy-drawer__header { padding: 16px 20px; border-bottom: 1px solid var(--busy-border-color-lighter); }
+  .page-drawer .busy-drawer__body { position: relative; flex-direction: column; gap: 12px; padding: 20px; overflow: auto; }
+  .page-drawer .busy-loading-mask { z-index: 10; }
+  .page-drawer-head { display: flex; align-items: baseline; gap: 12px; }
+  .page-drawer-head .busy-drawer__title { flex: none; }
+  .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .page-message-host .busy-message { position: static; white-space: nowrap; max-width: none; }
+  .page-dropdown { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; }
+  .busy-select > .busy-input { cursor: pointer; }
+  .page-user-meta { margin-left: 8px; }
+  .page-tip-host { position: relative; display: inline-flex; align-items: center; }
+  .page-tip-host .is-disabled { pointer-events: none; }
+  .page-tip { display: none; position: absolute; bottom: calc(100% + 6px); left: 50%; transform: translateX(-50%); z-index: 50; white-space: nowrap; max-width: none; }
+  .page-tip--end { left: auto; right: 0; transform: none; }
+  .page-tip-host.has-tip:hover .page-tip { display: inline-block; }
+  .page-table-wrap { overflow-x: auto; }
+  .page-table-wrap .busy-loading-mask { z-index: 10; }
+  .page-table-wrap .busy-table th, .page-table-wrap .busy-table td { white-space: nowrap; padding-left: 10px; padding-right: 10px; }
+  .page-table-wrap .chip-group, .page-table-wrap .tpl-row-actions { flex-wrap: nowrap; }
+  .page-table-wrap .tpl-row-actions .busy-button { margin-left: 0; }
+  .page-col-check { width: 40px; }
+  .page-row-selected td { background: var(--busy-color-primary-bg); }
+  .page-cell-stack { display: flex; flex-direction: column; gap: 2px; }
+  .page-cell-line { display: inline-flex; align-items: center; gap: 6px; }
+  .page-timeline-title { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .page-timeline-reason { white-space: normal; }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 平台能力 / <a href="token-list.html">MCP接入管理</a> / <b>权限分配</b></span>
+  <span class="page-nav-links">
+    <a class="tpl-nav__crumb" href="token-list.html">我的令牌</a>
+    <a class="tpl-nav__crumb" href="token-form.html">生成令牌</a>
+    <a class="tpl-nav__crumb" href="token-detail.html">令牌详情</a>
+    <a class="tpl-nav__crumb" href="grant-list.html" aria-current="page"><b>权限分配</b></a>
+    <a class="tpl-nav__crumb" href="grant-form.html">分配权限</a>
+    <a class="tpl-nav__crumb" href="service-list.html">MCP 服务目录</a>
+    <a class="tpl-nav__crumb" href="devtool-resources.html">研发工具资源</a>
+    <a class="tpl-nav__crumb" href="datasource-list.html">数据源管理</a>
+    <a class="tpl-nav__crumb" href="datasource-detail.html">数据源详情</a>
+    <a class="tpl-nav__crumb" href="call-audit.html">调用审计</a>
+  </span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">李管理（Mock）</span>
+</nav>
+
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">权限分配</h1>
+      <div class="tpl-page-subtitle">Mock 数据，刷新即重置</div>
+    </div>
+    <div class="tpl-page-head__actions">
+      <span class="page-tip-host has-tip" id="batchHeadHost">
+        <button class="busy-button busy-button--primary is-disabled" type="button" id="btnBatchHead" disabled><span>批量分配</span></button>
+        <span class="busy-tooltip page-tip page-tip--end" role="tooltip" id="batchHeadTip">请先勾选人员</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 筛选卡 -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">人员</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fUser" data-value="">
+            <div class="busy-input"><input readonly placeholder="请选择人员"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" id="fUserList" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">部门</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fDept" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" hidden>
+              <div class="busy-select-dropdown__item is-selected" data-value="">全部</div>
+              <div class="busy-select-dropdown__item" data-value="数字化中心">数字化中心</div>
+              <div class="busy-select-dropdown__item" data-value="创新业务部">创新业务部</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">领域</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fArea" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" hidden>
+              <div class="busy-select-dropdown__item is-selected" data-value="">全部</div>
+              <div class="busy-select-dropdown__item" data-value="biz">业务系统</div>
+              <div class="busy-select-dropdown__item" data-value="dev">研发工具</div>
+              <div class="busy-select-dropdown__item" data-value="db">数据库</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">业务域</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fBizDomain" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" id="fBizDomainList" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">分配对象</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="fObject" placeholder="服务 / 资源 / 库表名称"></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">分配状态</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fStatus" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" hidden>
+              <div class="busy-select-dropdown__item is-selected" data-value="">全部</div>
+              <div class="busy-select-dropdown__item" data-value="assigned">已分配</div>
+              <div class="busy-select-dropdown__item" data-value="none">未分配</div>
+              <div class="busy-select-dropdown__item" data-value="expiring">7 天内到期</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="tpl-filter__actions">
+        <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查询</span></button>
+        <button class="busy-button" type="button" id="btnReset"><span>重置</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表格卡 -->
+  <div class="tpl-panel">
+    <div class="tpl-batch-bar" id="batchBar" hidden>
+      <span class="tpl-batch-bar__info">已选 <strong id="batchCount">0</strong> 人</span>
+      <div class="tpl-batch-bar__actions">
+        <span class="page-tip-host" id="batchBarHost">
+          <button class="busy-button busy-button--small busy-button--primary" type="button" id="btnBatchBar"><span>批量分配</span></button>
+          <span class="busy-tooltip page-tip page-tip--end" role="tooltip">不能为自己分配权限</span>
+        </span>
+        <button class="busy-button busy-button--small" type="button" id="btnClear"><span>清空</span></button>
+      </div>
+    </div>
+
+    <div class="page-table-wrap busy-loading-parent--relative">
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th class="page-col-check"><label class="busy-checkbox" id="checkAll" aria-label="全选"><span class="busy-checkbox__input"><span class="busy-checkbox__inner"></span></span></label></th>
+            <th>人员</th>
+            <th>部门</th>
+            <th>岗位</th>
+            <th>业务系统</th>
+            <th>研发工具</th>
+            <th>数据库</th>
+            <th>最近到期</th>
+            <th class="u-center">生效令牌数</th>
+            <th>最近调整</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="grantTbody"></tbody>
+      </table>
+      <div class="busy-empty" id="grantEmpty" hidden>
+        <div class="busy-empty__image"></div>
+        <div class="busy-empty__description">暂无符合条件的人员</div>
+      </div>
+      <div class="busy-loading-mask" id="grantLoading" hidden>
+        <div class="busy-loading-spinner"><svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg></div>
+      </div>
+    </div>
+    <div class="tpl-table-foot">
+      <div class="busy-pagination">
+        <span class="u-muted">共 <span id="grantTotal">0</span> 条</span>
+        <button type="button" disabled>‹</button>
+        <button type="button" class="is-active">1</button>
+        <button type="button" disabled>›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 变更记录抽屉 -->
+<div class="page-overlay page-overlay--drawer busy-overlay-demo" id="logOverlay" hidden>
+  <div class="busy-drawer page-drawer" role="dialog" aria-modal="true" aria-labelledby="logTitle">
+    <div class="busy-drawer__header">
+      <div class="page-drawer-head">
+        <span class="busy-drawer__title" id="logTitle">变更记录</span>
+        <span class="u-sub" id="logPerson"></span>
+      </div>
+      <button class="busy-drawer__close-btn" type="button" id="logClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="busy-drawer__body">
+      <div class="tpl-timeline" id="logTimeline"></div>
+      <div class="busy-empty" id="logEmpty" hidden>
+        <div class="busy-empty__image"></div>
+        <div class="busy-empty__description">暂无数据</div>
+      </div>
+      <div class="busy-loading-mask" id="logLoading" hidden>
+        <div class="busy-loading-spinner"><svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="page-message-host" id="messageHost" aria-live="polite"></div>
+
+<script>
+/* ===================== Mock 数据（刷新即重置） ===================== */
+var TODAY = '2026-10-22';
+var SELF_ID = 'MM10008';           /* 当前登录人：李管理（权限管理员） */
+var QS = location.search;
+var MOCK_FAIL = /[?&]fail=1(&|$)/.test(QS);
+
+/* 业务域枚举（devtool-rules.md §2.1） */
+var BIZ_DOMAINS = ['商品', '采购', '营运', '门店', '客服', '系统', '库存', '要货', '产研', '公共'];
+
+/* 业务系统：服务 → 工具（仅启用工具；type: query / write） */
+var BIZ = [
+  { id: 'goods', name: '商品中心', tools: [
+    { id: 'goods.archive', name: '查询商品档案', type: 'query' },
+    { id: 'goods.plan', name: '查询商品计划', type: 'query' },
+    { id: 'goods.tag', name: '更新商品标签', type: 'write' }
+  ] },
+  { id: 'store', name: '门店服务', tools: [
+    { id: 'store.archive', name: '查询门店档案', type: 'query' },
+    { id: 'store.data', name: '查询门店数据', type: 'query' }
+  ] },
+  { id: 'ticket', name: '客服工单', tools: [
+    { id: 'ticket.query', name: '查询工单', type: 'query' },
+    { id: 'ticket.note', name: '创建工单备注', type: 'write' }
+  ] }
+];
+/* 研发工具：已归属且开放的资源 */
+var DEV = {
+  sls: { label: 'SLS 日志', grain: '日志库', resources: [
+    { id: 'mmhm-store-prod/store-gateway-access', name: 'store-gateway-access', project: 'mmhm-store-prod', domain: '门店', env: '生产', region: 'cn-hangzhou' },
+    { id: 'mmhm-store-prod/store-service-app', name: 'store-service-app', project: 'mmhm-store-prod', domain: '门店', env: '生产', region: 'cn-hangzhou' },
+    { id: 'mmhm-store-test/store-service-app', name: 'store-service-app', project: 'mmhm-store-test', domain: '门店', env: '测试', region: 'cn-hangzhou' },
+    { id: 'mmhm-requirement-prod/order-app', name: 'order-app', project: 'mmhm-requirement-prod', domain: '要货', env: '生产', region: 'cn-hangzhou' },
+    { id: 'mmhm-product-test/product-app', name: 'product-app', project: 'mmhm-product-test', domain: '商品', env: '测试', region: 'cn-hangzhou' },
+    { id: 'mmhm-gateway-prod/gateway-access', name: 'gateway-access', project: 'mmhm-gateway-prod', domain: '公共', env: '生产', region: 'cn-hangzhou' }
+  ] },
+  arms: { label: 'ARMS 应用监控', grain: '应用', resources: [
+    { id: 'store-service', name: 'store-service', domain: '门店', env: '生产', region: 'cn-hangzhou' },
+    { id: 'store-service-test', name: 'store-service-test', domain: '门店', env: '测试', region: 'cn-hangzhou' },
+    { id: 'requirement-order', name: 'requirement-order', domain: '要货', env: '生产', region: 'cn-hangzhou' },
+    { id: 'product-center', name: 'product-center', domain: '商品', env: '生产', region: 'cn-hangzhou' },
+    { id: 'product-center-test', name: 'product-center-test', domain: '商品', env: '测试', region: 'cn-hangzhou' },
+    { id: 'devhub-server', name: 'devhub-server', domain: '产研', env: '生产', region: 'cn-hangzhou' }
+  ] }
+};
+/* 数据库：实例 → 库 → 表（仅已开放库表） */
+var DBS = [
+  { id: 'devhub-prod', type: 'MySQL', env: '生产', domain: '产研', dbs: [{ name: 'devhub', tables: ['rnd_report', 'mcp_call_log', 'feature_schedule'] }] },
+  { id: 'snackingdom-ro', type: 'MySQL', env: '生产', domain: '门店', dbs: [{ name: 'snackingdom', tables: ['store', 'store_order'] }] },
+  { id: 'lemeng-wms-test', type: 'MySQL', env: '测试', domain: '库存', dbs: [{ name: 'lemeng_wms', tables: ['stock', 'stock_flow'] }] }
+];
+
+var PEOPLE = [
+  { id: 'MM10231', name: '张研发', dept: '数字化中心', post: '研发工程师', tokens: 3, adjTime: '2026-10-20 15:32', adjBy: '李管理' },
+  { id: 'MM10318', name: '李产品', dept: '数字化中心', post: '产品经理', tokens: 1, adjTime: '2026-10-15 10:20', adjBy: '李管理' },
+  { id: 'MM10102', name: '王运维', dept: '数字化中心', post: '运维工程师', tokens: 2, adjTime: '2026-10-18 09:12', adjBy: '李管理' },
+  { id: 'MM20417', name: '赵实施', dept: '创新业务部', post: '实施顾问', tokens: 1, adjTime: '2026-10-11 10:00', adjBy: '李管理' },
+  { id: 'MM10466', name: '陈测试', dept: '数字化中心', post: '测试工程师', tokens: 0, adjTime: '2026-10-16 17:45', adjBy: '李管理' },
+  { id: 'MM20533', name: '刘产品', dept: '创新业务部', post: '产品经理', tokens: 0, adjTime: '2026-10-01 00:00', adjBy: '系统' },
+  { id: 'MM10008', name: '李管理', dept: '数字化中心', post: '研发效能经理', tokens: 1, adjTime: '2026-09-12 14:05', adjBy: '孙管理' }
+];
+
+/* 当前权限分配项。k 编码：biz|service|服务 / biz|tool|工具 / dev|domain|sls|业务域|环境限定 / dev|res|arms|资源 / db|instance|实例 / db|db|实例/库 / db|table|实例/库/表 */
+var GRANTS = {
+  MM10231: [
+    { k: 'biz|service|goods' },
+    { k: 'biz|service|store' },
+    { k: 'biz|tool|goods.tag', exp: '2026-10-27', reason: '商品标签批量修正，需临时写入权限' },
+    { k: 'dev|domain|sls|门店|全部环境', reason: '门店域值班，需检索生产与测试日志' },
+    { k: 'dev|domain|sls|要货|仅生产', reason: '要货链路线上问题排查' },
+    { k: 'dev|domain|sls|公共|仅生产', reason: '网关访问日志排查' },
+    { k: 'dev|domain|arms|门店|全部环境', reason: '门店域值班，需查看调用链' },
+    { k: 'dev|domain|arms|产研|仅生产', reason: '负责 DevHub 服务端线上问题排查' },
+    { k: 'db|db|devhub-prod/devhub', reason: '研发报告数据核对' }
+  ],
+  MM10318: [
+    { k: 'biz|service|goods' },
+    { k: 'dev|domain|sls|门店|仅非生产', exp: '2026-12-31' },
+    { k: 'dev|domain|arms|商品|全部环境', reason: '商品计划问题排查需查看生产调用链' },
+    { k: 'db|db|lemeng-wms-test/lemeng_wms' }
+  ],
+  MM10102: [
+    { k: 'dev|domain|sls|门店|仅生产', exp: '2026-11-30', reason: '生产环境值班巡检' },
+    { k: 'dev|domain|sls|公共|仅生产', reason: '网关与中间件日志巡检' },
+    { k: 'dev|domain|arms|门店|仅生产', exp: '2026-11-30', reason: '生产环境值班巡检' },
+    { k: 'dev|domain|arms|要货|仅生产', reason: '要货链路性能巡检' },
+    { k: 'dev|res|sls|mmhm-requirement-prod/order-app', reason: '要货订单异常排查' },
+    { k: 'db|instance|devhub-prod', reason: 'DevHub 数据库容量与慢查询巡检' },
+    { k: 'db|table|snackingdom-ro/snackingdom/store', exp: '2026-11-30', reason: '门店档案数据巡检' }
+  ],
+  MM20417: [
+    { k: 'biz|service|store', exp: '2026-10-25' },
+    { k: 'biz|service|ticket' },
+    { k: 'biz|tool|ticket.note', exp: '2026-12-31', reason: '实施期间协助门店补充工单备注' },
+    { k: 'dev|res|arms|store-service-test' },
+    { k: 'db|instance|snackingdom-ro', exp: '2026-10-28', reason: '新店上线数据核对' }
+  ],
+  MM10466: [
+    { k: 'biz|tool|store.archive' },
+    { k: 'dev|domain|sls|商品|仅非生产', exp: '2026-11-15' },
+    { k: 'dev|domain|arms|商品|仅非生产', exp: '2026-11-15' },
+    { k: 'db|instance|lemeng-wms-test' }
+  ],
+  MM20533: [],
+  MM10008: [
+    { k: 'biz|service|goods' },
+    { k: 'db|db|devhub-prod/devhub', reason: '研发效能数据核对' }
+  ]
+};
+
+/* 授权变更记录（audit-rules.md §6；倒序） */
+var CHANGES = {
+  MM10231: [
+    { t: '2026-10-20 15:32', by: '李管理', type: '分配', k: 'biz|tool|goods.tag', exp: '2026-10-27', reason: '商品标签批量修正，需临时写入权限' },
+    { t: '2026-10-20 15:32', by: '李管理', type: '分配', k: 'dev|domain|arms|产研|仅生产', exp: null, reason: '负责 DevHub 服务端线上问题排查' },
+    { t: '2026-09-18 11:05', by: '李管理', type: '收回', k: 'db|db|snackingdom-ro/snackingdom' },
+    { t: '2026-09-01 09:30', by: '李管理', type: '分配', k: 'dev|domain|sls|门店|全部环境', exp: null, reason: '门店域值班，需检索生产与测试日志' },
+    { t: '2026-09-01 09:30', by: '李管理', type: '分配', k: 'dev|domain|arms|门店|全部环境', exp: null, reason: '门店域值班，需查看调用链' },
+    { t: '2026-09-01 09:30', by: '李管理', type: '分配', k: 'dev|domain|sls|要货|仅生产', exp: null, reason: '要货链路线上问题排查' },
+    { t: '2026-09-01 09:30', by: '李管理', type: '分配', k: 'dev|domain|sls|公共|仅生产', exp: null, reason: '网关访问日志排查' },
+    { t: '2026-08-20 14:00', by: '李管理', type: '分配', k: 'biz|service|goods', exp: null },
+    { t: '2026-08-20 14:00', by: '李管理', type: '分配', k: 'biz|service|store', exp: null },
+    { t: '2026-08-20 14:00', by: '李管理', type: '分配', k: 'db|db|devhub-prod/devhub', exp: null, reason: '研发报告数据核对' },
+    { t: '2026-08-20 14:00', by: '李管理', type: '分配', k: 'db|db|snackingdom-ro/snackingdom', exp: null, reason: '门店订单问题排查' }
+  ],
+  MM10318: [
+    { t: '2026-10-15 10:20', by: '李管理', type: '分配', k: 'dev|domain|arms|商品|全部环境', exp: null, reason: '商品计划问题排查需查看生产调用链' },
+    { t: '2026-10-15 10:20', by: '李管理', type: '分配', k: 'dev|domain|sls|门店|仅非生产', exp: '2026-12-31' },
+    { t: '2026-10-10 18:00', by: '李管理', type: '收回', k: 'biz|service|ticket' },
+    { t: '2026-09-12 16:40', by: '李管理', type: '分配', k: 'biz|service|goods', exp: null },
+    { t: '2026-09-12 16:40', by: '李管理', type: '分配', k: 'biz|service|ticket', exp: null },
+    { t: '2026-09-12 16:40', by: '李管理', type: '分配', k: 'db|db|lemeng-wms-test/lemeng_wms', exp: null }
+  ],
+  MM10102: [
+    { t: '2026-10-18 09:12', by: '李管理', type: '分配', k: 'db|table|snackingdom-ro/snackingdom/store', exp: '2026-11-30', reason: '门店档案数据巡检' },
+    { t: '2026-10-08 00:00', by: '系统', type: '到期收回', k: 'dev|domain|sls|要货|全部环境' },
+    { t: '2026-09-05 10:30', by: '李管理', type: '分配', k: 'dev|domain|sls|门店|仅生产', exp: '2026-11-30', reason: '生产环境值班巡检' },
+    { t: '2026-09-05 10:30', by: '李管理', type: '分配', k: 'dev|domain|arms|门店|仅生产', exp: '2026-11-30', reason: '生产环境值班巡检' },
+    { t: '2026-09-05 10:30', by: '李管理', type: '分配', k: 'dev|domain|sls|公共|仅生产', exp: null, reason: '网关与中间件日志巡检' },
+    { t: '2026-09-05 10:30', by: '李管理', type: '分配', k: 'dev|domain|arms|要货|仅生产', exp: null, reason: '要货链路性能巡检' },
+    { t: '2026-09-05 10:30', by: '李管理', type: '分配', k: 'dev|res|sls|mmhm-requirement-prod/order-app', exp: null, reason: '要货订单异常排查' },
+    { t: '2026-09-05 10:30', by: '李管理', type: '分配', k: 'db|instance|devhub-prod', exp: null, reason: 'DevHub 数据库容量与慢查询巡检' },
+    { t: '2026-09-01 09:00', by: '李管理', type: '分配', k: 'dev|domain|sls|要货|全部环境', exp: '2026-10-07', reason: '要货系统升级期间临时排查' }
+  ],
+  MM20417: [
+    { t: '2026-10-11 10:00', by: '李管理', type: '分配', k: 'biz|service|store', exp: '2026-10-25' },
+    { t: '2026-10-11 10:00', by: '李管理', type: '分配', k: 'db|instance|snackingdom-ro', exp: '2026-10-28', reason: '新店上线数据核对' },
+    { t: '2026-09-05 15:20', by: '李管理', type: '分配', k: 'biz|service|ticket', exp: null },
+    { t: '2026-09-05 15:20', by: '李管理', type: '分配', k: 'biz|tool|ticket.note', exp: '2026-12-31', reason: '实施期间协助门店补充工单备注' },
+    { t: '2026-09-05 15:20', by: '李管理', type: '分配', k: 'dev|res|arms|store-service-test', exp: null },
+    { t: '2026-08-31 18:00', by: '系统', type: '停用收回', k: 'biz|service|store' },
+    { t: '2026-08-31 18:00', by: '系统', type: '停用收回', k: 'db|instance|snackingdom-ro' },
+    { t: '2026-07-15 09:40', by: '李管理', type: '分配', k: 'biz|service|store', exp: null },
+    { t: '2026-07-15 09:40', by: '李管理', type: '分配', k: 'db|instance|snackingdom-ro', exp: null, reason: '门店实施数据核对' }
+  ],
+  MM10466: [
+    { t: '2026-10-16 17:45', by: '李管理', type: '分配', k: 'dev|domain|sls|商品|仅非生产', exp: '2026-11-15' },
+    { t: '2026-10-16 17:45', by: '李管理', type: '分配', k: 'dev|domain|arms|商品|仅非生产', exp: '2026-11-15' },
+    { t: '2026-10-16 17:45', by: '李管理', type: '分配', k: 'db|instance|lemeng-wms-test', exp: null },
+    { t: '2026-10-16 17:45', by: '李管理', type: '分配', k: 'biz|tool|store.archive', exp: null }
+  ],
+  MM20533: [
+    { t: '2026-10-01 00:00', by: '系统', type: '到期收回', k: 'biz|service|goods' },
+    { t: '2026-10-01 00:00', by: '系统', type: '到期收回', k: 'dev|domain|sls|商品|仅非生产' },
+    { t: '2026-09-01 10:00', by: '李管理', type: '分配', k: 'biz|service|goods', exp: '2026-09-30' },
+    { t: '2026-09-01 10:00', by: '李管理', type: '分配', k: 'dev|domain|sls|商品|仅非生产', exp: '2026-09-30' }
+  ],
+  MM10008: [
+    { t: '2026-09-12 14:05', by: '孙管理', type: '分配', k: 'biz|service|goods', exp: null },
+    { t: '2026-09-12 14:05', by: '孙管理', type: '分配', k: 'db|db|devhub-prod/devhub', exp: null, reason: '研发效能数据核对' }
+  ]
+};
+
+/* ===================== 通用工具 ===================== */
+function $(id) { return document.getElementById(id); }
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+function toDate(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+function daysFromToday(s) { return Math.round((toDate(s) - toDate(TODAY)) / 86400000); }
+function findPerson(id) { return PEOPLE.filter(function (p) { return p.id === id; })[0]; }
+
+/* Message 轻提示 */
+function toast(text, type) {
+  type = type || 'success';
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="busy-message__icon busy-message-icon--' + type + '">' + (type === 'error' ? '✕' : '✓') + '</span><span class="busy-message__content"></span>';
+  el.querySelector('.busy-message__content').textContent = text;
+  $('messageHost').appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+function setBtnLoading(btn, on) {
+  if (on) {
+    btn.setAttribute('data-label', btn.innerHTML);
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="busy-button__loading"></span><span>' + esc(btn.textContent.trim()) + '</span>';
+  } else {
+    if (btn.hasAttribute('data-label')) btn.innerHTML = btn.getAttribute('data-label');
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+  }
+}
+
+/* ===================== 分配项解析 ===================== */
+var AREA_LABEL = { biz: '业务系统', dev: '研发工具', db: '数据库' };
+var GRAIN_LABEL = { service: '服务', tool: '工具', domain: '业务域', instance: '实例', db: '库', table: '表' };
+function bizService(id) { return BIZ.filter(function (s) { return s.id === id; })[0]; }
+function bizTool(id) {
+  var r = null;
+  BIZ.forEach(function (s) { s.tools.forEach(function (t) { if (t.id === id) r = { svc: s, tool: t }; }); });
+  return r;
+}
+function devRes(type, id) { return DEV[type].resources.filter(function (r) { return r.id === id; })[0]; }
+function dbInst(id) { return DBS.filter(function (i) { return i.id === id; })[0]; }
+function parseKey(k) {
+  var p = k.split('|');
+  if (p[0] === 'biz') {
+    if (p[1] === 'service') return { area: 'biz', kind: 'service', svc: bizService(p[2]) };
+    var bt = bizTool(p[2]);
+    return { area: 'biz', kind: 'tool', svc: bt.svc, tool: bt.tool };
+  }
+  if (p[0] === 'dev') {
+    if (p[1] === 'domain') return { area: 'dev', kind: 'domain', type: p[2], biz: p[3], env: p[4] };
+    return { area: 'dev', kind: 'res', type: p[2], res: devRes(p[2], p[3]) };
+  }
+  var path = p[2].split('/');
+  return { area: 'db', kind: p[1], inst: dbInst(path[0]), db: path[1] || '', table: path[2] || '' };
+}
+function envCovers(limit, env) {
+  if (limit === '全部环境') return true;
+  if (limit === '仅生产') return env === '生产';
+  return env !== '生产';
+}
+function domainResources(type, biz, limit) {
+  return DEV[type].resources.filter(function (r) { return r.domain === biz && (!limit || envCovers(limit, r.env)); });
+}
+function objectLabel(g) {
+  if (g.area === 'biz') return g.kind === 'service' ? g.svc.name : g.svc.name + ' · ' + g.tool.name;
+  if (g.area === 'dev') {
+    if (g.kind === 'domain') return DEV[g.type].label + ' · ' + g.biz;
+    return DEV[g.type].label + ' · ' + g.res.id;
+  }
+  return [g.inst.id, g.db, g.table].filter(Boolean).join(' / ');
+}
+function grainLabel(g) { return g.kind === 'res' ? DEV[g.type].grain : GRAIN_LABEL[g.kind]; }
+/* 对象描述：领域 + 对象名称 + 粒度 + 环境限定 */
+function describe(k) {
+  var g = parseKey(k);
+  return AREA_LABEL[g.area] + ' · ' + objectLabel(g) + ' · ' + grainLabel(g) + (g.kind === 'domain' ? ' · ' + g.env : '');
+}
+/* 分配对象关键词可命中的名称（含覆盖的下级对象） */
+function searchText(g) {
+  var names = [objectLabel(g)];
+  if (g.area === 'biz') {
+    if (g.kind === 'service') g.svc.tools.forEach(function (t) { if (t.type === 'query') names.push(t.name); });
+  } else if (g.area === 'dev') {
+    var list = g.kind === 'domain' ? domainResources(g.type, g.biz, g.env) : [g.res];
+    list.forEach(function (r) { names.push(r.name, r.id); });
+  } else {
+    g.inst.dbs.forEach(function (d) {
+      if (g.db && d.name !== g.db) return;
+      names.push(d.name);
+      d.tables.forEach(function (t) { if (!g.table || t === g.table) names.push(t); });
+    });
+  }
+  return names.join('\n').toLowerCase();
+}
+function bizDomainOf(g) {
+  if (g.area === 'dev') return g.kind === 'domain' ? g.biz : g.res.domain;
+  if (g.area === 'db') return g.inst.domain;
+  return '';
+}
+
+/* ===================== 列表单元格 ===================== */
+function grantsOf(id) {
+  return (GRANTS[id] || []).map(function (x) { var g = parseKey(x.k); g.k = x.k; g.exp = x.exp || null; return g; });
+}
+function bizCell(gs) {
+  var svc = {}, tools = {}, writes = false;
+  gs.forEach(function (g) {
+    if (g.area !== 'biz') return;
+    svc[g.svc.id] = true;
+    if (g.kind === 'service') g.svc.tools.forEach(function (t) { if (t.type === 'query') tools[t.id] = true; });
+    else { tools[g.tool.id] = true; if (g.tool.type === 'write') writes = true; }
+  });
+  var n = Object.keys(svc).length;
+  if (!n) return '<span class="u-muted">—</span>';
+  return '<span class="page-cell-line">' + n + ' 个服务 / ' + Object.keys(tools).length + ' 个工具' +
+    (writes ? '<span class="busy-tag busy-tag--warning busy-tag--small">写入</span>' : '') + '</span>';
+}
+function devCell(gs) {
+  var tags = [], seen = {}, resCount = 0;
+  gs.forEach(function (g) {
+    if (g.area !== 'dev') return;
+    if (g.kind === 'res') { resCount++; return; }
+    var label = g.biz + '·' + g.env;
+    if (!seen[label]) { seen[label] = true; tags.push({ label: label, order: BIZ_DOMAINS.indexOf(g.biz) }); }
+  });
+  if (!tags.length && !resCount) return '<span class="u-muted">—</span>';
+  tags.sort(function (a, b) { return a.order - b.order; });
+  var shown = tags.slice(0, 3), rest = tags.slice(3);
+  var html = shown.map(function (t) { return '<span class="busy-tag busy-tag--small">' + esc(t.label) + '</span>'; }).join('');
+  if (rest.length) {
+    html += '<span class="page-tip-host has-tip"><span class="busy-tag busy-tag--info busy-tag--small">+' + rest.length + '</span>' +
+      '<span class="busy-tooltip page-tip" role="tooltip">' + esc(rest.map(function (t) { return t.label; }).join('、')) + '</span></span>';
+  }
+  if (resCount) html += '<span class="busy-tag busy-tag--info busy-tag--small">+' + resCount + ' 个资源</span>';
+  return '<span class="chip-group">' + html + '</span>';
+}
+function dbCell(gs) {
+  var list = gs.filter(function (g) { return g.area === 'db'; });
+  if (!list.length) return '<span class="u-muted">—</span>';
+  var prod = list.some(function (g) { return g.inst.env === '生产'; });
+  var cnt = { instance: 0, db: 0, table: 0 };
+  list.forEach(function (g) { if (cnt[g.kind] !== undefined) cnt[g.kind]++; });
+  var parts = [];
+  if (cnt.instance) parts.push('实例 ' + cnt.instance);
+  if (cnt.db) parts.push('库 ' + cnt.db);
+  if (cnt.table) parts.push('表 ' + cnt.table);
+  return '<span class="page-cell-line">' + parts.join(' · ') +
+    (prod ? '<span class="busy-tag busy-tag--danger busy-tag--small">生产</span>' : '') + '</span>';
+}
+function nearestExpire(gs) {
+  var dates = gs.map(function (g) { return g.exp; }).filter(Boolean).sort();
+  return dates[0] || null;
+}
+function expireCell(gs) {
+  if (!gs.length) return '<span class="u-muted">—</span>';
+  var d = nearestExpire(gs);
+  if (!d) return '<span class="u-muted">长期</span>';
+  var soon = daysFromToday(d) <= 7;
+  return '<span class="u-mono' + (soon ? ' u-warning' : '') + '">' + d + '</span>';
+}
+function isExpiringSoon(gs) {
+  return gs.some(function (g) { if (!g.exp) return false; var n = daysFromToday(g.exp); return n >= 0 && n <= 7; });
+}
+
+/* ===================== 筛选 / 渲染 ===================== */
+var selected = {};
+var applied = { user: '', dept: '', area: '', bizDomain: '', object: '', status: '' };
+
+function filteredPeople() {
+  var f = applied;
+  var kw = f.object.toLowerCase();
+  return PEOPLE.filter(function (p) {
+    var gs = grantsOf(p.id);
+    if (f.user && p.id !== f.user) return false;
+    if (f.dept && p.dept !== f.dept) return false;
+    if (f.area && !gs.some(function (g) { return g.area === f.area; })) return false;
+    if (f.bizDomain && !gs.some(function (g) { return bizDomainOf(g) === f.bizDomain; })) return false;
+    if (kw && !gs.some(function (g) { return searchText(g).indexOf(kw) >= 0; })) return false;
+    if (f.status === 'assigned' && !gs.length) return false;
+    if (f.status === 'none' && gs.length) return false;
+    if (f.status === 'expiring' && !isExpiringSoon(gs)) return false;
+    return true;
+  });
+}
+function checkboxHtml(checked, indeterminate, attrs) {
+  return '<label class="busy-checkbox' + (checked ? ' is-checked' : '') + '" ' + attrs + '>' +
+    '<span class="busy-checkbox__input' + (indeterminate ? ' is-indeterminate' : '') + '"><span class="busy-checkbox__inner"></span></span></label>';
+}
+function opsHtml(p) {
+  var assign = p.id === SELF_ID
+    ? '<span class="page-tip-host has-tip"><button class="busy-button is-link is-disabled" type="button" disabled><span>分配权限</span></button>' +
+      '<span class="busy-tooltip page-tip" role="tooltip">不能为自己分配权限</span></span>'
+    : '<button class="busy-button is-link" type="button" data-act="assign" data-id="' + p.id + '"><span>分配权限</span></button>';
+  return '<div class="tpl-row-actions">' + assign +
+    '<button class="busy-button is-link" type="button" data-act="log" data-id="' + p.id + '"><span>变更记录</span></button></div>';
+}
+function rowHtml(p) {
+  var gs = grantsOf(p.id);
+  var on = !!selected[p.id];
+  return '<tr' + (on ? ' class="page-row-selected"' : '') + '>' +
+    '<td>' + checkboxHtml(on, false, 'data-check="' + p.id + '" aria-label="勾选' + esc(p.name) + '"') + '</td>' +
+    '<td><div class="page-cell-stack"><span>' + esc(p.name) + '</span><span class="u-sub u-mono">' + p.id + '</span></div></td>' +
+    '<td>' + esc(p.dept) + '</td>' +
+    '<td>' + esc(p.post) + '</td>' +
+    '<td>' + bizCell(gs) + '</td>' +
+    '<td>' + devCell(gs) + '</td>' +
+    '<td>' + dbCell(gs) + '</td>' +
+    '<td>' + expireCell(gs) + '</td>' +
+    '<td class="u-center u-mono">' + p.tokens + '</td>' +
+    '<td><div class="page-cell-stack"><span class="u-mono">' + p.adjTime + '</span><span class="u-sub">' + esc(p.adjBy) + '</span></div></td>' +
+    '<td>' + opsHtml(p) + '</td>' +
+    '</tr>';
+}
+var visible = [];
+function renderRows() {
+  visible = filteredPeople();
+  /* 仅保留当前结果中的勾选 */
+  var ids = visible.map(function (p) { return p.id; });
+  Object.keys(selected).forEach(function (id) { if (ids.indexOf(id) < 0) delete selected[id]; });
+  $('grantTbody').innerHTML = visible.map(rowHtml).join('');
+  $('grantTotal').textContent = visible.length;
+  $('grantEmpty').hidden = visible.length > 0;
+  renderSelection();
+}
+function renderSelection() {
+  var ids = Object.keys(selected);
+  var n = ids.length;
+  var hasSelf = !!selected[SELF_ID];
+  /* 表头全选 */
+  var all = visible.length > 0 && visible.every(function (p) { return selected[p.id]; });
+  var some = !all && visible.some(function (p) { return selected[p.id]; });
+  $('checkAll').classList.toggle('is-checked', all);
+  $('checkAll').querySelector('.busy-checkbox__input').classList.toggle('is-indeterminate', some);
+  /* 行勾选态 */
+  document.querySelectorAll('#grantTbody [data-check]').forEach(function (cb) {
+    var on = !!selected[cb.getAttribute('data-check')];
+    cb.classList.toggle('is-checked', on);
+    cb.closest('tr').classList.toggle('page-row-selected', on);
+  });
+  /* 页头批量分配 */
+  var headDisabled = n === 0 || hasSelf;
+  var headBtn = $('btnBatchHead');
+  headBtn.disabled = headDisabled;
+  headBtn.classList.toggle('is-disabled', headDisabled);
+  $('batchHeadHost').classList.toggle('has-tip', headDisabled);
+  $('batchHeadTip').textContent = n === 0 ? '请先勾选人员' : '不能为自己分配权限';
+  /* 批量条 */
+  $('batchBar').hidden = n === 0;
+  $('batchCount').textContent = n;
+  var barBtn = $('btnBatchBar');
+  barBtn.disabled = hasSelf;
+  barBtn.classList.toggle('is-disabled', hasSelf);
+  $('batchBarHost').classList.toggle('has-tip', hasSelf);
+}
+function goBatch() {
+  var ids = PEOPLE.map(function (p) { return p.id; }).filter(function (id) { return selected[id]; });
+  if (!ids.length || selected[SELF_ID]) return;
+  location.href = 'grant-form.html?mode=batch&users=' + ids.join(',');
+}
+$('btnBatchHead').addEventListener('click', goBatch);
+$('btnBatchBar').addEventListener('click', goBatch);
+$('btnClear').addEventListener('click', function () { selected = {}; renderSelection(); });
+$('checkAll').addEventListener('click', function (e) {
+  e.preventDefault();
+  var all = visible.length > 0 && visible.every(function (p) { return selected[p.id]; });
+  visible.forEach(function (p) { if (all) delete selected[p.id]; else selected[p.id] = true; });
+  renderSelection();
+});
+$('grantTbody').addEventListener('click', function (e) {
+  var cb = e.target.closest('[data-check]');
+  if (cb) {
+    e.preventDefault();
+    var id = cb.getAttribute('data-check');
+    if (selected[id]) delete selected[id]; else selected[id] = true;
+    renderSelection();
+    return;
+  }
+  var btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  var pid = btn.getAttribute('data-id');
+  if (btn.getAttribute('data-act') === 'assign') {
+    if (pid === SELF_ID) return;
+    location.href = 'grant-form.html?user=' + pid;
+  }
+  if (btn.getAttribute('data-act') === 'log') openLog(pid);
+});
+
+/* ===================== 下拉选择（单选） ===================== */
+function closeAllDropdowns(except) {
+  document.querySelectorAll('.page-dropdown').forEach(function (d) { if (d !== except) d.hidden = true; });
+}
+document.addEventListener('click', function () { closeAllDropdowns(); });
+function bindSelect(root) {
+  var dd = root.querySelector('.busy-select-dropdown');
+  root.querySelector('.busy-input').addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeAllDropdowns(dd);
+    dd.hidden = !dd.hidden;
+  });
+  dd.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var item = e.target.closest('.busy-select-dropdown__item');
+    if (!item) return;
+    setSelectValue(root, item.getAttribute('data-value'));
+    dd.hidden = true;
+  });
+}
+function setSelectValue(root, value) {
+  var label = '';
+  root.setAttribute('data-value', value);
+  root.querySelectorAll('.busy-select-dropdown__item').forEach(function (i) {
+    var hit = i.getAttribute('data-value') === value;
+    i.classList.toggle('is-selected', hit);
+    if (hit) label = i.getAttribute('data-label') || i.textContent;
+  });
+  root.querySelector('input').value = label;
+}
+/* 人员（UserSelector）：姓名 + 工号 + 部门 */
+$('fUserList').innerHTML = '<div class="busy-select-dropdown__item" data-value="" data-label="">全部人员</div>' + PEOPLE.map(function (p) {
+  return '<div class="busy-select-dropdown__item" data-value="' + p.id + '" data-label="' + esc(p.name) + '">' + esc(p.name) +
+    '<span class="u-sub page-user-meta">' + p.id + ' · ' + esc(p.dept) + '</span></div>';
+}).join('');
+$('fBizDomainList').innerHTML = '<div class="busy-select-dropdown__item is-selected" data-value="">全部</div>' + BIZ_DOMAINS.map(function (d) {
+  return '<div class="busy-select-dropdown__item" data-value="' + d + '">' + d + '</div>';
+}).join('');
+['fUser', 'fDept', 'fArea', 'fBizDomain', 'fStatus'].forEach(function (id) { bindSelect($(id)); });
+
+/* ===================== 查询 / 重置 ===================== */
+function readFilter() {
+  return {
+    user: $('fUser').getAttribute('data-value'),
+    dept: $('fDept').getAttribute('data-value'),
+    area: $('fArea').getAttribute('data-value'),
+    bizDomain: $('fBizDomain').getAttribute('data-value'),
+    object: $('fObject').value.trim(),
+    status: $('fStatus').getAttribute('data-value')
+  };
+}
+$('btnQuery').addEventListener('click', function () {
+  var btn = this;
+  if (btn.disabled) return;
+  setBtnLoading(btn, true);
+  $('grantLoading').hidden = false;
+  setTimeout(function () {
+    $('grantLoading').hidden = true;
+    setBtnLoading(btn, false);
+    if (MOCK_FAIL) { toast('查询失败，请稍后重试', 'error'); return; }
+    applied = readFilter();
+    renderRows();
+  }, 500);
+});
+$('fObject').addEventListener('keydown', function (e) { if (e.key === 'Enter') $('btnQuery').click(); });
+$('btnReset').addEventListener('click', function () {
+  setSelectValue($('fUser'), '');
+  ['fDept', 'fArea', 'fBizDomain', 'fStatus'].forEach(function (id) { setSelectValue($(id), ''); });
+  $('fObject').value = '';
+  applied = readFilter();
+  renderRows();
+});
+
+/* ===================== 变更记录抽屉 ===================== */
+var TYPE_TAG = { '分配': 'busy-tag--success', '收回': 'busy-tag--danger', '到期收回': 'busy-tag--warning', '停用收回': 'busy-tag--info' };
+function logItemHtml(r) {
+  var meta = ['<div class="tpl-timeline__meta">' + r.t + ' · 操作人 ' + esc(r.by) + '</div>'];
+  if (r.type === '分配') meta.push('<div class="tpl-timeline__meta">有效期：' + (r.exp || '长期') + '</div>');
+  if (r.reason) meta.push('<div class="tpl-timeline__meta page-timeline-reason">分配理由：' + esc(r.reason) + '</div>');
+  return '<div class="tpl-timeline__item">' +
+    '<span class="tpl-timeline__dot' + (r.type === '分配' ? ' is-primary' : '') + '"></span>' +
+    '<div class="tpl-timeline__content">' +
+      '<div class="tpl-timeline__title page-timeline-title"><span class="busy-tag busy-tag--small ' + TYPE_TAG[r.type] + '">' + r.type + '</span><span>' + esc(describe(r.k)) + '</span></div>' +
+      meta.join('') +
+    '</div></div>';
+}
+var logTimer = null;
+function openLog(id) {
+  var p = findPerson(id);
+  $('logPerson').textContent = p.name;
+  $('logTimeline').innerHTML = '';
+  $('logEmpty').hidden = true;
+  $('logLoading').hidden = false;
+  $('logOverlay').hidden = false;
+  clearTimeout(logTimer);
+  logTimer = setTimeout(function () {
+    $('logLoading').hidden = true;
+    if (MOCK_FAIL) {
+      $('logOverlay').hidden = true;
+      toast('变更记录加载失败，请稍后重试', 'error');
+      return;
+    }
+    var list = CHANGES[id] || [];
+    $('logTimeline').innerHTML = list.map(logItemHtml).join('');
+    $('logEmpty').hidden = list.length > 0;
+  }, 500);
+}
+function closeLog() { clearTimeout(logTimer); $('logOverlay').hidden = true; }
+$('logClose').addEventListener('click', closeLog);
+$('logOverlay').addEventListener('click', function (e) { if (e.target === $('logOverlay')) closeLog(); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('logOverlay').hidden) closeLog(); });
+
+/* ===================== 初始化 ===================== */
+(function init() {
+  /* 研发工具资源页「已分配人数」带入：?resource=资源名称 */
+  var m = QS.match(/[?&](?:resource|object)=([^&]+)/);
+  if (m) $('fObject').value = decodeURIComponent(m[1]);
+  applied = readFilter();
+  renderRows();
+})();
+</script>
+</body>
+</html>

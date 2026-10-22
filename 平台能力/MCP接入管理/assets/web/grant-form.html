@@ -1,0 +1,1167 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>分配权限 · MCP接入管理 · 静态原型</title>
+<!--
+  MCP接入管理 · 分配权限（archive-form · 静态原型，Mock 数据，刷新即重置）
+  需求真源：references/web-ui.md「分配权限」；规则：references/permission-rules.md §2（粒度 / 分配理由 / 有效期 / 批量只追加）、
+           references/devtool-rules.md §2.1（业务域枚举）、references/audit-rules.md §6
+  权限：路由与按钮 devhubMcpGrant（保存分配）；当前用户「李管理」为权限管理员
+  布局流：页头（返回 + 标题）→ 被分配人 → 分配内容（默认有效期 + 领域页签树）→ 已选清单 → 沉底操作栏（取消 / 保存分配）
+  浮层：日期选择面板、MessageBox 二次确认 / 错误详情、Message 轻提示
+  DOM 骨架依据：busyming-skills-design/templates/web/archive-form.html
+  URL 约定（Mock）：?user=<工号> 单人（默认 MM10318 李产品）；?mode=batch&users=<工号,…> 批量（默认张研发、王运维、陈测试）；?fail=1 演示保存失败
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/字号一律消费 var(--busy-*) */
+  .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }
+  .page-nav-links { display: flex; align-items: center; gap: 12px; white-space: nowrap; overflow-x: auto; }
+  .page-overlay { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; overflow: auto; }
+  .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .page-message-host .busy-message { position: static; white-space: nowrap; max-width: none; }
+  .busy-message-box__btns { gap: 8px; }
+  .busy-radio.is-checked .busy-radio__inner::after { transform: none; }
+  .page-radio-buttons { gap: 0; flex-wrap: nowrap; }
+  .page-radio-buttons .busy-radio-button.is-checked .busy-radio-button__inner { color: var(--busy-color-white); }
+  .page-radio-buttons .busy-radio-button--small .busy-radio-button__inner { height: 24px; padding: 0 10px; }
+  .busy-form-item.is-error .busy-input, .page-field.is-error .busy-input { border-color: var(--busy-color-danger); }
+  .tpl-section > .busy-form-item__error, .page-list .busy-form-item__error { position: static; padding-top: 4px; }
+  .page-form-item .busy-form-item__error { position: static; width: 100%; line-height: 1.5; }
+  .page-desc th { width: 110px; }
+  .page-form-item { margin-bottom: 0; }
+  .page-inline { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; min-height: 32px; }
+  .page-date-wrap { position: relative; display: inline-flex; }
+  .page-date-wrap .busy-date-editor { width: 200px; cursor: pointer; }
+  .page-date-wrap .busy-date-editor input { cursor: pointer; }
+  .page-date-wrap .busy-date-editor.is-disabled, .page-date-wrap .busy-date-editor.is-disabled input { cursor: not-allowed; }
+  .page-date-wrap--small .busy-date-editor { width: 128px; }
+  .page-date-pop { position: absolute; left: 0; top: calc(100% + 4px); z-index: 260; border-radius: var(--busy-border-radius-base); line-height: 30px; }
+  .page-date-pop.is-up { top: auto; bottom: calc(100% + 4px); }
+  /* 日期面板挂在已选清单表格内时，屏蔽外层表格单元格样式 */
+  .page-list .busy-table { overflow: visible; }
+  .page-date-pop .busy-date-table th { padding: 5px; text-align: center; font-weight: 400; background: none; }
+  .page-date-pop .busy-date-table td { padding: 4px 0; border: none; }
+  .page-date-pop .busy-date-table tr:hover td { background: none; }
+  .page-batch-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+  .page-batch-tags .busy-tag__close { cursor: pointer; }
+  .page-tab-panel { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+  .page-tree .busy-tree-node__content { gap: 6px; height: auto; min-height: 26px; flex-wrap: wrap; }
+  .page-group-title { padding-top: 8px; }
+  .page-list .busy-table td { vertical-align: top; }
+  .page-list .busy-table td.page-cell-mid { vertical-align: middle; }
+  .page-exp { display: flex; align-items: center; gap: 8px; }
+  .page-reason { display: flex; align-items: center; gap: 8px; min-width: 280px; }
+  .page-reason .busy-input { flex: 1; }
+  .page-row-revoked td { color: var(--busy-text-tertiary); }
+  .page-strike { text-decoration: line-through; }
+  .page-cell-line { display: inline-flex; align-items: center; gap: 6px; min-height: 24px; }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 平台能力 / <a href="token-list.html">MCP接入管理</a> / <a href="grant-list.html">权限分配</a> / <b id="crumbLast">分配权限</b></span>
+  <span class="page-nav-links">
+    <a class="tpl-nav__crumb" href="token-list.html">我的令牌</a>
+    <a class="tpl-nav__crumb" href="token-form.html">生成令牌</a>
+    <a class="tpl-nav__crumb" href="token-detail.html">令牌详情</a>
+    <a class="tpl-nav__crumb" href="grant-list.html">权限分配</a>
+    <a class="tpl-nav__crumb" href="grant-form.html" aria-current="page"><b>分配权限</b></a>
+    <a class="tpl-nav__crumb" href="service-list.html">MCP 服务目录</a>
+    <a class="tpl-nav__crumb" href="devtool-resources.html">研发工具资源</a>
+    <a class="tpl-nav__crumb" href="datasource-list.html">数据源管理</a>
+    <a class="tpl-nav__crumb" href="datasource-detail.html">数据源详情</a>
+    <a class="tpl-nav__crumb" href="call-audit.html">调用审计</a>
+  </span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">李管理（Mock）</span>
+</nav>
+
+<section class="tpl-page tpl-page--with-actionbar">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <a class="tpl-page-head__back" href="grant-list.html">‹ 返回权限分配</a>
+      <h1 class="tpl-page-title" id="pageTitle">分配权限</h1>
+      <div class="tpl-page-subtitle">带 <b class="u-danger">*</b> 为必填项；Mock 数据，刷新即重置</div>
+    </div>
+  </div>
+
+  <!-- 第一节：被分配人 -->
+  <div class="tpl-panel" data-form-panel>
+    <div class="tpl-section" id="assigneeSection">
+      <div class="tpl-section__head">被分配人</div>
+      <table class="busy-descriptions is-border page-desc" id="assigneeSingle" hidden>
+        <tbody>
+          <tr><th>姓名</th><td id="aName"></td><th>工号</th><td class="u-mono" id="aId"></td><th>部门</th><td id="aDept"></td></tr>
+          <tr><th>岗位</th><td id="aPost"></td><th>生效令牌数</th><td class="u-mono" id="aTokens" colspan="3"></td></tr>
+        </tbody>
+      </table>
+      <div id="assigneeBatch" hidden>
+        <div class="page-batch-tags" id="batchTags"></div>
+      </div>
+      <div class="tpl-panel__subtitle" id="batchHint" hidden>ⓘ 批量分配只追加，不会移除这些人员已有的权限</div>
+      <div class="busy-form-item__error" id="assigneeError" hidden>不能为自己分配权限</div>
+    </div>
+  </div>
+
+  <!-- 第二节：分配内容 -->
+  <div class="tpl-panel" data-form-panel>
+    <div class="tpl-section" id="scopeSection">
+      <div class="tpl-section__head">分配内容</div>
+      <div class="busy-form-item page-form-item" id="defItem">
+        <div class="busy-form-item__label">默认有效期</div>
+        <div class="busy-form-item__content">
+          <div class="page-inline">
+            <div class="busy-radio-group" id="defGroup" role="radiogroup" aria-label="默认有效期">
+              <label class="busy-radio is-checked" data-value="forever"><span class="busy-radio__inner"></span>长期</label>
+              <label class="busy-radio" data-value="date"><span class="busy-radio__inner"></span>截止日期</label>
+            </div>
+            <span class="page-date-wrap" id="defDateWrap">
+              <span class="busy-date-editor busy-input is-disabled" id="defDateBox"><input readonly placeholder="选择日期" id="defDate" aria-label="截止日期"></span>
+            </span>
+            <span class="u-sub">作用于本次新勾选的对象</span>
+          </div>
+          <div class="busy-form-item__error" id="defError" hidden>截止日期需晚于今天</div>
+        </div>
+      </div>
+
+      <div class="busy-tabs" id="domainTabs" role="tablist">
+        <div class="busy-tabs__item is-active" role="tab" data-tab="biz">业务系统（<span data-count="biz">0</span>）</div>
+        <div class="busy-tabs__item" role="tab" data-tab="dev">研发工具（<span data-count="dev">0</span>）</div>
+        <div class="busy-tabs__item" role="tab" data-tab="db">数据库（<span data-count="db">0</span>）</div>
+      </div>
+      <div class="page-tab-panel" data-panel="biz">
+        <div class="busy-tree page-tree" id="tree-biz"></div>
+      </div>
+      <div class="page-tab-panel" data-panel="dev" hidden>
+        <div class="tpl-toolbar__title page-group-title">SLS 日志</div>
+        <div class="busy-tree page-tree" id="tree-sls"></div>
+        <div class="tpl-toolbar__title page-group-title">ARMS 应用监控</div>
+        <div class="busy-tree page-tree" id="tree-arms"></div>
+      </div>
+      <div class="page-tab-panel" data-panel="db" hidden>
+        <div class="busy-tree page-tree" id="tree-db"></div>
+      </div>
+      <div class="busy-form-item__error" id="scopeError" hidden>请至少选择一项要分配的权限</div>
+    </div>
+  </div>
+
+  <!-- 第三节：已选清单 -->
+  <div class="tpl-panel" data-form-panel>
+    <div class="tpl-section page-list">
+      <div class="tpl-section__head">已选清单</div>
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>领域</th>
+            <th>对象</th>
+            <th>粒度</th>
+            <th>环境限定</th>
+            <th>有效期</th>
+            <th>分配理由</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="listTbody"></tbody>
+      </table>
+      <div class="busy-empty" id="listEmpty" hidden>
+        <div class="busy-empty__image"></div>
+        <div class="busy-empty__description">暂无数据</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 沉底操作栏 -->
+  <div class="tpl-actionbar">
+    <div class="tpl-actionbar__inner">
+      <button class="busy-button" type="button" id="btnCancel"><span>取消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="btnSave"><span>保存分配</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- 日期选择面板（DatePicker，单例，打开时挂到当前日期输入框旁） -->
+<div class="busy-popper busy-picker__popper page-date-pop" id="datePop" hidden>
+  <div class="busy-picker-panel busy-date-picker">
+    <div class="busy-picker-panel__body-wrapper">
+      <div class="busy-picker-panel__body">
+        <div class="busy-date-picker__header">
+          <span class="busy-date-picker__prev-btn">
+            <button class="busy-picker-panel__icon-btn" type="button" data-nav="-12" aria-label="上一年">«</button>
+            <button class="busy-picker-panel__icon-btn" type="button" data-nav="-1" aria-label="上个月">‹</button>
+          </span>
+          <span class="busy-date-picker__header-label" id="dpLabel"></span>
+          <span class="busy-date-picker__next-btn">
+            <button class="busy-picker-panel__icon-btn" type="button" data-nav="1" aria-label="下个月">›</button>
+            <button class="busy-picker-panel__icon-btn" type="button" data-nav="12" aria-label="下一年">»</button>
+          </span>
+        </div>
+        <div class="busy-picker-panel__content">
+          <table class="busy-date-table"><tbody id="dpBody"></tbody></table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MessageBox（二次确认 / 错误详情） -->
+<div class="page-overlay busy-overlay-demo" id="mbOverlay" hidden>
+  <div class="busy-message-box busy-message-box--custom" role="alertdialog" aria-modal="true" aria-labelledby="mbTitle">
+    <div class="busy-message-box__header">
+      <div class="busy-message-box__title"><span class="busy-message-box__status busy-message-box-icon--warning" id="mbIcon">⚠</span><span id="mbTitle">提示</span></div>
+      <button class="busy-message-box__headerbtn" type="button" id="mbClose" aria-label="关闭"><span class="busy-message-box__close">✕</span></button>
+    </div>
+    <div class="busy-message-box__content">
+      <div class="busy-message-box__container"><div class="busy-message-box__message"><p id="mbText"></p></div></div>
+    </div>
+    <div class="busy-message-box__btns">
+      <button class="busy-button" type="button" id="mbCancel"><span>取消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="mbConfirm"><span>确定</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="page-message-host" id="messageHost" aria-live="polite"></div>
+
+<script>
+/* ===================== Mock 数据（刷新即重置；与权限分配页同源） ===================== */
+var TODAY = '2026-10-22';
+var SELF_ID = 'MM10008';           /* 当前登录人：李管理（权限管理员） */
+var QS = location.search;
+var BATCH = /[?&]mode=batch(&|$)/.test(QS);
+var MOCK_FAIL = /[?&]fail=1(&|$)/.test(QS);
+
+var BIZ_DOMAINS = ['商品', '采购', '营运', '门店', '客服', '系统', '库存', '要货', '产研', '公共'];
+var ENV_ORDER = ['生产', '预发', '测试'];
+var ENV_LIMITS = ['全部环境', '仅生产', '仅非生产'];
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info' };
+
+/* 业务系统：仅已启用的服务与工具（type: query / write） */
+var BIZ = [
+  { id: 'goods', name: '商品中心', tools: [
+    { id: 'goods.archive', name: '查询商品档案', type: 'query' },
+    { id: 'goods.plan', name: '查询商品计划', type: 'query' },
+    { id: 'goods.tag', name: '更新商品标签', type: 'write' }
+  ] },
+  { id: 'store', name: '门店服务', tools: [
+    { id: 'store.archive', name: '查询门店档案', type: 'query' },
+    { id: 'store.data', name: '查询门店数据', type: 'query' }
+  ] },
+  { id: 'ticket', name: '客服工单', tools: [
+    { id: 'ticket.query', name: '查询工单', type: 'query' },
+    { id: 'ticket.note', name: '创建工单备注', type: 'write' }
+  ] }
+];
+/* 研发工具：仅已归属且开放的资源 */
+var DEV = {
+  sls: { label: 'SLS 日志', grain: '日志库', resources: [
+    { id: 'mmhm-store-prod/store-gateway-access', name: 'store-gateway-access', project: 'mmhm-store-prod', domain: '门店', env: '生产', region: 'cn-hangzhou' },
+    { id: 'mmhm-store-prod/store-service-app', name: 'store-service-app', project: 'mmhm-store-prod', domain: '门店', env: '生产', region: 'cn-hangzhou' },
+    { id: 'mmhm-store-test/store-service-app', name: 'store-service-app', project: 'mmhm-store-test', domain: '门店', env: '测试', region: 'cn-hangzhou' },
+    { id: 'mmhm-requirement-prod/order-app', name: 'order-app', project: 'mmhm-requirement-prod', domain: '要货', env: '生产', region: 'cn-hangzhou' },
+    { id: 'mmhm-product-test/product-app', name: 'product-app', project: 'mmhm-product-test', domain: '商品', env: '测试', region: 'cn-hangzhou' },
+    { id: 'mmhm-gateway-prod/gateway-access', name: 'gateway-access', project: 'mmhm-gateway-prod', domain: '公共', env: '生产', region: 'cn-hangzhou' }
+  ] },
+  arms: { label: 'ARMS 应用监控', grain: '应用', resources: [
+    { id: 'store-service', name: 'store-service', domain: '门店', env: '生产', region: 'cn-hangzhou' },
+    { id: 'store-service-test', name: 'store-service-test', domain: '门店', env: '测试', region: 'cn-hangzhou' },
+    { id: 'requirement-order', name: 'requirement-order', domain: '要货', env: '生产', region: 'cn-hangzhou' },
+    { id: 'product-center', name: 'product-center', domain: '商品', env: '生产', region: 'cn-hangzhou' },
+    { id: 'product-center-test', name: 'product-center-test', domain: '商品', env: '测试', region: 'cn-hangzhou' },
+    { id: 'devhub-server', name: 'devhub-server', domain: '产研', env: '生产', region: 'cn-hangzhou' }
+  ] }
+};
+/* 数据库：仅已开放的库表 */
+var DBS = [
+  { id: 'devhub-prod', type: 'MySQL', env: '生产', domain: '产研', dbs: [{ name: 'devhub', tables: ['rnd_report', 'mcp_call_log', 'feature_schedule'] }] },
+  { id: 'snackingdom-ro', type: 'MySQL', env: '生产', domain: '门店', dbs: [{ name: 'snackingdom', tables: ['store', 'store_order'] }] },
+  { id: 'lemeng-wms-test', type: 'MySQL', env: '测试', domain: '库存', dbs: [{ name: 'lemeng_wms', tables: ['stock', 'stock_flow'] }] }
+];
+
+var PEOPLE = [
+  { id: 'MM10231', name: '张研发', dept: '数字化中心', post: '研发工程师', tokens: 3 },
+  { id: 'MM10318', name: '李产品', dept: '数字化中心', post: '产品经理', tokens: 1 },
+  { id: 'MM10102', name: '王运维', dept: '数字化中心', post: '运维工程师', tokens: 2 },
+  { id: 'MM20417', name: '赵实施', dept: '创新业务部', post: '实施顾问', tokens: 1 },
+  { id: 'MM10466', name: '陈测试', dept: '数字化中心', post: '测试工程师', tokens: 0 },
+  { id: 'MM20533', name: '刘产品', dept: '创新业务部', post: '产品经理', tokens: 0 },
+  { id: 'MM10008', name: '李管理', dept: '数字化中心', post: '研发效能经理', tokens: 1 }
+];
+/* 现有分配项（k 编码同权限分配页） */
+var GRANTS = {
+  MM10231: [
+    { k: 'biz|service|goods' },
+    { k: 'biz|service|store' },
+    { k: 'biz|tool|goods.tag', exp: '2026-10-27', reason: '商品标签批量修正，需临时写入权限' },
+    { k: 'dev|domain|sls|门店|全部环境', reason: '门店域值班，需检索生产与测试日志' },
+    { k: 'dev|domain|sls|要货|仅生产', reason: '要货链路线上问题排查' },
+    { k: 'dev|domain|sls|公共|仅生产', reason: '网关访问日志排查' },
+    { k: 'dev|domain|arms|门店|全部环境', reason: '门店域值班，需查看调用链' },
+    { k: 'dev|domain|arms|产研|仅生产', reason: '负责 DevHub 服务端线上问题排查' },
+    { k: 'db|db|devhub-prod/devhub', reason: '研发报告数据核对' }
+  ],
+  MM10318: [
+    { k: 'biz|service|goods' },
+    { k: 'dev|domain|sls|门店|仅非生产', exp: '2026-12-31' },
+    { k: 'dev|domain|arms|商品|全部环境', reason: '商品计划问题排查需查看生产调用链' },
+    { k: 'db|db|lemeng-wms-test/lemeng_wms' }
+  ],
+  MM10102: [
+    { k: 'dev|domain|sls|门店|仅生产', exp: '2026-11-30', reason: '生产环境值班巡检' },
+    { k: 'dev|domain|sls|公共|仅生产', reason: '网关与中间件日志巡检' },
+    { k: 'dev|domain|arms|门店|仅生产', exp: '2026-11-30', reason: '生产环境值班巡检' },
+    { k: 'dev|domain|arms|要货|仅生产', reason: '要货链路性能巡检' },
+    { k: 'dev|res|sls|mmhm-requirement-prod/order-app', reason: '要货订单异常排查' },
+    { k: 'db|instance|devhub-prod', reason: 'DevHub 数据库容量与慢查询巡检' },
+    { k: 'db|table|snackingdom-ro/snackingdom/store', exp: '2026-11-30', reason: '门店档案数据巡检' }
+  ],
+  MM20417: [
+    { k: 'biz|service|store', exp: '2026-10-25' },
+    { k: 'biz|service|ticket' },
+    { k: 'biz|tool|ticket.note', exp: '2026-12-31', reason: '实施期间协助门店补充工单备注' },
+    { k: 'dev|res|arms|store-service-test' },
+    { k: 'db|instance|snackingdom-ro', exp: '2026-10-28', reason: '新店上线数据核对' }
+  ],
+  MM10466: [
+    { k: 'biz|tool|store.archive' },
+    { k: 'dev|domain|sls|商品|仅非生产', exp: '2026-11-15' },
+    { k: 'dev|domain|arms|商品|仅非生产', exp: '2026-11-15' },
+    { k: 'db|instance|lemeng-wms-test' }
+  ],
+  MM20533: [],
+  MM10008: [
+    { k: 'biz|service|goods' },
+    { k: 'db|db|devhub-prod/devhub', reason: '研发效能数据核对' }
+  ]
+};
+
+/* ===================== 通用工具 ===================== */
+function $(id) { return document.getElementById(id); }
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; });
+}
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function fmtDate(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+function toDate(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +p[2]); }
+function clone(o) { return JSON.parse(JSON.stringify(o)); }
+function findPerson(id) { return PEOPLE.filter(function (p) { return p.id === id; })[0]; }
+function validDate(s) { return !!s && /^\d{4}-\d{2}-\d{2}$/.test(s) && s > TODAY; }
+
+function toast(text, type) {
+  type = type || 'success';
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="busy-message__icon busy-message-icon--' + type + '">' + (type === 'error' ? '✕' : '✓') + '</span><span class="busy-message__content"></span>';
+  el.querySelector('.busy-message__content').textContent = text;
+  $('messageHost').appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+function setBtnLoading(btn, on) {
+  if (on) {
+    btn.setAttribute('data-label', btn.innerHTML);
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    btn.innerHTML = '<span class="busy-button__loading"></span><span>' + esc(btn.textContent.trim()) + '</span>';
+  } else {
+    if (btn.hasAttribute('data-label')) btn.innerHTML = btn.getAttribute('data-label');
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+  }
+}
+
+/* MessageBox：opts = { text, type: 'warning' | 'error', showCancel, onConfirm } */
+var mbState = null;
+function messageBox(opts) {
+  mbState = opts;
+  var isError = opts.type === 'error';
+  $('mbIcon').className = 'busy-message-box__status busy-message-box-icon--' + (isError ? 'error' : 'warning');
+  $('mbIcon').textContent = isError ? '✕' : '⚠';
+  $('mbTitle').textContent = isError ? '保存失败' : '提示';
+  $('mbText').textContent = opts.text;
+  $('mbCancel').hidden = opts.showCancel === false;
+  $('mbOverlay').hidden = false;
+}
+function closeMessageBox(confirmed) {
+  var o = mbState;
+  mbState = null;
+  $('mbOverlay').hidden = true;
+  if (o && confirmed && o.onConfirm) o.onConfirm();
+}
+$('mbConfirm').addEventListener('click', function () { closeMessageBox(true); });
+$('mbCancel').addEventListener('click', function () { closeMessageBox(false); });
+$('mbClose').addEventListener('click', function () { closeMessageBox(false); });
+
+/* ===================== 分配项解析 ===================== */
+var AREA_LABEL = { biz: '业务系统', dev: '研发工具', db: '数据库' };
+var GRAIN_LABEL = { service: '服务', tool: '工具', domain: '业务域', instance: '实例', db: '库', table: '表' };
+function bizService(id) { return BIZ.filter(function (s) { return s.id === id; })[0]; }
+function bizTool(id) {
+  var r = null;
+  BIZ.forEach(function (s) { s.tools.forEach(function (t) { if (t.id === id) r = { svc: s, tool: t }; }); });
+  return r;
+}
+function devRes(type, id) { return DEV[type].resources.filter(function (r) { return r.id === id; })[0]; }
+function dbInst(id) { return DBS.filter(function (i) { return i.id === id; })[0]; }
+function parseKey(k) {
+  var p = k.split('|');
+  if (p[0] === 'biz') {
+    if (p[1] === 'service') return { area: 'biz', kind: 'service', svc: bizService(p[2]) };
+    var bt = bizTool(p[2]);
+    return { area: 'biz', kind: 'tool', svc: bt.svc, tool: bt.tool };
+  }
+  if (p[0] === 'dev') {
+    if (p[1] === 'domain') return { area: 'dev', kind: 'domain', type: p[2], biz: p[3], env: p[4] };
+    return { area: 'dev', kind: 'res', type: p[2], res: devRes(p[2], p[3]) };
+  }
+  var path = p[2].split('/');
+  return { area: 'db', kind: p[1], inst: dbInst(path[0]), db: path[1] || '', table: path[2] || '' };
+}
+function envCovers(limit, env) {
+  if (limit === '全部环境') return true;
+  if (limit === '仅生产') return env === '生产';
+  return env !== '生产';
+}
+function domainResources(type, biz, limit) {
+  return DEV[type].resources.filter(function (r) { return r.domain === biz && (!limit || envCovers(limit, r.env)); });
+}
+function objectLabel(g) {
+  if (g.area === 'biz') return g.kind === 'service' ? g.svc.name : g.svc.name + ' · ' + g.tool.name;
+  if (g.area === 'dev') return DEV[g.type].label + ' · ' + (g.kind === 'domain' ? g.biz : g.res.id);
+  return [g.inst.id, g.db, g.table].filter(Boolean).join(' / ');
+}
+function grainLabel(g) { return g.kind === 'res' ? DEV[g.type].grain : GRAIN_LABEL[g.kind]; }
+function describe(k) {
+  var g = parseKey(k);
+  return AREA_LABEL[g.area] + ' · ' + objectLabel(g) + ' · ' + grainLabel(g) + (g.kind === 'domain' ? ' · ' + g.env : '');
+}
+/* 高风险（permission-rules.md §2.3）：写入类工具；生产环境数据库的实例 / 库 / 表；生产环境研发工具资源（含覆盖生产的业务域：全部环境 / 仅生产） */
+function isHighRisk(k) {
+  var g = parseKey(k);
+  if (g.area === 'biz') return g.kind === 'tool' && g.tool.type === 'write';
+  if (g.area === 'dev') return g.kind === 'domain' ? g.env !== '仅非生产' : g.res.env === '生产';
+  return g.inst.env === '生产';
+}
+function sortVec(k) {
+  var g = parseKey(k);
+  if (g.area === 'biz') return [0, BIZ.indexOf(g.svc), g.kind === 'service' ? 0 : 1 + g.svc.tools.indexOf(g.tool), 0];
+  if (g.area === 'dev') {
+    var biz = g.kind === 'domain' ? g.biz : g.res.domain;
+    return [1, (g.type === 'sls' ? 0 : 100) + BIZ_DOMAINS.indexOf(biz), g.kind === 'domain' ? 0 : 1 + DEV[g.type].resources.indexOf(g.res), g.kind === 'domain' ? ENV_LIMITS.indexOf(g.env) : 0];
+  }
+  var di = 0, ti = 0;
+  g.inst.dbs.forEach(function (d, i) { if (d.name === g.db) { di = i; ti = d.tables.indexOf(g.table); } });
+  return [2, DBS.indexOf(g.inst), g.kind === 'instance' ? 0 : (g.kind === 'db' ? 1 + di * 100 : 2 + di * 100 + ti), 0];
+}
+function cmpKey(a, b) {
+  var x = sortVec(a), y = sortVec(b);
+  for (var i = 0; i < x.length; i++) if (x[i] !== y[i]) return x[i] - y[i];
+  return a < b ? -1 : 1;
+}
+
+/* ===================== 表单状态 ===================== */
+var person = null;
+var batchPeople = [];
+if (BATCH) {
+  var um = QS.match(/[?&]users=([^&]+)/);
+  var uids = um ? decodeURIComponent(um[1]).split(',') : ['MM10231', 'MM10102', 'MM10466'];
+  batchPeople = uids.map(findPerson).filter(Boolean);
+} else {
+  var m1 = QS.match(/[?&]user=([^&]+)/);
+  person = (m1 && findPerson(decodeURIComponent(m1[1]))) || findPerson('MM10318');
+}
+/* original：现有分配（单人回显）；sel：当前勾选。项：{ expMode: forever|date, expDate, reason, expEdited } */
+var original = {};
+if (!BATCH) {
+  (GRANTS[person.id] || []).forEach(function (x) {
+    original[x.k] = { expMode: x.exp ? 'date' : 'forever', expDate: x.exp || '', reason: x.reason || '', expEdited: true };
+  });
+}
+var sel = clone(original);
+var def = { mode: 'forever', date: '' };
+var rowErr = {};
+var expanded = {};
+var saving = false;
+var leaving = false;
+
+function newItem() {
+  return { expMode: def.mode, expDate: def.mode === 'date' ? def.date : '', reason: '', expEdited: false };
+}
+function addKey(k) { if (!sel[k]) sel[k] = original[k] ? clone(original[k]) : newItem(); }
+function removeKey(k) { delete sel[k]; delete rowErr[k]; }
+function statusOf(k) {
+  if (sel[k] && original[k]) return '保持';
+  return sel[k] ? '新增' : '将收回';
+}
+function canonical(map) {
+  return JSON.stringify(Object.keys(map).sort().map(function (k) {
+    var v = map[k];
+    return [k, v.expMode, v.expMode === 'date' ? v.expDate : '', v.reason.trim()];
+  }));
+}
+function snapshot() {
+  return JSON.stringify([canonical(sel), def.mode, def.date, batchPeople.map(function (p) { return p.id; })]);
+}
+function hasSelf() {
+  return BATCH ? batchPeople.some(function (p) { return p.id === SELF_ID; }) : person.id === SELF_ID;
+}
+function counts() {
+  var c = { added: 0, kept: 0, revoked: 0 };
+  Object.keys(sel).forEach(function (k) { if (original[k]) c.kept++; else c.added++; });
+  Object.keys(original).forEach(function (k) { if (!sel[k]) c.revoked++; });
+  return c;
+}
+
+/* ===================== 被分配人 ===================== */
+function renderAssignee() {
+  if (BATCH) {
+    $('batchTags').innerHTML = batchPeople.map(function (p) {
+      return '<span class="busy-tag is-closable' + (p.id === SELF_ID ? ' busy-tag--danger' : '') + '">' + esc(p.name) + '（' + p.id + '）' +
+        '<span class="busy-tag__close" role="button" aria-label="移除' + esc(p.name) + '" data-remove-user="' + p.id + '">✕</span></span>';
+    }).join('');
+  } else {
+    $('aName').textContent = person.name;
+    $('aId').textContent = person.id;
+    $('aDept').textContent = person.dept;
+    $('aPost').textContent = person.post;
+    $('aTokens').textContent = person.tokens;
+  }
+  $('assigneeError').hidden = !hasSelf();
+}
+$('batchTags').addEventListener('click', function (e) {
+  var x = e.target.closest('[data-remove-user]');
+  if (!x || saving) return;
+  var id = x.getAttribute('data-remove-user');
+  batchPeople = batchPeople.filter(function (p) { return p.id !== id; });
+  renderAssignee();
+  updateSaveState();
+});
+
+/* ===================== 树：通用 ===================== */
+function checkboxHtml(checked, indeterminate, attrs) {
+  return '<label class="busy-checkbox' + (checked ? ' is-checked' : '') + '" ' + attrs + '>' +
+    '<span class="busy-checkbox__input' + (indeterminate ? ' is-indeterminate' : '') + '"><span class="busy-checkbox__inner"></span></span></label>';
+}
+function expandHtml(key, hasChildren) {
+  if (!hasChildren) return '<span class="busy-tree-node__expand"></span>';
+  return '<span class="busy-tree-node__expand" data-toggle="' + esc(key) + '" role="button" aria-label="展开 / 收起">' + (expanded[key] ? '▾' : '▸') + '</span>';
+}
+function nodeHtml(content, childrenHtml, key) {
+  return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + content + '</div>' +
+    (childrenHtml != null ? '<div class="busy-tree-node__children"' + (expanded[key] ? '' : ' hidden') + '>' + childrenHtml + '</div>' : '') + '</div>';
+}
+
+/* ===================== 树：业务系统（服务 → 工具） ===================== */
+function svcKey(id) { return 'biz|service|' + id; }
+function toolKey(id) { return 'biz|tool|' + id; }
+function renderBizTree() {
+  $('tree-biz').innerHTML = BIZ.map(function (s) {
+    var svcOn = !!sel[svcKey(s.id)];
+    var anyTool = s.tools.some(function (t) { return sel[toolKey(t.id)]; });
+    var key = 'svc:' + s.id, gkey = 'grp:' + s.id;
+    var query = s.tools.filter(function (t) { return t.type === 'query'; });
+    var writes = s.tools.filter(function (t) { return t.type === 'write'; });
+    var children = query.map(function (t) {
+      return nodeHtml(expandHtml('', false) +
+        checkboxHtml(svcOn || !!sel[toolKey(t.id)], false, 'data-check="qtool" data-svc="' + s.id + '" data-id="' + t.id + '"') +
+        '<span class="busy-tree-node__label">' + esc(t.name) + '</span>');
+    }).join('');
+    if (writes.length) {
+      children += nodeHtml(expandHtml(gkey, true) +
+        '<span class="busy-tree-node__label">写入类工具</span><span class="busy-tag busy-tag--warning busy-tag--small">写入</span>',
+        writes.map(function (t) {
+          return nodeHtml(expandHtml('', false) +
+            checkboxHtml(!!sel[toolKey(t.id)], false, 'data-check="wtool" data-id="' + t.id + '"') +
+            '<span class="busy-tree-node__label">' + esc(t.name) + '</span><span class="busy-tag busy-tag--warning busy-tag--small">写入</span>');
+        }).join(''), gkey);
+    }
+    return nodeHtml(expandHtml(key, true) +
+      checkboxHtml(svcOn, !svcOn && anyTool, 'data-check="svc" data-id="' + s.id + '"') +
+      '<span class="busy-tree-node__label u-strong">' + esc(s.name) + '</span>', children, key);
+  }).join('');
+}
+function onBizCheck(kind, cb) {
+  var id = cb.getAttribute('data-id');
+  if (kind === 'svc') {
+    var s = bizService(id);
+    var query = s.tools.filter(function (t) { return t.type === 'query'; });
+    if (sel[svcKey(id)]) {
+      removeKey(svcKey(id));
+      query.forEach(function (t) { removeKey(toolKey(t.id)); });
+    } else {
+      /* 勾选服务 = 全部已启用查询类工具；写入类工具需逐个勾选 */
+      addKey(svcKey(id));
+      query.forEach(function (t) { removeKey(toolKey(t.id)); });
+    }
+  } else if (kind === 'qtool') {
+    var sid = cb.getAttribute('data-svc');
+    if (sel[svcKey(sid)]) {
+      /* 取消服务下某个工具：改为逐个工具分配 */
+      removeKey(svcKey(sid));
+      bizService(sid).tools.forEach(function (t) { if (t.type === 'query' && t.id !== id) addKey(toolKey(t.id)); });
+    } else if (sel[toolKey(id)]) removeKey(toolKey(id));
+    else addKey(toolKey(id));
+  } else if (kind === 'wtool') {
+    if (sel[toolKey(id)]) removeKey(toolKey(id)); else addKey(toolKey(id));
+  }
+}
+
+/* ===================== 树：研发工具（业务域 → 资源） ===================== */
+function resKey(type, id) { return 'dev|res|' + type + '|' + id; }
+function domainKeyIn(map, type, biz) {
+  var pre = 'dev|domain|' + type + '|' + biz + '|';
+  return Object.keys(map).filter(function (k) { return k.indexOf(pre) === 0; })[0] || null;
+}
+function devDomains(type) {
+  return BIZ_DOMAINS.filter(function (d) { return DEV[type].resources.some(function (r) { return r.domain === d; }); });
+}
+function envGroupHtml(type, biz, env) {
+  return '<span class="busy-radio-group page-radio-buttons" role="radiogroup" aria-label="环境限定">' + ENV_LIMITS.map(function (e) {
+    return '<label class="busy-radio-button busy-radio-button--small' + (e === env ? ' is-checked' : '') + '" data-env="' + e + '" data-type="' + type + '" data-biz="' + biz + '">' +
+      '<span class="busy-radio-button__inner">' + e + '</span></label>';
+  }).join('') + '</span>';
+}
+function renderDevTree(type) {
+  $('tree-' + type).innerHTML = devDomains(type).map(function (biz) {
+    var dk = domainKeyIn(sel, type, biz);
+    var env = dk ? dk.split('|')[4] : '';
+    var list = domainResources(type, biz);
+    var anyRes = list.some(function (r) { return sel[resKey(type, r.id)]; });
+    var dist = ENV_ORDER.map(function (e) {
+      var n = list.filter(function (r) { return r.env === e; }).length;
+      return n ? e + ' ' + n : '';
+    }).filter(Boolean).join(' · ');
+    var key = 'dom:' + type + ':' + biz;
+    var children = list.map(function (r) {
+      var on = (dk && envCovers(env, r.env)) || !!sel[resKey(type, r.id)];
+      return nodeHtml(expandHtml('', false) +
+        checkboxHtml(on, false, 'data-check="res" data-type="' + type + '" data-id="' + esc(r.id) + '"') +
+        '<span class="busy-tree-node__label">' + esc(r.name) + '</span>' +
+        '<span class="busy-tag busy-tag--small ' + ENV_TAG[r.env] + '">' + r.env + '</span>' +
+        '<span class="u-sub">' + (type === 'sls' ? 'Project ' + esc(r.project) + ' · ' : '') + esc(r.region) + '</span>');
+    }).join('');
+    return nodeHtml(expandHtml(key, true) +
+      checkboxHtml(!!dk, !dk && anyRes, 'data-check="domain" data-type="' + type + '" data-biz="' + biz + '"') +
+      '<span class="busy-tree-node__label u-strong">' + biz + '</span>' +
+      '<span class="u-sub">' + list.length + ' 个资源 · ' + dist + '</span>' +
+      (dk ? envGroupHtml(type, biz, env) + '<span class="busy-tag busy-tag--small">含后续开放资源</span>' : ''),
+      children, key);
+  }).join('');
+}
+function setDomain(type, biz, env) {
+  var dk = domainKeyIn(sel, type, biz);
+  if (dk) removeKey(dk);
+  addKey('dev|domain|' + type + '|' + biz + '|' + env);
+  /* 已被业务域覆盖的单资源分配合并 */
+  domainResources(type, biz, env).forEach(function (r) { removeKey(resKey(type, r.id)); });
+}
+function onDevCheck(kind, cb) {
+  var type = cb.getAttribute('data-type');
+  if (kind === 'domain') {
+    var biz = cb.getAttribute('data-biz');
+    var dk = domainKeyIn(sel, type, biz);
+    if (dk) {
+      removeKey(dk);
+      domainResources(type, biz).forEach(function (r) { removeKey(resKey(type, r.id)); });
+    } else {
+      var ok = domainKeyIn(original, type, biz);
+      setDomain(type, biz, ok ? ok.split('|')[4] : '全部环境');
+    }
+  } else if (kind === 'res') {
+    var r = devRes(type, cb.getAttribute('data-id'));
+    var dk2 = domainKeyIn(sel, type, r.domain);
+    var env = dk2 ? dk2.split('|')[4] : '';
+    if (dk2 && envCovers(env, r.env)) {
+      /* 展开后取消某个资源：业务域分配改为逐个资源分配（不再含后续开放资源） */
+      removeKey(dk2);
+      domainResources(type, r.domain, env).forEach(function (x) { if (x.id !== r.id) addKey(resKey(type, x.id)); });
+    } else if (sel[resKey(type, r.id)]) removeKey(resKey(type, r.id));
+    else addKey(resKey(type, r.id));
+  }
+}
+
+/* ===================== 树：数据库（实例 → 库 → 表） ===================== */
+function instKey(i) { return 'db|instance|' + i; }
+function dbKey(i, d) { return 'db|db|' + i + '/' + d; }
+function tblKey(i, d, t) { return 'db|table|' + i + '/' + d + '/' + t; }
+function clearUnder(inst, onlyDb) {
+  inst.dbs.forEach(function (d) {
+    if (onlyDb && d.name !== onlyDb) return;
+    if (!onlyDb) removeKey(dbKey(inst.id, d.name));
+    d.tables.forEach(function (t) { removeKey(tblKey(inst.id, d.name, t)); });
+  });
+}
+function renderDbTree() {
+  $('tree-db').innerHTML = DBS.map(function (inst) {
+    var iOn = !!sel[instKey(inst.id)];
+    var anyUnder = inst.dbs.some(function (d) {
+      return sel[dbKey(inst.id, d.name)] || d.tables.some(function (t) { return sel[tblKey(inst.id, d.name, t)]; });
+    });
+    var ikey = 'inst:' + inst.id;
+    var dbsHtml = inst.dbs.map(function (d) {
+      var dSel = !!sel[dbKey(inst.id, d.name)];
+      var dOn = iOn || dSel;
+      var dAny = d.tables.some(function (t) { return sel[tblKey(inst.id, d.name, t)]; });
+      var dkey = 'db:' + inst.id + '/' + d.name;
+      var tables = d.tables.map(function (t) {
+        return nodeHtml(expandHtml('', false) +
+          checkboxHtml(dOn || !!sel[tblKey(inst.id, d.name, t)], false, 'data-check="table" data-inst="' + inst.id + '" data-db="' + d.name + '" data-id="' + t + '"') +
+          '<span class="busy-tree-node__label">' + esc(t) + '</span>');
+      }).join('');
+      return nodeHtml(expandHtml(dkey, true) +
+        checkboxHtml(dOn, !dOn && dAny, 'data-check="db" data-inst="' + inst.id + '" data-id="' + d.name + '"') +
+        '<span class="busy-tree-node__label">' + esc(d.name) + '</span>' +
+        (dSel ? '<span class="busy-tag busy-tag--small">含后续开放表</span>' : ''), tables, dkey);
+    }).join('');
+    return nodeHtml(expandHtml(ikey, true) +
+      checkboxHtml(iOn, !iOn && anyUnder, 'data-check="inst" data-id="' + inst.id + '"') +
+      '<span class="busy-tree-node__label u-strong">' + esc(inst.id) + '</span>' +
+      '<span class="busy-tag busy-tag--small ' + ENV_TAG[inst.env] + '">' + inst.env + '</span>' +
+      '<span class="u-sub">业务域：' + inst.domain + '</span>' +
+      (iOn ? '<span class="busy-tag busy-tag--small">含后续开放表</span>' : ''), dbsHtml, ikey);
+  }).join('');
+}
+function onDbCheck(kind, cb) {
+  var id = cb.getAttribute('data-id');
+  if (kind === 'inst') {
+    var inst = dbInst(id);
+    if (sel[instKey(id)]) { removeKey(instKey(id)); clearUnder(inst); }
+    else { addKey(instKey(id)); clearUnder(inst); }
+    return;
+  }
+  var i = cb.getAttribute('data-inst');
+  var instObj = dbInst(i);
+  if (kind === 'db') {
+    var db = instObj.dbs.filter(function (d) { return d.name === id; })[0];
+    if (sel[instKey(i)]) {
+      /* 取消实例下某个库：改为逐库分配 */
+      removeKey(instKey(i));
+      instObj.dbs.forEach(function (d) { if (d.name !== id) addKey(dbKey(i, d.name)); });
+    } else if (sel[dbKey(i, id)]) {
+      removeKey(dbKey(i, id));
+      clearUnder(instObj, id);
+    } else {
+      addKey(dbKey(i, id));
+      db.tables.forEach(function (t) { removeKey(tblKey(i, id, t)); });
+    }
+  } else if (kind === 'table') {
+    var dname = cb.getAttribute('data-db');
+    var dObj = instObj.dbs.filter(function (d) { return d.name === dname; })[0];
+    if (sel[instKey(i)]) {
+      removeKey(instKey(i));
+      instObj.dbs.forEach(function (d) { if (d.name !== dname) addKey(dbKey(i, d.name)); });
+      dObj.tables.forEach(function (t) { if (t !== id) addKey(tblKey(i, dname, t)); });
+    } else if (sel[dbKey(i, dname)]) {
+      /* 取消库下某张表：改为逐表分配（不再含后续开放表） */
+      removeKey(dbKey(i, dname));
+      dObj.tables.forEach(function (t) { if (t !== id) addKey(tblKey(i, dname, t)); });
+    } else if (sel[tblKey(i, dname, id)]) removeKey(tblKey(i, dname, id));
+    else addKey(tblKey(i, dname, id));
+  }
+}
+
+/* ===================== 树：交互分发 ===================== */
+function onTreeClick(e) {
+  if (saving) return;
+  var tg = e.target.closest('[data-toggle]');
+  if (tg) { var tk = tg.getAttribute('data-toggle'); expanded[tk] = !expanded[tk]; renderTrees(); return; }
+  var envBtn = e.target.closest('[data-env]');
+  if (envBtn) {
+    e.preventDefault();
+    var type = envBtn.getAttribute('data-type'), biz = envBtn.getAttribute('data-biz'), env = envBtn.getAttribute('data-env');
+    var cur = domainKeyIn(sel, type, biz);
+    if (cur && cur.split('|')[4] !== env) { setDomain(type, biz, env); renderAll(); }
+    return;
+  }
+  var cb = e.target.closest('label.busy-checkbox[data-check]');
+  if (!cb) return;
+  e.preventDefault();
+  var kind = cb.getAttribute('data-check');
+  if (kind === 'svc' || kind === 'qtool' || kind === 'wtool') onBizCheck(kind, cb);
+  else if (kind === 'domain' || kind === 'res') onDevCheck(kind, cb);
+  else onDbCheck(kind, cb);
+  $('scopeError').hidden = true;
+  renderAll();
+}
+['tree-biz', 'tree-sls', 'tree-arms', 'tree-db'].forEach(function (id) { $(id).addEventListener('click', onTreeClick); });
+
+document.querySelectorAll('#domainTabs .busy-tabs__item').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    var t = tab.getAttribute('data-tab');
+    document.querySelectorAll('#domainTabs .busy-tabs__item').forEach(function (x) { x.classList.toggle('is-active', x === tab); });
+    document.querySelectorAll('.page-tab-panel').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== t; });
+  });
+});
+
+/* ===================== 已选清单 ===================== */
+function expCellHtml(k, item, err) {
+  var isDate = item.expMode === 'date';
+  return '<div class="page-exp page-field' + (err ? ' is-error' : '') + '">' +
+    '<span class="busy-radio-group page-radio-buttons" role="radiogroup" aria-label="有效期">' +
+      '<label class="busy-radio-button busy-radio-button--small' + (isDate ? '' : ' is-checked') + '" data-exp-mode="forever" data-key="' + esc(k) + '"><span class="busy-radio-button__inner">长期</span></label>' +
+      '<label class="busy-radio-button busy-radio-button--small' + (isDate ? ' is-checked' : '') + '" data-exp-mode="date" data-key="' + esc(k) + '"><span class="busy-radio-button__inner">日期</span></label>' +
+    '</span>' +
+    '<span class="page-date-wrap page-date-wrap--small"' + (isDate ? '' : ' hidden') + '>' +
+      '<span class="busy-date-editor busy-input busy-input--small"><input readonly placeholder="选择日期" aria-label="截止日期" data-date-key="' + esc(k) + '" value="' + esc(item.expDate) + '"></span>' +
+    '</span></div>' +
+    '<div class="busy-form-item__error"' + (err ? '' : ' hidden') + '>截止日期需晚于今天</div>';
+}
+function reasonCellHtml(k, item, err) {
+  return '<div class="page-reason page-field' + (err ? ' is-error' : '') + '">' +
+    '<span class="busy-tag busy-tag--danger busy-tag--small">高风险</span>' +
+    '<span class="busy-input busy-input--small"><input maxlength="200" placeholder="必填，2–200 字" aria-label="分配理由" data-reason-key="' + esc(k) + '" value="' + esc(item.reason) + '"></span></div>' +
+    '<div class="busy-form-item__error"' + (err ? '' : ' hidden') + '>请填写 2–200 字的分配理由</div>';
+}
+var STATUS_TAG = { '新增': 'busy-tag--success', '保持': 'busy-tag--info', '将收回': 'busy-tag--danger' };
+function rowHtml(k) {
+  var g = parseKey(k);
+  var st = statusOf(k);
+  var active = st !== '将收回';
+  var item = active ? sel[k] : original[k];
+  var err = rowErr[k] || {};
+  var strike = active ? '' : ' class="page-strike"';
+  var exp = active ? expCellHtml(k, item, err.exp)
+    : '<span class="page-cell-line"><span class="page-strike">' + (item.expMode === 'date' ? item.expDate : '长期') + '</span></span>';
+  var reason;
+  if (!active) reason = '<span class="page-cell-line">' + (item.reason ? '<span class="page-strike">' + esc(item.reason) + '</span>' : '—') + '</span>';
+  else if (isHighRisk(k)) reason = reasonCellHtml(k, item, err.reason);
+  else reason = '<span class="page-cell-line u-muted">—</span>';
+  return '<tr data-row="' + esc(k) + '"' + (active ? '' : ' class="page-row-revoked"') + '>' +
+    '<td><span class="page-cell-line"><span' + strike + '>' + AREA_LABEL[g.area] + '</span></span></td>' +
+    '<td><span class="page-cell-line"><span' + strike + '>' + esc(objectLabel(g)) + '</span></span></td>' +
+    '<td><span class="page-cell-line"><span' + strike + '>' + grainLabel(g) + '</span></span></td>' +
+    '<td><span class="page-cell-line"><span' + strike + '>' + (g.kind === 'domain' ? g.env : '—') + '</span></span></td>' +
+    '<td>' + exp + '</td>' +
+    '<td>' + reason + '</td>' +
+    '<td><span class="page-cell-line"><span class="busy-tag busy-tag--small ' + STATUS_TAG[st] + '">' + st + '</span></span></td>' +
+    '<td><span class="page-cell-line">' + (active ? '<button class="busy-button is-link" type="button" data-remove="' + esc(k) + '"><span>移除</span></button>' : '—') + '</span></td>' +
+    '</tr>';
+}
+function renderList() {
+  closePicker();
+  var all = {};
+  Object.keys(sel).forEach(function (k) { all[k] = 1; });
+  Object.keys(original).forEach(function (k) { all[k] = 1; });
+  var keys = Object.keys(all).sort(cmpKey);
+  $('listTbody').innerHTML = keys.map(rowHtml).join('');
+  $('listEmpty').hidden = keys.length > 0;
+}
+function validateReason(k) {
+  var ok = !isHighRisk(k) || (function (v) { return v.length >= 2 && v.length <= 200; })(sel[k].reason.trim());
+  rowErr[k] = rowErr[k] || {};
+  rowErr[k].reason = !ok;
+  return ok;
+}
+function validateExp(k) {
+  var it = sel[k];
+  var ok = it.expMode !== 'date' || validDate(it.expDate);
+  rowErr[k] = rowErr[k] || {};
+  rowErr[k].exp = !ok;
+  return ok;
+}
+function rowOf(k) {
+  var hit = null;
+  document.querySelectorAll('#listTbody tr[data-row]').forEach(function (tr) { if (tr.getAttribute('data-row') === k) hit = tr; });
+  return hit;
+}
+$('listTbody').addEventListener('click', function (e) {
+  if (saving) return;
+  var rm = e.target.closest('[data-remove]');
+  if (rm) { removeKey(rm.getAttribute('data-remove')); renderAll(); return; }
+  var mode = e.target.closest('[data-exp-mode]');
+  if (mode) {
+    e.preventDefault();
+    var k = mode.getAttribute('data-key');
+    var m = mode.getAttribute('data-exp-mode');
+    sel[k].expMode = m;
+    sel[k].expEdited = true;
+    if (rowErr[k]) rowErr[k].exp = false;
+    renderList();
+    updateSaveState();
+    if (m === 'date') { var inp = rowOf(k).querySelector('[data-date-key]'); openRowPicker(inp); }
+    return;
+  }
+  var di = e.target.closest('.busy-date-editor');
+  if (di) { var input = di.querySelector('[data-date-key]'); if (input) openRowPicker(input); }
+});
+function openRowPicker(input) {
+  var k = input.getAttribute('data-date-key');
+  openPicker(input.closest('.page-date-wrap'), sel[k].expDate, function (v) {
+    sel[k].expDate = v;
+    sel[k].expEdited = true;
+    validateExp(k);
+    renderList();
+    updateSaveState();
+  });
+}
+$('listTbody').addEventListener('input', function (e) {
+  var k = e.target.getAttribute('data-reason-key');
+  if (!k || !sel[k]) return;
+  sel[k].reason = e.target.value;
+  updateSaveState();
+});
+$('listTbody').addEventListener('focusout', function (e) {
+  var k = e.target.getAttribute('data-reason-key');
+  if (!k || !sel[k]) return;
+  var ok = validateReason(k);
+  var cell = e.target.closest('td');
+  cell.querySelector('.page-reason').classList.toggle('is-error', !ok);
+  cell.querySelector('.busy-form-item__error').hidden = ok;
+});
+
+/* ===================== 默认有效期 ===================== */
+function applyDefault() {
+  Object.keys(sel).forEach(function (k) {
+    if (original[k] || sel[k].expEdited) return;
+    sel[k].expMode = def.mode;
+    sel[k].expDate = def.mode === 'date' ? def.date : '';
+    if (rowErr[k]) rowErr[k].exp = false;
+  });
+  renderList();
+  updateSaveState();
+}
+function showDefError(on) {
+  $('defError').hidden = !on;
+  $('defItem').classList.toggle('is-error', on);
+}
+$('defGroup').addEventListener('click', function (e) {
+  var r = e.target.closest('.busy-radio');
+  if (!r || saving) return;
+  e.preventDefault();
+  def.mode = r.getAttribute('data-value');
+  document.querySelectorAll('#defGroup .busy-radio').forEach(function (x) { x.classList.toggle('is-checked', x === r); });
+  var isDate = def.mode === 'date';
+  $('defDateBox').classList.toggle('is-disabled', !isDate);
+  if (!isDate) showDefError(false);
+  applyDefault();
+  if (isDate) openDefPicker();
+});
+function openDefPicker() {
+  openPicker($('defDateWrap'), def.date, function (v) {
+    def.date = v;
+    $('defDate').value = v;
+    showDefError(!validDate(v));
+    applyDefault();
+  });
+}
+$('defDateBox').addEventListener('click', function () {
+  if (def.mode !== 'date' || saving) return;
+  openDefPicker();
+});
+
+/* ===================== 日期选择面板 ===================== */
+var picker = { host: null, value: '', year: 0, month: 0, onPick: null };
+function renderPicker() {
+  $('dpLabel').textContent = picker.year + ' 年 ' + (picker.month + 1) + ' 月';
+  var first = new Date(picker.year, picker.month, 1);
+  var offset = (first.getDay() + 6) % 7; /* 周一开始 */
+  var start = new Date(picker.year, picker.month, 1 - offset);
+  var rows = ['<tr>' + ['一', '二', '三', '四', '五', '六', '日'].map(function (w) { return '<th>' + w + '</th>'; }).join('') + '</tr>'];
+  for (var w = 0; w < 6; w++) {
+    var cells = [];
+    for (var d = 0; d < 7; d++) {
+      var day = new Date(start.getFullYear(), start.getMonth(), start.getDate() + w * 7 + d);
+      var s = fmtDate(day);
+      var cls = ['available'];
+      if (day.getMonth() < picker.month && day.getFullYear() <= picker.year || day.getFullYear() < picker.year) cls.push('prev-month');
+      else if (day.getMonth() !== picker.month) cls.push('next-month');
+      if (s === TODAY) cls.push('today');
+      if (s === picker.value) cls.push('current');
+      cells.push('<td class="' + cls.join(' ') + '" data-date="' + s + '"><div class="busy-date-table-cell"><span class="busy-date-table-cell__text">' + day.getDate() + '</span></div></td>');
+    }
+    rows.push('<tr class="busy-date-table__row">' + cells.join('') + '</tr>');
+  }
+  $('dpBody').innerHTML = rows.join('');
+}
+function openPicker(host, value, onPick) {
+  var base = toDate(validDate(value) || /^\d{4}-\d{2}-\d{2}$/.test(value) ? value : TODAY);
+  picker.host = host;
+  picker.value = value;
+  picker.year = base.getFullYear();
+  picker.month = base.getMonth();
+  picker.onPick = onPick;
+  renderPicker();
+  var pop = $('datePop');
+  host.appendChild(pop);
+  pop.hidden = false;
+  /* 视口下方空间不足时向上展开 */
+  var rect = host.getBoundingClientRect();
+  pop.classList.toggle('is-up', rect.bottom + pop.offsetHeight + 80 > window.innerHeight && rect.top > pop.offsetHeight + 8);
+}
+function closePicker() {
+  var pop = $('datePop');
+  if (pop.hidden) return;
+  pop.hidden = true;
+  document.body.appendChild(pop);
+  picker.host = null;
+}
+$('datePop').addEventListener('click', function (e) {
+  e.stopPropagation();
+  var nav = e.target.closest('[data-nav]');
+  if (nav) {
+    var n = +nav.getAttribute('data-nav');
+    var d = new Date(picker.year, picker.month + n, 1);
+    picker.year = d.getFullYear();
+    picker.month = d.getMonth();
+    renderPicker();
+    return;
+  }
+  var td = e.target.closest('[data-date]');
+  if (td) {
+    var v = td.getAttribute('data-date');
+    var cb = picker.onPick;
+    closePicker();
+    if (cb) cb(v);
+  }
+});
+document.addEventListener('mousedown', function (e) {
+  if ($('datePop').hidden) return;
+  if (e.target.closest('#datePop') || (picker.host && picker.host.contains(e.target))) return;
+  closePicker();
+});
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') closePicker(); });
+
+/* ===================== 渲染汇总 ===================== */
+function renderTrees() {
+  renderBizTree();
+  renderDevTree('sls');
+  renderDevTree('arms');
+  renderDbTree();
+}
+function renderCounts() {
+  var c = { biz: 0, dev: 0, db: 0 };
+  Object.keys(sel).forEach(function (k) { c[k.split('|')[0]]++; });
+  Object.keys(c).forEach(function (a) { document.querySelector('[data-count="' + a + '"]').textContent = c[a]; });
+}
+function updateSaveState() {
+  var btn = $('btnSave');
+  if (saving) return;
+  var disabled = BATCH ? batchPeople.length === 0 : (hasSelf() || canonical(sel) === canonical(original));
+  btn.disabled = disabled;
+  btn.classList.toggle('is-disabled', disabled);
+}
+function renderAll() {
+  renderTrees();
+  renderCounts();
+  renderList();
+  updateSaveState();
+}
+
+/* ===================== 保存 ===================== */
+function setFormDisabled(on) {
+  document.querySelectorAll('[data-form-panel]').forEach(function (p) { if (on) p.setAttribute('inert', ''); else p.removeAttribute('inert'); });
+  $('btnCancel').disabled = on;
+  $('btnCancel').classList.toggle('is-disabled', on);
+}
+function validateAll() {
+  var first = null;
+  if (hasSelf()) { $('assigneeError').hidden = false; first = $('assigneeSection'); }
+  var keys = Object.keys(sel);
+  if (BATCH && !keys.length) { $('scopeError').hidden = false; first = first || $('scopeSection'); }
+  if (def.mode === 'date' && !validDate(def.date)) { showDefError(true); first = first || $('defItem'); }
+  var rowFirst = null;
+  keys.sort(cmpKey).forEach(function (k) {
+    var a = validateExp(k), b = validateReason(k);
+    if ((!a || !b) && !rowFirst) rowFirst = k;
+  });
+  renderList();
+  if (rowFirst && !first) first = rowOf(rowFirst);
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return !first;
+}
+function doSave() {
+  var btn = $('btnSave');
+  saving = true;
+  closePicker();
+  setLoading(true);
+  setTimeout(function () {
+    if (MOCK_FAIL) {
+      saving = false;
+      setLoading(false);
+      var firstNew = Object.keys(sel).filter(function (k) { return !original[k]; }).sort(cmpKey)[0];
+      messageBox({
+        type: 'error', showCancel: false,
+        text: firstNew ? '「' + describe(firstNew) + '」已不可分配（服务、资源或库表已停用 / 关闭开放），请取消勾选后重试（Mock 错误详情）'
+          : '保存失败：服务暂不可用，请稍后重试（Mock 错误详情）'
+      });
+      updateSaveState();
+      return;
+    }
+    var c = counts();
+    if (BATCH) toast('已为 ' + batchPeople.length + ' 人追加权限分配，已通知本人');
+    else toast('已为「' + person.name + '」保存权限分配（新增 ' + c.added + ' 项，收回 ' + c.revoked + ' 项），已通知本人');
+    leaving = true;
+    setTimeout(function () { location.href = 'grant-list.html'; }, 1500);
+  }, 1000);
+  function setLoading(on) { setBtnLoading(btn, on); setFormDisabled(on); }
+}
+$('btnSave').addEventListener('click', function () {
+  if (saving || this.disabled) return;
+  if (!validateAll()) return;
+  if (BATCH) {
+    messageBox({
+      text: '将为 ' + batchPeople.length + ' 人追加 ' + Object.keys(sel).length + ' 项权限，确认分配？',
+      onConfirm: doSave
+    });
+    return;
+  }
+  var c = counts();
+  if (c.revoked > 0) {
+    messageBox({ text: '将收回 ' + c.revoked + ' 项权限，相关令牌中对应授权将立即失效，确认保存？', onConfirm: doSave });
+    return;
+  }
+  doSave();
+});
+
+/* ===================== 取消 / 离开守卫 ===================== */
+var initialSnapshot = '';
+function isDirty() { return !leaving && !saving && snapshot() !== initialSnapshot; }
+function guardLeave(href) {
+  if (!isDirty()) { location.href = href; return; }
+  messageBox({ text: '您有未保存的修改，确认离开？', onConfirm: function () { leaving = true; location.href = href; } });
+}
+$('btnCancel').addEventListener('click', function () {
+  if (this.disabled) return;
+  guardLeave('grant-list.html');
+});
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('a[href]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (!href || href.charAt(0) === '#') return;
+  if (saving) { e.preventDefault(); return; }
+  if (isDirty()) { e.preventDefault(); guardLeave(href); }
+}, true);
+
+/* ===================== 初始化 ===================== */
+(function init() {
+  if (BATCH) {
+    document.title = '批量分配 · MCP接入管理 · 静态原型';
+    $('pageTitle').textContent = '批量分配';
+    $('crumbLast').textContent = '批量分配';
+    $('assigneeBatch').hidden = false;
+    $('batchHint').hidden = false;
+  } else {
+    $('assigneeSingle').hidden = false;
+  }
+  /* 默认展开：服务、写入分组、数据库实例与库；研发工具业务域默认收起，含单资源分配的业务域展开 */
+  BIZ.forEach(function (s) { expanded['svc:' + s.id] = true; expanded['grp:' + s.id] = true; });
+  DBS.forEach(function (i) { expanded['inst:' + i.id] = true; i.dbs.forEach(function (d) { expanded['db:' + i.id + '/' + d.name] = true; }); });
+  Object.keys(sel).forEach(function (k) {
+    var g = parseKey(k);
+    if (g.area === 'dev' && g.kind === 'res') expanded['dom:' + g.type + ':' + g.res.domain] = true;
+  });
+  renderAssignee();
+  renderAll();
+  initialSnapshot = snapshot();
+})();
+</script>
+</body>
+</html>
