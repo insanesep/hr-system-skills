@@ -1,1497 +1,1354 @@
 <!DOCTYPE html>
-<html lang="zh-CN" data-theme="light">
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>研发排期工作台 · 功能排期 · 鸣鸣很忙</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>研发排期工作台 · 功能排期管理 · 鸣鸣很忙</title>
 <!--
-  功能排期 · 研发排期工作台（Web 原型）
-  页面描述真源：../../references/web-ui.md；规则真源：business-rule.md / state-machine.md / field-rules.md / permission-rules.md
-  样式只引用 design-system.css，控件取 busyming-skills-design/web/components 的组件 DOM；
-  交互由页内脚本承接，runtime.js 只负责图标注入与组件尺寸投影。卡片详情见 feature-schedule-detail.html，
-  两页共用 feature-schedule-data.js 的会话内演示数据。演示基准日 2026-10-17，数据为虚构样例。
+  功能排期 · 研发排期工作台（Web 原型 · Mock 演示数据，刷新即重置）
+  页面描述真源：../../references/web-ui.md#研发排期工作台 ｜ 页面类型 order-list
+  整页范例：busyming-skills-design/templates/web/order-list.html ｜ 状态机：../../references/state-machine.md
+  区块：指挥栏 A1–A9（池展开/时间导航/本月进度/搜索/视图切换/筛选/新建/更多）
+    → 待排期池 B1–B6（服务端分页 10/20/50、批量多选、空态）｜ 月视图 C / 周视图 D / 列表视图 E
+    → 浮层 G1–G12（筛选抽屉、日详情、年月选择、右键菜单、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示）
+  演示基准日 2026-10-21（周三）；当前登录人演示为「陈默」（PM，全权限）。
+  演示约定：卡片 DOM 仅用 busy-*/.tpl-*/.u-* 类，JS 定位一律 data-* 属性；
+    拖拽/右键/快捷键 (←/→/T/Esc) 均已实现；浮层按硬约束以文档流内 overlay 承载（busy-overlay-demo 遮罩视觉），
+    定位、600/640 弹层尺寸等生产细节由组件库默认承载，不在原型写私有 CSS。
 -->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
-<style>
-  /* 非需求改动弹层固定高度：设计系统 AcModal 仅提供视口级 max-height，暂无固定高度属性 */
-  .fs-nf-modal { height: min(640px, calc(100vh - 140px)); display: flex; flex-direction: column; }
-  .fs-nf-modal .ac-modal__body { flex: 1 1 auto; min-height: 0; max-height: none; overflow-y: auto; }
-  .fs-nf-modal .ac-modal__footer { flex: 0 0 auto; }
-  .fs-nf-modal .ac-modal__footer[hidden] { display: none; }
-</style>
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
 </head>
 <body>
-<nav class="web-nav">
-  <span class="web-nav__logo">鸣鸣很忙</span>
-  <span class="web-nav__crumb">研发 / 研发管理 / <b>功能排期管理</b></span>
-  <span class="web-nav__spacer"></span>
-  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
-    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
-    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
-      <div class="ac-dropdown-group-title">Web</div>
-      <a class="ac-dropdown-item is-active" role="menuitem" href="feature-schedule.html">研发排期工作台</a>
-      <a class="ac-dropdown-item" role="menuitem" href="feature-schedule-detail.html">卡片详情</a>
-      <div class="ac-dropdown-divider"></div>
-      <div class="ac-dropdown-item" role="menuitem" tabindex="0" id="protoResetBtn">重置演示数据</div>
-    </div>
-  </div>
-  <span class="web-nav__crumb">张三</span>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发管理 / <b>功能排期管理</b></span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">产品经理 · 陈默</span>
 </nav>
 
-<section class="tpl-page" id="fsPage">
-  <div class="tpl-panel">
+<section class="tpl-page">
+  <!-- ========== A. 指挥栏（单行；A1 池展开入口在池收起时出现于最左侧） ========== -->
+  <div class="tpl-panel" id="commandBar">
     <div class="tpl-toolbar">
       <div class="tpl-toolbar__left">
-        <button class="ac-btn" type="button" id="poolExpandBtn" hidden><span class="ac-icon" data-ac="AcIcon" data-name="double-right" data-size="sm"></span><span class="ac-btn__label">待排期</span><span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="poolExpandCount">0</span></span></button>
-        <button class="ac-btn" type="button" id="prevBtn" aria-label="上一期"><span class="ac-icon" data-ac="AcIcon" data-name="left" data-size="sm"></span></button>
-        <span class="ac-popover" data-ac="AcPopover" data-trigger="click" id="periodPop">
-          <button class="ac-btn ac-btn--text" type="button" id="periodBtn"><span class="ac-btn__label" id="periodText">2026 年 10 月</span><span class="ac-icon" data-ac="AcIcon" data-name="down" data-size="sm" id="periodArrow"></span></button>
-          <span data-ac="AcDatePicker"><span class="ac-date-picker__panel" id="monthPanel" hidden></span></span>
+        <span id="poolOpenEntry" hidden>
+          <button class="busy-button busy-button--small" type="button" id="btnPoolOpen"><span>待排期 23 ▶</span></button>
         </span>
-        <button class="ac-btn" type="button" id="nextBtn" aria-label="下一期"><span class="ac-icon" data-ac="AcIcon" data-name="right" data-size="sm"></span></button>
-        <button class="ac-btn" type="button" id="todayBtn">今天</button>
-        <span id="statsInline"></span>
-        <span class="ac-popover" data-ac="AcPopover" data-trigger="click" id="progressPop" hidden>
-          <button class="ac-btn" type="button" id="progressBtn"><span class="ac-btn__label">进度</span><span class="ac-icon" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
-          <span class="ac-popover__pop" role="dialog" id="progressPanel" hidden><span class="ac-popover__title">本月进度</span><span class="ac-popover__content" id="statsPop"></span></span>
+        <button class="busy-button busy-button--small" type="button" id="btnPrev"><span>‹</span></button>
+        <button class="busy-button is-text" type="button" id="periodLabel"><span>2026 年 10 月 ▾</span></button>
+        <button class="busy-button busy-button--small" type="button" id="btnNext"><span>›</span></button>
+        <button class="busy-button busy-button--small" type="button" id="btnToday"><span>今天</span></button>
+        <span class="u-sub" id="statWrap">
+          本月进度：待排期 <b class="u-strong">23</b>
+          <button class="busy-button busy-button--small busy-button--primary is-plain" type="button" data-stat="PENDING"><span>待开发 8</span></button>
+          <button class="busy-button busy-button--small busy-button--primary is-plain" type="button" data-stat="IN_PROGRESS"><span>开发中 4</span></button>
+          <button class="busy-button busy-button--small busy-button--primary is-plain" type="button" data-stat="DONE"><span>已完成 2</span></button>
+          <button class="busy-button busy-button--small busy-button--warning is-plain" type="button" data-stat="DELAYED"><span>延期 2</span></button>
         </span>
+        <button class="busy-button is-text" type="button" id="btnProgressFloat"><span>进度 ▾</span></button>
       </div>
       <div class="tpl-toolbar__right">
-        <span class="ac-input tpl-toolbar__search" id="searchBox"><span class="ac-input__prefix"><span class="ac-icon" data-ac="AcIcon" data-name="search" data-size="sm"></span></span><input class="ac-input__inner" type="search" id="searchInput" placeholder="搜索任务：标题 / 编号 / 提交人" autocomplete="off" /></span>
-        <div class="ac-segmented" data-ac="AcSegmented" role="tablist" id="viewSeg">
-          <button class="ac-btn ac-segmented__item" type="button" data-view="month" data-long="月视图" data-short="月">月视图</button>
-          <button class="ac-btn ac-segmented__item" type="button" data-view="week" data-long="周视图" data-short="周">周视图</button>
-          <button class="ac-btn ac-segmented__item" type="button" data-view="list" data-long="列表" data-short="列表">列表</button>
+        <div class="busy-input tpl-toolbar__search"><input id="searchInput" placeholder="搜索任务：标题 / 编号 / 提交人"></div>
+        <div class="busy-radio-group" id="viewSwitch">
+          <label class="busy-radio-button is-checked" data-view="month"><span class="busy-radio-button__inner">月视图</span></label>
+          <label class="busy-radio-button" data-view="week"><span class="busy-radio-button__inner">周视图</span></label>
+          <label class="busy-radio-button" data-view="list"><span class="busy-radio-button__inner">列表</span></label>
         </div>
-        <button class="ac-btn" type="button" id="filterBtn"><span class="ac-icon" data-ac="AcIcon" data-name="filter" data-size="sm"></span><span class="ac-btn__label">筛选</span><span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count" id="filterCountWrap" hidden><span class="ac-badge__count" id="filterCount">0</span></span></button>
-        <button class="ac-btn ac-btn--primary" type="button" id="newCardBtn"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span><span class="ac-btn__label">新建卡片</span></button>
-        <div class="ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="moreDd">
-          <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="moreBtn"><span class="ac-btn__label">更多</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
-          <div class="ac-dropdown__menu" role="menu" id="moreMenu" hidden>
-            <div class="ac-dropdown-item" role="menuitem" data-menu="merge">合并卡片</div>
-            <div class="ac-dropdown-divider"></div>
-            <div class="ac-dropdown-group-title">显示密度</div>
-            <div class="ac-dropdown-item" role="menuitem" data-menu="density" data-density="standard">标准</div>
-            <div class="ac-dropdown-item" role="menuitem" data-menu="density" data-density="compact">紧凑</div>
-            <div class="ac-dropdown-divider"></div>
-            <div class="ac-dropdown-item" role="menuitem" data-menu="nonfeature">非需求改动<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="nfCount">0</span></span></div>
-            <div class="ac-dropdown-item" role="menuitem" data-menu="projects">项目配置</div>
+        <span class="busy-badge" id="filterBadge">
+          <button class="busy-button" type="button" id="btnFilter"><span>筛选</span></button>
+          <span class="busy-badge__content" id="filterCount" hidden>0</span>
+        </span>
+        <button class="busy-button busy-button--primary" type="button" id="btnCreate"><span>新建卡片</span></button>
+        <button class="busy-button" type="button" id="btnMore"><span>更多 ▾</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========== 主体：待排期池（固定宽左栏，可收起）｜ 视图区（自适应） ========== -->
+  <div class="tpl-dual">
+    <!-- B. 待排期池 -->
+    <div class="tpl-panel" id="poolPanel">
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">待排期</span><span class="u-sub">共 <b id="poolTotal">23</b> 张</span></div>
+        <div class="tpl-toolbar__right">
+          <button class="busy-button busy-button--small" type="button" id="btnBatch"><span>批量</span></button>
+          <button class="busy-button busy-button--small" type="button" id="btnPoolCollapse"><span>收起</span></button>
+        </div>
+      </div>
+      <div id="poolBody">
+        <div id="poolList"></div>
+        <div class="tpl-table-foot" id="poolPager"></div>
+      </div>
+      <div id="poolCollapsedTip" hidden><span class="u-sub">待排期池已收起，点击指挥栏最左侧「待排期 N ▶」展开。</span></div>
+    </div>
+
+    <!-- 视图区 -->
+    <div class="tpl-dual__main">
+      <div class="tpl-panel" id="viewMonth">
+        <table class="busy-table busy-table--border" id="monthTable">
+          <thead><tr><th>周一</th><th>周二</th><th>周三</th><th>周四</th><th>周五</th><th>周六</th><th>周日</th></tr></thead>
+          <tbody id="monthBody"></tbody>
+        </table>
+      </div>
+      <div class="tpl-panel" id="viewWeek" hidden>
+        <table class="busy-table busy-table--border" id="weekTable">
+          <thead id="weekHead"></thead>
+          <tbody id="weekBody"></tbody>
+        </table>
+      </div>
+      <div class="tpl-panel" id="viewList" hidden>
+        <table class="busy-table" id="listTable">
+          <thead>
+            <tr>
+              <th>任务</th><th>编号</th><th>项目</th><th>模块</th><th>提交人</th><th>开发人</th>
+              <th><button class="busy-button is-text" type="button" data-sort="start"><span>开始 ↕</span></button></th>
+              <th>截止</th><th>状态</th>
+              <th><button class="busy-button is-text" type="button" data-sort="created"><span>创建时间 ↕</span></button></th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="listBody"></tbody>
+        </table>
+        <div class="busy-empty" id="listEmpty" hidden><div class="busy-empty__image">▦</div>本月暂无已排期的卡片</div>
+      </div>
+      <div class="tpl-panel" id="zeroHit" hidden>
+        <div class="busy-empty"><div class="busy-empty__image">▦</div>当前筛选/搜索条件下暂无任务
+          <div class="tpl-footer-bar">
+            <button class="busy-button" type="button" id="btnClearFilter"><span>清空筛选</span></button>
+            <button class="busy-button busy-button--primary" type="button" id="btnClearSearch"><span>清除搜索</span></button>
           </div>
         </div>
       </div>
     </div>
   </div>
 
-  <div class="tpl-dual" id="mainDual">
-    <aside class="tpl-dual__side tpl-dual__side--sticky" id="poolSide">
-      <div class="tpl-panel" id="poolPanel" data-drop="pool">
-        <div class="tpl-toolbar">
-          <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">待排期</span><span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--count"><span class="ac-badge__count" id="poolCount">0</span></span></div>
-          <div class="tpl-toolbar__right">
-            <button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="batchBtn">批量</button>
-            <button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="poolCollapseBtn" aria-label="收起待排期池"><span class="ac-icon" data-ac="AcIcon" data-name="double-left" data-size="sm"></span></button>
-          </div>
-        </div>
-        <div class="tpl-section" id="poolList"></div>
-        <div class="tpl-section" id="poolPager"></div>
-      </div>
-    </aside>
-    <div class="tpl-dual__main">
-      <div class="tpl-panel" id="viewPanel">
-        <div class="ac-calendar ac-calendar--full" data-ac="AcCalendar" role="grid" id="monthView"></div>
-        <div data-ac="AcCalendar" id="weekView" hidden></div>
-        <div id="listView" hidden></div>
-        <div class="ac-alert ac-alert--normal" data-ac="AcAlert" role="status" id="zeroHint" hidden>
-          <div class="ac-alert__icon">●</div>
-          <div class="ac-alert__body"><div class="ac-alert__content">当前筛选/搜索条件下暂无任务</div></div>
-          <div class="ac-alert__action"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="clearFiltersBtn">清空筛选</button><button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="clearSearchBtn">清除搜索</button></div>
-        </div>
-      </div>
-    </div>
+  <!-- G6 合并操作条 / B4 批量操作条（底部，信息居左、操作居右同组） -->
+  <div class="tpl-batch-bar" id="mergeBar" hidden>
+    <span class="tpl-batch-bar__info">已选 <strong id="mergeCount">0</strong> 张 · 模块 <strong id="mergeModule">—</strong></span>
+    <span class="tpl-batch-bar__actions">
+      <button class="busy-button" type="button" id="btnMergeCancel"><span>取消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="btnMergeOk"><span>确认合并</span></button>
+    </span>
+  </div>
+  <div class="tpl-batch-bar" id="batchBar" hidden>
+    <span class="tpl-batch-bar__info">已选 <strong id="batchCount">0</strong> 张</span>
+    <span class="tpl-batch-bar__actions">
+      <button class="busy-button" type="button" id="btnBatchCancel"><span>取消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="btnBatchMove"><span>移入非需求</span></button>
+    </span>
   </div>
 </section>
 
-<div class="tpl-actionbar" id="modeBar" hidden>
-  <div class="tpl-actionbar__inner">
-    <div class="tpl-batch-bar">
-      <span class="tpl-batch-bar__info" id="modeInfo"></span>
-      <div class="tpl-batch-bar__actions">
-        <button class="ac-btn ac-btn--sm" type="button" id="modeCancelBtn">取消</button>
-        <button class="ac-btn ac-btn--sm ac-btn--primary" type="button" id="modeOkBtn">确认合并</button>
-      </div>
-    </div>
-  </div>
-</div>
+<!-- ========== G. 浮层（overlay host：文档流内承载，Esc 分层关闭） ========== -->
+<div class="busy-overlay-demo" id="ovFilter" hidden></div>
+<div class="busy-overlay-demo" id="ovDay" hidden></div>
+<div class="busy-overlay-demo" id="ovYm" hidden></div>
+<div class="busy-overlay-demo" id="ovCtx" hidden></div>
+<div class="busy-overlay-demo" id="ovMerge" hidden></div>
+<div class="busy-overlay-demo" id="ovCreate" hidden></div>
+<div class="busy-overlay-demo" id="ovNonFeature" hidden></div>
+<div class="busy-overlay-demo" id="ovProject" hidden></div>
+<div class="busy-overlay-demo" id="ovProgress" hidden></div>
+<div class="busy-overlay-demo" id="ovMore" hidden></div>
 
-<div class="ac-drawer ac-drawer--right" data-ac="AcDrawer" data-placement="right" data-width="380" id="filterDrawer" hidden>
-  <div class="ac-drawer__mask" data-close="filterDrawer"></div>
-  <div class="ac-drawer__body ac-drawer__body--right" role="dialog" aria-modal="true">
-    <header class="ac-drawer__header"><div class="ac-drawer__title">筛选</div><div class="ac-drawer__extra"><button class="ac-btn ac-drawer__close" type="button" aria-label="关闭" data-close="filterDrawer">×</button></div></header>
-    <div class="ac-drawer__content" id="fdContent"></div>
-    <footer class="ac-drawer__footer">
-      <button class="ac-btn" type="button" id="fdResetBtn">重置</button>
-      <button class="ac-btn" type="button" data-close="filterDrawer">取消</button>
-      <button class="ac-btn ac-btn--primary" type="button" id="fdOkBtn">确定</button>
-    </footer>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="dayModal" hidden>
-  <div class="ac-modal__mask" data-close="dayModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="560">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="dayModalTitle">日详情</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="dayModal">×</button></div>
-      <div class="ac-modal__body"><div class="tpl-section" id="dayModalBody"></div></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="mergeModal" hidden>
-  <div class="ac-modal__mask" data-close="mergeModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="460">
-      <div class="ac-modal__header"><div class="ac-modal__title">生成合并卡</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="mergeModal">×</button></div>
-      <div class="ac-modal__body"><div class="tpl-section" id="mergeModalBody"></div></div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="mergeModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="mergeOkBtn">确定</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="newCardModal" hidden>
-  <div class="ac-modal__mask" data-close="newCardModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="600">
-      <div class="ac-modal__header"><div class="ac-modal__title">新建卡片</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="newCardModal">×</button></div>
-      <div class="ac-modal__body"><div class="tpl-section" id="newCardBody"></div></div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="newCardModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="newCardOkBtn">确认建卡</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="nfModal" hidden>
-  <div class="ac-modal__mask" data-close="nfModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel fs-nf-modal" data-width="600">
-      <div class="ac-modal__header"><div class="ac-modal__title">非需求改动</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="nfModal">×</button></div>
-      <div class="ac-modal__body" id="nfModalBody"></div>
-      <div class="ac-modal__footer" id="nfModalFooter" hidden></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal" data-ac="AcModal" id="projectModal" hidden>
-  <div class="ac-modal__mask" data-close="projectModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="860">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="projectModalTitle">项目配置</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="projectModal">×</button></div>
-      <div class="ac-modal__body"><div class="tpl-section" id="projectModalBody"></div></div>
-      <div class="ac-modal__footer" id="projectModalFooter"></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
-  <div class="ac-modal__mask" data-close="confirmModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="440">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="confirmTitle">确认操作</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="confirmModal">×</button></div>
-      <div class="ac-modal__body ac-modal__body--semantic"><span class="ac-modal__sem-icon ac-modal__sem-icon--warning">!</span><div id="confirmContent"></div></div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" id="confirmCancelBtn">取消</button><button class="ac-btn ac-btn--primary" type="button" id="confirmOkBtn">确认</button></div>
-    </div>
-  </div>
-</div>
-
-<div class="ac-dropdown" data-ac="AcDropdown" data-trigger="contextmenu" id="ctxDd"><div class="ac-dropdown__menu" role="menu" id="ctxMenu" hidden></div></div>
-
-<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
-  <div class="ac-popconfirm__inner">
-    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning">⚠</span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
-    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
-  </div>
-  <span class="ac-popconfirm__arrow"></span>
-</div>
-
-<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
-
-<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
-<script src="feature-schedule-data.js"></script>
+<script src="./feature-schedule-data.js"></script>
 <script>
-(function () {
-  'use strict';
-  /* ---------- 基础工具 ---------- */
-  const $ = (s, r) => (r || document).querySelector(s);
-  const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-  const esc = (s) => String(s == null ? '' : s).replace(/[&<>"']/g, (ch) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[ch]));
-  const pad = (n) => String(n).padStart(2, '0');
-  const ds = (d) => d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
-  const pd = (s) => { const a = s.slice(0, 10).split('-').map(Number); return new Date(a[0], a[1] - 1, a[2]); };
-  const addDays = (d, n) => new Date(d.getFullYear(), d.getMonth(), d.getDate() + n);
-  const shift = (s, n) => ds(addDays(pd(s), n));
-  const span = (a, b) => Math.round((pd(b) - pd(a)) / 86400000);
-  const md = (s) => s.slice(5, 10);
-  const mondayOf = (d) => addDays(d, -((d.getDay() + 6) % 7));
-  const parseDT = (s) => { const p = s.split(' '); const a = p[0].split('-').map(Number); const b = (p[1] || '00:00').split(':').map(Number); return new Date(a[0], a[1] - 1, a[2], b[0], b[1]); };
-  const WEEK = ['一', '二', '三', '四', '五', '六', '日'];
-  const wait = (ms) => new Promise((r) => setTimeout(r, ms || 360));
-  const store = {
-    get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : v; } catch (e) { return d; } },
-    set(k, v) { try { localStorage.setItem(k, v); } catch (e) { return; } },
-  };
+/* ==================== 状态与通用 ==================== */
+var D = FS_DATA, P = FS_PROTO;
+var S = {
+  year: 2026, month: 9,                 /* 0-based：2026-10 */
+  view: localStorage.getItem('fs_view') || 'month',
+  density: localStorage.getItem('fs_density') || 'standard',
+  poolCollapsed: localStorage.getItem('fs_pool') === '1',
+  poolPage: 1, poolSize: 10,
+  weekAnchor: D.today,                  /* 周视图锚定日期 */
+  search: '',
+  filters: { mine: false, status: [], owners: [], repos: [], projects: [], modules: [] },
+  quickStatus: null,                    /* 指挥栏状态快捷筛选 */
+  batch: false, mergeMode: false, selected: {},
+  sortKey: null, sortAsc: true
+};
+var $ = function (id) { return document.getElementById(id); };
+function iso(d) { return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+function parseD(s) { return new Date(s + 'T00:00:00'); }
+function repoOf(card) { var p = P.projectOf(card.project); return p.harness || 'unknown-repo'; }
+function isMine(card) { return card.submitter === D.user || card.developer === D.user; }
+function statusKey(card) { return P.statusMeta(card).label; } /* 待开发/开发中/开发完成/延期 */
 
-  const D = window.FS_DEMO;
-  const TODAY_S = D.TODAY;
-  const TODAY = pd(TODAY_S);
-  const NOW_S = D.NOW;
-  const NOW = parseDT(NOW_S);
-  const ME = D.ME;
-  const USERS = D.USERS;
-  const PERM = { EDIT: true, DELETE: true, MARK_DONE: true, RELEASE_DAY: true };
+/* 筛选 + 搜索（口径见 business-rule §5/§6；待排期池由服务端过滤，原型本地同口径模拟） */
+function matchSearch(card) {
+  if (!S.search) return true;
+  var kws = S.search.split(/[,，\s]+/).filter(Boolean);
+  var hay = (card.title + ' ' + (card.content || '') + ' ' + card.no + ' ' + card.submitter).toLowerCase();
+  return kws.every(function (k) { return hay.indexOf(k.toLowerCase()) >= 0; });
+}
+function matchFilter(card) {
+  var f = S.filters;
+  if (f.mine && !isMine(card)) return false;
+  var st = f.status.slice();
+  var label = P.statusMeta(card).label;
+  if (S.quickStatus === 'DELAYED') { if (label !== '延期') return false; }
+  else if (S.quickStatus && label !== statusLabelOf(S.quickStatus)) return false;
+  if (st.length && st.indexOf(label) < 0) return false;
+  if (f.owners.length && f.owners.indexOf(card.submitter) < 0 && f.owners.indexOf(card.developer || '') < 0) return false;
+  if (f.repos.length && f.repos.indexOf(repoOf(card)) < 0) return false;
+  if (f.projects.length) {
+    var pname = P.projectOf(card.project).name;
+    if (f.projects.indexOf(pname) < 0) return false;
+  }
+  if (f.modules.length && f.modules.indexOf(card.module) < 0) return false;
+  return true;
+}
+function statusLabelOf(key) { return { PENDING: '待开发', IN_PROGRESS: '开发中', DONE: '开发完成', DELAYED: '延期' }[key]; }
+function visibleScheduled() { return D.scheduled.filter(function (c) { return matchFilter(c); }); }
+function visiblePool() {
+  var all = D.pool.items.concat(D.pool.page2, D.pool.page3);
+  return all.filter(function (c) { return matchFilter(c) && matchSearch(c); });
+}
+function filterCount() {
+  var f = S.filters, n = 0;
+  if (f.mine) n++;
+  if (f.status.length) n++;
+  if (f.owners.length) n++;
+  if (f.repos.length && f.repos.length < D.filterOptions.repos.length) n++;
+  if (f.projects.length && f.projects.length < D.filterOptions.projects.length) n++;
+  if (f.modules.length) n++;
+  return n;
+}
+function anyFilterActive() { return filterCount() > 0 || !!S.quickStatus || !!S.search; }
 
-  const ST = {
-    PENDING: { label: '待开发', badge: 'default' },
-    IN_PROGRESS: { label: '开发中', badge: 'processing' },
-    DONE: { label: '开发完成', badge: 'success' },
-    DELAYED: { label: '延期', badge: 'warning' },
-    NON_FEATURE: { label: '非需求改动', badge: 'default' },
-  };
-  const STAT_KEYS = ['PENDING', 'IN_PROGRESS', 'DONE', 'DELAYED'];
-  const STAT_LABEL = { PENDING: '待开发', IN_PROGRESS: '开发中', DONE: '已完成', DELAYED: '延期' };
-  const LOG_TONE = { MARKED_DONE: 'success', REVERTED: 'danger', DELETED: 'danger', RESCHEDULED: 'warning', UNSCHEDULED: 'warning', RELEASED: 'warning' };
+/* 卡片 DOM（各视图通用；density=compact 时单行） */
+function cardHtml(card, mode) {
+  var hit = !S.search || matchSearch(card);
+  var title = card.title;
+  if (S.search && hit) {
+    var kws = S.search.split(/[,，\s]+/).filter(Boolean);
+    kws.forEach(function (k) { title = title.split(k).join('<b class="u-primary">' + k + '</b>'); });
+  }
+  var mergeTag = card.merged ? '<span class="busy-tag busy-tag--small is-plain">⊕ 合并 · ' + card.childCount + ' 项</span>' : '';
+  var lockTag = card.status === 'DONE' ? '<span class="busy-tag busy-tag--small busy-tag--info">锁定</span>' : '';
+  var staleTag = card.stale ? '<span class="busy-tag busy-tag--small busy-tag--warning">超 7 天未排期</span>' : '';
+  var dimCls = (S.search && !hit) ? ' u-muted' : '';
+  var checkbox = (S.batch || S.mergeMode) ? '<label class="busy-checkbox' + (S.selected[card.no] ? ' is-checked' : '') + (S.mergeMode && !mergeable(card) ? ' is-disabled' : '') + '"><span class="busy-checkbox__inner"></span></label> ' : '';
+  if (mode === 'compact') {
+    return '<div data-card="' + card.no + '"' + dragAttr(card) + '>' + checkbox +
+      '<span class="chip-group' + dimCls + '">' + P.statusCell(card) + P.projectTag(card.project, true) +
+      '<span>' + (card.title.length > 10 ? card.title.slice(0, 10) + '…' : card.title) + '</span>' +
+      '<span class="u-sub">' + card.submitter + '</span>' + mergeTag + lockTag + '</span></div>';
+  }
+  var line3 = card.no + ' · ' + card.submitter + (card.developer ? ' → ' + card.developer : '');
+  if (mode === 'pool') line3 = card.created + ' · ' + card.ago + ' · ' + card.submitter;
+  return '<div data-card="' + card.no + '"' + dragAttr(card) + '>' + checkbox +
+    '<div class="' + (dimCls ? 'u-muted' : '') + '"><b>' + title + '</b> ' + mergeTag + lockTag + staleTag + '</div>' +
+    '<div class="chip-group">' + P.statusCell(card) + P.projectTag(card.project, true) +
+    '<span class="busy-tag busy-tag--small busy-tag--info is-plain">' + card.module + '</span></div>' +
+    '<div class="u-sub u-mono">' + line3 + '</div></div>';
+}
+function dragAttr(card) {
+  var locked = card.status === 'DONE' || card.status === 'NON_FEATURE' || card.child;
+  return locked ? '' : ' draggable="true"';
+}
+function mergeable(card) { return card.status === 'PENDING' || card.status === 'IN_PROGRESS'; }
 
-  /* ---------- 演示数据（与卡片详情页共用，会话内保存） ---------- */
-  const REPOS = D.REPOS;
-  const repoOf = (r) => REPOS.find((x) => x.repo === r);
-  const COMMITS = D.COMMITS;
-  const DB = D.load();
-  const CARDS = DB.cards;
-  const PROJECTS = DB.projects;
-  const RELEASE = new Set(DB.release);
-  const mk = D.mk;
-  const makeLog = D.makeLog;
-  const persist = () => { DB.release = [...RELEASE]; D.save(DB); };
+/* ==================== 渲染：指挥栏统计 ==================== */
+function statScope(card) {
+  /* business-rule §4：仅只看自己与项目筛选影响统计；状态/负责人/仓/模块/搜索不改变统计 */
+  var f = S.filters;
+  if (f.mine && !isMine(card)) return false;
+  if (f.projects.length && f.projects.indexOf(P.projectOf(card.project).name) < 0) return false;
+  return true;
+}
+function renderStats() {
+  var prefix = S.year + '-' + String(S.month + 1).padStart(2, '0');
+  var inMonth = D.scheduled.filter(function (c) { return statScope(c) && c.start && c.start.slice(0, 7) === prefix; });
+  var cnt = { PENDING: 0, IN_PROGRESS: 0, DONE: 0, DELAYED: 0 };
+  inMonth.forEach(function (c) {
+    var m = P.statusMeta(c);
+    if (m.label === '延期') cnt.DELAYED++; else cnt[c.status]++;
+  });
+  $('statWrap').querySelector('b').textContent = statPoolTotal();
+  var statLabel = { PENDING: '待开发', IN_PROGRESS: '开发中', DONE: '已完成', DELAYED: '延期' };
+  document.querySelectorAll('#statWrap [data-stat]').forEach(function (b) {
+    var k = b.getAttribute('data-stat');
+    b.querySelector('span').textContent = statLabel[k] + ' ' + cnt[k];
+    if (S.quickStatus === k) { b.classList.remove('is-plain'); } else { b.classList.add('is-plain'); }
+  });
+  var fc = $('filterCount'), n = filterCount();
+  fc.hidden = n === 0; fc.textContent = n;
+  $('btnPoolOpen').querySelector('span').textContent = '待排期 ' + visiblePoolTotal() + ' ▶';
+}
+function statPoolTotal() {
+  var all = D.pool.items.concat(D.pool.page2, D.pool.page3);
+  var n = all.filter(statScope).length;
+  /* 池内全量总数与页码无关；无筛选时取全量 total 演示 */
+  return (S.filters.mine || S.filters.projects.length) ? n : D.pool.total;
+}
+function visiblePoolTotal() {
+  /* 待排期统计取池内全量总数（不随页码变化）；筛选/搜索变化时由服务端返回命中总数，此处按可见数模拟 */
+  return anyFilterActive() ? visiblePool().length : D.pool.total;
+}
 
-  /* ---------- 页面状态 ---------- */
-  const newFilter = () => ({ onlyMine: false, status: new Set(), owner: new Set(), module: new Set(), repo: null, project: null });
-  const cloneFilter = (f) => ({ onlyMine: f.onlyMine, status: new Set(f.status), owner: new Set(f.owner), module: new Set(f.module), repo: f.repo ? new Set(f.repo) : null, project: f.project ? new Set(f.project) : null });
-  const S = {
-    view: store.get('fs.view', 'month'),
-    density: store.get('fs.density', 'standard'),
-    poolCollapsed: store.get('fs.poolCollapsed', '0') === '1',
-    y: TODAY.getFullYear(),
-    m: TODAY.getMonth(),
-    weekStart: mondayOf(TODAY),
-    search: '',
-    f: newFilter(),
-    draft: null,
-    mode: null,
-    selected: new Set(),
-    mergeModule: null,
-    poolPage: 1,
-    poolSize: 10,
-    nfPage: 1,
-    nfSize: 10,
-    sort: { key: 'start', dir: 'asc' },
-    drag: null,
-  };
-  if (!['month', 'week', 'list'].includes(S.view)) S.view = 'month';
-  if (!['standard', 'compact'].includes(S.density)) S.density = 'standard';
-  const CTX = D.unstash('fs.ctx');
-  if (CTX) {
-    const toSet = (a) => (a ? new Set(a) : null);
-    Object.assign(S, { view: CTX.view, y: CTX.y, m: CTX.m, weekStart: pd(CTX.weekStart), search: CTX.search, poolPage: CTX.poolPage || 1, poolSize: [10, 20, 50].includes(CTX.poolSize) ? CTX.poolSize : 10, sort: CTX.sort });
-    S.f = { onlyMine: CTX.f.onlyMine, status: new Set(CTX.f.status), owner: new Set(CTX.f.owner), module: new Set(CTX.f.module), repo: toSet(CTX.f.repo), project: toSet(CTX.f.project) };
-  }
+/* ==================== 渲染：待排期池 B ==================== */
+function poolPageItems() {
+  var all = anyFilterActive() ? visiblePool() : D.pool.items.concat(D.pool.page2, D.pool.page3);
+  var from = (S.poolPage - 1) * S.poolSize;
+  return all.slice(from, from + S.poolSize);
+}
+function renderPool() {
+  $('poolPanel').querySelector('#poolBody').hidden = S.poolCollapsed;
+  $('poolCollapsedTip').hidden = !S.poolCollapsed;
+  $('poolOpenEntry').hidden = !S.poolCollapsed;
+  $('btnPoolCollapse').querySelector('span').textContent = S.poolCollapsed ? '已收起' : '收起';
+  if (S.poolCollapsed) return;
+  $('poolTotal').textContent = visiblePoolTotal();
+  $('btnBatch').querySelector('span').textContent = S.batch ? '退出批量' : '批量';
 
-  /* ---------- 卡片判定 ---------- */
-  const byNo = (no) => CARDS.find((c) => c.no === no);
-  const alive = (c) => !c.deleted;
-  const endOf = (c) => c.end || c.start;
-  const ownerKey = (c) => c.dev || c.owner;
-  const monthKey = () => (S.view === 'week' ? ds(S.weekStart).slice(0, 7) : S.y + '-' + pad(S.m + 1));
-  const delayCtx = () => (S.view === 'week' ? TODAY >= S.weekStart && TODAY <= addDays(S.weekStart, 6) : S.y === TODAY.getFullYear() && S.m === TODAY.getMonth());
-  const isDelayed = (c) => delayCtx() && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && !!c.start && endOf(c) < TODAY_S;
-  const dispStatus = (c) => (isDelayed(c) ? 'DELAYED' : c.status);
-  const isLocked = (c) => c.status === 'DONE' || c.status === 'NON_FEATURE' || !!c.parent;
-  const projectOf = (repo) => { const p = PROJECTS.find((x) => x.enabled && x.harness === repo); return p ? p.name : '未归属项目'; };
-  const projectEntryOf = (repo) => PROJECTS.find((x) => x.enabled && x.harness === repo) || null;
-  const projectColorOf = (repo) => { const p = projectEntryOf(repo); return p && p.color ? p.color : 'default'; };
-  const projectColorByName = (name) => { const p = PROJECTS.find((x) => x.enabled && x.name === name); return p && p.color ? p.color : 'default'; };
-  const sourceRepos = () => PROJECTS.filter((p) => p.enabled && repoOf(p.harness)).map((p) => p.harness);
-  const projectOptions = () => PROJECTS.filter((p) => p.enabled).map((p) => p.name).concat('未归属项目');
-  const subset = (set, all) => !!set && set.size > 0 && set.size < all.length;
-  function passFilters(c, f, o) {
-    const opt = o || {};
-    if (f.onlyMine && c.owner !== ME && c.dev !== ME) return false;
-    if (subset(f.project, projectOptions()) && !f.project.has(projectOf(c.repo))) return false;
-    if (opt.onlyBase) return true;
-    if (f.status.size && !f.status.has(opt.pool ? c.status : dispStatus(c))) return false;
-    if (f.owner.size && !f.owner.has(ownerKey(c))) return false;
-    if (f.module.size && !f.module.has(c.module)) return false;
-    if (subset(f.repo, sourceRepos()) && !f.repo.has(c.repo)) return false;
-    return true;
-  }
-  const tokens = () => S.search.trim().toLowerCase().split(/[,，\s]+/).filter(Boolean);
-  function hitOf(c) {
-    const t = tokens();
-    if (!t.length) return null;
-    const hay = (c.title + ' ' + c.content + ' ' + c.no + ' ' + c.owner).toLowerCase();
-    return t.every((k) => hay.includes(k));
-  }
-  const poolAll = () => CARDS.filter((c) => alive(c) && !c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, { pool: true })).sort((a, b) => (a.createdAt === b.createdAt ? (a.no < b.no ? 1 : -1) : (a.createdAt < b.createdAt ? 1 : -1)));
-  const poolVisible = () => poolAll().filter((c) => hitOf(c) !== false);
-  const calCards = () => CARDS.filter((c) => alive(c) && c.start && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, {}));
-  const cardsOn = (k, list) => list.filter((c) => c.start <= k && endOf(c) >= k);
-  function filterCount(f) {
-    const x = f || S.f;
-    return [subset(x.repo, sourceRepos()), subset(x.project, projectOptions()), x.status.size > 0, x.owner.size > 0, x.module.size > 0, x.onlyMine].filter(Boolean).length;
-  }
-  function genNo(dateS) {
-    const p = 'FS-' + dateS.replace(/-/g, '') + '-';
-    const max = CARDS.filter((c) => c.no.startsWith(p)).reduce((m, c) => Math.max(m, Number(c.no.slice(-3))), 0);
-    return p + String(max + 1).padStart(3, '0');
-  }
-  const titleFromMsg = (msg) => { const line = String(msg).split('\n')[0]; const i = line.indexOf(':'); return (i >= 0 ? line.slice(i + 1) : line).trim().slice(0, 30); };
-  const moduleFromMsg = (msg) => { const m = /^[a-z]+\(([A-Za-z0-9_-]+)\)\s*:/.exec(msg); return m ? m[1] : 'MISC'; };
-  const addLog = (c, type, detail) => c.logs.unshift(makeLog(type, detail, ME, NOW_S));
-
-  /* ---------- 组件片段 ---------- */
-  const icon = (name) => `<span class="ac-icon" data-ac="AcIcon" data-name="${name}" data-size="sm"></span>`;
-  const txt = (html, cls) => `<span data-ac="AcTypographyText" class="ac-typo-text${cls ? ' ' + cls : ''}"><span class="ac-typo-text__body">${html}</span></span>`;
-  const tag = (text, color, pre) => `<span data-ac="AcTag" class="ac-tag ac-tag--mini ac-tag--${color || 'default'} is-filled">${pre || ''}<span class="ac-tag__text">${esc(text)}</span></span>`;
-  const projectTag = (c) => tag(projectOf(c.repo), projectColorOf(c.repo), icon('tag'));
-  function pageItems(cur, pages) {
-    if (pages <= 7) return Array.from({ length: pages }, (_, i) => i + 1);
-    const picked = [...new Set([1, pages, cur - 1, cur, cur + 1])].filter((n) => n >= 1 && n <= pages).sort((a, b) => a - b);
-    const out = [];
-    picked.forEach((n, i) => { if (i && n - picked[i - 1] > 1) out.push('…'); out.push(n); });
-    return out;
-  }
-  function pagerHtml(total, page, size, o) {
-    const opt = o || {};
-    const pages = Math.max(1, Math.ceil(total / size));
-    const cur = Math.min(Math.max(1, page), pages);
-    const unit = opt.unit || '张';
-    const sizes = [10, 20, 50].map((n) => `<li class="ac-pagination__page-size-option${n === size ? ' is-selected' : ''}" data-page-size-option="${n}" data-size="${n}">${n} 条/页</li>`).join('');
-    const sizeSel = `<span class="ac-pagination__page-size"><span class="ac-pagination__page-size-trigger" role="button" tabindex="0"><span class="ac-pagination__page-size-value">${size} 条/页</span><span class="ac-pagination__page-size-arrow">▾</span></span><ul class="ac-pagination__page-size-panel" hidden>${sizes}</ul></span>`;
-    if (pages <= 1) return `<div class="ac-pagination${opt.compact ? ' ac-pagination--mini' : ''}" data-ac="AcPagination" data-total="${total}" data-current="1" data-page-size="${size}">${txt('共 ' + total + ' ' + unit, 'ac-typo-text--secondary')}${sizeSel}</div>`;
-    const nums = pageItems(cur, pages).map((n) => (n === '…'
-      ? '<span class="ac-pagination__ellipsis">…</span>'
-      : `<button class="ac-btn ac-pagination__btn${n === cur ? ' is-active' : ''}" type="button" data-page="${n}" aria-label="第 ${n} 页"${n === cur ? ' aria-current="page"' : ''}>${n}</button>`)).join('');
-    const jumper = opt.jumper ? '<span class="ac-pagination__jumper">跳至<input class="ac-pagination__jumper-input" type="text" inputmode="numeric" aria-label="跳转页码" name="page" data-page-jump />页</span>' : '';
-    return `<div class="ac-pagination${opt.compact ? ' ac-pagination--mini' : ''}" data-ac="AcPagination" data-total="${total}" data-current="${cur}" data-page-size="${size}">${txt('共 ' + total + ' ' + unit, 'ac-typo-text--secondary')}<button class="ac-btn ac-pagination__btn ac-pagination__btn--nav" type="button" data-page-step="prev" aria-label="上一页"${cur <= 1 ? ' disabled' : ''}>‹</button><span class="ac-pagination__pages">${nums}</span><button class="ac-btn ac-pagination__btn ac-pagination__btn--nav" type="button" data-page-step="next" aria-label="下一页"${cur >= pages ? ' disabled' : ''}>›</button>${jumper}${sizeSel}</div>`;
-  }
-  const badge = (st, label) => `<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-badge--status" data-status="${ST[st].badge}"><span class="ac-badge__dot"></span>${label === false ? '' : '<span class="ac-badge__text">' + esc(label || ST[st].label) + '</span>'}</span>`;
-  const checkbox = (on, disabled, label, attrs) => `<span class="ac-checkbox${on === 'mixed' ? ' is-indeterminate' : on ? ' is-checked' : ''}${disabled ? ' is-disabled' : ''}" role="checkbox" tabindex="0" aria-checked="${on}" data-ac="AcCheckbox" data-size="medium" data-shape="square"${attrs || ''}><span class="ac-checkbox__box">${on === 'mixed' ? '<span class="ac-checkbox__dash"></span>' : '<span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span>'}</span>${label ? '<span class="ac-checkbox__label">' + label + '</span>' : ''}</span>`;
-  const emptyHtml = (desc, extra) => `<div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__image"><svg viewBox="0 0 80 80" aria-hidden="true"><ellipse cx="40" cy="66" rx="30" ry="4" fill="var(--ac-fill-2)"/><path d="M18 38 L18 60 Q18 62 20 62 L60 62 Q62 62 62 60 L62 38 Z" fill="var(--ac-fill-2)" stroke="var(--ac-fill-3)"/><path d="M14 28 L26 28 L30 38 L50 38 L54 28 L66 28 L66 40 L14 40 Z" fill="var(--ac-bg-3)" stroke="var(--ac-fill-3)"/></svg></div><div class="ac-empty__description">${esc(desc)}</div>${extra ? '<div class="ac-empty__footer">' + extra + '</div>' : ''}</div>`;
-  function relTag(c) {
-    const min = Math.max(0, Math.floor((NOW - parseDT(c.createdAt)) / 60000));
-    let s = '刚刚';
-    if (min >= 525600) s = Math.floor(min / 525600) + ' 年前';
-    else if (min >= 43200) s = Math.floor(min / 43200) + ' 个月前';
-    else if (min >= 1440) s = Math.floor(min / 1440) + ' 天前';
-    else if (min >= 60) s = Math.floor(min / 60) + ' 小时前';
-    else if (min >= 1) s = min + ' 分钟前';
-    return tag(s, min > 7 * 1440 ? 'warning' : 'blue');
-  }
-
-  /* ---------- 多选态 ---------- */
-  const boxCtx = () => (S.mode === 'merge' ? ['month', 'pool', 'day'] : S.mode === 'batch' ? ['pool'] : []);
-  function eligible(c, ctx) {
-    if (S.mode === 'batch') return ctx === 'pool';
-    if (S.mode === 'merge') return !c.parent && (c.status === 'PENDING' || c.status === 'IN_PROGRESS') && (!S.mergeModule || c.module === S.mergeModule);
-    return false;
-  }
-  const dragFlag = () => (S.mode || !PERM.EDIT ? 'false' : 'true');
-
-  /* ---------- 卡片呈现 ---------- */
-  function cardHtml(c, ctx) {
-    const st = ctx === 'pool' ? c.status : dispStatus(c);
-    const hit = hitOf(c);
-    const dim = hit === false;
-    const box = boxCtx().includes(ctx) ? checkbox(S.selected.has(c.no), !eligible(c, ctx)) + ' ' : '';
-    const tCls = 'is-bold' + (hit ? ' is-mark' : '') + (dim ? ' is-disabled' : '');
-    const mCls = 'ac-typo-text--secondary' + (dim ? ' is-disabled' : '');
-    const head = box + (c.merged ? icon('link') + ' ' : '') + txt(esc(c.title), tCls);
-    const titleRow = ctx === 'day' ? `<div>${head}</div>` : `<div class="ac-card__title">${head}</div>`;
-    const lock = c.status === 'DONE' ? ' ' + icon('lock') : '';
-    const devT = c.dev && (c.status === 'IN_PROGRESS' || c.status === 'DONE') ? ' ' + tag(c.dev, 'default', icon('user')) : '';
-    const mergeT = c.merged ? ' ' + tag(c.children.length + ' 项', 'primary') : '';
-    let rows = `<div>${badge(st)} ${txt(esc(c.no), mCls)}${lock}</div><div>${txt(esc(c.owner), mCls)} ${projectTag(c)} ${tag(c.module, 'default')}${devT}${mergeT}</div>`;
-    if (ctx === 'pool') rows += `<div>${icon('time')} ${txt(esc(c.createdAt), mCls)} ${relTag(c)}</div>`;
-    return `<div data-ac="AcCard" class="ac-card ac-card--small is-bordered is-hoverable" data-card="${c.no}" data-ctx="${ctx}" draggable="${dragFlag()}" tabindex="0"><div class="ac-card__body">${titleRow}${rows}</div></div>`;
-  }
-  function chipHtml(c) {
-    const hit = hitOf(c);
-    const box = boxCtx().includes('month') ? checkbox(S.selected.has(c.no), !eligible(c, 'month')) : '';
-    const cls = ((hit ? 'is-mark' : '') + (hit === false ? ' is-disabled' : '')).trim();
-    return `<span class="ac-calendar__event" data-card="${c.no}" data-ctx="month" draggable="${dragFlag()}" tabindex="0">${box}${badge(dispStatus(c), false)}<span class="ac-calendar__ev-text">${projectTag(c)} ${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), cls)}</span><span>${esc(c.owner)}</span></span>`;
-  }
-
-  /* ---------- 待排期池 ---------- */
-  function renderPool() {
-    const list = poolVisible();
-    const total = list.length;
-    const pages = Math.max(1, Math.ceil(total / S.poolSize));
-    if (S.poolPage > pages) S.poolPage = pages;
-    const start = (S.poolPage - 1) * S.poolSize;
-    $('#poolCount').textContent = total;
-    $('#poolExpandCount').textContent = total;
-    $('#poolList').innerHTML = total
-      ? list.slice(start, start + S.poolSize).map((c) => cardHtml(c, 'pool')).join('')
-      : S.f.onlyMine ? emptyHtml('没有由你提交的卡片', txt('关闭『只看自己』可查看全部', 'ac-typo-text--secondary')) : emptyHtml('待排期池已清空');
-    $('#poolPager').innerHTML = total ? pagerHtml(total, S.poolPage, S.poolSize, { compact: true, unit: '张' }) : '';
-    $('#batchBtn').hidden = !PERM.EDIT;
-    $('#batchBtn').textContent = S.mode === 'batch' ? '退出批量' : '批量';
-  }
-
-  /* ---------- 月视图 ---------- */
-  function renderMonth() {
-    const first = new Date(S.y, S.m, 1);
-    const end = addDays(mondayOf(new Date(S.y, S.m + 1, 0)), 6);
-    const list = calCards();
-    const seen = new Set();
-    let cells = '';
-    for (let d = mondayOf(first); d <= end; d = addDays(d, 1)) {
-      const k = ds(d);
-      const out = d.getMonth() !== S.m;
-      const items = out ? [] : cardsOn(k, list);
-      items.forEach((c) => seen.add(c));
-      const shown = items.slice(0, 3).map((c) => (S.density === 'compact' ? chipHtml(c) : cardHtml(c, 'month'))).join('');
-      const more = items.length > 3 ? `<span class="ac-calendar__more" role="button" tabindex="0" data-more="${k}">+${items.length - 3}</span>` : '';
-      const rel = !out && RELEASE.has(k) ? ' ' + tag('发版', 'blue') : '';
-      const cls = 'ac-calendar__cell' + (out ? ' is-outside' : '') + (k === TODAY_S ? ' is-today' : '');
-      cells += `<div class="${cls}" role="gridcell" data-date="${k}"${out ? '' : ' data-drop="cell"'}><div class="ac-calendar__cell-inner"><div><span class="ac-calendar__num">${d.getDate()}</span>${rel}</div><div class="ac-calendar__events">${shown}${more}</div></div></div>`;
-    }
-    $('#monthView').innerHTML = `<div class="ac-calendar__weekrow" role="row">${WEEK.map((w) => `<span class="ac-calendar__weekname" role="columnheader">周${w}</span>`).join('')}</div><div class="ac-calendar__grid" role="rowgroup">${cells}</div>`;
-    return [...seen];
-  }
-
-  /* ---------- 周视图 ---------- */
-  function renderWeek() {
-    const days = [0, 1, 2, 3, 4, 5, 6].map((i) => ds(addDays(S.weekStart, i)));
-    const list = calCards().filter((c) => c.start <= days[6] && endOf(c) >= days[0]);
-    const owners = [...new Set(list.map(ownerKey))].sort((a, b) => a.localeCompare(b, 'zh'));
-    const cur = delayCtx();
-    const head = '<th>负责人</th>' + days.map((k, i) => `<th>周${WEEK[i]} ${md(k)}${k === TODAY_S ? ' ' + tag('今天', 'primary') : ''}</th>`).join('');
-    const body = owners.map((o) => {
-      const mine = list.filter((c) => ownerKey(c) === o);
-      const late = cur ? mine.filter(isDelayed).length : 0;
-      const cells = days.map((k) => `<td data-drop="cell" data-date="${k}"><div class="ac-calendar__events">${cardsOn(k, mine).map((c) => cardHtml(c, 'week')).join('')}</div></td>`).join('');
-      return `<tr><td><div>${txt(esc(o), 'is-bold')}</div><div>${txt(mine.length + ' 张', 'ac-typo-text--secondary')}${late ? ' ' + tag('延 ' + late, 'warning') : ''}</div></td>${cells}</tr>`;
-    }).join('');
-    $('#weekView').innerHTML = owners.length
-      ? `<div class="ac-table-wrap"><table class="ac-table ac-table--fixed"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`
-      : emptyHtml('本周暂无已排期的卡片');
-    return list;
-  }
-
-  /* ---------- 列表视图 ---------- */
-  function rowAction(c) {
-    const act = { PENDING: ['take', '领取'], IN_PROGRESS: ['done', '完成'], DONE: ['revert', '回退'] }[c.status];
-    if (!PERM.MARK_DONE || !act) return '—';
-    return `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-row-act="${act[0]}" data-no="${c.no}"><span class="ac-btn__label">${act[1]}</span></button></div>`;
-  }
-  function renderList() {
-    const key = monthKey();
-    const rows = calCards().filter((c) => c.start.slice(0, 7) === key);
-    const { key: sk, dir } = S.sort;
-    rows.sort((a, b) => {
-      const x = a[sk] || '';
-      const y = b[sk] || '';
-      if (!x || !y) return x ? -1 : y ? 1 : 0;
-      return (x < y ? -1 : x > y ? 1 : 0) * (dir === 'asc' ? 1 : -1);
-    });
-    const th = (k, label) => `<th class="is-sortable${sk === k ? ' is-' + dir : ''}" data-sort="${k}">${label}</th>`;
-    const head = `<th class="u-wrap">任务</th><th>编号</th><th>项目</th><th>模块</th><th>提交人</th><th>开发人</th>${th('start', '开始')}<th>截止</th><th>状态</th>${th('createdAt', '创建时间')}<th>操作</th>`;
-    const body = rows.length
-      ? rows.map((c) => {
-          const hit = hitOf(c);
-          const dim = hit === false ? ' is-disabled' : '';
-          return `<tr data-row="${c.no}"><td class="u-wrap">${c.merged ? icon('link') + ' ' : ''}${txt(esc(c.title), ((hit ? 'is-mark' : '') + dim).trim())}</td><td>${txt(esc(c.no), 'ac-typo-text--secondary' + dim)}</td><td>${projectTag(c)}</td><td>${tag(c.module, 'default')}</td><td>${esc(c.owner)}</td><td>${esc(c.dev || '—')}</td><td>${c.start}</td><td>${endOf(c)}</td><td>${badge(dispStatus(c))}</td><td>${esc(c.createdAt)}</td><td>${rowAction(c)}</td></tr>`;
-        }).join('')
-      : `<tr><td colspan="11">${emptyHtml('本月暂无已排期的卡片')}</td></tr>`;
-    $('#listView').innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table></div>`;
-    return rows;
-  }
-
-  /* ---------- 指挥栏与统计 ---------- */
-  function statsHtml() {
-    const key = monthKey();
-    const scope = (c) => alive(c) && c.status !== 'NON_FEATURE' && !c.parent && passFilters(c, S.f, { onlyBase: true });
-    const pool = CARDS.filter((c) => scope(c) && !c.start).length;
-    const n = { PENDING: 0, IN_PROGRESS: 0, DONE: 0, DELAYED: 0 };
-    CARDS.filter((c) => scope(c) && c.start && c.start.slice(0, 7) === key).forEach((c) => { n[dispStatus(c)] += 1; });
-    const chips = STAT_KEYS.map((k) => {
-      const on = S.f.status.has(k);
-      return `<span class="ac-chip${on ? ' is-active' : ''}" role="button" tabindex="0" aria-pressed="${on}" data-stat="${k}">${badge(k, STAT_LABEL[k])} ${n[k]}${on ? ' ' + icon('check') : ''}</span>`;
-    }).join(' ');
-    return txt('待排期 ' + pool, 'ac-typo-text--secondary') + ' ' + chips;
-  }
-  function renderToolbar() {
-    $('#periodText').textContent = S.view === 'week' ? md(ds(S.weekStart)) + ' ~ ' + md(ds(addDays(S.weekStart, 6))) : S.y + ' 年 ' + pad(S.m + 1) + ' 月';
-    $('#periodArrow').hidden = S.view === 'week';
-    const html = statsHtml();
-    $('#statsInline').innerHTML = html;
-    $('#statsPop').innerHTML = html;
-    const fc = filterCount();
-    $('#filterCountWrap').hidden = !fc;
-    $('#filterCount').textContent = fc;
-    $('#nfCount').textContent = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').length;
-    $$('#viewSeg [data-view]').forEach((b) => { const on = b.dataset.view === S.view; b.classList.toggle('is-active', on); b.setAttribute('aria-selected', String(on)); });
-    $$('#moreMenu [data-density]').forEach((it) => it.classList.toggle('is-active', it.dataset.density === S.density));
-    $('#newCardBtn').hidden = !PERM.EDIT;
-    $('#moreMenu [data-menu="merge"]').hidden = !PERM.EDIT;
-    $('#poolSide').hidden = S.poolCollapsed;
-    $('#mainDual').classList.toggle('tpl-dual', !S.poolCollapsed);
-    $('#poolExpandBtn').hidden = !S.poolCollapsed;
-  }
-  function toolbarFits() {
-    const kids = $$('#fsPage > .tpl-panel > .tpl-toolbar > div > *').filter((x) => !x.hidden && x.getClientRects().length);
-    const cy = kids.map((x) => { const r = x.getBoundingClientRect(); return r.top + r.height / 2; });
-    return Math.max(...cy) - Math.min(...cy) <= 12;
-  }
-  function fitToolbar() {
-    if (FLOATS.has($('#progressPanel'))) return;
-    $('#statsInline').hidden = false;
-    $('#progressPop').hidden = true;
-    if (toolbarFits()) return;
-    $('#statsInline').hidden = true;
-    $('#progressPop').hidden = false;
-  }
-  function applyResponsive() {
-    const narrow = window.innerWidth < 1440;
-    $$('#viewSeg [data-view]').forEach((b) => { b.textContent = narrow ? b.dataset.short : b.dataset.long; });
-    fitToolbar();
-  }
-  function renderZero(shown) {
-    const fc = filterCount();
-    const searching = tokens().length > 0;
-    const visible = shown.filter((c) => hitOf(c) !== false).length;
-    $('#zeroHint').hidden = !((fc > 0 || searching) && visible === 0);
-    $('#clearFiltersBtn').hidden = fc === 0;
-    $('#clearSearchBtn').hidden = !searching;
-  }
-  function renderMode() {
-    $('#modeBar').hidden = !S.mode;
-    $('#fsPage').classList.toggle('tpl-page--with-actionbar', !!S.mode);
-    if (!S.mode) return;
-    const n = S.selected.size;
-    $('#modeInfo').innerHTML = S.mode === 'merge' ? `已选 <strong>${n}</strong> 张 · 模块 ${esc(S.mergeModule || '未锁定')}` : `已选 <strong>${n}</strong> 张`;
-    $('#modeOkBtn').textContent = S.mode === 'merge' ? '确认合并' : '移入非需求';
-    $('#modeOkBtn').disabled = S.mode === 'merge' ? n < 2 : n < 1;
-  }
-  function renderAll() {
-    persist();
-    renderToolbar();
-    renderPool();
-    $('#monthView').hidden = S.view !== 'month';
-    $('#weekView').hidden = S.view !== 'week';
-    $('#listView').hidden = S.view !== 'list';
-    const shown = S.view === 'month' ? renderMonth() : S.view === 'week' ? renderWeek() : renderList();
-    renderZero(shown);
-    renderMode();
-    fitToolbar();
-  }
-  function resetPool(opts) {
-    S.poolPage = 1;
-    if (opts && opts.exitMode && S.mode) {
-      S.mode = null;
-      S.selected.clear();
-      S.mergeModule = null;
-    }
-  }
-
-  /* ---------- 弹窗与反馈 ---------- */
-  const OPEN = new Set();
-  function showLayer(id) {
-    const el = $('#' + id);
-    clearTimeout(el.leaveTimer);
-    el.inert = false;
-    el.hidden = false;
-    void el.offsetWidth;
-    el.classList.add('is-open');
-    OPEN.add(id);
-  }
-  function hideLayer(id) {
-    const el = $('#' + id);
-    if (el.hidden || !el.classList.contains('is-open')) return;
-    OPEN.delete(id);
-    el.classList.remove('is-open');
-    el.inert = true;
-    el.leaveTimer = setTimeout(() => { el.hidden = true; el.inert = false; }, Number(el.getAttribute('data-ds-leave')) || 320);
-  }
-  function toast(msg, type) {
-    const t = type || 'success';
-    const el = document.createElement('div');
-    el.className = 'ac-message__item is-' + t;
-    el.innerHTML = `<span class="ac-message__icon is-${t}">${{ success: '✓', error: '!', warning: '!', info: 'i' }[t]}</span><span class="ac-message__text">${esc(msg)}</span>`;
-    $('#toastList').appendChild(el);
-    setTimeout(() => el.remove(), 2600);
-  }
-  function busy(btn, on) {
-    if (!btn) return;
-    btn.disabled = on;
-    btn.classList.toggle('is-loading', on);
-    const sp = btn.querySelector('.ac-btn-spin');
-    if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
-    if (!on && sp) sp.remove();
-  }
-  function markLoading(no) {
-    $$('[data-card="' + no + '"]').forEach((el) => {
-      const t = el.querySelector('.ac-card__title, .ac-calendar__ev-text, .ac-card__body > div');
-      if (t && !el.querySelector('.ac-btn-spin')) t.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span> ');
+  var items = poolPageItems();
+  var list = $('poolList');
+  if (!items.length) {
+    list.innerHTML = S.filters.mine
+      ? '<div class="busy-empty"><div class="busy-empty__image">▦</div>没有由你提交的卡片<div class="u-sub">关闭「只看自己」可查看全部</div></div>'
+      : '<div class="busy-empty"><div class="busy-empty__image">▦</div>待排期池已清空</div>';
+  } else {
+    list.innerHTML = '';
+    items.forEach(function (c) {
+      var box = document.createElement('div');
+      box.innerHTML = cardHtml(c, 'pool') + '<hr class="tpl-divider">';
+      list.appendChild(box);
     });
   }
-  const alertHtml = (type, text, action) => `<div class="ac-alert ac-alert--${type}" data-ac="AcAlert" role="alert"><div class="ac-alert__icon">${{ info: 'ℹ', success: '✓', warning: '⚠', error: '⊘', normal: '●' }[type]}</div><div class="ac-alert__body"><div class="ac-alert__content">${esc(text)}</div></div>${action ? '<div class="ac-alert__action">' + action + '</div>' : ''}</div>`;
-  const section = (title, html) => `<div class="tpl-section"><div class="tpl-section__head">${title}</div>${html}</div>`;
-
-  let confirmResolve = null;
-  function askConfirm(title, content, okText, danger) {
-    $('#confirmTitle').textContent = title;
-    $('#confirmContent').textContent = content;
-    const ok = $('#confirmOkBtn');
-    ok.textContent = okText || '确认';
-    ok.className = 'ac-btn ' + (danger ? 'ac-btn--danger' : 'ac-btn--primary');
-    showLayer('confirmModal');
-    return new Promise((r) => { confirmResolve = r; });
-  }
-  function settleConfirm(v) {
-    if (!confirmResolve) return;
-    const r = confirmResolve;
-    confirmResolve = null;
-    if (!v) hideLayer('confirmModal');
-    r(v);
-  }
-  async function confirmRun(title, content, okText, danger, run) {
-    if (!(await askConfirm(title, content, okText, danger))) return false;
-    const btn = $('#confirmOkBtn');
-    busy(btn, true);
-    await wait();
-    try { await run(); } finally { busy(btn, false); hideLayer('confirmModal'); }
-    return true;
-  }
-
-  let popResolve = null;
-  function askPop(anchor, title, content) {
-    const p = $('#popconfirm');
-    $('#pcTitle').textContent = title;
-    $('#pcContent').textContent = content || '';
-    p.hidden = false;
-    const r = anchor.getBoundingClientRect();
-    p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
-    p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
-    return new Promise((res) => { popResolve = res; });
-  }
-  function settlePop(v) {
-    if (!popResolve) return;
-    const r = popResolve;
-    popResolve = null;
-    if (!v) $('#popconfirm').hidden = true;
-    r(v);
-  }
-
-  /* ---------- 浮动面板（菜单、年月选择、下拉、日期面板） ---------- */
-  const FLOATS = new Map();
-  function openFloat(el, onClose) { closeFloats(el); el.hidden = false; FLOATS.set(el, onClose || null); }
-  function closeFloat(el) {
-    if (!FLOATS.has(el)) return;
-    const done = FLOATS.get(el);
-    FLOATS.delete(el);
-    if (!el.isConnected) return;
-    el.hidden = true;
-    const root = el.closest('[data-ac="AcSelect"], [data-ac="AcDropdown"]');
-    if (root) root.classList.remove('is-open');
-    if (done) done();
-  }
-  function closeFloats(keep) { [...FLOATS.keys()].forEach((el) => { if (!keep || (el !== keep && !el.contains(keep))) closeFloat(el); }); }
-  function placeFixed(el, x, y) {
-    el.style.left = '0px';
-    el.style.top = '0px';
-    el.style.left = Math.max(8, Math.min(window.innerWidth - el.offsetWidth - 8, x)) + 'px';
-    el.style.top = Math.max(8, Math.min(window.innerHeight - el.offsetHeight - 8, y)) + 'px';
-  }
-  function placeUnder(el, anchor) {
-    const r = anchor.getBoundingClientRect();
-    const leftHalf = r.left + r.width / 2 < window.innerWidth / 2;
-    el.style.left = '0px';
-    placeFixed(el, leftHalf ? r.left : r.right - el.offsetWidth, r.bottom + 4);
-  }
-  let pickerYear = S.y;
-  function renderMonthPanel() {
-    const cells = Array.from({ length: 12 }, (_, i) => `<button class="ac-btn ac-date-picker__cell${pickerYear === S.y && i === S.m ? ' is-selected' : ''}" type="button" data-pick-month="${i}">${i + 1} 月</button>`).join('');
-    $('#monthPanel').innerHTML = `<span class="ac-date-picker__header"><button class="ac-btn ac-date-picker__nav" type="button" data-pick-year="-1" aria-label="上一年">‹</button><span class="ac-date-picker__title">${pickerYear} 年</span><button class="ac-btn ac-date-picker__nav" type="button" data-pick-year="1" aria-label="下一年">›</button></span><span class="ac-date-picker__cell-grid">${cells}</span>`;
-  }
-
-  /* ---------- 表单片段 ---------- */
-  const inputHtml = (field, value, ph, o) => {
-    const opt = o || {};
-    return `<div class="ac-input${opt.disabled ? ' is-disabled' : ''}" data-ac="AcInput" data-size="medium"${opt.error ? ' data-status="error"' : ''}><input class="ac-input__inner" data-field="${field}" value="${esc(value)}" placeholder="${esc(ph || '')}"${opt.max ? ' maxlength="' + opt.max + '"' : ''}${opt.disabled ? ' disabled' : ''} />${opt.max ? '<span class="ac-input__suffix" data-count="' + field + '">' + String(value || '').length + '/' + opt.max + '</span>' : ''}</div>`;
-  };
-  const formItem = (label, control, o) => {
-    const opt = o || {};
-    return `<div class="ac-form-item ac-form-item--vertical${opt.required ? ' is-required' : ''}${opt.error ? ' is-error' : ''}" data-ac="AcFormItem"><label class="ac-form-item__label">${opt.required ? '<span class="ac-form-item__required">*</span>' : ''}${label}</label><div class="ac-form-item__wrapper"><div class="ac-form-item__control">${control}</div><div class="ac-form-item__help${opt.error ? ' is-error' : ''}"${opt.helpId ? ' id="' + opt.helpId + '"' : ''}>${esc(opt.error || opt.help || '')}</div></div></div>`;
-  };
-  const selectHtml = (key, value, options, ph, disabled) => {
-    const cur = options.find((x) => x.value === value);
-    const list = options.map((x) => `<li class="ac-select__option${x.value === value ? ' is-selected' : ''}${x.disabled ? ' is-disabled' : ''}" data-value="${esc(x.value)}"><span class="ac-select__option-label">${esc(x.label)}</span>${x.sub ? txt(esc(x.sub), 'ac-typo-text--secondary') : ''}</li>`).join('');
-    return `<div class="ac-select ac-select--medium${disabled ? ' is-disabled' : ''}" data-ac="AcSelect" data-select="${key}"><div class="ac-select__trigger" tabindex="0"><span class="ac-select__single${cur ? '' : ' is-placeholder'}">${esc(cur ? cur.label : ph)}</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div><div class="ac-select__popup" hidden><ul class="ac-select__list">${list}</ul></div></div>`;
-  };
-  const radioGroup = (key, value, opts, disabled) => `<div class="ac-radio-group" role="radiogroup" data-ac="AcRadioGroup">${opts.map((x) => `<span class="ac-radio ac-radio--dot${x[0] === value ? ' is-checked' : ''}${disabled ? ' is-disabled' : ''}" role="radio" tabindex="0" aria-checked="${x[0] === value}" data-ac="AcRadio" data-radio="${key}" data-value="${x[0]}" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">${x[1]}</span></span>`).join(' ')}</div>`;
-
-  /* ---------- 卡片详情跳转 ---------- */
-  function goDetail(no) {
-    const f = S.f;
-    const arr = (x) => (x ? [...x] : null);
-    D.stash('fs.ctx', { view: S.view, y: S.y, m: S.m, weekStart: ds(S.weekStart), search: S.search, poolPage: S.poolPage, poolSize: S.poolSize, sort: S.sort, f: { onlyMine: f.onlyMine, status: [...f.status], owner: [...f.owner], module: [...f.module], repo: arr(f.repo), project: arr(f.project) } });
-    persist();
-    location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
-  }
-
-  /* ---------- 排期与发版日 ---------- */
-  function diffuse(mc, fields) {
-    if (!mc.merged) return;
-    mc.children.forEach((no) => { const ch = byNo(no); if (ch) fields.forEach((k) => { ch[k] = Array.isArray(mc[k]) ? mc[k].slice() : mc[k]; }); });
-  }
-  const spread = (c) => (c.merged ? '，扩散至 ' + c.children.length + ' 张子卡' : '');
-  function setHelp(id, msg) { const el = $('#' + id); if (!el) return; el.textContent = msg; el.classList.toggle('is-error', !!msg); }
-  async function applySchedule(c, start, end, o) {
-    const opt = o || {};
-    if (start < TODAY_S) { toast('不可将卡片改期到今天之前', 'error'); return false; }
-    if (c.start === start && endOf(c) === end) return false;
-    markLoading(c.no);
-    await wait();
-    const before = c.start;
-    c.start = start;
-    c.end = end;
-    addLog(c, before ? 'RESCHEDULED' : 'SCHEDULED', '排期：' + (before ? before + ' → ' : '') + start + (end !== start ? ' ~ ' + end : '') + spread(c));
-    diffuse(c, ['start', 'end']);
-    toast(opt.msg || (before ? '已改期到 ' : '已排期到 ') + md(start));
-    renderAll();
-    if (OPEN.has('dayModal')) renderDayModal();
-    return true;
-  }
-  async function unschedule(c) {
-    if (!c.start) return false;
-    markLoading(c.no);
-    await wait();
-    const before = c.start;
-    c.start = null;
-    c.end = null;
-    addLog(c, 'UNSCHEDULED', '取消排期：' + before + spread(c));
-    diffuse(c, ['start', 'end']);
-    S.poolPage = 1;
-    toast('已移回待排期');
-    renderAll();
-    if (OPEN.has('dayModal')) renderDayModal();
-    return true;
-  }
-  async function toggleRelease(k) {
-    if (!PERM.RELEASE_DAY) return;
-    const marked = RELEASE.has(k);
-    await confirmRun(
-      marked ? '取消发版日标记' : '标记发版日',
-      marked ? '确认取消 ' + md(k) + ' 的发版日标记？' : '确认将 ' + md(k) + ' 标记为发版日？',
-      marked ? '取消标记' : '确认标记',
-      false,
-      async () => {
-        await wait();
-        if (marked) { RELEASE.delete(k); toast('已取消 ' + md(k) + ' 的发版日标记'); } else { RELEASE.add(k); toast('已标记 ' + md(k) + ' 为发版日'); }
-        renderAll();
-      },
-    );
-  }
-
-  /* ---------- 批量移入与列表行内状态流转 ---------- */
-  function moveToNF(c) {
-    const was = ST[c.status].label;
-    Object.assign(c, { status: 'NON_FEATURE', start: null, end: null, dev: null, takenAt: null, done: [], doneAt: null });
-    addLog(c, 'EDITED', '从『' + was + '』移入非需求改动');
-    diffuse(c, ['status', 'start', 'end', 'dev', 'takenAt', 'done', 'doneAt']);
-  }
-  async function rowAct(btn) {
-    const c = byNo(btn.dataset.no);
-    const act = btn.dataset.rowAct;
-    const text = { take: ['确认领取开发？', ''], done: ['确认标记完成？', '完成 commit 可稍后在卡片详情页补录'], revert: ['确认回退为开发中？', '将清空完成 commit，保留开发人'] }[act];
-    if (!c || !(await askPop(btn, text[0], text[1]))) return;
-    busy($('#pcOkBtn'), true);
-    await wait();
-    if (act === 'take') { c.status = 'IN_PROGRESS'; c.dev = ME; c.takenAt = NOW_S; addLog(c, 'TAKEN', '领取开发：' + ME + spread(c)); toast('已领取开发'); }
-    if (act === 'done') { c.status = 'DONE'; if (!c.dev) { c.dev = ME; c.takenAt = NOW_S; } c.doneAt = NOW_S; addLog(c, 'MARKED_DONE', '标记完成（未关联完成 commit）' + spread(c)); toast('已标记完成'); }
-    if (act === 'revert') {
-      const keep = !!c.dev;
-      c.status = keep ? 'IN_PROGRESS' : 'PENDING'; c.done = []; c.doneAt = null;
-      if (!keep) c.takenAt = null;
-      addLog(c, 'REVERTED', (keep ? '已回退为「开发中」，保留开发人 ' + c.dev : '已回退为「待开发」') + spread(c));
-      toast(keep ? '已回退为开发中' : '已回退为待开发');
-    }
-    diffuse(c, ['status', 'dev', 'takenAt', 'doneAt', 'done']);
-    busy($('#pcOkBtn'), false);
-    $('#popconfirm').hidden = true;
-    renderAll();
-  }
-
-  /* ---------- 合并与批量 ---------- */
-  function startMode(mode) {
-    if (!PERM.EDIT) return;
-    S.mode = mode; S.selected.clear(); S.mergeModule = null;
-    closeFloats();
-    renderAll();
-    toast(mode === 'merge' ? '已进入合并多选态：勾选同模块卡片，至少 2 张' : '已进入批量多选态：勾选待排期卡片后移入非需求改动', 'info');
-  }
-  function exitMode() { S.mode = null; S.selected.clear(); S.mergeModule = null; renderAll(); if (OPEN.has('dayModal')) renderDayModal(); }
-  function toggleSelect(c, ctx) {
-    if (!eligible(c, ctx)) {
-      if (S.mode === 'merge') toast(c.parent ? '子卡不可再次合并' : c.status === 'DONE' || c.status === 'NON_FEATURE' ? '开发完成或非需求改动的卡片不可合并' : '仅同模块卡片可合并', 'error');
-      return;
-    }
-    if (S.selected.has(c.no)) S.selected.delete(c.no); else S.selected.add(c.no);
-    if (S.mode === 'merge') S.mergeModule = S.selected.size ? S.mergeModule || c.module : null;
-    renderAll();
-    if (OPEN.has('dayModal')) renderDayModal();
-  }
-  function mergeCheck(cards) {
-    if (cards.length < 2) return '至少选择 2 张卡片';
-    if (cards.some((c) => c.parent)) return '子卡不可再次合并，请先解散其合并卡';
-    if (cards.some((c) => c.status !== 'PENDING' && c.status !== 'IN_PROGRESS')) return '开发完成或非需求改动的卡片不可合并';
-    if (new Set(cards.map((c) => c.module)).size > 1) return '仅同模块卡片可合并';
-    return '';
-  }
-  let MERGE_NOS = [];
-  function openMergeModal(nos) {
-    MERGE_NOS = nos;
-    const cards = nos.map(byNo);
-    $('#mergeModalBody').innerHTML = `<div id="mergeAlert"></div>${txt('已选 ' + cards.length + ' 张 · 模块 ' + esc(cards[0].module), 'ac-typo-text--secondary')}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('合并卡标题', inputHtml('mergeTitle', '', '最长 30 字符', { max: 30 }), { required: true, helpId: 'helpMerge' })}</div><div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split" role="list"><div class="ac-list__body">${cards.map((c) => `<div class="ac-list-item ac-list-item--small" role="listitem"><div class="ac-list-item__main">${esc(c.no)} ${esc(c.title)}</div>${badge(c.status)}</div>`).join('')}</div></div>`;
-    showLayer('mergeModal');
-    setTimeout(() => { const el = $('#mergeModal [data-field="mergeTitle"]'); if (el) el.focus(); }, 30);
-  }
-  async function createMerge(btn) {
-    const title = ($('#mergeModal [data-field="mergeTitle"]').value || '').trim();
-    if (!title) { setHelp('helpMerge', '请输入合并卡标题'); return; }
-    const picked = MERGE_NOS.map(byNo);
-    const err = mergeCheck(picked);
-    if (err) { $('#mergeAlert').innerHTML = alertHtml('error', err); return; }
-    busy(btn, true);
-    await wait();
-    const no = genNo(TODAY_S);
-    const leaves = [];
-    const snaps = {};
-    picked.forEach((c) => {
-      if (c.merged) {
-        c.children.forEach((n) => { leaves.push(n); snaps[n] = c.snaps[n]; });
-        c.children = []; c.deleted = true;
-        addLog(c, 'DELETED', '被合并至 ' + no);
-      } else {
-        leaves.push(c.no);
-        snaps[c.no] = { status: c.status, start: c.start, end: c.end, dev: c.dev, takenAt: c.takenAt, at: NOW_S };
-      }
-    });
-    const start = picked.map((c) => c.start).filter(Boolean).sort()[0] || null;
-    const mc = mk({ no, title, status: 'PENDING', start, end: start, module: picked[0].module, repo: '_merge', commit: 'MERGE:' + no, merged: true, children: leaves, snaps, createdAt: NOW_S, content: '合并自 ' + leaves.length + ' 张子卡：\n' + leaves.map((n) => '- ' + n + ' ' + byNo(n).title).join('\n') });
-    mc.logs = [makeLog('CREATED', '合并自 ' + leaves.length + ' 张：' + leaves.join(', '), ME, NOW_S)];
-    CARDS.push(mc);
-    leaves.forEach((n) => { const ch = byNo(n); Object.assign(ch, { parent: no, status: 'PENDING', start, end: start, dev: null, takenAt: null }); addLog(ch, 'EDITED', '并入合并卡 ' + no); });
-    busy(btn, false);
-    hideLayer('mergeModal');
-    S.mode = null; S.selected.clear(); S.mergeModule = null;
-    toast('已生成合并卡 ' + no);
-    renderAll();
-    if (OPEN.has('dayModal')) renderDayModal();
-  }
-  async function batchToNF() {
-    const nos = [...S.selected];
-    await confirmRun('批量移入非需求改动', '将 ' + nos.length + ' 张卡片移入非需求改动？移入后清空排期、开发人与完成 commit', '确认移入', false, () => {
-      let ok = 0;
-      let fail = 0;
-      nos.forEach((no) => { const c = byNo(no); if (!c || c.parent || c.deleted || c.status === 'NON_FEATURE') { fail += 1; return; } moveToNF(c); ok += 1; });
-      toast('已移入 ' + ok + ' 张，失败 ' + fail + ' 张', fail ? 'warning' : 'success');
-      S.mode = null; S.selected.clear();
-    });
-    renderAll();
-  }
-
-  /* ---------- 新建卡片 ---------- */
-  const NC = { repo: '', q: '', pick: '' };
-  const cardByCommit = (repo, hash) => CARDS.find((c) => c.repo === repo && hash.startsWith(c.commit));
-  function ncListHtml() {
-    if (!NC.repo) return emptyHtml('请先选择代码仓');
-    const q = NC.q.trim().toLowerCase();
-    const list = (COMMITS[NC.repo] || []).filter((x) => !q || (x.msg + ' ' + x.hash + ' ' + x.author).toLowerCase().includes(q));
-    if (!list.length) return emptyHtml('没有匹配的 commit');
-    return `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((x) => {
-      const on = NC.pick === x.hash;
-      const has = cardByCommit(NC.repo, x.hash);
-      return `<div class="ac-list-item ac-list-item--small is-clickable" role="listitem" tabindex="0" data-nc-pick="${x.hash}"><span class="ac-radio ac-radio--dot${on ? ' is-checked' : ''}" role="radio" aria-checked="${on}" data-ac="AcRadio" data-size="medium"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span></span><div class="ac-list-item__main">${txt(x.hash.slice(0, 7), 'is-code')} ${esc(x.msg)}</div>${txt(esc(x.author + ' · ' + x.at), 'ac-typo-text--secondary')}${has ? ' ' + tag(has.deleted ? '卡片已删除' : '已有卡片 ' + has.no, 'default') : ''}</div>`;
-    }).join('')}</div></div>`;
-  }
-  function renderNewCard() {
-    const repos = sourceRepos().map(repoOf).filter(Boolean);
-    $('#newCardBody').innerHTML = `<div id="ncAlert"></div><div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('代码仓', selectHtml('ncRepo', NC.repo, repos.map((r) => ({ value: r.repo, label: r.name, sub: r.repo })), '请选择代码仓'), { required: true, helpId: 'helpNcRepo' })}${formItem('commit', `<div class="ac-input" data-ac="AcInput" data-size="medium"><span class="ac-input__prefix">${icon('search')}</span><input class="ac-input__inner" type="search" data-field="ncQ" value="${esc(NC.q)}" placeholder="搜索提交说明 / hash / 作者" /></div>`, { required: true, helpId: 'helpNcCommit' })}</div><div id="ncList">${ncListHtml()}</div>`;
-  }
-  async function createCard(btn) {
-    $('#ncAlert').innerHTML = '';
-    if (!NC.repo) { setHelp('helpNcRepo', '请选择代码仓'); return; }
-    if (!NC.pick) { setHelp('helpNcCommit', '请选择一条 commit'); return; }
-    const exist = cardByCommit(NC.repo, NC.pick);
-    if (exist && exist.deleted) { $('#ncAlert').innerHTML = alertHtml('error', '该 commit 的卡片 ' + exist.no + ' 已删除，源 commit 不再出卡'); return; }
-    if (exist) { hideLayer('newCardModal'); D.stash('fs.flash', { msg: '该 commit 已有卡片 ' + exist.no + '，已为你打开', type: 'info' }); goDetail(exist.no); return; }
-    busy(btn, true);
-    await wait();
-    const x = COMMITS[NC.repo].find((y) => y.hash === NC.pick);
-    const no = genNo(x.at.slice(0, 10));
-    const c = mk({ no, title: titleFromMsg(x.msg), content: x.msg, owner: x.author, ownerUnmatched: !USERS.includes(x.author), module: moduleFromMsg(x.msg), repo: NC.repo, commit: x.hash.slice(0, 7), createdAt: NOW_S });
-    c.logs = [makeLog('CREATED', '手动新建：' + NC.repo + ' @ ' + c.commit, ME, NOW_S)];
-    CARDS.push(c);
-    busy(btn, false);
-    hideLayer('newCardModal');
-    S.poolPage = 1;
-    toast('已生成卡片 ' + no + '，落入待排期池');
-    renderAll();
-  }
-
-  /* ---------- 非需求改动与项目配置 ---------- */
-  function renderNF() {
-    const all = CARDS.filter((c) => alive(c) && c.status === 'NON_FEATURE').sort((a, b) => (a.createdAt === b.createdAt ? (a.no < b.no ? 1 : -1) : (a.createdAt < b.createdAt ? 1 : -1)));
-    const total = all.length;
-    const pages = Math.max(1, Math.ceil(total / S.nfSize));
-    if (S.nfPage > pages) S.nfPage = pages;
-    const start = (S.nfPage - 1) * S.nfSize;
-    const list = all.slice(start, start + S.nfSize);
-    $('#nfModalBody').innerHTML = total
-      ? `<div data-ac="AcList" class="ac-list ac-list--bordered ac-list--split ac-list--hoverable" role="list"><div class="ac-list__body">${list.map((c) => `<div class="ac-list-item ac-list-item--medium is-clickable" role="listitem" tabindex="0" data-open-card="${c.no}"><div class="ac-list-item__main"><div>${txt(esc(c.title), 'is-bold')} ${tag('非需求改动', 'warning')} ${projectTag(c)}</div><div>${txt(esc(c.no + ' · ' + c.owner + ' · ' + c.createdAt), 'ac-typo-text--secondary')}</div></div></div>`).join('')}</div></div>`
-      : emptyHtml('暂无非需求改动卡片');
-    $('#nfModalFooter').hidden = !total;
-    $('#nfModalFooter').innerHTML = total ? `<div id="nfPager">${pagerHtml(total, S.nfPage, S.nfSize, { unit: '条', jumper: true })}</div>` : '';
-  }
-  const PJ = { view: 'list', edit: null, draft: null, base: '', err: '' };
-  const pjDirty = () => PJ.view === 'form' && JSON.stringify(PJ.draft) !== PJ.base;
-  function openProjectForm(id) {
-    const p = PROJECTS.find((x) => x.id === id);
-    PJ.view = 'form'; PJ.edit = id || null; PJ.err = '';
-    PJ.draft = p ? { name: p.name, harness: p.harness, repos: p.repos.slice(), enabled: p.enabled, note: p.note } : { name: '', harness: '', repos: [], enabled: true, note: '' };
-    PJ.base = JSON.stringify(PJ.draft);
-    renderProjects();
-  }
-  function renderProjects() {
-    const body = $('#projectModalBody');
-    const foot = $('#projectModalFooter');
-    if (PJ.view === 'list') {
-      $('#projectModalTitle').textContent = '项目配置';
-      body.innerHTML = `<div class="ac-table-wrap"><table class="ac-table"><thead><tr><th>项目名称</th><th>harness 工程</th><th class="u-wrap">代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>${PROJECTS.map((p) => { const h = repoOf(p.harness); return `<tr><td>${tag(p.name, p.color || 'default')}</td><td>${h ? esc(h.name) + ' ' + txt(esc(p.harness), 'ac-typo-text--secondary') : esc(p.harness) + ' ' + tag('云效侧失效', 'default')}</td><td class="u-wrap">${p.repos.length ? p.repos.map((r) => (repoOf(r) ? tag(r, 'blue') : tag(r + '（云效侧失效）', 'default'))).join(' ') : '—'}</td><td>${p.enabled ? badge('DONE', '启用') : badge('PENDING', '停用')}</td><td>${PERM.EDIT ? `<div class="ac-row-actions" data-ac="AcRowActions"><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-edit="${p.id}"><span class="ac-btn__label">编辑</span></button><button class="ac-btn" type="button" data-ac="AcButton" data-type="text" data-size="small" data-pj-toggle="${p.id}"><span class="ac-btn__label">${p.enabled ? '停用' : '启用'}</span></button></div>` : '—'}</td></tr>`; }).join('')}</tbody></table></div>`;
-      foot.innerHTML = (PERM.EDIT ? '<button class="ac-btn ac-btn--primary" type="button" data-pj-new>新建项目</button>' : '') + '<button class="ac-btn" type="button" data-close="projectModal">关闭</button>';
-      return;
-    }
-    const d = PJ.draft;
-    $('#projectModalTitle').textContent = PJ.edit ? '编辑项目' : '新建项目';
-    const taken = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && (p.harness === repo || p.repos.includes(repo)));
-    const harnessOpts = REPOS.map((r) => { const t = taken(r.repo); return { value: r.repo, label: r.name + (t ? '（已归属 ' + t.name + '）' : ''), sub: r.repo, disabled: !!t }; });
-    if (d.harness && !repoOf(d.harness)) harnessOpts.unshift({ value: d.harness, label: d.harness + '（云效侧失效）', sub: '映射失效', disabled: false });
-    const checks = REPOS.map((r) => {
-      const t = taken(r.repo);
-      const on = d.repos.includes(r.repo);
-      return `<div>${checkbox(on, !!t && !on, esc(r.name) + ' ' + txt(esc(r.repo), 'ac-typo-text--secondary') + (t ? ' ' + tag('已归属 ' + t.name, 'default') : ''), ' data-pj-repo="' + r.repo + '"')}</div>`;
-    }).join('') + d.repos.filter((r) => !repoOf(r)).map((r) => `<div>${checkbox(true, true, txt(esc(r) + '（云效侧失效，映射失效）', 'ac-typo-text--secondary is-disabled'))}</div>`).join('');
-    body.innerHTML = `${PJ.err ? alertHtml('error', PJ.err) : ''}<div class="ac-form ac-form--vertical" data-ac="AcForm">${formItem('项目名称', inputHtml('pjName', d.name, '请填写项目名称', { max: 12 }), { required: true, helpId: 'helpPjName' })}${formItem('harness 工程', selectHtml('pjHarness', d.harness, harnessOpts, '请选择 harness 工程'), { required: true, helpId: 'helpPjHarness', help: '项目的需求 / 文档真源工程，从云效研发仓中单选' })}${formItem('代码服务仓', `<div class="ac-checkbox-group">${checks}</div>`, { helpId: 'helpPjRepos', help: '选填；候选为云效研发仓，被其他启用中项目占用的仓不可选' })}${formItem('状态', radioGroup('pjEnabled', d.enabled ? 'on' : 'off', [['on', '启用'], ['off', '停用']]), { required: true })}${formItem('备注', `<div class="ac-input is-textarea" data-ac="AcInput" data-size="medium"><textarea class="ac-input__textarea" data-field="pjNote" rows="2">${esc(d.note)}</textarea></div>`)}</div>`;
-    foot.innerHTML = '<button class="ac-btn" type="button" data-pj-back>返回列表</button><button class="ac-btn ac-btn--primary" type="button" data-pj-save>保存</button>';
-  }
-  async function saveProject(btn) {
-    const d = PJ.draft;
-    const name = d.name.trim();
-    const harness = d.harness;
-    const live = d.repos.filter((r) => repoOf(r));
-    PJ.err = '';
-    setHelp('helpPjName', !name ? '请填写项目名称' : name.length > 12 ? '项目名称最长 12 字' : d.enabled && PROJECTS.some((p) => p.enabled && p.id !== PJ.edit && p.name === name) ? '项目名称「' + name + '」已被启用中项目占用' : '');
-    setHelp('helpPjHarness', harness ? '' : '请选择 harness 工程');
-    if ($$('#projectModal .ac-form-item__help.is-error').length) return;
-    const takenBy = (repo) => PROJECTS.find((p) => p.enabled && p.id !== PJ.edit && (p.harness === repo || p.repos.includes(repo)));
-    const clash = d.enabled ? [harness].concat(live).map((r) => [r, takenBy(r)]).find((x) => x[1]) : null;
-    if (clash) { PJ.err = '代码仓 ' + clash[0] + ' 已被启用中项目「' + clash[1].name + '」占用'; renderProjects(); return; }
-    busy(btn, true);
-    await wait();
-    const data = { name, harness, repos: d.repos.slice(), enabled: d.enabled, note: d.note };
-    if (PJ.edit) Object.assign(PROJECTS.find((p) => p.id === PJ.edit), data);
-    else PROJECTS.push(Object.assign({ id: 'p' + (PROJECTS.length + 1), color: D.PROJECT_COLORS[PROJECTS.length % D.PROJECT_COLORS.length] }, data));
-    PJ.view = 'list';
-    toast('项目已保存，卡片归属已按新映射重新解析');
-    renderProjects();
-    renderAll();
-  }
-  async function toggleProject(id, btn) {
-    const p = PROJECTS.find((x) => x.id === id);
-    if (p.enabled) {
-      await confirmRun('停用项目', '停用后「' + p.name + '」退出筛选选项集，其 harness 工程仓的卡片回落「未归属项目」。确认停用？', '确认停用', true, () => { p.enabled = false; toast('项目已停用'); });
-    } else {
-      const clash = [p.harness].concat(p.repos).map((r) => [r, PROJECTS.find((x) => x.enabled && x.id !== p.id && (x.harness === r || x.repos.includes(r)))]).find((x) => x[1]);
-      if (clash) { toast('代码仓 ' + clash[0] + ' 已被启用中项目「' + clash[1].name + '」占用', 'error'); return; }
-      busy(btn, true);
-      await wait();
-      p.enabled = true;
-      toast('项目已启用');
-    }
-    renderProjects();
-    renderAll();
-  }
-
-  /* ---------- 日详情、筛选抽屉与右键菜单 ---------- */
-  let DAY = null;
-  function renderDayModal() {
-    if (!DAY) return;
-    const items = cardsOn(DAY, calCards());
-    $('#dayModalTitle').textContent = Number(DAY.slice(5, 7)) + ' 月 ' + Number(DAY.slice(8, 10)) + ' 日 · ' + items.length + ' 张';
-    $('#dayModalBody').innerHTML = items.length ? items.map((c) => cardHtml(c, 'day')).join('') : emptyHtml('当日暂无卡片');
-  }
-  function openFilter() { S.draft = cloneFilter(S.f); renderFilter(); showLayer('filterDrawer'); }
-  const groupSet = (f, key, all) => (key === 'repo' || key === 'project' ? (f[key] ? f[key] : new Set(all)) : f[key]);
-  function renderFilter() {
-    const f = S.draft;
-    const owners = [...new Set(CARDS.filter((c) => alive(c) && !c.parent && c.status !== 'NON_FEATURE').map(ownerKey))].sort((a, b) => a.localeCompare(b, 'zh'));
-    const modules = [...new Set(CARDS.filter((c) => alive(c) && !c.parent).map((c) => c.module))].sort();
-    const repos = sourceRepos();
-    const projects = projectOptions();
-    const chips = [];
-    f.status.forEach((v) => chips.push(['status', v, '状态：' + STAT_LABEL[v]]));
-    f.owner.forEach((v) => chips.push(['owner', v, '负责人：' + v]));
-    if (subset(f.repo, repos)) f.repo.forEach((v) => chips.push(['repo', v, '仓库：' + v]));
-    if (subset(f.project, projects)) f.project.forEach((v) => chips.push(['project', v, '项目：' + v]));
-    f.module.forEach((v) => chips.push(['module', v, '模块：' + v]));
-    const chipsHtml = chips.length ? chips.map((x) => {
-      const color = x[0] === 'project' ? projectColorByName(x[1]) : 'primary';
-      return `<span data-ac="AcTag" class="ac-tag ac-tag--small ac-tag--${color} is-filled is-closable"><span class="ac-tag__text">${esc(x[2])}</span><button class="ac-btn ac-tag__close" type="button" aria-label="移除条件" data-chip-group="${x[0]}" data-chip-value="${esc(x[1])}">×</button></span>`;
-    }).join(' ') : txt('未设置筛选条件', 'ac-typo-text--secondary');
-    const group = (key, title, opts, withAll) => {
-      const set = groupSet(f, key, opts.map((o) => o[0]));
-      const allOn = set.size === opts.length;
-      const head = withAll ? `<div>${checkbox(allOn ? true : set.size ? 'mixed' : false, false, '全部', ' data-fd-all="' + key + '"')}</div><hr class="ac-divider" />` : '';
-      return section(title, head + opts.map((o) => `<div>${checkbox(set.has(o[0]), false, o[2] || esc(o[1]), ' data-fd-group="' + key + '" data-fd-value="' + esc(o[0]) + '"')}</div>`).join(''));
-    };
-    $('#fdContent').innerHTML = `<div class="tpl-section"><div><button class="ac-btn ac-switch${S.f.onlyMine ? ' is-checked' : ''}" type="button" role="switch" aria-checked="${S.f.onlyMine}" data-ac="AcSwitch" data-size="medium" data-shape="rounded" id="onlyMineSwitch"><span class="ac-switch__thumb"></span></button> ${txt('只看自己', 'is-bold')} ${txt('即时生效：只显示提交人或开发人为当前用户的卡片', 'ac-typo-text--secondary')}</div>${section('已选条件', '<div>' + chipsHtml + '</div>')}${group('status', '状态', STAT_KEYS.map((k) => [k, STAT_LABEL[k]]))}${group('owner', '负责人', owners.map((o) => [o, o]))}${group('repo', 'skills 仓库', repos.map((r) => [r, r]), true)}${group('project', '项目', projects.map((p) => [p, p, tag(p, p === '未归属项目' ? 'default' : projectColorByName(p))]), true)}${group('module', '模块', modules.map((m) => [m, m]))}</div>`;
-  }
-  function toggleGroup(key, value) {
-    const f = S.draft;
-    if (key === 'repo' || key === 'project') {
-      const all = key === 'repo' ? sourceRepos() : projectOptions();
-      const set = new Set(groupSet(f, key, all));
-      if (set.has(value)) set.delete(value); else set.add(value);
-      f[key] = set.size === all.length ? null : set;
-    } else if (f[key].has(value)) f[key].delete(value); else f[key].add(value);
-    renderFilter();
-  }
-  function openCtx(e, c) {
-    const locked = !PERM.EDIT || isLocked(c);
-    const items = [['detail', '查看详情', false], ['today', '改期到今天', locked], ['tomorrow', '改期到明天', locked], ['pool', '移回待排期', locked || !c.start]];
-    const menu = $('#ctxMenu');
-    menu.innerHTML = items.map((x) => `<div class="ac-dropdown-item${x[2] ? ' is-disabled' : ''}" role="menuitem" data-ctx-act="${x[0]}" data-no="${c.no}">${x[1]}</div>`).join('');
-    (e.target.closest('[data-ac="AcModal"]') || document.body).appendChild($('#ctxDd'));
-    openFloat(menu);
-    placeFixed(menu, e.clientX, e.clientY);
-  }
-  async function ctxAct(item) {
-    const c = byNo(item.dataset.no);
-    const act = item.dataset.ctxAct;
-    if (!c || item.classList.contains('is-disabled')) return;
-    closeFloats();
-    if (act === 'detail') { goDetail(c.no); return; }
-    if (act === 'pool') { await unschedule(c); return; }
-    const s = act === 'today' ? TODAY_S : shift(TODAY_S, 1);
-    await applySchedule(c, s, shift(s, c.start ? span(c.start, endOf(c)) : 0));
-  }
-
-  /* ---------- 关闭与导航 ---------- */
-  async function requestClose(id) {
-    if (id === 'confirmModal') { settleConfirm(false); return; }
-    if (id === 'projectModal' && pjDirty()) {
-      if (!(await askConfirm('放弃修改', '项目信息尚未保存，确认放弃？', '放弃修改', true))) return;
-      hideLayer('confirmModal');
-    }
-    if (id === 'filterDrawer') S.draft = null;
-    if (id === 'projectModal') PJ.view = 'list';
-    if (id === 'dayModal') DAY = null;
-    hideLayer(id);
-  }
-  async function pjBack() {
-    if (pjDirty()) {
-      if (!(await askConfirm('放弃修改', '项目信息尚未保存，确认放弃？', '放弃修改', true))) return;
-      hideLayer('confirmModal');
-    }
-    PJ.view = 'list';
-    renderProjects();
-  }
-  async function applyFilterDraft(btn) {
-    busy(btn, true);
-    await wait(240);
-    const d = S.draft;
-    d.onlyMine = S.f.onlyMine;
-    S.f = d;
-    S.draft = null;
-    resetPool({ exitMode: true });
-    busy(btn, false);
-    hideLayer('filterDrawer');
-    renderAll();
-  }
-  function step(n) {
-    if (S.view === 'week') S.weekStart = addDays(S.weekStart, 7 * n);
-    else { const d = new Date(S.y, S.m + n, 1); S.y = d.getFullYear(); S.m = d.getMonth(); }
-    renderAll();
-  }
-  function goToday() {
-    S.y = TODAY.getFullYear();
-    S.m = TODAY.getMonth();
-    S.weekStart = mondayOf(TODAY);
-    renderAll();
-    const el = S.view === 'month' ? $('.ac-calendar__cell.is-today') : null;
-    if (el) el.scrollIntoView({ block: 'center' });
-  }
-  function onEscape() {
-    if (FLOATS.has($('#ctxMenu'))) { closeFloat($('#ctxMenu')); return; }
-    if (!$('#popconfirm').hidden) { settlePop(false); return; }
-    if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
-    const modal = ['mergeModal', 'newCardModal', 'nfModal', 'projectModal', 'dayModal'].find((id) => OPEN.has(id));
-    if (modal) { requestClose(modal); return; }
-    if (FLOATS.size) { closeFloats(); return; }
-    if (OPEN.has('filterDrawer')) { requestClose('filterDrawer'); return; }
-    if (S.mode) exitMode();
-  }
-  function onSelect(key, v) {
-    if (key === 'ncRepo') { NC.repo = v; NC.pick = ''; NC.q = ''; renderNewCard(); }
-    if (key === 'pjHarness' && PJ.draft) { PJ.draft.harness = v; renderProjects(); }
-  }
-  function markDrop(cell) {
-    $$('.ac-calendar__cell.is-selected').forEach((x) => { if (x !== cell) x.classList.remove('is-selected'); });
-    if (cell) cell.classList.add('is-selected');
-  }
-
-  /* ---------- 事件委托：页面自管交互，事件不再冒泡到组件文档站运行时 ---------- */
-  const HANDLERS = {};
-  const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
-  ['click', 'input', 'keydown', 'contextmenu', 'dragstart', 'dragover', 'drop', 'dragend', 'mousedown', 'focusin', 'focusout'].forEach((type) => {
-    document.body.addEventListener(type, (e) => {
-      const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
-      for (const [sel, fn] of HANDLERS[type] || []) {
-        const el = sel ? t && t.closest(sel) : t;
-        if (el && fn(e, el) === true) break;
-      }
-      e.stopPropagation();
+  renderPoolPager(items.length);
+  bindCards(list);
+}
+function renderPoolPager(pageLen) {
+  var total = visiblePoolTotal();
+  var pages = Math.max(1, Math.ceil(total / S.poolSize));
+  var h = '<div class="busy-pagination"><span class="u-muted">共 ' + total + ' 张</span>';
+  h += '<button data-pg="prev"' + (S.poolPage <= 1 ? ' disabled' : '') + '>‹</button>';
+  for (var i = 1; i <= pages; i++) h += '<button data-pg="' + i + '"' + (i === S.poolPage ? ' class="is-active"' : '') + '>' + i + '</button>';
+  h += '<button data-pg="next"' + (S.poolPage >= pages ? ' disabled' : '') + '>›</button>';
+  h += '<span class="u-muted">每页</span>';
+  [10, 20, 50].forEach(function (n) {
+    h += '<button data-size="' + n + '"' + (n === S.poolSize ? ' class="is-active"' : '') + '>' + n + '</button>';
+  });
+  h += '</div>';
+  $('poolPager').innerHTML = h;
+  $('poolPager').querySelectorAll('button').forEach(function (b) {
+    b.addEventListener('click', function () {
+      if (b.dataset.pg === 'prev' && S.poolPage > 1) S.poolPage--;
+      else if (b.dataset.pg === 'next' && S.poolPage < pages) S.poolPage++;
+      else if (b.dataset.pg && b.dataset.pg !== 'prev' && b.dataset.pg !== 'next') S.poolPage = +b.dataset.pg;
+      else if (b.dataset.size) { S.poolSize = +b.dataset.size; S.poolPage = 1; }
+      renderPool(); /* 切换页码保留勾选（business-rule §7 跨页多选） */
     });
   });
+}
 
-  on('mousedown', null, (e, t) => {
-    if (!$('#popconfirm').hidden && !(t && t.closest('#popconfirm'))) settlePop(false);
-    [...FLOATS.keys()].forEach((el) => {
-      const owner = el.closest('[data-ac="AcSelect"], #moreDd, #periodPop, #progressPop, #protoDd');
-      if (t && (el.contains(t) || (owner && owner.contains(t)))) return;
-      closeFloat(el);
-    });
-    if (!(t && t.closest('.ac-pagination__page-size'))) {
-      $$('.ac-pagination__page-size.is-open').forEach((x) => {
-        x.classList.remove('is-open');
-        const panel = x.querySelector('.ac-pagination__page-size-panel');
-        if (panel) panel.hidden = true;
-      });
+/* ==================== 渲染：月视图 C ==================== */
+function monthGridDates() {
+  var first = new Date(S.year, S.month, 1);
+  var startIdx = (first.getDay() + 6) % 7;
+  var daysIn = new Date(S.year, S.month + 1, 0).getDate();
+  var rows = Math.ceil((startIdx + daysIn) / 7);
+  var dates = [];
+  var d = new Date(S.year, S.month, 1 - startIdx);
+  for (var i = 0; i < rows * 7; i++) { dates.push(iso(d)); d.setDate(d.getDate() + 1); }
+  return dates;
+}
+function cardsOn(dateStr) {
+  return visibleScheduled().filter(function (c) { return c.start <= dateStr && c.end >= dateStr; });
+}
+function renderMonth() {
+  var dates = monthGridDates();
+  var curPrefix = S.year + '-' + String(S.month + 1).padStart(2, '0');
+  var h = '';
+  for (var r = 0; r < dates.length / 7; r++) {
+    h += '<tr>';
+    for (var c = 0; c < 7; c++) {
+      var ds = dates[r * 7 + c];
+      var inMonth = ds.slice(0, 7) === curPrefix;
+      var isToday = ds === D.today;
+      var cells = inMonth ? cardsOn(ds).filter(matchSearch) : [];
+      var all = inMonth ? cardsOn(ds) : [];
+      var shown = cells.slice(0, 3);
+      h += '<td data-date="' + ds + '"' + (inMonth ? '' : ' data-out="1"') + '>';
+      h += '<div class="chip-group">';
+      h += isToday ? '<span class="busy-tag busy-tag--small">' + (+ds.slice(8)) + ' 今天</span>'
+                   : '<span class="' + (inMonth ? 'u-mono' : 'u-muted') + '">' + (+ds.slice(8)) + '</span>';
+      if (D.releaseDays.indexOf(ds) >= 0) h += '<span class="busy-tag busy-tag--small busy-tag--warning is-plain">发版</span>';
+      h += '</div>';
+      shown.forEach(function (card) { h += cardHtml(card, S.density === 'compact' ? 'compact' : 'standard'); });
+      if (cells.length > 3) h += '<button class="busy-button is-link" type="button" data-day="' + ds + '"><span>+' + (cells.length - 3) + '</span></button>';
+      if (inMonth && !cells.length && all.length && S.search) h += '<span class="u-sub u-muted">未命中 ' + all.length + ' 张已淡化</span>';
+      h += '</td>';
     }
-    return false;
-  });
-  on('focusin', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.add('is-focused'); return true; });
-  on('focusout', '.ac-input__inner, .ac-input__textarea', (e, el) => { const box = el.closest('.ac-input'); if (box) box.classList.remove('is-focused'); return true; });
-
-  on('click', '[data-close]', (e, el) => { requestClose(el.dataset.close); return true; });
-  on('click', '#confirmOkBtn', () => { settleConfirm(true); return true; });
-  on('click', '#confirmCancelBtn', () => { settleConfirm(false); return true; });
-  on('click', '#pcOkBtn', () => { settlePop(true); return true; });
-  on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
-  on('click', '[data-ctx-act]', (e, el) => { ctxAct(el); return true; });
-  on('click', '[data-ac="AcSelect"] .ac-select__option', (e, el) => {
-    const root = el.closest('[data-ac="AcSelect"]');
-    if (el.classList.contains('is-disabled')) return true;
-    closeFloat(root.querySelector('.ac-select__popup'));
-    onSelect(root.dataset.select, el.dataset.value);
-    return true;
-  });
-  on('click', '[data-ac="AcSelect"] .ac-select__trigger', (e, el) => {
-    const root = el.closest('[data-ac="AcSelect"]');
-    const pop = root.querySelector('.ac-select__popup');
-    if (root.classList.contains('is-disabled')) return true;
-    if (FLOATS.has(pop)) closeFloat(pop); else { openFloat(pop); root.classList.add('is-open'); }
-    return true;
-  });
-  on('click', '#periodBtn', () => {
-    const p = $('#monthPanel');
-    if (S.view === 'week') return true;
-    if (FLOATS.has(p)) { closeFloat(p); return true; }
-    pickerYear = S.y;
-    renderMonthPanel();
-    openFloat(p);
-    return true;
-  });
-  on('click', '[data-pick-year]', (e, el) => { pickerYear += Number(el.dataset.pickYear); renderMonthPanel(); return true; });
-  on('click', '[data-pick-month]', (e, el) => { S.y = pickerYear; S.m = Number(el.dataset.pickMonth); closeFloats(); renderAll(); return true; });
-  on('click', '#prevBtn', () => { step(-1); return true; });
-  on('click', '#nextBtn', () => { step(1); return true; });
-  on('click', '#todayBtn', () => { goToday(); return true; });
-  on('click', '#progressBtn', (e, el) => {
-    const pop = $('#progressPanel');
-    if (FLOATS.has(pop)) { closeFloat(pop); return true; }
-    openFloat(pop);
-    pop.style.left = '0px';
-    pop.style.top = el.offsetHeight + 8 + 'px';
-    return true;
-  });
-  on('click', '[data-stat]', (e, el) => {
-    const k = el.dataset.stat;
-    if (S.f.status.has(k)) S.f.status.delete(k); else S.f.status.add(k);
-    resetPool({ exitMode: true });
-    renderAll();
-    return true;
-  });
-  on('click', '#viewSeg [data-view]', (e, el) => {
-    const v = el.dataset.view;
-    if (v === S.view) return true;
-    if (S.view === 'week') { S.y = S.weekStart.getFullYear(); S.m = S.weekStart.getMonth(); }
-    if (v === 'week') S.weekStart = S.y === TODAY.getFullYear() && S.m === TODAY.getMonth() ? mondayOf(TODAY) : mondayOf(new Date(S.y, S.m, 1));
-    S.view = v;
-    store.set('fs.view', v);
-    renderAll();
-    return true;
-  });
-  on('click', '#filterBtn', () => { openFilter(); return true; });
-  on('click', '#newCardBtn', () => { NC.repo = ''; NC.q = ''; NC.pick = ''; renderNewCard(); showLayer('newCardModal'); return true; });
-  on('click', '#moreBtn', (e, el) => {
-    const m = $('#moreMenu');
-    if (FLOATS.has(m)) { closeFloat(m); return true; }
-    openFloat(m);
-    $('#moreDd').classList.add('is-open');
-    placeUnder(m, el);
-    return true;
-  });
-  on('click', '[data-menu]', (e, el) => {
-    const k = el.dataset.menu;
-    closeFloats();
-    if (k === 'merge') startMode('merge');
-    if (k === 'density') { S.density = el.dataset.density; store.set('fs.density', S.density); renderAll(); }
-    if (k === 'nonfeature') { S.nfPage = 1; renderNF(); showLayer('nfModal'); }
-    if (k === 'projects') { PJ.view = 'list'; renderProjects(); showLayer('projectModal'); }
-    return true;
-  });
-  on('click', '#poolCollapseBtn', () => { S.poolCollapsed = true; store.set('fs.poolCollapsed', '1'); renderAll(); return true; });
-  on('click', '#poolExpandBtn', () => { S.poolCollapsed = false; store.set('fs.poolCollapsed', '0'); renderAll(); return true; });
-  on('click', '#batchBtn', () => { if (S.mode === 'batch') exitMode(); else startMode('batch'); return true; });
-  function pagerRoot(el) { return el.closest('#poolPager') || el.closest('#nfPager'); }
-  function pagerApply(root, page, size) {
-    if (root.id === 'poolPager') {
-      if (page) S.poolPage = page;
-      if (size) { S.poolSize = size; S.poolPage = 1; }
-      renderPool();
-    } else {
-      if (page) S.nfPage = page;
-      if (size) { S.nfSize = size; S.nfPage = 1; }
-      renderNF();
-    }
+    h += '</tr>';
   }
-  on('click', '[data-page]', (e, el) => {
-    const root = pagerRoot(el);
-    if (!root) return false;
-    pagerApply(root, Number(el.dataset.page));
-    return true;
+  $('monthBody').innerHTML = h;
+  bindCards($('monthBody'));
+  /* +N 日详情弹层 G3 */
+  $('monthBody').querySelectorAll('[data-day]').forEach(function (b) {
+    b.addEventListener('click', function (e) { e.stopPropagation(); openDay(b.getAttribute('data-day')); });
   });
-  on('click', '[data-page-step]', (e, el) => {
-    const root = pagerRoot(el);
-    if (!root) return false;
-    const box = el.closest('[data-ac="AcPagination"]');
-    const total = Number(box.dataset.total);
-    const size = Number(box.dataset.pageSize);
-    const pages = Math.max(1, Math.ceil(total / size));
-    const cur = Number(box.dataset.current);
-    pagerApply(root, el.dataset.pageStep === 'prev' ? Math.max(1, cur - 1) : Math.min(pages, cur + 1));
-    return true;
-  });
-  on('click', '[data-page-size-option]', (e, el) => {
-    const root = pagerRoot(el);
-    if (!root) return false;
-    pagerApply(root, null, Number(el.dataset.pageSizeOption));
-    return true;
-  });
-  on('click', '.ac-pagination__page-size-trigger', (e, el) => {
-    const box = el.closest('.ac-pagination__page-size');
-    if (!box) return false;
-    const panel = box.querySelector('.ac-pagination__page-size-panel');
-    const open = panel.hidden;
-    $$('.ac-pagination__page-size.is-open').forEach((x) => {
-      x.classList.remove('is-open');
-      const p = x.querySelector('.ac-pagination__page-size-panel');
-      if (p) p.hidden = true;
+  /* 发版日：点击可放置日期格空白处切换（G 操作反馈清单） */
+  $('monthBody').querySelectorAll('td[data-date]').forEach(function (td) {
+    td.addEventListener('click', function (e) {
+      if (td.getAttribute('data-out')) return;
+      /* 仅日期格空白处切换发版日（排除卡片、+N、日期数字行与按钮） */
+      if (e.target.closest('[data-card]') || e.target.closest('button') || e.target.closest('.chip-group')) return;
+      toggleReleaseDay(td.getAttribute('data-date'));
     });
-    box.classList.toggle('is-open', open);
-    panel.hidden = !open;
-    return true;
+    td.addEventListener('dragover', function (e) { if (!td.getAttribute('data-out')) e.preventDefault(); });
+    td.addEventListener('drop', function (e) {
+      e.preventDefault();
+      var no = e.dataTransfer.getData('text/plain');
+      if (no) dropCardOn(no, td.getAttribute('data-date'));
+    });
   });
-  function jumpPager(input) {
-    const root = pagerRoot(input);
-    if (!root) return;
-    const box = input.closest('[data-ac="AcPagination"]');
-    const pages = Math.max(1, Math.ceil(Number(box.dataset.total) / Number(box.dataset.pageSize)));
-    const n = Math.min(pages, Math.max(1, Number(input.value) || 1));
-    pagerApply(root, n);
+}
+function toggleReleaseDay(ds) {
+  var i = D.releaseDays.indexOf(ds);
+  var marked = i >= 0;
+  if (marked) D.releaseDays.splice(i, 1); else D.releaseDays.push(ds);
+  P.toast(marked ? '已取消 ' + P.mmdd(ds) + ' 的发版日标记' : '已标记 ' + P.mmdd(ds) + ' 为发版日', 'success');
+  renderMonth();
+}
+
+/* ==================== 渲染：周视图 D（负责人 × 周一至周日） ==================== */
+function weekDates() {
+  var d = parseD(S.weekAnchor);
+  var monday = new Date(d); monday.setDate(d.getDate() - ((d.getDay() + 6) % 7));
+  var out = [];
+  for (var i = 0; i < 7; i++) { out.push(iso(monday)); monday.setDate(monday.getDate() + 1); }
+  return out;
+}
+function renderWeek() {
+  var dates = weekDates();
+  $('weekHead').innerHTML = '<tr><th>负责人</th>' + dates.map(function (ds) {
+    return '<th>' + '一二三四五六日'[dates.indexOf(ds)] + ' <span class="u-mono">' + P.mmdd(ds) + '</span>' +
+      (ds === D.today ? ' <span class="busy-tag busy-tag--small">今天</span>' : '') + '</th>';
+  }).join('') + '</tr>';
+  var cards = visibleScheduled().filter(function (c) { return c.end >= dates[0] && c.start <= dates[6] && matchSearch(c); });
+  var owners = [];
+  cards.forEach(function (c) {
+    var o = c.developer || c.submitter;
+    if (owners.indexOf(o) < 0) owners.push(o);
+  });
+  var isCurWeek = dates.indexOf(D.today) >= 0;
+  $('weekBody').innerHTML = owners.map(function (o) {
+    var mine = cards.filter(function (c) { return (c.developer || c.submitter) === o; });
+    var delayN = isCurWeek ? mine.filter(function (c) { return P.statusMeta(c).label === '延期'; }).length : 0;
+    var row = '<td><b>' + o + '</b> <span class="u-sub">本周 ' + mine.length + ' 张</span>' +
+      (delayN ? ' <span class="busy-tag busy-tag--small busy-tag--warning">延 ' + delayN + '</span>' : '') + '</td>';
+    dates.forEach(function (ds) {
+      row += '<td data-date="' + ds + '">' + mine.filter(function (c) { return c.start <= ds && c.end >= ds; })
+        .map(function (c) { return cardHtml(c, 'standard'); }).join('') + '</td>';
+    });
+    return '<tr>' + row + '</tr>';
+  }).join('') || '<tr><td colspan="8"><div class="busy-empty"><div class="busy-empty__image">▦</div>本周暂无已排期的卡片</div></td></tr>';
+  bindCards($('weekBody'));
+  $('weekBody').querySelectorAll('td[data-date]').forEach(function (td) {
+    td.addEventListener('dragover', function (e) { e.preventDefault(); });
+    td.addEventListener('drop', function (e) {
+      e.preventDefault();
+      var no = e.dataTransfer.getData('text/plain');
+      if (no) dropCardOn(no, td.getAttribute('data-date'));
+    });
+  });
+}
+
+/* ==================== 渲染：列表视图 E ==================== */
+function renderList() {
+  var prefix = S.year + '-' + String(S.month + 1).padStart(2, '0');
+  var rows = visibleScheduled().filter(function (c) { return c.start && c.start.slice(0, 7) === prefix && matchSearch(c); });
+  if (S.sortKey) {
+    rows = rows.slice().sort(function (a, b) {
+      var va = S.sortKey === 'start' ? a.start : (a.created || '');
+      var vb = S.sortKey === 'start' ? b.start : (b.created || '');
+      if (!va) return 1; if (!vb) return -1; /* 空值置底 */
+      return S.sortAsc ? (va < vb ? -1 : 1) : (va > vb ? -1 : 1);
+    });
   }
-  on('keydown', '[data-page-jump]', (e, el) => {
-    if (e.key !== 'Enter') return false;
-    jumpPager(el);
-    return true;
-  });
-  on('focusout', '[data-page-jump]', (e, el) => { if (el.value) jumpPager(el); return true; });
-  on('click', '#modeCancelBtn', () => { exitMode(); return true; });
-  on('click', '#modeOkBtn', (e, el) => { if (el.disabled) return true; if (S.mode === 'merge') openMergeModal([...S.selected]); else batchToNF(); return true; });
-  on('click', '#mergeOkBtn', (e, el) => { createMerge(el); return true; });
-  on('click', '#newCardOkBtn', (e, el) => { createCard(el); return true; });
-  on('click', '[data-nc-pick]', (e, el) => { NC.pick = el.dataset.ncPick; setHelp('helpNcCommit', ''); $('#ncList').innerHTML = ncListHtml(); return true; });
-  on('click', '#clearFiltersBtn', () => { S.f = newFilter(); resetPool({ exitMode: true }); renderAll(); return true; });
-  on('click', '#clearSearchBtn', () => { S.search = ''; $('#searchInput').value = ''; resetPool({ exitMode: true }); renderAll(); return true; });
-  on('click', '[data-more]', (e, el) => { DAY = el.dataset.more; renderDayModal(); showLayer('dayModal'); return true; });
-  on('click', '#protoBtn', (e, el) => {
-    const m = $('#protoMenu');
-    if (FLOATS.has(m)) { closeFloat(m); return true; }
-    openFloat(m);
-    $('#protoDd').classList.add('is-open');
-    placeUnder(m, el);
-    return true;
-  });
-  on('click', '#protoResetBtn', () => { D.reset(); location.reload(); return true; });
-  on('click', '[data-radio]', (e, el) => {
-    if (el.classList.contains('is-disabled')) return true;
-    if (el.dataset.radio === 'pjEnabled') { PJ.draft.enabled = el.dataset.value === 'on'; renderProjects(); }
-    return true;
-  });
-  on('click', '[data-open-card]', (e, el) => { goDetail(el.dataset.openCard); return true; });
+  $('listEmpty').hidden = rows.length > 0;
+  $('listTable').hidden = rows.length === 0;
+  $('listBody').innerHTML = rows.map(function (c) {
+    return '<tr data-card="' + c.no + '">' +
+      '<td><b>' + c.title + '</b>' + (c.merged ? ' <span class="busy-tag busy-tag--small is-plain">⊕ 合并 · ' + c.childCount + ' 项</span>' : '') + '</td>' +
+      '<td class="u-mono">' + c.no + '</td>' +
+      '<td>' + P.projectTag(c.project, true) + '</td>' +
+      '<td><span class="busy-tag busy-tag--small busy-tag--info is-plain">' + c.module + '</span></td>' +
+      '<td>' + c.submitter + '</td>' +
+      '<td>' + (c.developer || '—') + '</td>' +
+      '<td class="u-mono">' + c.start + '</td>' +
+      '<td class="u-mono">' + c.end + '</td>' +
+      '<td>' + P.statusCell(c) + '</td>' +
+      '<td class="u-mono u-sub">' + (c.created || '—') + '</td>' +
+      '<td><span class="tpl-row-actions">' + rowAction(c) + '</span></td>' +
+      '</tr>';
+  }).join('');
+  bindListActions();
+}
+function rowAction(c) {
+  var m = P.statusMeta(c).label;
+  if (m === '延期' && c.status === 'PENDING') m = '待开发';
+  if (m === '延期' && c.status === 'IN_PROGRESS') m = '开发中';
+  if (m === '待开发') return '<button class="busy-button is-link" type="button" data-act="take" data-no="' + c.no + '"><span>领取</span></button>';
+  if (m === '开发中') return '<button class="busy-button is-link" type="button" data-act="done" data-no="' + c.no + '"><span>完成</span></button>';
+  if (c.status === 'DONE') return '<button class="busy-button is-link" type="button" data-act="revert" data-no="' + c.no + '"><span>回退</span></button>';
+  return '';
+}
 
-  on('click', '#onlyMineSwitch', () => { S.f.onlyMine = !S.f.onlyMine; if (S.draft) S.draft.onlyMine = S.f.onlyMine; resetPool({ exitMode: true }); renderFilter(); renderAll(); return true; });
-  on('click', '[data-fd-all]', (e, el) => {
-    const key = el.dataset.fdAll;
-    const all = key === 'repo' ? sourceRepos() : projectOptions();
-    S.draft[key] = groupSet(S.draft, key, all).size === all.length ? new Set() : null;
-    renderFilter();
-    return true;
+/* ==================== 卡片事件绑定（点击进详情 G1 / 拖拽 / 右键 G5 / 多选勾选 F8） ==================== */
+function bindCards(root) {
+  root.querySelectorAll('[data-card]').forEach(function (el) {
+    var no = el.getAttribute('data-card');
+    el.addEventListener('click', function (e) {
+      if (e.target.closest('button') || e.target.closest('a')) return;
+      if (S.batch || S.mergeMode) { toggleSelect(no); return; }
+      location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
+    });
+    el.addEventListener('dragstart', function (e) {
+      e.dataTransfer.setData('text/plain', no);
+      e.dataTransfer.effectAllowed = 'move';
+    });
+    el.addEventListener('contextmenu', function (e) {
+      e.preventDefault();
+      openCtxMenu(no);
+    });
   });
-  on('click', '[data-fd-group]', (e, el) => { toggleGroup(el.dataset.fdGroup, el.dataset.fdValue); return true; });
-  on('click', '[data-chip-group]', (e, el) => {
-    const g = el.dataset.chipGroup;
-    if (g === 'repo' || g === 'project') toggleGroup(g, el.dataset.chipValue);
-    else { S.draft[g].delete(el.dataset.chipValue); renderFilter(); }
-    return true;
-  });
-  on('click', '#fdOkBtn', (e, el) => { applyFilterDraft(el); return true; });
-  on('click', '#fdResetBtn', () => { S.f = newFilter(); S.draft = newFilter(); resetPool({ exitMode: true }); renderFilter(); renderAll(); toast('已重置筛选', 'info'); return true; });
+}
+function findCard(no) {
+  var all = D.scheduled.concat(D.pool.items, D.pool.page2, D.pool.page3, D.nonFeature.items);
+  return all.filter(function (c) { return c.no === no; })[0];
+}
 
-  on('click', '[data-pj-new]', () => { openProjectForm(); return true; });
-  on('click', '[data-pj-edit]', (e, el) => { openProjectForm(el.dataset.pjEdit); return true; });
-  on('click', '[data-pj-toggle]', (e, el) => { toggleProject(el.dataset.pjToggle, el); return true; });
-  on('click', '[data-pj-back]', () => { pjBack(); return true; });
-  on('click', '[data-pj-save]', (e, el) => { saveProject(el); return true; });
-  on('click', '[data-pj-repo]', (e, el) => {
-    if (el.classList.contains('is-disabled')) return true;
-    const r = el.dataset.pjRepo;
-    const i = PJ.draft.repos.indexOf(r);
-    if (i >= 0) PJ.draft.repos.splice(i, 1); else PJ.draft.repos.push(r);
-    renderProjects();
-    return true;
+/* 拖拽落点：池→日历=排期；日历→日历=改期；日历→池=拖回待排期（business-rule §2.1） */
+function removeFromPool(no) {
+  ['items', 'page2', 'page3'].forEach(function (k) {
+    var i = D.pool[k].findIndex(function (c) { return c.no === no; });
+    if (i >= 0) D.pool[k].splice(i, 1);
   });
-
-  on('click', '[data-row-act]', (e, el) => { rowAct(el); return true; });
-  on('click', '[data-sort]', (e, el) => { const k = el.dataset.sort; S.sort = { key: k, dir: S.sort.key === k && S.sort.dir === 'asc' ? 'desc' : 'asc' }; renderAll(); return true; });
-  on('click', 'tr[data-row]', (e, el) => { goDetail(el.dataset.row); return true; });
-  on('click', '[data-card]', (e, el) => {
-    const c = byNo(el.dataset.card);
-    if (!c) return true;
-    if (S.mode) { toggleSelect(c, el.dataset.ctx); return true; }
-    goDetail(c.no);
-    return true;
-  });
-  on('click', '.ac-calendar__cell[data-drop]', (e, cell) => { toggleRelease(cell.dataset.date); return true; });
-
-  on('input', '#searchInput', (e, el) => { S.search = el.value; resetPool({ exitMode: true }); renderAll(); return true; });
-  on('input', '#mergeModal [data-field="mergeTitle"]', (e, el) => {
-    const cnt = el.closest('.ac-input').querySelector('[data-count]');
-    if (cnt) cnt.textContent = el.value.length + '/30';
-    setHelp('helpMerge', el.value.length >= 30 ? '标题最长 30 字符' : '');
-    $('#helpMerge').classList.remove('is-error');
-    return true;
-  });
-  on('input', '#newCardModal [data-field="ncQ"]', (e, el) => { NC.q = el.value; $('#ncList').innerHTML = ncListHtml(); return true; });
-  on('input', '#projectModal [data-field]', (e, el) => { const k = { pjName: 'name', pjNote: 'note' }[el.dataset.field]; if (k) PJ.draft[k] = el.value; return true; });
-
-  on('contextmenu', '[data-card]', (e, el) => { const c = byNo(el.dataset.card); if (!c) return false; e.preventDefault(); openCtx(e, c); return true; });
-  on('dragstart', '[data-card]', (e, el) => {
-    const c = byNo(el.dataset.card);
-    if (!c || S.mode || !PERM.EDIT) { e.preventDefault(); return true; }
-    if (isLocked(c)) { e.preventDefault(); toast('已完成的卡片不允许拖拽改期；如需改期请先回退状态', 'error'); return true; }
-    S.drag = c.no;
-    e.dataTransfer.effectAllowed = 'move';
-    e.dataTransfer.setData('text/plain', c.no);
-    return true;
-  });
-  on('dragover', '[data-card]', (e, el) => { if (!S.drag || el.dataset.card === S.drag) return false; e.preventDefault(); markDrop(null); return true; });
-  on('dragover', '[data-drop="cell"]', (e, cell) => { if (!S.drag) return false; e.preventDefault(); markDrop(cell.matches('.ac-calendar__cell') && cell.dataset.date >= TODAY_S ? cell : null); return true; });
-  on('dragover', '[data-drop="pool"]', (e) => { if (S.drag) { e.preventDefault(); markDrop(null); } return true; });
-  on('drop', '[data-card]', (e, el) => {
-    if (!S.drag || el.dataset.card === S.drag) return false;
-    e.preventDefault();
-    const a = byNo(S.drag);
-    const b = byNo(el.dataset.card);
-    S.drag = null;
-    markDrop(null);
-    if (a.start && !b.start) { unschedule(a); return true; }
-    const err = mergeCheck([b, a]);
-    if (err) toast(err, 'error'); else openMergeModal([b.no, a.no]);
-    return true;
-  });
-  on('drop', '[data-drop="cell"]', (e, cell) => {
-    if (!S.drag) return false;
-    e.preventDefault();
-    const c = byNo(S.drag);
-    const k = cell.dataset.date;
-    S.drag = null;
-    markDrop(null);
-    if (k < TODAY_S) { toast('不可将卡片改期到今天之前', 'error'); return true; }
-    applySchedule(c, k, shift(k, c.start ? span(c.start, endOf(c)) : 0));
-    return true;
-  });
-  on('drop', '[data-drop="pool"]', (e) => {
-    if (!S.drag) return false;
-    e.preventDefault();
-    const c = byNo(S.drag);
-    S.drag = null;
-    markDrop(null);
-    if (c.start) unschedule(c);
-    return true;
-  });
-  on('dragend', null, () => { S.drag = null; markDrop(null); return false; });
-
-  on('keydown', '#mergeModal [data-field="mergeTitle"]', (e) => { if (e.key !== 'Enter') return false; createMerge($('#mergeOkBtn')); return true; });
-  on('keydown', '[data-card], [data-stat], [data-more], [data-nc-pick], [data-open-card], [data-fd-group], [data-fd-all], [data-pj-repo], [data-radio], #protoResetBtn, .ac-select__trigger', (e, el) => {
-    if ((e.key !== 'Enter' && e.key !== ' ') || e.target !== el) return false;
-    e.preventDefault();
-    el.click();
-    return true;
-  });
-  on('keydown', null, (e, t) => {
-    if (e.key === 'Escape') {
-      if (t && t.id === 'searchInput' && S.search) { S.search = ''; t.value = ''; renderAll(); return true; }
-      onEscape();
-      return true;
-    }
-    const typing = t && t.closest('input, textarea, [contenteditable="true"]');
-    if (typing || document.hidden || OPEN.size || FLOATS.size || !$('#popconfirm').hidden) return false;
-    if (e.key === 'ArrowLeft') { step(-1); return true; }
-    if (e.key === 'ArrowRight') { step(1); return true; }
-    if (e.key === 't' || e.key === 'T') { goToday(); return true; }
-    return false;
-  });
-  window.addEventListener('scroll', () => { closeFloat($('#ctxMenu')); closeFloat($('#moreMenu')); closeFloat($('#protoMenu')); }, true);
-  window.addEventListener('resize', applyResponsive);
-
-  $('#searchInput').value = S.search;
+}
+function dropCardOn(no, dateStr) {
+  var card = findCard(no);
+  if (!card) return;
+  if (dateStr < D.today) { P.toast('不可将卡片改期到今天之前', 'error'); return; }
+  var fromPool = !card.start;
+  var dur = card.start ? P.daysBetween(card.start, card.end) : 1;
+  if (card.start === dateStr && card.end) return; /* 拖回原日期不产生变更 */
+  card.start = dateStr;
+  var end = parseD(dateStr); end.setDate(end.getDate() + dur - 1);
+  card.end = iso(end);
+  if (fromPool) {
+    removeFromPool(no);
+    D.pool.total--; moveScheduledIn(card);
+    P.toast('已排期到 ' + P.mmdd(dateStr), 'success');
+    poolAfterRemove();
+  } else {
+    P.toast('已改期到 ' + P.mmdd(dateStr), 'success');
+  }
   renderAll();
-  applyResponsive();
-  const flash = D.unstash('fs.flash');
-  if (flash) toast(flash.msg, flash.type);
+}
+function moveScheduledIn(card) { if (D.scheduled.indexOf(card) < 0) D.scheduled.push(card); }
+function poolAfterRemove() {
+  /* 刷新当前页，当前页为空且不是第 1 页时回退上一页 */
+  var total = visiblePoolTotal();
+  var pages = Math.max(1, Math.ceil(total / S.poolSize));
+  if (S.poolPage > pages) S.poolPage = pages;
+}
+function dropCardToPool(no) {
+  var card = findCard(no);
+  if (!card || !card.start) return;
+  delete card.start; delete card.end;
+  D.pool.total++;
+  S.poolPage = 1; /* 移回待排期后回到第 1 页 */
+  P.toast('已移回待排期', 'success');
+  renderAll();
+}
 
-})();
+/* ==================== G5 右键菜单（busy-dialog 承载；不可用项置灰） ==================== */
+function openCtxMenu(no) {
+  var card = findCard(no);
+  if (!card) return;
+  var locked = card.status === 'DONE';
+  var unscheduled = !card.start;
+  function item(label, act, disabled) {
+    return '<button class="busy-button is-text' + (disabled ? ' is-disabled' : '') + '" type="button" data-x="' + act + '"' + (disabled ? ' disabled' : '') + '><span>' + label + '</span></button>';
+  }
+  $('ovCtx').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">' + no + '</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        item('查看详情', 'view', false) +
+        item('改期到今天', 'today', locked || unscheduled) +
+        item('改期到明天', 'tomorrow', locked || unscheduled) +
+        item('移回待排期', 'pool', locked || unscheduled) +
+      '</div></div>' +
+    '</div>';
+  P.openOverlay('ovCtx');
+  $('ovCtx').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovCtx'); };
+  $('ovCtx').querySelectorAll('button[data-x]').forEach(function (b) {
+    if (b.disabled || b.getAttribute('data-x') === 'close') return;
+    b.addEventListener('click', function () {
+      var act = b.getAttribute('data-x');
+      P.closeOverlay('ovCtx');
+      if (act === 'view') location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
+      if (act === 'today') dropCardOn(no, D.today);
+      if (act === 'tomorrow') { var t = parseD(D.today); t.setDate(t.getDate() + 1); dropCardOn(no, iso(t)); }
+      if (act === 'pool') dropCardToPool(no);
+    });
+  });
+}
+
+/* ==================== G3 日详情弹层 ==================== */
+function openDay(ds) {
+  var cards = cardsOn(ds).filter(matchSearch);
+  $('ovDay').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">' + ds + ' · ' + cards.length + ' 张卡片</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        cards.map(function (c) { return cardHtml(c, 'standard'); }).join('<hr class="tpl-divider">') +
+      '</div></div>' +
+    '</div>';
+  P.openOverlay('ovDay');
+  $('ovDay').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovDay'); };
+  bindCards($('ovDay'));
+}
+
+/* ==================== G4 年月选择 ==================== */
+function openYm() {
+  var months = [];
+  for (var m = 1; m <= 12; m++) {
+    months.push('<button class="busy-button busy-button--small' + (m - 1 === S.month ? ' busy-button--primary' : ' is-plain') + '" type="button" data-m="' + (m - 1) + '"><span>' + m + ' 月</span></button>');
+  }
+  $('ovYm').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">选择年月</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="tpl-toolbar"><div class="tpl-toolbar__left">' +
+          '<button class="busy-button busy-button--small" type="button" data-y="-1"><span>‹</span></button>' +
+          '<b>' + S.year + '</b>' +
+          '<button class="busy-button busy-button--small" type="button" data-y="1"><span>›</span></button>' +
+        '</div></div>' +
+        '<div class="chip-group">' + months.join('') + '</div>' +
+      '</div></div>' +
+    '</div>';
+  P.openOverlay('ovYm');
+  $('ovYm').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovYm'); };
+  $('ovYm').querySelectorAll('[data-m]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      S.month = +b.getAttribute('data-m');
+      P.closeOverlay('ovYm');
+      renderAll();
+    });
+  });
+  $('ovYm').querySelectorAll('[data-y]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      S.year += +b.getAttribute('data-y');
+      P.closeOverlay('ovYm'); openYm();
+    });
+  });
+}
+
+/* ==================== G2 筛选抽屉（草稿/应用语义见 business-rule §6.1） ==================== */
+var filterDraft = null;
+function openFilter() {
+  filterDraft = JSON.parse(JSON.stringify(S.filters));
+  renderFilterDrawer();
+  P.openOverlay('ovFilter');
+}
+function selectedTags() {
+  var f = filterDraft, tags = [];
+  if (f.mine) tags.push({ g: 'mine', v: '只看自己' });
+  f.status.forEach(function (v) { tags.push({ g: 'status', v: v }); });
+  f.owners.forEach(function (v) { tags.push({ g: 'owners', v: v }); });
+  f.repos.forEach(function (v) { tags.push({ g: 'repos', v: v }); });
+  f.projects.forEach(function (v) { tags.push({ g: 'projects', v: v }); });
+  f.modules.forEach(function (v) { tags.push({ g: 'modules', v: v }); });
+  return tags;
+}
+function renderFilterDrawer() {
+  var f = filterDraft;
+  function group(title, key, opts, isProject) {
+    return '<div class="tpl-section"><div class="tpl-section__head">' + title + '</div><div class="busy-checkbox-group">' +
+      opts.map(function (o) {
+        var checked = f[key].indexOf(o) >= 0;
+        var label = isProject && o !== '未归属项目'
+          ? P.projectTag(D.projects.filter(function (p) { return p.name === o; })[0].key, true)
+          : (o === '未归属项目' ? P.projectTag('none', true) : o);
+        return '<label class="busy-checkbox' + (checked ? ' is-checked' : '') + '" data-g="' + key + '" data-v="' + o + '"><span class="busy-checkbox__inner"></span><span>' + label + '</span></label>';
+      }).join('') + '</div></div>';
+  }
+  $('ovFilter').innerHTML =
+    '<div class="busy-drawer">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">筛选</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="tpl-toolbar"><div class="tpl-toolbar__left">只看自己</div>' +
+        '<button class="busy-switch' + (f.mine ? ' is-checked' : '') + '" type="button" id="mineSwitch"><span class="busy-switch__core"></span></button></div>' +
+        '<div class="chip-group" id="filterTags">' +
+          (selectedTags().map(function (t) {
+            return '<span class="busy-tag busy-tag--small">' + t.v + ' <button class="busy-button is-text" type="button" data-g="' + t.g + '" data-v="' + t.v + '"><span>✕</span></button></span>';
+          }).join('') || '<span class="u-sub">暂无条件</span>') +
+        '</div>' +
+        group('状态', 'status', D.filterOptions.status) +
+        group('负责人', 'owners', D.filterOptions.owners) +
+        group('skills 仓库', 'repos', D.filterOptions.repos) +
+        group('项目', 'projects', D.filterOptions.projects, true) +
+        group('模块', 'modules', D.filterOptions.modules) +
+      '</div></div>' +
+      '<div class="busy-dialog__footer">' +
+        '<button class="busy-button" type="button" data-x="reset"><span>重 置</span></button>' +
+        '<button class="busy-button" type="button" data-x="cancel"><span>取 消</span></button>' +
+        '<button class="busy-button busy-button--primary" type="button" data-x="ok"><span>确 定</span></button>' +
+      '</div>' +
+    '</div>';
+  $('mineSwitch').onclick = function () {
+    filterDraft.mine = !filterDraft.mine;
+    /* 只看自己即时生效（business-rule §6.1） */
+    S.filters.mine = filterDraft.mine;
+    S.poolPage = 1; exitSelectModes();
+    renderAll(); renderFilterDrawer();
+  };
+  $('ovFilter').querySelectorAll('.busy-checkbox[data-g]').forEach(function (lb) {
+    lb.addEventListener('click', function () {
+      var g = lb.getAttribute('data-g'), v = lb.getAttribute('data-v');
+      var i = filterDraft[g].indexOf(v);
+      if (i >= 0) filterDraft[g].splice(i, 1); else filterDraft[g].push(v);
+      renderFilterDrawer();
+    });
+  });
+  $('ovFilter').querySelectorAll('#filterTags [data-g]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var g = b.getAttribute('data-g'), v = b.getAttribute('data-v');
+      if (g === 'mine') { filterDraft.mine = false; S.filters.mine = false; }
+      else { var i = filterDraft[g].indexOf(v); if (i >= 0) filterDraft[g].splice(i, 1); }
+      renderFilterDrawer();
+    });
+  });
+  $('ovFilter').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovFilter'); };
+  $('ovFilter').querySelector('[data-x="cancel"]').onclick = function () { P.closeOverlay('ovFilter'); };
+  $('ovFilter').querySelector('[data-x="reset"]').onclick = function () {
+    filterDraft = { mine: false, status: [], owners: [], repos: [], projects: [], modules: [] };
+    S.filters = JSON.parse(JSON.stringify(filterDraft));
+    S.quickStatus = null; S.poolPage = 1; exitSelectModes();
+    renderAll(); renderFilterDrawer();
+  };
+  $('ovFilter').querySelector('[data-x="ok"]').onclick = function () {
+    S.filters = JSON.parse(JSON.stringify(filterDraft));
+    S.poolPage = 1; exitSelectModes();
+    P.closeOverlay('ovFilter');
+    renderAll();
+  };
+}
+function exitSelectModes() {
+  if (S.batch || S.mergeMode) { S.batch = false; S.mergeMode = false; S.selected = {}; renderBars(); }
+}
+
+/* ==================== A4 进度浮层（窄视口形态演示；统计项可点击筛选且浮层不关闭） ==================== */
+function openProgress() {
+  var stats = [['PENDING', '待开发'], ['IN_PROGRESS', '开发中'], ['DONE', '已完成'], ['DELAYED', '延期']];
+  $('ovProgress').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">本月进度</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-stat-bar">' +
+        '<div class="tpl-stat-bar__item"><span class="tpl-stat-bar__label"><span class="tpl-stat-bar__dot is-info"></span>待排期</span><span class="tpl-stat-bar__value">' + visiblePoolTotal() + '</span></div>' +
+        stats.map(function (s) {
+          var dot = { PENDING: '', IN_PROGRESS: 'is-primary', DONE: 'is-success', DELAYED: 'is-warning' }[s[0]];
+          var n = document.querySelector('#statWrap [data-stat="' + s[0] + '"] span').textContent.split(' ')[1];
+          return '<div class="tpl-stat-bar__item' + (S.quickStatus === s[0] ? ' is-active' : '') + '" data-stat="' + s[0] + '">' +
+            '<span class="tpl-stat-bar__label"><span class="tpl-stat-bar__dot ' + dot + '"></span>' + s[1] + '</span>' +
+            '<span class="tpl-stat-bar__value">' + n + '</span></div>';
+        }).join('') +
+      '</div></div>' +
+    '</div>';
+  P.openOverlay('ovProgress');
+  $('ovProgress').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovProgress'); };
+  $('ovProgress').querySelectorAll('[data-stat]').forEach(function (it) {
+    it.addEventListener('click', function () {
+      var k = it.getAttribute('data-stat');
+      S.quickStatus = S.quickStatus === k ? null : k;
+      renderAll(); openProgress(); /* 点击后浮层不关闭（重新渲染选中态） */
+    });
+  });
+}
+
+/* ==================== A9 更多菜单 ==================== */
+function openMore() {
+  $('ovMore').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">更多</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<button class="busy-button is-text" type="button" data-x="merge"><span>合并卡片</span></button>' +
+        '<div>显示密度：' +
+          '<button class="busy-button is-text' + (S.density === 'standard' ? ' busy-button--primary' : '') + '" type="button" data-x="density-standard"><span>标准' + (S.density === 'standard' ? ' ✓' : '') + '</span></button>' +
+          '<button class="busy-button is-text' + (S.density === 'compact' ? ' busy-button--primary' : '') + '" type="button" data-x="density-compact"><span>紧凑' + (S.density === 'compact' ? ' ✓' : '') + '</span></button>' +
+        '</div>' +
+        '<button class="busy-button is-text" type="button" data-x="nonfeature"><span>非需求改动（共 ' + D.nonFeature.total + ' 条）</span></button>' +
+        '<button class="busy-button is-text" type="button" data-x="project"><span>项目配置</span></button>' +
+      '</div></div>' +
+    '</div>';
+  P.openOverlay('ovMore');
+  $('ovMore').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovMore'); };
+  $('ovMore').querySelector('[data-x="merge"]').onclick = function () {
+    P.closeOverlay('ovMore');
+    S.mergeMode = true; S.batch = false; S.selected = {};
+    renderBars(); renderAll();
+    P.toast('已进入合并多选态：勾选 ≥2 张同模块卡片', 'info');
+  };
+  $('ovMore').querySelector('[data-x="density-standard"]').onclick = function () { S.density = 'standard'; localStorage.setItem('fs_density', 'standard'); P.closeOverlay('ovMore'); renderAll(); };
+  $('ovMore').querySelector('[data-x="density-compact"]').onclick = function () { S.density = 'compact'; localStorage.setItem('fs_density', 'compact'); P.closeOverlay('ovMore'); renderAll(); };
+  $('ovMore').querySelector('[data-x="nonfeature"]').onclick = function () { P.closeOverlay('ovMore'); openNonFeature(); };
+  $('ovMore').querySelector('[data-x="project"]').onclick = function () { P.closeOverlay('ovMore'); openProject(); };
+}
+
+/* ==================== G6/G7 合并多选态与合并标题弹窗 ==================== */
+function renderBars() {
+  $('mergeBar').hidden = !S.mergeMode;
+  $('batchBar').hidden = !S.batch;
+  var nos = Object.keys(S.selected).filter(function (k) { return S.selected[k]; });
+  $('mergeCount').textContent = nos.length;
+  $('batchCount').textContent = nos.length;
+  if (S.mergeMode && nos.length) {
+    $('mergeModule').textContent = findCard(nos[0]).module; /* 首张勾选锁定其来源模块 */
+  } else {
+    $('mergeModule').textContent = '—';
+  }
+}
+function toggleSelect(no) {
+  var card = findCard(no);
+  if (S.mergeMode) {
+    if (!mergeable(card)) { P.toast('开发完成、非需求改动不可参与合并', 'error'); return; }
+    var nos = Object.keys(S.selected).filter(function (k) { return S.selected[k]; });
+    if (!S.selected[no] && nos.length && card.module !== findCard(nos[0]).module) {
+      P.toast('仅可勾选同模块卡片（当前模块 ' + findCard(nos[0]).module + '）', 'error');
+      return;
+    }
+  }
+  S.selected[no] = !S.selected[no];
+  renderBars(); renderAll();
+}
+$('btnMergeCancel').onclick = function () { S.mergeMode = false; S.selected = {}; renderBars(); renderAll(); };
+$('btnBatchCancel').onclick = function () { S.batch = false; S.selected = {}; renderBars(); renderAll(); };
+$('btnMergeOk').onclick = function () {
+  var nos = Object.keys(S.selected).filter(function (k) { return S.selected[k]; });
+  if (nos.length < 2) { P.toast('至少选中 2 张卡片', 'error'); return; }
+  openMergeTitle(nos);
+};
+function openMergeTitle(nos) {
+  var module = findCard(nos[0]).module;
+  $('ovMerge').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">合并卡片</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="u-sub">已选 ' + nos.length + ' 张 · 模块 ' + module + '</div>' +
+        nos.map(function (no) {
+          var c = findCard(no);
+          return '<div class="chip-group"><span class="u-mono u-sub">' + c.no + '</span><span>' + c.title + '</span>' + P.statusCell(c) + '</div>';
+        }).join('') +
+        '<div class="busy-form-item"><div class="busy-form-item__label is-required">合并卡标题</div>' +
+        '<div class="busy-form-item__content"><div class="busy-input"><input id="mergeTitle" maxlength="30" placeholder="请输入合并卡标题（1-30 字符）"></div>' +
+        '<div class="busy-form-item__error" id="mergeErr" hidden></div></div></div>' +
+      '</div></div>' +
+      '<div class="busy-dialog__footer">' +
+        '<button class="busy-button" type="button" data-x="cancel"><span>取 消</span></button>' +
+        '<button class="busy-button busy-button--primary" type="button" data-x="ok"><span>确 定</span></button>' +
+      '</div>' +
+    '</div>';
+  P.openOverlay('ovMerge');
+  var input = $('mergeTitle'), err = $('mergeErr');
+  input.addEventListener('input', function () {
+    if (input.value.length > 30) { err.textContent = '标题最长 30 字符'; err.hidden = false; }
+    else err.hidden = true;
+  });
+  $('ovMerge').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovMerge'); };
+  $('ovMerge').querySelector('[data-x="cancel"]').onclick = function () { P.closeOverlay('ovMerge'); };
+  $('ovMerge').querySelector('[data-x="ok"]').onclick = function () {
+    var v = input.value.trim();
+    if (!v) { err.textContent = '请输入合并卡标题'; err.hidden = false; input.focus(); return; }
+    var btn = this;
+    P.btnLoading(btn, function () {
+      var newNo = 'FS-20261021-002';
+      D.scheduled.push({ no: newNo, title: v, module: module, project: findCard(nos[0]).project, start: '2026-10-26', end: '2026-10-26', status: 'PENDING', submitter: D.user, merged: true, childCount: nos.length, nature: '业务功能', bizContact: '' });
+      P.closeOverlay('ovMerge');
+      S.mergeMode = false; S.selected = {}; renderBars();
+      P.toast('已生成合并卡 ' + newNo, 'success');
+      renderAll();
+    });
+  };
+}
+
+/* ==================== B4 批量移入非需求（AcModal 二次确认） ==================== */
+$('btnBatchMove').onclick = function () {
+  var nos = Object.keys(S.selected).filter(function (k) { return S.selected[k]; });
+  if (!nos.length) { P.toast('请至少勾选 1 张卡片', 'error'); return; }
+  P.confirmBox({
+    title: '批量移入非需求改动',
+    message: '将 ' + nos.length + ' 张卡片移入非需求改动？移入后清空排期、开发人与完成 commit',
+    onOk: function () {
+      nos.forEach(function (no) {
+        var c = findCard(no);
+        if (c) { c.status = 'NON_FEATURE'; delete c.start; delete c.end; delete c.developer; removeFromPool(no); D.nonFeature.items.unshift(c); D.nonFeature.total++; D.pool.total--; }
+      });
+      S.batch = false; S.selected = {}; renderBars(); poolAfterRemove(); renderAll();
+      P.toast('已移入 ' + nos.length + ' 张，失败 0 张', 'success');
+    }
+  });
+};
+
+/* ==================== G8 新建卡片弹窗 ==================== */
+var createState = { repo: '', commit: '' };
+function openCreate() {
+  createState = { repo: '', commit: '' };
+  renderCreate();
+  P.openOverlay('ovCreate');
+}
+function renderCreate() {
+  var repos = D.projects.filter(function (p) { return p.status === '启用'; }).map(function (p) { return p.harness; });
+  var commits = createState.repo ? D.repoCommits : [];
+  $('ovCreate').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">新建卡片</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="busy-message busy-message--error" id="createErr" hidden></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label is-required">代码仓</div>' +
+        '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input readonly id="createRepo" placeholder="请选择代码仓" value="' + createState.repo + '"></div><span class="busy-select__caret">▾</span></div>' +
+        '<div class="busy-select-dropdown" id="createRepoDd" hidden>' +
+          repos.map(function (r) { return '<div class="busy-select-dropdown__item" data-r="' + r + '">' + r + '</div>'; }).join('') +
+        '</div>' +
+        '<div class="busy-form-item__error" id="createRepoErr" hidden>请选择代码仓</div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">commit 搜索</div>' +
+        '<div class="busy-form-item__content"><div class="busy-input"><input id="createKw" placeholder="输入关键字检索 commit"></div></div></div>' +
+        '<div class="tpl-section" id="createCommits">' +
+          (!createState.repo ? '<div class="u-sub">请先选择代码仓</div>' :
+            commits.map(function (c) {
+              var note = c.card === 'DELETED' ? ' <span class="busy-tag busy-tag--small busy-tag--info">卡片已删除</span>'
+                : c.card ? ' <span class="busy-tag busy-tag--small">已出卡 ' + c.card + '</span>' : '';
+              return '<label class="busy-radio' + (createState.commit === c.hash ? ' is-checked' : '') + '" data-c="' + c.hash + '">' +
+                '<span class="busy-radio__inner"></span><span class="u-mono">' + c.hash + '</span> <span>' + c.msg + '</span>' +
+                '<span class="u-sub">' + c.author + ' · ' + c.time + '</span>' + note + '</label>';
+            }).join('')) +
+        '</div>' +
+        '<div class="busy-form-item__error" id="createCommitErr" hidden>请选择一条 commit</div>' +
+      '</div></div>' +
+      '<div class="busy-dialog__footer">' +
+        '<button class="busy-button" type="button" data-x="cancel"><span>取 消</span></button>' +
+        '<button class="busy-button busy-button--primary" type="button" data-x="ok"><span>确认建卡</span></button>' +
+      '</div>' +
+    '</div>';
+  var repoInput = $('createRepo'), dd = $('createRepoDd');
+  repoInput.closest('.busy-select').addEventListener('click', function () { dd.hidden = !dd.hidden; });
+  dd.querySelectorAll('[data-r]').forEach(function (it) {
+    it.addEventListener('click', function () { createState.repo = it.getAttribute('data-r'); createState.commit = ''; renderCreate(); });
+  });
+  $('createKw').addEventListener('input', function () {
+    var kw = this.value.trim();
+    $('ovCreate').querySelectorAll('#createCommits .busy-radio').forEach(function (lb) {
+      lb.hidden = kw && lb.textContent.indexOf(kw) < 0;
+    });
+  });
+  $('ovCreate').querySelectorAll('[data-c]').forEach(function (lb) {
+    lb.addEventListener('click', function () {
+      createState.commit = lb.getAttribute('data-c');
+      $('ovCreate').querySelectorAll('[data-c]').forEach(function (x) { x.classList.remove('is-checked'); });
+      lb.classList.add('is-checked');
+      $('createCommitErr').hidden = true;
+    });
+  });
+  $('ovCreate').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovCreate'); };
+  $('ovCreate').querySelector('[data-x="cancel"]').onclick = function () { P.closeOverlay('ovCreate'); };
+  $('ovCreate').querySelector('[data-x="ok"]').onclick = function () {
+    if (!createState.repo) { $('createRepoErr').hidden = false; return; }
+    if (!createState.commit) { $('createCommitErr').hidden = false; return; }
+    var picked = D.repoCommits.filter(function (c) { return c.hash === createState.commit; })[0];
+    if (picked.card && picked.card !== 'DELETED') {
+      P.closeOverlay('ovCreate');
+      P.toast('该 commit 已有卡片 ' + picked.card + '，已为你打开', 'info');
+      location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(picked.card);
+      return;
+    }
+    var btn = this;
+    P.btnLoading(btn, function () {
+      var newNo = 'FS-20261021-003';
+      D.pool.items.unshift({ no: newNo, title: picked.msg.replace(/^[a-z]+(\([^)]*\))?:\s*/, '').slice(0, 30), module: 'STORE', project: 'main', submitter: picked.author, created: picked.time, ago: '刚刚' });
+      D.pool.total++;
+      S.poolPage = 1;
+      P.closeOverlay('ovCreate');
+      P.toast('已生成卡片 ' + newNo + '，落入待排期池', 'success');
+      renderAll();
+    });
+  };
+}
+
+/* ==================== G9 非需求改动弹层（服务端分页演示；尺寸由组件默认承载） ==================== */
+function openNonFeature() {
+  $('ovNonFeature').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">非需求改动</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        (D.nonFeature.items.length ? D.nonFeature.items.map(function (c) {
+          return '<div data-card="' + c.no + '"><div><b>' + c.title + '</b> <span class="busy-tag busy-tag--small busy-tag--info">非需求改动</span> ' + P.projectTag(c.project, true) + '</div>' +
+            '<div class="u-sub u-mono">' + c.no + ' · ' + c.submitter + ' · ' + c.created + '</div></div>';
+        }).join('<hr class="tpl-divider">') : '<div class="busy-empty"><div class="busy-empty__image">▦</div>暂无非需求改动卡片</div>') +
+      '</div></div>' +
+      '<div class="busy-dialog__footer"><div class="busy-pagination"><span class="u-muted">共 ' + D.nonFeature.total + ' 条</span>' +
+        '<button disabled>‹</button><button class="is-active">1</button><button disabled>›</button>' +
+        '<span class="u-muted">每页 10 条（可切 10 / 20 / 50）</span></div></div>' +
+    '</div>';
+  P.openOverlay('ovNonFeature');
+  $('ovNonFeature').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovNonFeature'); };
+  bindCards($('ovNonFeature'));
+}
+
+/* ==================== G10 项目配置弹层（列表 ↔ 项目表单双态） ==================== */
+var projectForm = null; /* {mode:'new'|'edit', name, harness, repos[], status, remark, dirty} */
+function openProject() { renderProjectList(); P.openOverlay('ovProject'); }
+function renderProjectList() {
+  $('ovProject').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">项目配置</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="u-sub">项目 ↔ harness 工程 / 代码服务仓映射的唯一真源；标识色由系统按调色板（蓝/青/紫/金/品红/橙红循环）分配，不可编辑。</div>' +
+        '<table class="busy-table busy-table--border"><thead><tr><th>项目 / 标识色</th><th>harness 工程</th><th>代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>' +
+        D.projects.map(function (p, i) {
+          return '<tr><td>' + P.projectTag(p.key, true) + ' <span class="u-sub">' + p.colorName + '</span></td>' +
+            '<td class="u-mono">' + p.harness + '</td>' +
+            '<td class="u-mono">' + (p.repos.join('、') || '—') + '</td>' +
+            '<td>' + (p.status === '启用' ? '<span class="tpl-cell-status is-success">启用</span>' : '<span class="tpl-cell-status">停用</span>') + '</td>' +
+            '<td><span class="tpl-row-actions">' +
+              '<button class="busy-button is-link" type="button" data-edit="' + i + '"><span>编辑</span></button>' +
+              (p.status === '启用'
+                ? '<button class="busy-button is-link busy-button--warning" type="button" data-stop="' + i + '"><span>停用</span></button>'
+                : '<button class="busy-button is-link busy-button--success" type="button" data-start="' + i + '"><span>启用</span></button>') +
+            '</span></td></tr>';
+        }).join('') +
+        '</tbody></table>' +
+        '<div><button class="busy-button busy-button--primary" type="button" data-x="new"><span>新建项目</span></button></div>' +
+      '</div></div>' +
+    '</div>';
+  $('ovProject').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovProject'); };
+  $('ovProject').querySelector('[data-x="new"]').onclick = function () {
+    projectForm = { mode: 'new', name: '', harness: '', repos: [], status: '启用', remark: '', dirty: false };
+    renderProjectForm();
+  };
+  $('ovProject').querySelectorAll('[data-edit]').forEach(function (b) {
+    b.onclick = function () {
+      var p = D.projects[+b.getAttribute('data-edit')];
+      projectForm = { mode: 'edit', idx: +b.getAttribute('data-edit'), name: p.name, harness: p.harness, repos: p.repos.slice(), status: p.status, remark: p.remark || '', dirty: false };
+      renderProjectForm();
+    };
+  });
+  $('ovProject').querySelectorAll('[data-stop]').forEach(function (b) {
+    b.onclick = function () {
+      var p = D.projects[+b.getAttribute('data-stop')];
+      P.confirmBox({
+        title: '停用项目',
+        message: '停用后「' + p.name + '」退出筛选选项集，其 harness 工程仓的卡片回落「未归属项目」。确认停用？',
+        onOk: function () { p.status = '停用'; P.toast('项目已停用', 'success'); renderProjectList(); }
+      });
+    };
+  });
+  $('ovProject').querySelectorAll('[data-start]').forEach(function (b) {
+    b.onclick = function () {
+      var p = D.projects[+b.getAttribute('data-start')];
+      P.btnLoading(b, function () { p.status = '启用'; P.toast('项目已启用', 'success'); renderProjectList(); });
+    };
+  });
+}
+function renderProjectForm() {
+  var f = projectForm;
+  $('ovProject').innerHTML =
+    '<div class="busy-dialog">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">' + (f.mode === 'new' ? '新建项目' : '编辑项目') + '</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="busy-message busy-message--error" id="projErr" hidden></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label is-required">项目名称</div>' +
+        '<div class="busy-form-item__content"><div class="busy-input"><input id="projName" maxlength="12" value="' + f.name + '" placeholder="1-12 字，启用中项目之间唯一"></div>' +
+        '<div class="busy-form-item__error" id="projNameErr" hidden></div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">标识色</div>' +
+        '<div class="busy-form-item__content">' + (f.mode === 'edit' ? P.projectTag(D.projects[f.idx].key, true) + ' <span class="u-sub">' + D.projects[f.idx].colorName + ' · 系统分配，不可编辑</span>' : '<span class="u-sub">创建时按调色板顺序自动分配</span>') + '</div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label is-required">harness 工程</div>' +
+        '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input id="projHarness" placeholder="搜索并选择云效研发仓" value="' + f.harness + '"></div><span class="busy-select__caret">▾</span></div>' +
+        '<div class="busy-select-dropdown" id="projHarnessDd" hidden>' +
+          D.repos.map(function (r) {
+            var dis = r.stale || (r.owner && r.name.indexOf('harness-') === 0 && (f.mode === 'new' || D.projects[f.idx].harness !== r.name));
+            var note = r.stale ? '（云效侧已失效）' : (dis ? '（已被 ' + r.owner + ' 占用）' : '');
+            return '<div class="busy-select-dropdown__item' + (dis ? ' is-disabled' : '') + (f.harness === r.name ? ' is-selected' : '') + '" data-r="' + r.name + '">' + r.name + ' <span class="u-sub">' + note + '</span></div>';
+          }).join('') +
+        '</div>' +
+        '<div class="busy-form-item__error" id="projHarnessErr" hidden>请选择 harness 工程</div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">代码服务仓</div>' +
+        '<div class="busy-form-item__content"><div class="busy-checkbox-group">' +
+          D.repos.filter(function (r) { return r.name.indexOf('harness-') !== 0; }).map(function (r) {
+            var dis = r.stale || (r.owner && f.repos.indexOf(r.name) < 0 && (f.mode === 'new' || D.projects[f.idx].repos.indexOf(r.name) < 0) && r.owner !== f.name);
+            var note = r.stale ? '（云效侧已失效）' : (dis ? '（已被 ' + r.owner + ' 占用）' : '');
+            return '<label class="busy-checkbox' + (f.repos.indexOf(r.name) >= 0 ? ' is-checked' : '') + (dis ? ' is-disabled' : '') + '" data-r="' + r.name + '"' + (dis ? ' data-dis="1"' : '') + '><span class="busy-checkbox__inner"></span><span class="u-mono">' + r.name + '</span> <span class="u-sub">' + note + '</span></label>';
+          }).join('') +
+        '</div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label is-required">状态</div>' +
+        '<div class="busy-form-item__content"><div class="busy-radio-group">' +
+          ['启用', '停用'].map(function (s) { return '<label class="busy-radio' + (f.status === s ? ' is-checked' : '') + '" data-s="' + s + '"><span class="busy-radio__inner"></span><span>' + s + '</span></label>'; }).join('') +
+        '</div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">备注</div>' +
+        '<div class="busy-form-item__content"><textarea class="busy-textarea" id="projRemark" placeholder="选填">' + f.remark + '</textarea></div></div>' +
+      '</div></div>' +
+      '<div class="busy-dialog__footer">' +
+        '<button class="busy-button" type="button" data-x="back"><span>返回列表</span></button>' +
+        '<button class="busy-button busy-button--primary" type="button" data-x="save"><span>保 存</span></button>' +
+      '</div>' +
+    '</div>';
+  var nameInput = $('projName');
+  nameInput.addEventListener('blur', function () {
+    var v = nameInput.value.trim(), err = $('projNameErr');
+    if (!v) { err.textContent = '请填写项目名称'; err.hidden = false; return; }
+    if (v.length > 12) { err.textContent = '项目名称最长 12 字'; err.hidden = false; return; }
+    var dup = D.projects.filter(function (p, i) { return p.status === '启用' && p.name === v && (f.mode === 'new' || i !== f.idx); })[0];
+    if (dup) { err.textContent = '项目名称「' + v + '」已被启用中项目占用'; err.hidden = false; return; }
+    err.hidden = true; f.name = v; f.dirty = true;
+  });
+  nameInput.addEventListener('input', function () { f.dirty = true; });
+  var hInput = $('projHarness'), hDd = $('projHarnessDd');
+  hInput.addEventListener('input', function () {
+    f.dirty = true;
+    var kw = hInput.value.trim();
+    hDd.hidden = false;
+    hDd.querySelectorAll('[data-r]').forEach(function (it) { it.hidden = kw && it.textContent.indexOf(kw) < 0; });
+  });
+  hInput.closest('.busy-select').addEventListener('click', function () { hDd.hidden = !hDd.hidden; });
+  hDd.querySelectorAll('[data-r]').forEach(function (it) {
+    it.addEventListener('click', function () {
+      if (it.classList.contains('is-disabled')) return;
+      f.harness = it.getAttribute('data-r'); f.dirty = true;
+      hInput.value = f.harness; hDd.hidden = true;
+      $('projHarnessErr').hidden = true;
+    });
+  });
+  $('ovProject').querySelectorAll('.busy-checkbox[data-r]').forEach(function (lb) {
+    lb.addEventListener('click', function () {
+      if (lb.getAttribute('data-dis')) return;
+      var r = lb.getAttribute('data-r'), i = f.repos.indexOf(r);
+      if (i >= 0) f.repos.splice(i, 1); else f.repos.push(r);
+      f.dirty = true;
+      lb.classList.toggle('is-checked');
+    });
+  });
+  $('ovProject').querySelectorAll('.busy-radio[data-s]').forEach(function (lb) {
+    lb.addEventListener('click', function () {
+      f.status = lb.getAttribute('data-s'); f.dirty = true;
+      $('ovProject').querySelectorAll('.busy-radio[data-s]').forEach(function (x) { x.classList.remove('is-checked'); });
+      lb.classList.add('is-checked');
+    });
+  });
+  $('projRemark').addEventListener('input', function () { f.remark = this.value; f.dirty = true; });
+  $('ovProject').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovProject'); };
+  $('ovProject').querySelector('[data-x="back"]').onclick = function () {
+    if (f.dirty) {
+      P.confirmBox({ title: '放弃修改', message: '项目信息尚未保存，确认放弃？', onOk: function () { renderProjectList(); } });
+    } else renderProjectList();
+  };
+  $('ovProject').querySelector('[data-x="save"]').onclick = function () {
+    nameInput.dispatchEvent(new Event('blur'));
+    if (!$('projNameErr').hidden) { nameInput.focus(); return; }
+    if (!f.name) { $('projNameErr').textContent = '请填写项目名称'; $('projNameErr').hidden = false; nameInput.focus(); return; }
+    if (!f.harness) { $('projHarnessErr').hidden = false; return; }
+    var btn = this;
+    P.btnLoading(btn, function () {
+      if (f.mode === 'new') {
+        var palette = [['蓝', ''], ['青', 'busy-tag--success'], ['紫', 'busy-tag--danger'], ['金', 'busy-tag--warning'], ['品红', 'busy-tag--danger is-plain'], ['橙红', 'busy-tag--warning is-plain']];
+        var ci = D.projects.length % 6;
+        D.projects.push({ key: 'p' + Date.now(), name: f.name, colorName: palette[ci][0], cls: palette[ci][1], harness: f.harness, repos: f.repos.slice(), status: f.status, remark: f.remark });
+      } else {
+        var p = D.projects[f.idx];
+        p.name = f.name; p.harness = f.harness; p.repos = f.repos.slice(); p.status = f.status; p.remark = f.remark;
+      }
+      P.toast('项目已保存，卡片归属已按新映射重新解析', 'success');
+      renderProjectList(); renderAll();
+    });
+  };
+}
+
+/* ==================== 行内操作（气泡确认 = BubbleCard 的 busy-popover is-light DOM） ==================== */
+function bindListActions() {
+  $('listBody').querySelectorAll('tr[data-card]').forEach(function (tr) {
+    tr.addEventListener('click', function (e) {
+      if (e.target.closest('button') || e.target.closest('.busy-popover')) return;
+      location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(tr.getAttribute('data-card'));
+    });
+  });
+  $('listBody').querySelectorAll('[data-act]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var no = b.getAttribute('data-no'), act = b.getAttribute('data-act');
+      var tips = {
+        take: '确认领取开发？',
+        done: '确认标记完成？完成 commit 可稍后在卡片详情页补录',
+        revert: '确认回退为开发中？将清空完成 commit，保留开发人'
+      };
+      var pop = document.createElement('span');
+      pop.className = 'busy-popover is-light';
+      pop.innerHTML = '<div>' + tips[act] + '</div><div class="tpl-footer-bar">' +
+        '<button class="busy-button busy-button--small" type="button" data-x="no"><span>取消</span></button>' +
+        '<button class="busy-button busy-button--small busy-button--primary" type="button" data-x="yes"><span>确定</span></button></div>';
+      b.parentNode.appendChild(pop);
+      P.onEsc(function () { pop.remove(); });
+      pop.querySelector('[data-x="no"]').onclick = function () { pop.remove(); };
+      pop.querySelector('[data-x="yes"]').onclick = function () {
+        var card = findCard(no);
+        P.btnLoading(pop.querySelector('[data-x="yes"]'), function () {
+          pop.remove();
+          if (act === 'take') { card.status = 'IN_PROGRESS'; card.developer = D.user; card.takenAt = D.today + ' 10:00'; P.toast('已领取开发', 'success'); }
+          if (act === 'done') { card.status = 'DONE'; card.doneAt = D.today + ' 10:00'; if (!card.developer) { card.developer = D.user; card.takenAt = D.today + ' 10:00'; } P.toast('已标记完成', 'success'); }
+          if (act === 'revert') {
+            if (card.developer) { card.status = 'IN_PROGRESS'; P.toast('已回退为开发中', 'success'); }
+            else { card.status = 'PENDING'; P.toast('已回退为待开发', 'success'); }
+            delete card.doneAt; card.commits = 0;
+          }
+          renderAll();
+        });
+      };
+    });
+  });
+}
+
+/* ==================== 命令栏事件 ==================== */
+function shiftPeriod(dir) {
+  if (S.view === 'week') {
+    var d = parseD(S.weekAnchor); d.setDate(d.getDate() + dir * 7);
+    S.weekAnchor = iso(d);
+  } else {
+    S.month += dir;
+    if (S.month < 0) { S.month = 11; S.year--; }
+    if (S.month > 11) { S.month = 0; S.year++; }
+  }
+  renderAll();
+}
+function periodText() {
+  if (S.view === 'week') {
+    var ds = weekDates();
+    return ds[0] + ' ~ ' + ds[6];
+  }
+  return S.year + ' 年 ' + (S.month + 1) + ' 月';
+}
+$('btnPrev').onclick = function () { shiftPeriod(-1); };
+$('btnNext').onclick = function () { shiftPeriod(1); };
+$('btnToday').onclick = function () {
+  S.year = 2026; S.month = 9; S.weekAnchor = D.today;
+  renderAll();
+};
+$('periodLabel').onclick = function () { if (S.view !== 'week') openYm(); };
+document.querySelectorAll('#statWrap [data-stat]').forEach(function (b) {
+  b.addEventListener('click', function () {
+    var k = b.getAttribute('data-stat');
+    S.quickStatus = S.quickStatus === k ? null : k;
+    renderAll();
+  });
+});
+$('btnProgressFloat').onclick = openProgress;
+$('searchInput').addEventListener('input', function () {
+  S.search = this.value.trim();
+  S.poolPage = 1; /* 搜索变化后待排期池回到第 1 页 */
+  if (S.batch || S.mergeMode) exitSelectModes();
+  renderAll();
+});
+$('searchInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Escape') { this.value = ''; S.search = ''; S.poolPage = 1; renderAll(); }
+});
+document.querySelectorAll('#viewSwitch .busy-radio-button').forEach(function (lb) {
+  lb.addEventListener('click', function () {
+    document.querySelectorAll('#viewSwitch .busy-radio-button').forEach(function (x) { x.classList.remove('is-checked'); });
+    lb.classList.add('is-checked');
+    S.view = lb.getAttribute('data-view');
+    localStorage.setItem('fs_view', S.view);
+    renderAll();
+  });
+});
+$('btnFilter').onclick = openFilter;
+$('btnCreate').onclick = openCreate;
+$('btnMore').onclick = openMore;
+$('btnBatch').onclick = function () {
+  S.batch = !S.batch; S.mergeMode = false; S.selected = {};
+  renderBars(); renderAll();
+};
+$('btnPoolCollapse').onclick = function () {
+  S.poolCollapsed = true; localStorage.setItem('fs_pool', '1'); renderAll();
+};
+$('btnPoolOpen').onclick = function () {
+  S.poolCollapsed = false; localStorage.setItem('fs_pool', '0'); renderAll();
+};
+$('btnClearFilter').onclick = function () {
+  S.filters = { mine: false, status: [], owners: [], repos: [], projects: [], modules: [] };
+  S.quickStatus = null; S.poolPage = 1; renderAll();
+};
+$('btnClearSearch').onclick = function () {
+  S.search = ''; $('searchInput').value = ''; S.poolPage = 1; renderAll();
+};
+/* 列表排序 E2 */
+document.querySelectorAll('#listTable [data-sort]').forEach(function (b) {
+  b.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var k = b.getAttribute('data-sort');
+    if (S.sortKey === k) S.sortAsc = !S.sortAsc; else { S.sortKey = k; S.sortAsc = true; }
+    b.querySelector('span').textContent = (k === 'start' ? '开始 ' : '创建时间 ') + (S.sortAsc ? '↑' : '↓');
+    renderList();
+  });
+});
+/* 待排期池接收拖回（含落到池内卡片上，不触发合并） */
+$('poolPanel').addEventListener('dragover', function (e) { e.preventDefault(); });
+$('poolPanel').addEventListener('drop', function (e) {
+  e.preventDefault();
+  var no = e.dataTransfer.getData('text/plain');
+  if (no) dropCardToPool(no);
+});
+
+/* ==================== 键盘 H：←/→ 切换期，T 回到今天；输入框聚焦与弹层打开时不响应 ==================== */
+document.addEventListener('keydown', function (e) {
+  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+  var overlayOpen = ['ovFilter', 'ovDay', 'ovYm', 'ovCtx', 'ovMerge', 'ovCreate', 'ovNonFeature', 'ovProject', 'ovProgress', 'ovMore']
+    .some(function (id) { return !$(id).hidden && $(id).innerHTML; });
+  if (overlayOpen) return;
+  if (e.key === 'ArrowLeft') shiftPeriod(-1);
+  if (e.key === 'ArrowRight') shiftPeriod(1);
+  if (e.key === 't' || e.key === 'T') $('btnToday').click();
+});
+
+/* ==================== 总渲染与初始化 ==================== */
+function renderAll() {
+  renderStats();
+  renderPool();
+  $('periodLabel').querySelector('span').textContent = periodText() + (S.view !== 'week' ? ' ▾' : '');
+  document.querySelectorAll('#viewSwitch .busy-radio-button').forEach(function (lb) {
+    lb.classList.toggle('is-checked', lb.getAttribute('data-view') === S.view);
+  });
+  $('viewMonth').hidden = S.view !== 'month';
+  $('viewWeek').hidden = S.view !== 'week';
+  $('viewList').hidden = S.view !== 'list';
+  if (S.view === 'month') renderMonth();
+  if (S.view === 'week') renderWeek();
+  if (S.view === 'list') renderList();
+  /* C5 零命中提示 */
+  var hasVisible = S.view === 'list'
+    ? visibleScheduled().filter(function (c) { return c.start && c.start.slice(0, 7) === S.year + '-' + String(S.month + 1).padStart(2, '0') && matchSearch(c); }).length > 0
+    : visibleScheduled().filter(function (c) { return c.start; }).filter(matchSearch).length > 0;
+  $('zeroHit').hidden = !(anyFilterActive() && !hasVisible);
+}
+P.renderNav({ active: 'schedule' });
+renderBars();
+renderAll();
+
+
+
 </script>
 </body>
 </html>

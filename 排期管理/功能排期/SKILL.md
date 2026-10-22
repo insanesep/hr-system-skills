@@ -36,9 +36,9 @@ metadata:
 | 权限规则 | [references/permission-rules.md](references/permission-rules.md) | 菜单与按钮权限编码、无权限时的入口表现 | 本模块 |
 | 数据定义 | [references/data.md](references/data.md) | 卡片、完成回执、合并明细、流水、发版日、项目 | 本模块 |
 | Web 页面 | [references/web-ui.md](references/web-ui.md) | 工作台与卡片详情页的区块元素、导航、操作反馈与表单校验 | 本模块 |
-| 页面模板 | [order-list.html](../../../busyming-skills-design/web/templates/order-list.html) | 研发排期工作台 `order-list` 的整页范例 | busyming-skills-design |
-| 页面模板 | [order-detail.html](../../../busyming-skills-design/web/templates/order-detail.html) | 卡片详情页 `order-detail` 的整页范例 | busyming-skills-design |
-| 原型样式入口 | [design-system.css](../../../busyming-skills-design/web/styles/design-system.css) | 原型唯一样式入口与组件类 | busyming-skills-design |
+| 页面模板 | [order-list.html](../../../busyming-skills-design/templates/web/order-list.html) | 研发排期工作台 `order-list` 的整页范例 | busyming-skills-design |
+| 页面模板 | [order-detail.html](../../../busyming-skills-design/templates/web/order-detail.html) | 卡片详情页 `order-detail` 的整页范例 | busyming-skills-design |
+| 原型样式入口 | [templates.css](../../../busyming-skills-design/templates/web/templates.css)（+ [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css)） | 原型样式链：`components/web/tokens/pc.css` → `docs-site/demos/pc/css/convert-el-plus.css` → `docs-site/ep-base-shim.css` → `templates/web/templates.css` | busyming-skills-design |
 | 功能使用情况管理 | [SKILL.md](../../成本管理/功能使用情况管理/SKILL.md) | 埋点登记：菜单权限、功能目录与前端路由三处一并登记 | busyming-skills-devops |
 | 需求管理 | [business-rule.md §5](../需求管理/references/business-rule.md#5-排期关联规则) | 需求单单向关联卡片；业务对接人为空时的提交人兜底来源 | busyming-skills-devops |
 | 云效 Codeup | 公共仓未迁入真源（busyming-skills-common 的 api、agent 目录仅有占位） | 研发仓列表获取（项目配置选仓）、commit 采集、检索与完成链接生成 | busyming-skills-common |
