@@ -1,188 +1,245 @@
-<!doctype html>
-<html lang="zh-CN" data-theme="light">
+<!DOCTYPE html>
+<html lang="zh-CN">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>文档一致性报告 · 报告列表 · App 原型</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>报告列表 · 文档一致性报告 · App 原型</title>
 <!--
-  文档一致性报告 · 报告列表（App 查阅端原型）
-  页面描述真源：../../references/mobile-ui.md#报告列表 ｜ 页面类型 list（分组卡片流）
-  整页范例：busyming-skills-design/mobile/templates/list.html ｜ DOM 依据：skeletons/app/list-page.tsx.tpl
-  结构：ac-nav-bar（返回 + 标题 + 搜索图标）→ 搜索栏（点图标展开）→ 项目筛选 chip 组 → 周分组卡片流（齐全度徽标）→ 加载更多
-  本周行仅周日当天起展示（演示基准日 2026-10-18 周日）；未入库项灰显占位卡不可点；下拉刷新/上拉加载以 proto-bar 演示与「加载更多」承载。
-  项目集合为虚构演示数据（真源=报告项目配置生效数据）。
+  App 报告列表页（列表页 · 按周分组卡片流 · 静态原型，数据为 Mock）
+  页面描述：references/mobile-ui.md「报告列表」；周索引口径：../../../报告配置/references/business-rule.md §2
+  结构依据：busyming-skills-design/templates/mobile/list.html（busy-navbar → 搜索 → 分组卡片流）
+  组件树：NavBar / SearchBar / Tag(busy-tag--round 作项目 chip；齐全度徽标) / Button / Skeleton(筛选 loading) / Toast / 空态 tpl-empty
+  导航：工作台入口 Push 进入；手势返回允许；未入库占位卡灰显不可点（App 查阅端无「立即生成 / 补传」写操作，仅 Web 开放）
+  Mock 约定：当前日 = 2026-10-18（周日）；下拉刷新为手势交互，静态原型以注释声明，不强制触发
 -->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/mobile/styles/design-system.css" />
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/NavBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/SearchBar.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tag.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Button.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Skeleton.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Toast.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
+<style>
+/* 页面级模板扩展类（templates.css 未含骨架行/周分组排版块；仅定位与尺寸收进类，字号消费 --busy-font-size-* token） */
+.tpl-tap { cursor: pointer; }
+.rpt-chips { display: flex; gap: 8px; overflow-x: auto; }
+.tpl-skel-col { display: flex; flex-direction: column; gap: 12px; }
+.tpl-skel-card { height: 96px; width: 100%; }
+.rpt-weeks { display: flex; flex-direction: column; gap: 16px; }
+.rpt-loadmore { display: flex; justify-content: center; padding: 4px 0; }
+.rpt-loadend { text-align: center; font-size: var(--busy-font-size-sm); }
+.tpl-toast-float { position: fixed; top: 45%; left: 50%; transform: translate(-50%, -50%); z-index: 400; display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 8px; }
+.rpt-card--missing { background: var(--busy-bg-subtle); }
+.rpt-card__missing { font-size: var(--busy-font-size-md); }
+.rpt-card-link { text-decoration: none; color: inherit; }
+.rpt-card__title { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.rpt-week { display: flex; flex-direction: column; gap: 8px; }
+.rpt-week__head { display: flex; align-items: center; gap: 8px; }
+.rpt-week__label { font-size: var(--busy-font-size-md); }
+</style>
 </head>
 <body>
-<section class="tpl-page">
-<div class="tpl-panel">
-<div class="app-phone">
-  <div class="app-phone__status"><span>09:41</span><span>5G · 100%</span></div>
-  <div class="app-screen">
-    <header class="ac-nav-bar" data-ac="AcNavBar">
-      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="返回工作台"><span class="ac-icon" data-icon="back"></span></span>
-      <strong class="ac-nav-bar__title">文档一致性报告</strong>
-      <span class="ac-nav-bar__side" role="button" tabindex="0" aria-label="搜索" id="searchToggle"><span class="ac-icon" data-icon="search"></span></span>
-    </header>
-    <div class="app-screen__content app-screen__content--flush">
-      <!-- 搜索栏：点导航栏搜索图标展开，按标题模糊匹配 -->
-      <div class="ac-search-bar" data-ac="AcSearchBar" id="searchBar" hidden>
-        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="searchInput" placeholder="按报告标题模糊搜索" autocomplete="off" /></span>
-        <span class="ac-search-bar__clear" role="button" tabindex="0" id="searchCancel">取消</span>
-      </div>
-      <!-- 项目筛选 chip 组（单选，切换即刷新） -->
-      <div class="tpl-filter-chips" id="projChips">
-        <span class="tpl-filter-chips__chip is-active" data-proj="">全部</span>
-        <span class="tpl-filter-chips__chip" data-proj="llhm">零食很忙</span>
-        <span class="tpl-filter-chips__chip" data-proj="zym">赵一鸣零食</span>
-      </div>
-      <div class="app-stack" id="cardHost" style="padding:var(--ac-space-3)"></div>
-      <div class="ac-load-more" data-ac="AcLoadMore" id="loadMore">加载更多</div>
+<div class="tpl-app">
+  <!-- 顶部导航栏：标题 + 右侧搜索图标（点击展开搜索输入框，按标题模糊匹配） -->
+  <div class="busy-navbar">
+    <div class="busy-navbar__bar">
+      <a class="busy-navbar__side" href="javascript:void 0" id="navBack" title="返回工作台"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></a>
+      <span class="busy-navbar__title">文档一致性报告</span>
+      <span class="busy-navbar__side busy-navbar__side--right tpl-tap" id="navSearch"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"><circle cx="9" cy="9" r="6" stroke="currentColor" stroke-width="1.6"/><path d="M13.5 13.5L17 17" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg></span>
     </div>
   </div>
-</div>
+
+  <div class="tpl-app__scroll" id="scrollBody">
+    <!-- 搜索输入框（默认折叠，点导航栏搜索图标展开） -->
+    <div class="busy-searchbar" id="searchBar" hidden>
+      <div class="busy-searchbar__row">
+        <div class="busy-searchbar__field">
+          <span class="busy-searchbar__leading"><svg class="busy-searchbar__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+          <input class="busy-searchbar__input" id="searchInput" placeholder="搜索报告标题">
+          <span class="busy-searchbar__action busy-searchbar__clear" id="searchClear" hidden><svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zM5.47 5.47a.75.75 0 0 1 1.06 0L8 6.94l1.47-1.47a.75.75 0 1 1 1.06 1.06L9.06 8l1.47 1.47a.75.75 0 1 1-1.06 1.06L8 9.06l-1.47 1.47a.75.75 0 0 1-1.06-1.06L6.94 8 5.47 6.53a.75.75 0 0 1 0-1.06z"/></svg></span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 项目筛选 chip 组（单选：全部 + 各启用项目，来自「报告项目配置」生效数据） -->
+    <div class="rpt-chips" id="chipRow">
+      <span class="busy-tag busy-tag--primary busy-tag--solid busy-tag--round" data-chip=""><span class="busy-tag__content">全部</span></span>
+      <span class="busy-tag busy-tag--default busy-tag--tint busy-tag--round" data-chip="store"><span class="busy-tag__content">门店要货</span></span>
+      <span class="busy-tag busy-tag--default busy-tag--tint busy-tag--round" data-chip="devops"><span class="busy-tag__content">产研平台</span></span>
+    </div>
+
+    <!-- 筛选/搜索 loading：列表骨架屏 -->
+    <div id="listSkeleton" hidden class="tpl-skel-col">
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-card"></span>
+      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-card"></span>
+    </div>
+
+    <!-- 周分组卡片流（JS 渲染；按所属周倒序） -->
+    <div id="weekList" class="rpt-weeks"></div>
+
+    <!-- 空态：筛选无结果 -->
+    <div class="tpl-empty" id="emptyState" hidden>
+      <div class="tpl-empty__icon">🔍</div>
+      <div class="tpl-empty__desc">该条件下暂无报告</div>
+    </div>
+
+    <!-- 上拉加载（滚动到底部且仍有更早周次；失败=AcToast error + 保留重试入口） -->
+    <div id="loadMore" class="rpt-loadmore">
+      <button class="adm-button adm-button-default adm-button-fill-none busy-button busy-button--text-neutral busy-button--medium" id="btnLoadMore" type="button">上拉加载更早周次</button>
+    </div>
+    <div class="u-muted rpt-loadend" id="loadEnd" hidden>已加载全部周次</div>
+  </div>
 </div>
 
-<!-- 原型页间互联与三态演示（非 App 真实 UI） -->
-<nav class="proto-bar">
-  <b>报告列表</b> ·
-  <a class="ac-link" href="report-detail.html">报告详情</a>
-  ｜三态演示：
-  <a class="ac-link" href="#" data-demo="normal" onclick="return false">正常</a> ·
-  <a class="ac-link" href="#" data-demo="skeleton" onclick="return false">骨架</a> ·
-  <a class="ac-link" href="#" data-demo="empty" onclick="return false">空态</a> ·
-  <a class="ac-link" href="#" data-demo="error" onclick="return false">错误</a>
-</nav>
-</section>
+<div id="toastHost"></div>
 
-<script src="../../../../../busyming-skills-design/mobile/styles/runtime.js"></script>
 <script>
-const $ = (s, r) => (r || document).querySelector(s);
-const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
-const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-function toast(text, type) {
-  const layer = document.createElement('div');
-  layer.className = 'ac-toast-layer';
-  layer.innerHTML = `<div class="ac-toast" data-ac="AcToast" data-type="${type || 'success'}" role="status"><span class="ac-toast__text">${esc(text)}</span></div>`;
-  document.body.appendChild(layer);
-  setTimeout(() => layer.remove(), 2600);
-}
-
-/* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
-const PROJ = { llhm: ['primary', '零食很忙'], zym: ['warning', '赵一鸣零食'] };
-const WEEKS = [
-  { label: '第 42 周', range: '10-12~10-18', full: false, items: [
-    { proj: 'llhm', title: '一致性检查报告（零食很忙） - 2026-10-18', date: '10-18', src: '服务端生成', ver: 'v1' },
-    { proj: 'zym', missing: true },
-  ]},
-  { label: '第 41 周', range: '10-05~10-11', full: true, items: [
-    { proj: 'llhm', title: '一致性检查报告（零食很忙） - 2026-10-11', date: '10-11', src: '服务端生成', ver: 'v1' },
-    { proj: 'zym', title: '一致性检查报告（赵一鸣零食） - 2026-10-11', date: '10-11', src: '手动补传', ver: 'v2' },
-  ]},
-  { label: '第 40 周', range: '09-28~10-04', full: true, items: [
-    { proj: 'llhm', title: '一致性检查报告（零食很忙） - 2026-10-04', date: '10-04', src: '服务端生成', ver: 'v1' },
-    { proj: 'zym', title: '一致性检查报告（赵一鸣零食） - 2026-10-04', date: '10-04', src: '推送上报', ver: 'v1' },
-  ]},
+/* ================= Mock 数据（周索引：按所属周倒序；组内按项目 key 字典序） ================= */
+var PROJECTS = {
+  store: { name: '门店要货', tagCls: 'busy-tag--primary busy-tag--tint busy-tag--round' },
+  devops: { name: '产研平台', tagCls: 'busy-tag--info busy-tag--tint busy-tag--round' }
+};
+var WEEKS = [
+  {
+    label: '第 42 周 · 10-12~10-18', done: 1, total: 2,
+    items: [
+      { proj: 'devops', title: '', date: '', source: '', ver: '', missing: true },
+      { proj: 'store', title: '一致性检查报告（门店要货） - 2026-10-18', date: '2026-10-18', source: '服务端生成', ver: 'v2', missing: false }
+    ]
+  },
+  {
+    label: '第 41 周 · 10-05~10-11', done: 2, total: 2,
+    items: [
+      { proj: 'devops', title: '一致性检查报告（产研平台） - 2026-10-11', date: '2026-10-11', source: '服务端生成', ver: 'v1', missing: false },
+      { proj: 'store', title: '一致性检查报告（门店要货） - 2026-10-11', date: '2026-10-11', source: '推送上报', ver: 'v1', missing: false }
+    ]
+  }
 ];
+var WEEKS_OLD = [
+  {
+    label: '第 40 周 · 09-28~10-04', done: 1, total: 2,
+    items: [
+      { proj: 'devops', title: '', date: '', source: '', ver: '', missing: true },
+      { proj: 'store', title: '一致性检查报告（门店要货） - 2026-10-04', date: '2026-10-04', source: '手动补传', ver: 'v1', missing: false }
+    ]
+  }
+];
+var state = { chip: '', kw: '', loadedOld: false };
 
-const S = { proj: '', kw: '' };
+function toast(text) {
+  var el = document.createElement('div');
+  el.className = 'busy-toast busy-toast--horizontal tpl-toast-float';
+  el.textContent = text;
+  document.getElementById('toastHost').appendChild(el);
+  setTimeout(function () { el.remove(); }, 1600);
+}
 
 function cardHtml(it) {
+  var p = PROJECTS[it.proj];
   if (it.missing) {
-    return `<div class="tpl-doc-card" aria-disabled="true">
-      <div class="tpl-doc-card__head"><span class="ac-tag ac-tag--outline">${PROJ[it.proj][1]}</span><span class="ac-tag ac-tag--outline">未入库</span></div>
-      <div class="tpl-doc-card__body"><div><div class="tpl-doc-card__label">报告标题</div><div class="tpl-doc-card__value u-muted">本周期报告未入库，请在 Web 端立即生成或补传</div></div></div>
-    </div>`;
+    /* 未入库占位卡：灰显不可点 */
+    return '<div class="tpl-doc-card rpt-card--missing">' +
+      '<div class="tpl-doc-card__head"><span class="busy-tag busy-tag--default busy-tag--tint busy-tag--round"><span class="busy-tag__content">' + p.name + ' · ' + it.proj + '</span></span></div>' +
+      '<div class="u-muted rpt-card__missing">未入库</div>' +
+    '</div>';
   }
-  return `<div class="tpl-doc-card" role="button" tabindex="0" data-go="report-detail.html">
-    <div class="tpl-doc-card__head"><span class="ac-tag ac-tag--${PROJ[it.proj][0]}">${PROJ[it.proj][1]}</span><span class="mono u-muted">${it.ver}</span></div>
-    <div class="tpl-doc-card__body">
-      <div><div class="tpl-doc-card__label">报告标题</div><div class="tpl-doc-card__value"><span class="ac-ellipsis" data-ac="AcEllipsis"><span class="ac-ellipsis__text">${esc(it.title)}</span></span></div></div>
-      <div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value mono">${it.date}</div></div>
-      <div><div class="tpl-doc-card__label">来源</div><div class="tpl-doc-card__value">${it.src}</div></div>
-      <div><div class="tpl-doc-card__label">版本号</div><div class="tpl-doc-card__value mono">${it.ver}</div></div>
-    </div>
-  </div>`;
+  return '<a class="tpl-doc-card rpt-card-link" href="report-detail.html">' +
+    '<div class="tpl-doc-card__head"><span class="busy-tag ' + p.tagCls + '"><span class="busy-tag__content">' + p.name + ' · ' + it.proj + '</span></span></div>' +
+    '<div class="tpl-doc-card__no rpt-card__title">' + it.title + '</div>' +
+    '<div class="tpl-doc-card__foot"><span>发报日 ' + it.date + ' · ' + it.source + '</span><b class="u-mono">' + it.ver + '</b></div>' +
+  '</a>';
 }
 function groupHtml(w) {
-  const badge = w.full
-    ? `<span class="ac-tag ac-tag--success">${w.items.length}/${w.items.length}</span>`
-    : `<span class="ac-tag ac-tag--warning">${w.items.filter((i) => !i.missing).length}/${w.items.length}</span>`;
-  const items = w.items
-    .filter((it) => (!S.proj || it.proj === S.proj) && (!S.kw || it.missing || it.title.includes(S.kw)))
-    .map(cardHtml).join('');
-  if (!items) return '';
-  return `<div class="tpl-list-group-header"><span class="tpl-list-group-header__title">${w.label}</span><span class="tpl-list-group-header__range">${w.range}</span>${badge}</div>${items}`;
-}
-function emptyHtml() {
-  return `<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">该条件下暂无报告</div></div>`;
-}
-function skeletonHtml() {
-  return Array.from({ length: 3 }).map(() => `<div class="tpl-doc-card"><div class="ac-skeleton"><div class="ac-skeleton--line ac-skeleton--line-sm"></div><div class="ac-skeleton--line"></div><div class="ac-skeleton--line ac-skeleton--line-sm"></div></div></div>`).join('');
+  var full = w.done === w.total;
+  var badgeCls = full ? 'busy-tag busy-tag--success busy-tag--tint busy-tag--round' : 'busy-tag busy-tag--warning busy-tag--tint busy-tag--round';
+  return '<div class="rpt-week">' +
+    '<div class="rpt-week__head">' +
+      '<span class="u-strong rpt-week__label">' + w.label + '</span>' +
+      '<span class="' + badgeCls + '"><span class="busy-tag__content">' + w.done + '/' + w.total + '</span></span>' +
+    '</div>' +
+    w.items.map(cardHtml).join('') +
+  '</div>';
 }
 function render() {
-  const host = $('#cardHost');
-  const html = WEEKS.map(groupHtml).join('');
-  host.innerHTML = html || emptyHtml();
-  $('#loadMore').textContent = html ? '加载更多' : '';
+  var list = document.getElementById('weekList');
+  var weeks = state.loadedOld ? WEEKS.concat(WEEKS_OLD) : WEEKS;
+  var html = weeks.map(function (w) {
+    var items = w.items.filter(function (it) {
+      if (state.chip && it.proj !== state.chip) return false;
+      if (state.kw && (it.missing || it.title.indexOf(state.kw) === -1)) return false;
+      return true;
+    });
+    if (!items.length) return '';
+    return groupHtml({ label: w.label, done: w.done, total: w.total, items: items });
+  }).join('');
+  list.innerHTML = html;
+  document.getElementById('emptyState').hidden = !!html;
 }
-function renderWithSkeleton() {
-  $('#cardHost').innerHTML = skeletonHtml();
-  $('#loadMore').textContent = '';
-  setTimeout(render, 300);
-}
-
-/* ==================== 事件 ==================== */
-/* 搜索图标 → 展开搜索栏；取消 → 收起并清空 */
-$('#searchToggle').addEventListener('click', () => {
-  $('#searchBar').hidden = false;
-  $('#searchInput').focus();
-});
-$('#searchCancel').addEventListener('click', () => {
-  $('#searchBar').hidden = true;
-  $('#searchInput').value = '';
-  S.kw = '';
-  renderWithSkeleton();
-});
-$('#searchInput').addEventListener('input', () => { S.kw = $('#searchInput').value.trim(); render(); });
-
-/* 项目 chip 单选：切换即骨架屏刷新 */
-$('#projChips').addEventListener('click', (e) => {
-  const chip = e.target.closest('.tpl-filter-chips__chip');
-  if (!chip) return;
-  $$('#projChips .tpl-filter-chips__chip').forEach((c) => c.classList.remove('is-active'));
-  chip.classList.add('is-active');
-  S.proj = chip.getAttribute('data-proj');
-  renderWithSkeleton();
-});
-
-/* 卡片跳转详情（未入库占位卡无 data-go，不可点） */
-$('#cardHost').addEventListener('click', (e) => {
-  if (e.target.closest('[data-retry]')) { renderWithSkeleton(); return; }
-  const card = e.target.closest('[data-go]');
-  if (card) location.href = card.getAttribute('data-go');
-});
-
-/* 上拉加载更多（原型以按钮承载手势） */
-$('#loadMore').addEventListener('click', () => {
-  $('#loadMore').textContent = '没有更多了';
-});
-
-/* 三态演示（原型专用）；下拉刷新以「正常」重载演示 */
-document.querySelector('.proto-bar').addEventListener('click', (e) => {
-  const a = e.target.closest('[data-demo]');
-  if (!a) return;
-  const d = a.getAttribute('data-demo');
-  if (d === 'skeleton') { $('#cardHost').innerHTML = skeletonHtml(); $('#loadMore').textContent = ''; }
-  else if (d === 'empty') { $('#cardHost').innerHTML = emptyHtml(); $('#loadMore').textContent = ''; }
-  else if (d === 'error') {
-    $('#cardHost').innerHTML = `<div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__visual"></div><div class="ac-empty__title">加载失败</div><div class="ac-empty__description"><a class="ac-link" href="#" onclick="return false" data-retry>点击重试</a></div></div>`;
-    $('#loadMore').textContent = '';
-  } else renderWithSkeleton();
-});
-
 render();
+
+/* ================= 标题搜索（确认即筛选；失败=AcToast error） ================= */
+document.getElementById('navSearch').addEventListener('click', function () {
+  var bar = document.getElementById('searchBar');
+  bar.hidden = !bar.hidden;
+  if (!bar.hidden) document.getElementById('searchInput').focus();
+});
+document.getElementById('searchInput').addEventListener('input', function (e) {
+  document.getElementById('searchClear').hidden = !e.target.value;
+});
+document.getElementById('searchInput').addEventListener('keydown', function (e) {
+  if (e.key !== 'Enter') return;
+  state.kw = e.target.value.trim();
+  document.getElementById('listSkeleton').hidden = false;
+  document.getElementById('weekList').hidden = true;
+  setTimeout(function () {
+    document.getElementById('listSkeleton').hidden = true;
+    document.getElementById('weekList').hidden = false;
+    render();
+  }, 400);
+});
+document.getElementById('searchClear').addEventListener('click', function () {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').hidden = true;
+  state.kw = '';
+  render();
+});
+
+/* ================= 项目筛选 chip（单选，切换即骨架屏刷新；失败=AcToast error） ================= */
+document.querySelectorAll('[data-chip]').forEach(function (chip) {
+  chip.addEventListener('click', function () {
+    document.querySelectorAll('[data-chip]').forEach(function (c) {
+      var on = c === chip;
+      c.className = 'busy-tag busy-tag--round ' + (on ? 'busy-tag--primary busy-tag--solid' : 'busy-tag--default busy-tag--tint');
+    });
+    state.chip = chip.getAttribute('data-chip');
+    document.getElementById('listSkeleton').hidden = false;
+    document.getElementById('weekList').hidden = true;
+    setTimeout(function () {
+      document.getElementById('listSkeleton').hidden = true;
+      document.getElementById('weekList').hidden = false;
+      render();
+    }, 400);
+  });
+});
+
+/* ================= 上拉加载（追加更早周分组；失败=AcToast error + 保留重试入口） ================= */
+document.getElementById('btnLoadMore').addEventListener('click', function (e) {
+  var btn = e.currentTarget;
+  btn.textContent = '加载中…';
+  btn.classList.add('busy-button--disabled');
+  setTimeout(function () {
+    state.loadedOld = true;
+    render();
+    document.getElementById('loadMore').hidden = true;
+    document.getElementById('loadEnd').hidden = false;
+  }, 500);
+});
+
+/* 下拉刷新：手势触发（静态原型不强制伪类/手势），生产为下拉刷新指示器 → 列表刷新至最新，失败 AcToast error */
+document.getElementById('navBack').addEventListener('click', function () {
+  toast('返回工作台（原型演示）');
+});
 </script>
 </body>
 </html>
