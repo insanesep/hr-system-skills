@@ -1,495 +1,782 @@
-<!doctype html>
-<!--
-  研发报告 · 报告触发配置页（Web 端原型 · 报告配置模块）
-  ================================================================
-  规格真源：../../references/web-ui.md §报告触发配置
-  DOM 范本：.agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl
-            拓扑 = .tpl-page > [筛选 .tpl-panel] > [表格 .tpl-panel]
-  Token   ：.agents/skills/page-blueprint/tokens/web.css（:root 为 token 定义层，
-            页面样式一律只写 var(--ac-*)，无裸色值/裸间距/裸字号）
--->
+<!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>报告触发配置 · 研发报告</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报告触发配置 · 研发报告 · 报告配置（静态原型 · Mock）</title>
+<!--
+  报告配置 / 报告触发配置（含页内「人员范围」页签 = 统计人员范围；静态原型，数据为 Mock）
+  路由：/rnd-report/trigger-config；权限：路由 devhubReportTriggerConfig，按钮 devhubReportTrigger（编辑 / 启停 / 立即生成 / 失败重试 / 人员维护）
+  页型：列表页（配置表格 + 编辑弹窗 + 生成记录抽屉），骨架对齐 busyming-skills-design/templates/web/archive-list.html
+  规则真源：references/business-rule.md §3.3 / §4 / §5.2；字段真源：references/data.md §3 / §4 / §7
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
 <style>
-/* ==========================================================================
-   token 定义层（摘自 page-blueprint/tokens/web.css，值不得改动）
-   ========================================================================== */
-:root{
-  /* palette */
-  --ac-palette-blue-1:#E8F7FF; --ac-palette-blue-6:#3491FA; --ac-palette-blue-7:#206CCF;
-  --ac-palette-cyan-1:#E8FFFB; --ac-palette-cyan-7:#0AA5A8;
-  --ac-palette-purple-1:#F5E8FF; --ac-palette-purple-6:#722ED1;
-  --ac-palette-gold-1:#FFFCE8; --ac-palette-gold-7:#CC9213;
-  /* semantic */
-  --ac-text-1:#1D2129; --ac-text-2:#4E5969; --ac-text-3:#86909C; --ac-text-4:#C9CDD4; --ac-text-white:#FFFFFF;
-  --ac-primary-1:#FFECE8; --ac-primary-5:#F76560; --ac-primary-6:#F53F3F; --ac-primary-7:#CB272D;
-  --ac-success-1:#E8FFEA; --ac-success-6:#00B42A; --ac-success-7:#009A29;
-  --ac-warning-1:#FFF7E8; --ac-warning-6:#FF7D00; --ac-warning-7:#D25F00;
-  --ac-danger-1:#FFECE8; --ac-danger-6:#F53F3F; --ac-danger-7:#CB272D;
-  --ac-bg-1:#FFFFFF; --ac-bg-2:#F7F8FA;
-  --ac-fill-1:#F7F8FA; --ac-fill-2:#F2F3F5; --ac-fill-3:#E5E6EB;
-  --ac-border-1:#F2F3F5; --ac-border-2:#E5E6EB; --ac-border-3:#C9CDD4;
-  /* alias --ac-color-* */
-  --ac-color-text-1:var(--ac-text-1); --ac-color-text-2:var(--ac-text-2); --ac-color-text-3:var(--ac-text-3);
-  --ac-color-success:var(--ac-success-6); --ac-color-warning:var(--ac-warning-6); --ac-color-danger:var(--ac-danger-6);
-  --ac-color-success-1:var(--ac-success-1); --ac-color-success-7:var(--ac-success-7);
-  --ac-color-warning-1:var(--ac-warning-1); --ac-color-warning-7:var(--ac-warning-7);
-  --ac-color-danger-1:var(--ac-danger-1); --ac-color-danger-6:var(--ac-danger-6);
-  /* spacing */
-  --ac-space-1:4px; --ac-space-2:8px; --ac-space-3:12px; --ac-space-4:16px;
-  --ac-space-5:20px; --ac-space-6:24px; --ac-space-8:32px;
-  /* radius */
-  --ac-radius-xs:2px; --ac-radius-sm:4px; --ac-radius-md:6px; --ac-radius-full:9999px;
-  /* shadow */
-  --ac-shadow-1:0 1px 2px 0 rgba(0,0,0,0.04); --ac-shadow-2:0 2px 8px 0 rgba(0,0,0,0.08);
-  --ac-shadow-3:0 4px 16px 0 rgba(0,0,0,0.10);
-  /* typography */
-  --ac-ff-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,'PingFang SC','Hiragino Sans GB','Microsoft YaHei',sans-serif;
-  --ac-ff-mono:'SF Mono',Menlo,Monaco,'Courier New',monospace;
-  --ac-fs-xs:12px; --ac-fs-sm:13px; --ac-fs-md:14px; --ac-fs-lg:15px; --ac-fs-xl:16px;
-  --ac-fs-3xl:20px; --ac-fs-5xl:28px;
-  --ac-fw-regular:400; --ac-fw-medium:500; --ac-fw-semibold:600;
-  --ac-lh-normal:1.5; --ac-lh-tight:1.2;
-  /* motion / z-index */
-  --ac-duration-fast:0.15s; --ac-easing-standard:cubic-bezier(0.4,0,0.2,1);
-  --ac-z-dropdown:100; --ac-z-modal:1000; --ac-z-toast:1100;
-}
-
-/* ==========================================================================
-   基础版式
-   ========================================================================== */
-*{box-sizing:border-box}
-body{margin:0;background:var(--ac-bg-2);color:var(--ac-color-text-1);
-  font-family:var(--ac-ff-sans);font-size:var(--ac-fs-md);line-height:var(--ac-lh-normal)}
-.tpl-layout{min-width:1200px;padding:0 var(--ac-space-5) var(--ac-space-6)}
-.tpl-layout>.tpl-page{margin-top:var(--ac-space-4)}
-.web-nav{height:48px;display:flex;align-items:center;gap:var(--ac-space-3);
-  margin:0 calc(-1 * var(--ac-space-5));padding:0 var(--ac-space-5);
-  background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-.web-nav__logo{font-weight:var(--ac-fw-semibold);color:var(--ac-primary-6)}
-.web-nav__crumb b{color:var(--ac-color-text-1);font-weight:var(--ac-fw-medium)}
-.web-nav__spacer{flex:1}
-
-.tpl-page{display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.tpl-panel{background:var(--ac-bg-1);border-radius:var(--ac-radius-sm);
-  padding:var(--ac-space-5);box-shadow:var(--ac-shadow-1);
-  display:flex;flex-direction:column;gap:var(--ac-space-4)}
-
-/* ===== 筛选区 ===== */
-.tpl-filter{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));
-  gap:var(--ac-space-4) var(--ac-space-5);align-items:center}
-.tpl-filter__item{display:flex;align-items:center;gap:var(--ac-space-3);min-width:0}
-.tpl-filter__label{flex-shrink:0;width:76px;text-align:right;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.tpl-filter__control{flex:1;min-width:0;position:relative}
-.tpl-filter__actions{display:flex;align-items:center;gap:var(--ac-space-2)}
-
-/* ===== 控件 ===== */
-.ac-select__trigger{height:32px;display:flex;align-items:center;justify-content:space-between;
-  gap:var(--ac-space-2);padding:0 var(--ac-space-3);cursor:pointer;
-  background:var(--ac-fill-2);border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-size:var(--ac-fs-md);color:var(--ac-color-text-1);
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-select__trigger:hover{background:var(--ac-fill-3)}
-.ac-select__value{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ac-select__arrow{flex-shrink:0;color:var(--ac-color-text-3);font-size:var(--ac-fs-xs)}
-.ac-input__inner{width:100%;height:32px;padding:0 var(--ac-space-3);background:var(--ac-fill-2);
-  border:1px solid transparent;border-radius:var(--ac-radius-sm);
-  font-family:inherit;font-size:var(--ac-fs-md);color:var(--ac-color-text-1)}
-.ac-input__inner::placeholder{color:var(--ac-color-text-3)}
-.ac-input__inner:focus{outline:none;background:var(--ac-bg-1);border-color:var(--ac-primary-6)}
-
-/* ===== 按钮 ===== */
-.ac-btn{height:32px;padding:0 var(--ac-space-4);display:inline-flex;align-items:center;
-  gap:var(--ac-space-1);border:1px solid var(--ac-border-2);border-radius:var(--ac-radius-sm);
-  background:var(--ac-bg-1);color:var(--ac-color-text-1);
-  font-family:inherit;font-size:var(--ac-fs-md);cursor:pointer;
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-btn:hover{background:var(--ac-fill-1)}
-.ac-btn--primary{background:var(--ac-primary-6);border-color:var(--ac-primary-6);color:var(--ac-text-white)}
-.ac-btn--primary:hover{background:var(--ac-primary-5);border-color:var(--ac-primary-5)}
-.ac-btn--text{height:auto;padding:0;background:transparent;border-color:transparent;
-  color:var(--ac-primary-6)}
-.ac-btn--text:hover{background:transparent;color:var(--ac-primary-7);text-decoration:underline}
-
-/* ===== 工具栏 ===== */
-.tpl-toolbar{display:flex;align-items:center;justify-content:space-between;gap:var(--ac-space-3)}
-.tpl-toolbar__left{display:flex;align-items:center;gap:var(--ac-space-3)}
-.tpl-toolbar__title{font-size:var(--ac-fs-lg);font-weight:var(--ac-fw-semibold);color:var(--ac-color-text-1)}
-.tpl-toolbar__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== 配置表格 ===== */
-.tpl-table-wrap{overflow-x:auto;margin:0 calc(-1 * var(--ac-space-5))}
-.tpl-table{width:100%;min-width:1160px;border-collapse:separate;border-spacing:0;
-  font-size:var(--ac-fs-md)}
-.tpl-table thead th{position:sticky;top:0;background:var(--ac-fill-1);
-  padding:var(--ac-space-3) var(--ac-space-4);text-align:left;white-space:nowrap;
-  font-weight:var(--ac-fw-medium);color:var(--ac-color-text-2);
-  border-bottom:1px solid var(--ac-border-2)}
-.tpl-table thead th:first-child,.tpl-table tbody td:first-child{padding-left:var(--ac-space-5)}
-.tpl-table thead th:last-child,.tpl-table tbody td:last-child{padding-right:var(--ac-space-5)}
-.tpl-table tbody td{padding:var(--ac-space-3) var(--ac-space-4);vertical-align:middle;
-  border-bottom:1px solid var(--ac-border-1);color:var(--ac-color-text-1)}
-.tpl-table tbody tr:hover td{background:var(--ac-fill-1)}
-.tpl-table tbody tr.is-disabled td{color:var(--ac-color-text-3)}
-.cell-mono{font-family:var(--ac-ff-mono);font-size:var(--ac-fs-sm)}
-.cell-muted{color:var(--ac-color-text-3)}
-.tpl-row-actions{display:inline-flex;align-items:center;gap:var(--ac-space-3)}
-
-/* ===== 标签 / 开关 ===== */
-.ac-tag{display:inline-flex;align-items:center;height:22px;padding:0 var(--ac-space-2);
-  border-radius:var(--ac-radius-xs);font-size:var(--ac-fs-xs);white-space:nowrap}
-.ac-tag.is-weekly{background:var(--ac-palette-blue-1);color:var(--ac-palette-blue-7)}
-.ac-tag.is-daily{background:var(--ac-success-1);color:var(--ac-success-7)}
-.ac-tag.is-proj-a{background:var(--ac-palette-cyan-1);color:var(--ac-palette-cyan-7)}
-.ac-tag.is-proj-b{background:var(--ac-palette-purple-1);color:var(--ac-palette-purple-6)}
-.ac-tag.is-progress{background:var(--ac-palette-gold-1);color:var(--ac-palette-gold-7)}
-.ac-tag.is-default{background:var(--ac-fill-2);color:var(--ac-color-text-3)}
-.ac-tag.is-success{background:var(--ac-color-success-1);color:var(--ac-color-success-7)}
-.ac-tag.is-danger{background:var(--ac-color-danger-1);color:var(--ac-color-danger-6)}
-.ac-switch{position:relative;width:36px;height:20px;border:none;cursor:pointer;
-  border-radius:var(--ac-radius-full);background:var(--ac-fill-3);
-  transition:background var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-switch::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;
-  border-radius:var(--ac-radius-full);background:var(--ac-bg-1);box-shadow:var(--ac-shadow-1);
-  transition:left var(--ac-duration-fast) var(--ac-easing-standard)}
-.ac-switch.is-on{background:var(--ac-primary-6)}
-.ac-switch.is-on::after{left:18px}
-.ac-switch:hover{background:var(--ac-fill-3)}
-.ac-switch.is-on:hover{background:var(--ac-primary-6)}
-
-/* ===== 复选框（AcCheckbox） ===== */
-.ac-checkbox{display:inline-flex;align-items:center;gap:var(--ac-space-1);cursor:pointer;line-height:32px}
-.ac-checkbox__box{width:16px;height:16px;display:inline-flex;align-items:center;justify-content:center;
-  background:var(--ac-bg-1);border:1px solid var(--ac-border-3);border-radius:var(--ac-radius-xs)}
-.ac-checkbox.is-checked .ac-checkbox__box{background:var(--ac-primary-6);border-color:var(--ac-primary-6)}
-.ac-checkbox__icon{color:var(--ac-text-white);font-size:var(--ac-fs-xs)}
-
-/* ===== 最近生成状态 ===== */
-.gen-status{display:inline-flex;align-items:center;gap:var(--ac-space-1);cursor:pointer}
-.gen-status.is-success{color:var(--ac-color-success-7)}
-.gen-status.is-failed{color:var(--ac-color-danger-6);text-decoration:underline}
-.gen-status.is-running{color:var(--ac-palette-blue-6)}
-.gen-status__time{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-
-/* ===== 分页 ===== */
-.tpl-pagination{display:flex;align-items:center;justify-content:flex-end;
-  gap:var(--ac-space-4);font-size:var(--ac-fs-md);color:var(--ac-color-text-2)}
-
-/* ===== 弹窗 ===== */
-.ac-modal-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);
-  z-index:var(--ac-z-modal);align-items:center;justify-content:center}
-.ac-modal-mask.is-open{display:flex}
-.ac-modal{width:560px;background:var(--ac-bg-1);border-radius:var(--ac-radius-md);
-  box-shadow:var(--ac-shadow-3)}
-.ac-modal__head{display:flex;align-items:center;justify-content:space-between;
-  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
-.ac-modal__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold)}
-.ac-modal__close{border:none;background:transparent;font-size:var(--ac-fs-lg);
-  color:var(--ac-color-text-3);cursor:pointer}
-.ac-modal__body{padding:var(--ac-space-5);display:flex;flex-direction:column;gap:var(--ac-space-4)}
-.ac-modal__foot{display:flex;justify-content:flex-end;gap:var(--ac-space-2);
-  padding:var(--ac-space-4) var(--ac-space-5);border-top:1px solid var(--ac-border-1)}
-.ac-form-item{display:flex;align-items:flex-start;gap:var(--ac-space-3)}
-.ac-form-item__label{flex-shrink:0;width:88px;text-align:right;line-height:32px;
-  color:var(--ac-color-text-2);font-size:var(--ac-fs-md)}
-.ac-form-item__label .is-required{color:var(--ac-color-danger)}
-.ac-form-item__control{flex:1;min-width:0}
-.ac-form-item__tip{margin-top:var(--ac-space-1);font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.ac-checks{display:flex;gap:var(--ac-space-4);line-height:32px}
-.ac-checks label{display:inline-flex;align-items:center;gap:var(--ac-space-1);cursor:pointer}
-
-/* ===== 抽屉（生成记录） ===== */
-.ac-drawer-mask{display:none;position:fixed;inset:0;background:rgba(29,33,41,0.5);z-index:var(--ac-z-modal)}
-.ac-drawer-mask.is-open{display:block}
-.ac-drawer{position:fixed;top:0;right:0;bottom:0;width:640px;background:var(--ac-bg-1);
-  box-shadow:var(--ac-shadow-3);display:flex;flex-direction:column;z-index:calc(var(--ac-z-modal) + 1)}
-.ac-drawer__head{display:flex;align-items:center;justify-content:space-between;
-  padding:var(--ac-space-4) var(--ac-space-5);border-bottom:1px solid var(--ac-border-1)}
-.ac-drawer__title{font-size:var(--ac-fs-xl);font-weight:var(--ac-fw-semibold)}
-.ac-drawer__body{flex:1;overflow:auto;padding:var(--ac-space-5)}
-.task-row{display:flex;flex-direction:column;gap:var(--ac-space-2);
-  padding:var(--ac-space-3) 0;border-bottom:1px solid var(--ac-border-1)}
-.task-row__head{display:flex;align-items:center;gap:var(--ac-space-3)}
-.task-row__meta{font-size:var(--ac-fs-xs);color:var(--ac-color-text-3)}
-.task-row__reason{font-size:var(--ac-fs-sm);color:var(--ac-color-danger-6)}
+/* 页面级骨架补位（templates.css 未含浮层壳类；仅定位与尺寸，色值全部消费 --busy-* token） */
+.tpl-mask { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--busy-popper-bg-dark) 45%, transparent); }
+.tpl-mask--drawer { justify-content: flex-end; }
+.tpl-dialog--560 { width: 560px; }
+.tpl-dialog--400 { width: 400px; }
+.tpl-drawer--760 { width: 760px; }
+.tpl-toast-wrap { position: fixed; top: 24px; left: 50%; transform: translateX(-50%); z-index: 3000; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+.tpl-select-pop { position: absolute; top: 36px; left: 0; right: 0; z-index: 1200; }
+.tpl-form-readonly { padding: 6px 0; color: var(--busy-text-primary); font-size: var(--busy-font-size-base); }
+.tpl-pagesize { width: 110px; }
+.tpl-row-disabled td { color: var(--busy-text-quaternary); }
+.tpl-drawer-body { flex: 1; overflow: auto; }
 </style>
 </head>
 <body>
-<div class="tpl-layout">
-  <nav class="web-nav">
-    <span class="web-nav__logo">研发中台</span>
-    <span class="web-nav__crumb">研发 / 研发报告 / 报告配置 / <b>报告触发配置</b></span>
-    <span class="web-nav__spacer"></span>
-  </nav>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / 报告配置 / <b>报告触发配置</b></span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">研发负责人 · 王倩</span>
+</nav>
 
-  <div class="tpl-page">
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">报告触发配置</h1>
+      <div class="tpl-page-subtitle">每个报告项（报告类型 + 项目标识）一条配置：触发方式、定时规则（东八区）、类型参数与启停；支持立即生成、生成记录与失败重试。</div>
+    </div>
+    <div class="tpl-page-head__actions">
+      <a class="busy-button" href="project-config.html"><span>前往报告项目配置 →</span></a>
+    </div>
+  </div>
 
-    <!-- 筛选 panel -->
-    <section class="tpl-panel">
+  <!-- 页内页签：报告触发配置 / 人员范围（统计人员范围） -->
+  <div class="busy-tabs" id="pageTabs">
+    <div class="busy-tabs__item is-active" data-pane="paneTrigger">报告触发配置</div>
+    <div class="busy-tabs__item" data-pane="paneStaff">人员范围</div>
+  </div>
+
+  <!-- ===================== 页签一：报告触发配置 ===================== -->
+  <div id="paneTrigger">
+    <!-- 筛选卡 -->
+    <div class="tpl-panel">
       <div class="tpl-filter">
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">报告类型</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
+        <div class="busy-form-item">
+          <div class="busy-form-item__label">报告类型</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" data-select="type"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
           </div>
         </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">项目</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
+        <div class="busy-form-item">
+          <div class="busy-form-item__label">项目</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" data-select="project"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
           </div>
         </div>
-        <div class="tpl-filter__item">
-          <span class="tpl-filter__label">状态</span>
-          <div class="tpl-filter__control">
-            <div class="ac-select__trigger">
-              <span class="ac-select__value">全部</span>
-              <span class="ac-select__arrow">▾</span>
-            </div>
+        <div class="busy-form-item">
+          <div class="busy-form-item__label">状态</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" data-select="status"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
           </div>
         </div>
-        <div class="tpl-filter__item">
-          <div class="tpl-filter__actions">
-            <button class="ac-btn ac-btn--primary">查询</button>
-            <button class="ac-btn">重置</button>
-          </div>
+        <div class="tpl-filter__actions">
+          <button class="busy-button busy-button--primary" id="btnQuery" type="button"><span>查 询</span></button>
+          <button class="busy-button" id="btnReset" type="button"><span>重 置</span></button>
         </div>
       </div>
-    </section>
+    </div>
 
-    <!-- 配置表格 panel -->
-    <section class="tpl-panel">
+    <!-- 配置表格卡 -->
+    <div class="tpl-panel">
       <div class="tpl-toolbar">
-        <div class="tpl-toolbar__left">
-          <span class="tpl-toolbar__title">报告触发配置</span>
-          <span class="tpl-toolbar__meta">报告项 = 报告类型 + 项目；项目维度配置行随报告项目配置联动生成</span>
+        <div class="tpl-toolbar__left">项目维度配置行随「<a href="project-config.html">报告项目配置</a>」扩展启停联动生成 / 停用，不可手工新增或删除 · 数据为 Mock 演示</div>
+        <div class="tpl-toolbar__right">
+          <button class="busy-button" id="btnMockReset" type="button"><span>重置 Mock</span></button>
         </div>
       </div>
 
-      <div class="tpl-table-wrap">
-        <table class="ac-table tpl-table">
-          <thead>
-            <tr>
-              <th>报告类型</th>
-              <th>项目</th>
-              <th>触发方式</th>
-              <th>定时规则</th>
-              <th>类型参数</th>
-              <th>启停</th>
-              <th>最近生成</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr>
-              <td><span class="ac-tag is-weekly">研发周报</span></td>
-              <td class="cell-muted">—</td>
-              <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
-              <td class="cell-mono">每周日 20:00</td>
-              <td class="cell-muted">—</td>
-              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td><span class="gen-status is-success">成功 <span class="gen-status__time">10-11 20:00</span></span></td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text" onclick="document.getElementById('cfgModal').classList.add('is-open')">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text" onclick="document.getElementById('taskDrawerMask').classList.add('is-open')">生成记录</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="ac-tag is-daily">研发日报</span></td>
-              <td class="cell-muted">—</td>
-              <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
-              <td class="cell-mono">每日 08:00</td>
-              <td class="cell-muted">—</td>
-              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td><span class="gen-status is-success">成功 <span class="gen-status__time">10-18 08:00</span></span></td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text">生成记录</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="ac-tag is-progress">项目进度报告</span></td>
-              <td class="cell-muted">全部项目汇总</td>
-              <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
-              <td class="cell-mono">每周一 09:00</td>
-              <td class="cell-muted">周期：周</td>
-              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td class="cell-muted">—</td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text">生成记录</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="ac-tag is-proj-a">文档一致性校验</span></td>
-              <td class="cell-muted">示例项目A</td>
-              <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
-              <td class="cell-mono">每周日 21:00</td>
-              <td class="cell-muted">回看 7 天</td>
-              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td><span class="gen-status is-success">成功 <span class="gen-status__time">10-11 21:00</span></span></td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text">生成记录</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="ac-tag is-proj-b">文档一致性校验</span></td>
-              <td class="cell-muted">示例项目B</td>
-              <td><span class="ac-tag is-default">手动</span></td>
-              <td class="cell-muted">—</td>
-              <td class="cell-muted">回看 7 天</td>
-              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td><span class="gen-status is-failed">失败 <span class="gen-status__time">10-15 10:22</span></span></td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text">生成记录</button>
-              </span></td>
-            </tr>
-            <tr>
-              <td><span class="ac-tag is-progress">项目进度报告</span></td>
-              <td class="cell-muted">示例项目A</td>
-              <td><span class="ac-tag is-default">定时</span> <span class="ac-tag is-default">手动</span></td>
-              <td class="cell-mono">每周日 20:30</td>
-              <td class="cell-muted">周期：周</td>
-              <td><button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td><span class="gen-status is-running">生成中 <span class="gen-status__time">10-16 09:12</span></span></td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text">生成记录</button>
-              </span></td>
-            </tr>
-            <tr class="is-disabled">
-              <td><span class="ac-tag is-progress">项目进度报告</span></td>
-              <td class="cell-muted">示例项目C</td>
-              <td><span class="ac-tag is-default">定时</span></td>
-              <td class="cell-mono">每月 1 日 09:00</td>
-              <td class="cell-muted">周期：月</td>
-              <td><button class="ac-btn ac-switch" type="button" role="switch" aria-checked="false" data-ac="AcSwitch" aria-label="启停"></button></td>
-              <td class="cell-muted">已停用 · 不再生成</td>
-              <td><span class="tpl-row-actions">
-                <button class="ac-btn ac-btn--text">编辑</button>
-                <button class="ac-btn ac-btn--text">立即生成</button>
-                <button class="ac-btn ac-btn--text">生成记录</button>
-              </span></td>
-            </tr>
-          </tbody>
-        </table>
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>报告类型</th>
+            <th>项目</th>
+            <th>触发方式</th>
+            <th>定时规则</th>
+            <th>类型参数</th>
+            <th class="u-center">启停</th>
+            <th>最近生成</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="listTbody"></tbody>
+      </table>
+      <div class="busy-empty" id="emptyState" hidden>
+        <div class="busy-empty__image">☁</div>
+        <div>暂无触发配置</div>
       </div>
 
-      <div class="tpl-pagination">
-        <span>共 7 条</span>
+      <div class="tpl-table-foot">
+        <div class="busy-pagination">
+          <span class="u-muted">共 <span id="totalCount">6</span> 条</span>
+          <button disabled>‹</button>
+          <button class="is-active">1</button>
+          <button disabled>›</button>
+          <div class="busy-select tpl-pagesize"><div class="busy-input busy-input--small"><input readonly value="20 条/页"></div><span class="busy-select__caret">▾</span></div>
+        </div>
       </div>
-    </section>
-
-  </div>
-</div>
-
-<!-- 编辑配置弹窗 -->
-<div class="ac-modal-mask" id="cfgModal">
-  <div class="ac-modal">
-    <div class="ac-modal__head">
-      <span class="ac-modal__title">编辑触发配置 · 研发周报</span>
-      <button class="ac-btn ac-modal__close" type="button" aria-label="关闭" onclick="document.getElementById('cfgModal').classList.remove('is-open')">✕</button>
     </div>
-    <div class="ac-modal__body">
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><i class="is-required">*</i> 触发方式</span>
-        <div class="ac-form-item__control">
-          <div class="ac-checks">
-            <span class="ac-checkbox is-checked" role="checkbox" tabindex="0" aria-checked="true" data-ac="AcCheckbox" data-size="medium" data-shape="square"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">定时</span></span>
-            <span class="ac-checkbox is-checked" role="checkbox" tabindex="0" aria-checked="true" data-ac="AcCheckbox" data-size="medium" data-shape="square"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">手动</span></span>
+  </div>
+
+  <!-- ===================== 页签二：人员范围（统计人员范围） ===================== -->
+  <div id="paneStaff" hidden>
+    <!-- 筛选卡 -->
+    <div class="tpl-panel">
+      <div class="tpl-filter">
+        <div class="busy-form-item tpl-filter__item--wide">
+          <div class="busy-form-item__label">关键词</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input"><input id="staffKeyword" placeholder="姓名 / 别名模糊查询"></div>
           </div>
-          <div class="ac-form-item__tip">至少启用一种；停用配置则两种均不生效</div>
         </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label"><i class="is-required">*</i> 定时规则</span>
-        <div class="ac-form-item__control">
-          <div class="ac-checks">
-            <div class="ac-select__trigger" style="width:96px"><span class="ac-select__value">每周</span><span class="ac-select__arrow">▾</span></div>
-            <div class="ac-select__trigger" style="width:96px"><span class="ac-select__value">周日</span><span class="ac-select__arrow">▾</span></div>
-            <input class="ac-input__inner" style="width:96px" value="20:00" aria-label="时间" />
+        <div class="busy-form-item">
+          <div class="busy-form-item__label">状态</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" data-select="staffStatus"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
           </div>
-          <div class="ac-form-item__tip">东八区；周期：每日 / 每周 / 每月，每日仅选时间；到点自动创建生成任务</div>
         </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label">类型参数</span>
-        <div class="ac-form-item__control">
-          <input class="ac-input__inner" placeholder="研发周报无类型参数" disabled />
-          <div class="ac-form-item__tip">一致性校验：回看天数；项目进度报告：统计周期（周 / 月）；研发周报与研发日报无类型参数</div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <span class="ac-form-item__label">启停</span>
-        <div class="ac-form-item__control">
-          <button class="ac-btn ac-switch is-on" type="button" role="switch" aria-checked="true" data-ac="AcSwitch" aria-label="启停"></button>
-          <div class="ac-form-item__tip">停用即不再定时触发且手动禁用；历史报告与生成记录保留</div>
+        <div class="tpl-filter__actions">
+          <button class="busy-button busy-button--primary" id="btnStaffQuery" type="button"><span>查 询</span></button>
+          <button class="busy-button" id="btnStaffReset" type="button"><span>重 置</span></button>
         </div>
       </div>
     </div>
-    <div class="ac-modal__foot">
-      <button class="ac-btn" onclick="document.getElementById('cfgModal').classList.remove('is-open')">取消</button>
-      <button class="ac-btn ac-btn--primary">保存</button>
+
+    <!-- 名单表格卡 -->
+    <div class="tpl-panel">
+      <div class="busy-message busy-message--info">人员范围同时作用于研发周报 / 日报的代码、排期卡片、Qoder 用量统计与 Token 管理看板；名单外人员不计入；别名支持 git 作者名 / 邮箱、Qoder 名称 / 邮箱、排期负责人名。</div>
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left">已启用 <b id="staffEnabled">3</b> / 总数 <b id="staffTotal">4</b> 人 · 不提供删除，停用即保留历史</div>
+        <div class="tpl-toolbar__right">
+          <button class="busy-button busy-button--primary" id="btnStaffAdd" type="button"><span>新增人员</span></button>
+        </div>
+      </div>
+
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>姓名</th>
+            <th>别名</th>
+            <th class="u-center">启停</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="staffTbody"></tbody>
+      </table>
+      <div class="busy-empty" id="staffEmpty" hidden>
+        <div class="busy-empty__image">☁</div>
+        <div>暂无人员，点击右上角「新增人员」维护</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 编辑配置弹窗（BusyDialog） -->
+<div class="tpl-mask" id="editMask" hidden>
+  <div class="busy-dialog tpl-dialog--560" role="dialog" aria-modal="true">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">编辑配置 · <span id="dlgItemName"></span></span><button class="busy-dialog__close" data-close="editMask">✕</button></div>
+    <div class="busy-dialog__body">
+      <div class="busy-message busy-message--error" id="dlgError" hidden></div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">报告项</div>
+        <div class="busy-form-item__content"><div class="tpl-form-readonly" id="dlgItem"></div></div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">触发方式</div>
+        <div class="busy-form-item__content">
+          <div class="busy-checkbox-group">
+            <label class="busy-checkbox" id="dlgWayCron"><span class="busy-checkbox__inner"></span><span>定时</span></label>
+            <label class="busy-checkbox" id="dlgWayManual"><span class="busy-checkbox__inner"></span><span>手动</span></label>
+          </div>
+          <div class="busy-form-item__error" id="dlgWayError" hidden>请至少选择一种触发方式</div>
+        </div>
+      </div>
+      <div id="dlgCronArea">
+        <div class="busy-form-item">
+          <div class="busy-form-item__label is-required">定时规则</div>
+          <div class="busy-form-item__content">
+            <div class="busy-radio-group" id="dlgCycle">
+              <label class="busy-radio-button is-checked"><span class="busy-radio-button__inner">每日</span></label>
+              <label class="busy-radio-button"><span class="busy-radio-button__inner">每周</span></label>
+              <label class="busy-radio-button"><span class="busy-radio-button__inner">每月</span></label>
+            </div>
+            <div class="tpl-filter__row" id="dlgCycleDetail">
+              <div class="busy-select" data-select="weekday" id="dlgWeekday" hidden><div class="busy-input"><input readonly value="周日"></div><span class="busy-select__caret">▾</span></div>
+              <div class="busy-select" data-select="monthday" id="dlgMonthday" hidden><div class="busy-input"><input readonly value="1 日"></div><span class="busy-select__caret">▾</span></div>
+              <div class="busy-input" id="dlgTimeWrap"><input id="dlgTime" placeholder="HH:mm（东八区）" value="20:00"></div>
+            </div>
+            <div class="busy-form-item__error" id="dlgCronError" hidden>请补全定时规则</div>
+            <div class="u-sub">计划点短暂不可用时，恢复后在下一计划点之前补跑最近一次</div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item" id="dlgParamRow">
+        <div class="busy-form-item__label">类型参数</div>
+        <div class="busy-form-item__content" id="dlgParamContent"></div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">启停</div>
+        <div class="busy-form-item__content">
+          <button class="busy-switch" id="dlgEnabled" type="button"><span class="busy-switch__core"></span></button>
+          <span class="u-sub">停用即不再定时触发，手动触发同步禁用；历史报告与生成记录保留</span>
+        </div>
+      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="editMask" type="button"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" id="dlgSave" type="button"><span>保 存</span></button>
     </div>
   </div>
 </div>
 
-<!-- 生成记录抽屉 -->
-<div class="ac-drawer-mask" id="taskDrawerMask">
-  <div class="ac-drawer">
-    <div class="ac-drawer__head">
-      <span class="ac-drawer__title">生成记录 · 研发周报</span>
-      <button class="ac-btn ac-modal__close" type="button" aria-label="关闭" onclick="document.getElementById('taskDrawerMask').classList.remove('is-open')">✕</button>
+<!-- 生成记录抽屉（BusyDrawer） -->
+<div class="tpl-mask tpl-mask--drawer" id="recordMask" hidden>
+  <div class="busy-drawer tpl-drawer--760">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">生成记录 · <span id="drawerItemName"></span></span><button class="busy-dialog__close" data-close="recordMask">✕</button></div>
+    <div class="busy-dialog__body tpl-drawer-body">
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>触发来源</th>
+            <th>状态</th>
+            <th>统计窗口</th>
+            <th>开始时间</th>
+            <th>耗时</th>
+            <th>失败原因</th>
+            <th>产出版本</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="recordTbody"></tbody>
+      </table>
     </div>
-    <div class="ac-drawer__body">
-      <div class="task-row">
-        <div class="task-row__head">
-          <span class="ac-tag is-default">定时</span>
-          <span class="ac-tag is-success">成功</span>
-          <span class="task-row__meta">统计窗口 2026-10-05 ~ 2026-10-11</span>
-        </div>
-        <div class="task-row__meta">开始 10-11 20:00 · 耗时 6 分 12 秒 · 产出 <a href="#">研发周报 - 2026-10-11（v1）</a></div>
-      </div>
-      <div class="task-row">
-        <div class="task-row__head">
-          <span class="ac-tag is-default">手动</span>
-          <span class="ac-tag is-danger">失败</span>
-          <span class="task-row__meta">统计窗口 2026-09-28 ~ 2026-10-04</span>
-        </div>
-        <div class="task-row__meta">开始 10-04 15:02 · 耗时 41 秒 · 操作人 刘操</div>
-        <div class="task-row__reason">失败原因：Qoder 用量接口超时（30s），未产出报告</div>
-        <div><button class="ac-btn ac-btn--text">重试</button></div>
-      </div>
-      <div class="task-row">
-        <div class="task-row__head">
-          <span class="ac-tag is-default">定时</span>
-          <span class="ac-tag is-success">成功</span>
-          <span class="task-row__meta">统计窗口 2026-09-28 ~ 2026-10-04</span>
-        </div>
-        <div class="task-row__meta">开始 10-04 20:00 · 耗时 5 分 48 秒 · 产出 <a href="#">研发周报 - 2026-10-04（v1）</a></div>
-      </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="recordMask" type="button"><span>关 闭</span></button>
     </div>
   </div>
 </div>
 
+<!-- 通用二次确认框（启停 / 立即生成；BusyMessageBox 确认形态，DOM 同 busy-dialog） -->
+<div class="tpl-mask" id="confirmMask" hidden>
+  <div class="busy-dialog tpl-dialog--400" role="dialog" aria-modal="true">
+    <div class="busy-dialog__header"><span class="busy-dialog__title" id="confirmTitle">操作确认</span><button class="busy-dialog__close" data-close="confirmMask">✕</button></div>
+    <div class="busy-dialog__body" id="confirmText"></div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="confirmMask" type="button"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" id="confirmOk" type="button"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 编辑人员弹窗（BusyDialog；新增共用） -->
+<div class="tpl-mask" id="staffMask" hidden>
+  <div class="busy-dialog tpl-dialog--560" role="dialog" aria-modal="true">
+    <div class="busy-dialog__header"><span class="busy-dialog__title" id="staffDlgTitle">编辑人员</span><button class="busy-dialog__close" data-close="staffMask">✕</button></div>
+    <div class="busy-dialog__body">
+      <div class="busy-message busy-message--error" id="staffDlgError" hidden></div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">姓名</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="staffName" placeholder="报告与看板展示名，≤64 字"></div>
+          <div class="busy-form-item__error" id="staffNameError" hidden></div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">别名</div>
+        <div class="busy-form-item__content">
+          <textarea class="busy-textarea" id="staffAlias" placeholder="git 作者名 / 邮箱、Qoder 名称 / 邮箱、排期负责人名；逗号或换行分隔，保存时去重（单个 ≤128 字，最多 50 个）"></textarea>
+          <div class="busy-form-item__error" id="staffAliasError" hidden>人员姓名或别名格式不正确</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">启停</div>
+        <div class="busy-form-item__content">
+          <button class="busy-switch" id="staffEnabledSw" type="button"><span class="busy-switch__core"></span></button>
+          <span class="u-sub">停用后该人员不再计入报告与 Token 管理统计</span>
+        </div>
+      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="staffMask" type="button"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" id="staffDlgSave" type="button"><span>保 存</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 轻提示挂载点（BusyMessage） -->
+<div class="tpl-toast-wrap" id="toastWrap"></div>
+
+<script>
+/* ===== Mock 数据（真实页面替换为接口数据；重置 Mock 可还原） ===== */
+var TYPE_TAG = {
+  WEEKLY_DEV: { text: '研发周报', cls: '' },
+  DAILY_DEV: { text: '研发日报', cls: 'busy-tag--success' },
+  CONSISTENCY: { text: '文档一致性校验', cls: 'busy-tag--warning' },
+  PROJECT_PROGRESS: { text: '项目进度报告', cls: 'busy-tag--info' }
+};
+var DEFAULT_CONFIGS = [
+  { type: 'WEEKLY_DEV', project: '', cron: true, manual: true, rule: '每周日 20:00', cycle: 'weekly', weekday: '周日', monthday: '', time: '20:00', param: '', enabled: true, last: { status: 'SUCCESS', time: '2026-10-18 20:00' } },
+  { type: 'DAILY_DEV', project: '', cron: true, manual: true, rule: '每日 08:00', cycle: 'daily', weekday: '', monthday: '', time: '08:00', param: '', enabled: true, last: { status: 'SUCCESS', time: '2026-10-20 08:00' } },
+  { type: 'CONSISTENCY', project: 'store-web', cron: true, manual: true, rule: '每周日 21:00', cycle: 'weekly', weekday: '周日', monthday: '', time: '21:00', param: '7', enabled: true, last: { status: 'FAILED', time: '2026-10-18 21:00' } },
+  { type: 'CONSISTENCY', project: 'supply', cron: true, manual: false, rule: '每周日 21:30', cycle: 'weekly', weekday: '周日', monthday: '', time: '21:30', param: '7', enabled: false, last: { status: 'SUCCESS', time: '2026-10-11 21:30' } },
+  { type: 'PROJECT_PROGRESS', project: 'store-web', cron: true, manual: true, rule: '每周日 22:00', cycle: 'weekly', weekday: '周日', monthday: '', time: '22:00', param: 'week', enabled: true, last: { status: 'RUNNING', time: '2026-10-20 10:05' } },
+  { type: 'PROJECT_PROGRESS', project: '_all', cron: true, manual: true, rule: '每月 1 日 07:00', cycle: 'monthly', weekday: '', monthday: '1 日', time: '07:00', param: 'month', enabled: true, last: { status: 'SUCCESS', time: '2026-10-01 07:00' } }
+];
+var CONFIGS = JSON.parse(JSON.stringify(DEFAULT_CONFIGS));
+var DEFAULT_RECORDS = [
+  { src: 'SCHEDULED', status: 'FAILED', window: '2026-10-12 ~ 2026-10-18', start: '2026-10-18 21:00', cost: '—', reason: '生成会话超时（上限 2 小时）', version: '' },
+  { src: 'MANUAL', status: 'SUCCESS', window: '2026-10-12 ~ 2026-10-18', start: '2026-10-18 15:22', cost: '6 分 12 秒', reason: '', version: 'v3', operator: '王倩' },
+  { src: 'SCHEDULED', status: 'SUCCESS', window: '2026-10-05 ~ 2026-10-11', start: '2026-10-11 21:00', cost: '5 分 48 秒', reason: '', version: 'v2' },
+  { src: 'SCHEDULED', status: 'SUCCESS', window: '2026-09-28 ~ 2026-10-04', start: '2026-10-04 21:00', cost: '6 分 01 秒', reason: '', version: 'v1' }
+];
+var RECORDS = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
+var DEFAULT_STAFF = [
+  { name: '王倩', alias: ['wangqian', 'wangqian@busy.com', '王倩(排期负责人)'], enabled: true },
+  { name: '李强', alias: ['liqiang', 'liqiang@busy.com'], enabled: true },
+  { name: '张敏', alias: [], enabled: true },
+  { name: '刘洋', alias: ['liuyang', 'liuyang@busy.com', 'Qoder:liuyang'], enabled: false }
+];
+var STAFF = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+var fType = '全部', fProject = '全部', fStatus = '全部', sKeyword = '', sStatus = '全部';
+
+/* ===== 通用：轻提示 / 遮罩 ===== */
+function toast(type, text) {
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  el.textContent = text;
+  document.getElementById('toastWrap').appendChild(el);
+  setTimeout(function () { el.remove(); }, 2600);
+}
+function openMask(id) { document.getElementById(id).hidden = false; }
+function closeMask(id) { document.getElementById(id).hidden = true; }
+document.querySelectorAll('[data-close]').forEach(function (b) {
+  b.addEventListener('click', function () { closeMask(b.getAttribute('data-close')); });
+});
+
+/* ===== 通用：二次确认（② 确认 → 回调内走 loading/结果） ===== */
+function confirmAction(title, text, onOk) {
+  document.getElementById('confirmTitle').textContent = title;
+  document.getElementById('confirmText').textContent = text;
+  openMask('confirmMask');
+  document.getElementById('confirmOk').onclick = function () { closeMask('confirmMask'); onOk(); };
+}
+
+/* ===== 通用：静态 select 下拉 ===== */
+var SELECT_OPTIONS = {
+  type: ['全部', '研发周报', '研发日报', '文档一致性校验', '项目进度报告'],
+  project: ['全部', 'store-web（门店系统）', 'supply（供应链中台）', '全部项目汇总（_all）'],
+  status: ['全部', '启用', '停用'],
+  staffStatus: ['全部', '启用', '停用'],
+  weekday: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
+  monthday: ['1 日', '5 日', '10 日', '15 日', '20 日', '25 日', '月末']
+};
+var openDropdown = null;
+function closeDropdown() { if (openDropdown) { openDropdown.remove(); openDropdown = null; } }
+document.querySelectorAll('[data-select]').forEach(function (sel) {
+  var key = sel.getAttribute('data-select');
+  sel.addEventListener('click', function (e) {
+    e.stopPropagation();
+    if (openDropdown) { closeDropdown(); return; }
+    var dd = document.createElement('div');
+    dd.className = 'busy-select-dropdown tpl-select-pop';
+    var cur = sel.querySelector('input').value;
+    SELECT_OPTIONS[key].forEach(function (opt) {
+      var item = document.createElement('div');
+      item.className = 'busy-select-dropdown__item' + (opt === cur ? ' is-selected' : '');
+      item.textContent = opt;
+      item.addEventListener('click', function (ev) {
+        ev.stopPropagation();
+        sel.querySelector('input').value = opt;
+        if (key === 'type') fType = opt;
+        if (key === 'project') fProject = opt;
+        if (key === 'status') fStatus = opt;
+        if (key === 'staffStatus') sStatus = opt;
+        closeDropdown();
+      });
+      dd.appendChild(item);
+    });
+    sel.appendChild(dd);
+    openDropdown = dd;
+  });
+});
+document.addEventListener('click', closeDropdown);
+
+/* ===== 页签切换 ===== */
+document.querySelectorAll('#pageTabs .busy-tabs__item').forEach(function (t) {
+  t.addEventListener('click', function () {
+    document.querySelectorAll('#pageTabs .busy-tabs__item').forEach(function (x) { x.classList.remove('is-active'); });
+    t.classList.add('is-active');
+    document.getElementById('paneTrigger').hidden = t.getAttribute('data-pane') !== 'paneTrigger';
+    document.getElementById('paneStaff').hidden = t.getAttribute('data-pane') !== 'paneStaff';
+  });
+});
+
+/* ===== 触发配置：行渲染 ===== */
+function projectText(p) {
+  if (!p) return '<span class="u-muted">—</span>';
+  if (p === '_all') return '全部项目汇总';
+  return '<span class="u-mono">' + p + '</span>';
+}
+function paramText(r) {
+  if (r.type === 'CONSISTENCY') return '回看 ' + r.param + ' 天';
+  if (r.type === 'PROJECT_PROGRESS') return '周期：' + (r.param === 'month' ? '月' : '周');
+  return '<span class="u-muted">—</span>';
+}
+function lastCell(r, i) {
+  var l = r.last;
+  if (!l) return '<span class="u-muted">—</span>';
+  if (l.status === 'FAILED') return '<a href="javascript:void 0" data-record="' + i + '" class="u-danger">失败 · ' + l.time + '</a>';
+  if (l.status === 'RUNNING') return '<span class="tpl-cell-status is-processing">生成中 · ' + l.time + '</span>';
+  return '<span class="tpl-cell-status is-success">成功 · ' + l.time + '</span>';
+}
+function renderConfigs() {
+  var tbody = document.getElementById('listTbody');
+  var rows = CONFIGS.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) {
+    if (fType !== '全部' && TYPE_TAG[x.r.type].text !== fType) return false;
+    if (fProject !== '全部') {
+      var want = fProject.indexOf('_all') >= 0 ? '_all' : fProject.split('（')[0];
+      if (x.r.project !== want) return false;
+    }
+    if (fStatus !== '全部' && (x.r.enabled ? '启用' : '停用') !== fStatus) return false;
+    return true;
+  });
+  document.getElementById('emptyState').hidden = rows.length > 0;
+  document.getElementById('totalCount').textContent = rows.length;
+  tbody.innerHTML = rows.map(function (x) {
+    var r = x.r, t = TYPE_TAG[r.type];
+    return '<tr>' +
+      '<td><span class="busy-tag ' + t.cls + ' is-plain">' + t.text + '</span></td>' +
+      '<td>' + projectText(r.project) + '</td>' +
+      '<td><span class="chip-group">' + (r.cron ? '<span class="busy-tag busy-tag--info is-plain">定时</span>' : '') + (r.manual ? '<span class="busy-tag busy-tag--info is-plain">手动</span>' : '') + '</span></td>' +
+      '<td>' + (r.cron ? r.rule : '<span class="u-muted">—</span>') + '</td>' +
+      '<td>' + paramText(r) + '</td>' +
+      '<td class="u-center"><button class="busy-switch' + (r.enabled ? ' is-checked' : '') + '" data-switch="' + x.i + '" type="button"><span class="busy-switch__core"></span></button></td>' +
+      '<td>' + lastCell(r, x.i) + '</td>' +
+      '<td><div class="tpl-row-actions">' +
+        '<button class="busy-button is-link" data-edit="' + x.i + '" type="button"><span>编辑</span></button>' +
+        '<button class="busy-button is-link" data-gen="' + x.i + '" type="button"><span>立即生成</span></button>' +
+        '<button class="busy-button is-link" data-record="' + x.i + '" type="button"><span>生成记录</span></button>' +
+      '</div></td>' +
+      '</tr>';
+  }).join('');
+  bindConfigEvents();
+}
+/* ===== 触发配置：行内事件（启停 / 编辑 / 立即生成 / 生成记录） ===== */
+function itemName(r) { return TYPE_TAG[r.type].text + (r.project ? ' · ' + (r.project === '_all' ? '全部项目汇总' : r.project) : ''); }
+function bindConfigEvents() {
+  document.querySelectorAll('[data-switch]').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      var r = CONFIGS[Number(sw.getAttribute('data-switch'))];
+      if (r.enabled) {
+        confirmAction('停用确认', '停用后不再定时生成「' + itemName(r) + '」，手动生成同步禁用；历史报告与生成记录保留。', function () {
+          sw.classList.add('is-disabled');
+          setTimeout(function () { r.enabled = false; renderConfigs(); toast('success', '已停用「' + itemName(r) + '」'); }, 400);
+        });
+      } else {
+        sw.classList.add('is-disabled');
+        setTimeout(function () { r.enabled = true; renderConfigs(); toast('success', '已启用「' + itemName(r) + '」'); }, 400);
+      }
+    });
+  });
+  document.querySelectorAll('[data-gen]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var idx = Number(b.getAttribute('data-gen')), r = CONFIGS[idx];
+      /* ① 前置校验：停用 / 进行中任务 / 未开手动 → 失败反馈，按钮恢复 */
+      if (!r.enabled) { toast('error', '配置已停用，无法立即生成'); return; }
+      if (!r.manual) { toast('error', '该报告项未开启手动触发'); return; }
+      if (r.last && r.last.status === 'RUNNING') { toast('error', '该报告项存在进行中任务，请等待完成'); return; }
+      /* ② 二次确认（确认报告项与统计窗口）→ ③ 按钮 loading → ④ toast → ⑤ 打开生成记录抽屉 */
+      var win = r.type === 'DAILY_DEV' ? '2026-10-20 ~ 2026-10-20（当日实时）' : '2026-10-12 ~ 2026-10-18';
+      confirmAction('立即生成', '确认为「' + itemName(r) + '」创建生成任务？统计窗口：' + win + '。', function () {
+        b.classList.add('is-disabled');
+        setTimeout(function () {
+          b.classList.remove('is-disabled');
+          var task = { src: 'MANUAL', status: 'RUNNING', window: win, start: '2026-10-20 10:30', cost: '—', reason: '', version: '', operator: '王倩' };
+          RECORDS.unshift(task);
+          r.last = { status: 'RUNNING', time: '2026-10-20 10:30' };
+          renderConfigs();
+          toast('success', '已创建生成任务');
+          openRecords(idx);
+        }, 600);
+      });
+    });
+  });
+  document.querySelectorAll('[data-record]').forEach(function (b) {
+    b.addEventListener('click', function () { openRecords(Number(b.getAttribute('data-record'))); });
+  });
+  document.querySelectorAll('[data-edit]').forEach(function (b) {
+    b.addEventListener('click', function () { openEdit(Number(b.getAttribute('data-edit'))); });
+  });
+}
+
+/* ===== 生成记录抽屉（含失败重试五阶段） ===== */
+var recordIdx = -1;
+function openRecords(i) {
+  recordIdx = i;
+  document.getElementById('drawerItemName').textContent = itemName(CONFIGS[i]);
+  renderRecords();
+  openMask('recordMask');
+}
+function renderRecords() {
+  var tbody = document.getElementById('recordTbody');
+  tbody.innerHTML = RECORDS.map(function (t, i) {
+    var statusCell = t.status === 'FAILED' ? '<span class="tpl-cell-status is-danger">失败</span>'
+      : t.status === 'RUNNING' ? '<span class="tpl-cell-status is-processing">生成中</span>'
+      : '<span class="tpl-cell-status is-success">成功</span>';
+    return '<tr>' +
+      '<td>' + (t.src === 'MANUAL' ? '手动（' + (t.operator || '王倩') + '）' : '定时') + '</td>' +
+      '<td>' + statusCell + '</td>' +
+      '<td class="u-mono">' + t.window + '</td>' +
+      '<td class="u-mono">' + t.start + '</td>' +
+      '<td class="u-mono">' + t.cost + '</td>' +
+      '<td>' + (t.reason || '<span class="u-muted">—</span>') + '</td>' +
+      '<td>' + (t.version ? '<a href="javascript:void 0" data-version="' + t.version + '">' + t.version + '</a>' : '<span class="u-muted">—</span>') + '</td>' +
+      '<td>' + (t.status === 'FAILED' ? '<button class="busy-button is-link" data-retry="' + i + '" type="button"><span>重试</span></button>' : '') + '</td>' +
+      '</tr>';
+  }).join('');
+  tbody.querySelectorAll('[data-retry]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      /* 失败重试：① 点重试（无需确认）→ ③ 按钮 loading → ④ toast「已创建重试任务」→ ⑤ 抽屉刷新（新建任务关联原任务） */
+      b.classList.add('is-disabled');
+      setTimeout(function () {
+        RECORDS.unshift({ src: 'MANUAL', status: 'RUNNING', window: RECORDS[Number(b.getAttribute('data-retry'))].window, start: '2026-10-20 10:32', cost: '—', reason: '', version: '', operator: '王倩（重试 #' + (Number(b.getAttribute('data-retry')) + 1) + '）' });
+        renderRecords();
+        toast('success', '已创建重试任务');
+      }, 500);
+    });
+  });
+  tbody.querySelectorAll('[data-version]').forEach(function (a) {
+    a.addEventListener('click', function () { toast('info', '原型示意：跳转对应模块报告详情页（' + a.getAttribute('data-version') + '）'); });
+  });
+}
+
+/* ===== 编辑配置弹窗（表单链路） ===== */
+var editIdx = -1, editCycle = 'weekly', editParam = '';
+function renderParamArea(type) {
+  var box = document.getElementById('dlgParamContent');
+  if (type === 'CONSISTENCY') {
+    box.innerHTML = '<div class="tpl-filter__row"><div class="busy-input-number"><div class="busy-input"><input id="dlgParamDays" value="' + (editParam || '7') + '"></div><div class="busy-input-number__btns"><span id="daysUp">▲</span><span id="daysDown">▼</span></div></div><span class="u-muted">天（回看天数，正整数）</span></div><div class="busy-form-item__error" id="dlgParamError" hidden>类型参数格式不正确</div>';
+    document.getElementById('daysUp').onclick = function () { var i = document.getElementById('dlgParamDays'); i.value = Number(i.value || 0) + 1; };
+    document.getElementById('daysDown').onclick = function () { var i = document.getElementById('dlgParamDays'); i.value = Math.max(1, Number(i.value || 1) - 1); };
+  } else if (type === 'PROJECT_PROGRESS') {
+    box.innerHTML = '<div class="busy-radio-group" id="dlgParamCycle">' +
+      '<label class="busy-radio' + (editParam !== 'month' ? ' is-checked' : '') + '"><span class="busy-radio__inner"></span><span>统计周期：周</span></label>' +
+      '<label class="busy-radio' + (editParam === 'month' ? ' is-checked' : '') + '"><span class="busy-radio__inner"></span><span>统计周期：月</span></label></div>';
+    box.querySelectorAll('.busy-radio').forEach(function (lab, bi) {
+      lab.addEventListener('click', function () {
+        box.querySelectorAll('.busy-radio').forEach(function (x) { x.classList.remove('is-checked'); });
+        lab.classList.add('is-checked');
+        editParam = bi === 0 ? 'week' : 'month';
+      });
+    });
+  } else {
+    box.innerHTML = '<span class="u-muted">该报告类型无类型参数</span>';
+  }
+}
+function openEdit(i) {
+  editIdx = i;
+  var r = CONFIGS[i];
+  document.getElementById('dlgItemName').textContent = itemName(r);
+  document.getElementById('dlgItem').innerHTML = '<span class="busy-tag ' + TYPE_TAG[r.type].cls + ' is-plain">' + TYPE_TAG[r.type].text + '</span> <span class="u-muted">项目维度配置行随报告项目配置联动，报告类型与项目只读</span>';
+  document.getElementById('dlgWayCron').classList.toggle('is-checked', r.cron);
+  document.getElementById('dlgWayManual').classList.toggle('is-checked', r.manual);
+  document.getElementById('dlgWayError').hidden = true;
+  document.getElementById('dlgCronError').hidden = true;
+  document.getElementById('dlgError').hidden = true;
+  document.getElementById('dlgCronArea').hidden = !r.cron;
+  editCycle = r.cycle;
+  editParam = r.param;
+  var cycleLabels = document.querySelectorAll('#dlgCycle .busy-radio-button');
+  cycleLabels.forEach(function (lab, bi) {
+    lab.classList.toggle('is-checked', ['daily', 'weekly', 'monthly'][bi] === r.cycle);
+  });
+  document.getElementById('dlgWeekday').hidden = r.cycle !== 'weekly';
+  document.getElementById('dlgMonthday').hidden = r.cycle !== 'monthly';
+  if (r.weekday) document.querySelector('#dlgWeekday input').value = r.weekday;
+  if (r.monthday) document.querySelector('#dlgMonthday input').value = r.monthday;
+  document.getElementById('dlgTime').value = r.time;
+  renderParamArea(r.type);
+  document.getElementById('dlgEnabled').classList.toggle('is-checked', r.enabled);
+  openMask('editMask');
+}
+document.getElementById('dlgWayCron').addEventListener('click', function () {
+  this.classList.toggle('is-checked');
+  document.getElementById('dlgCronArea').hidden = !this.classList.contains('is-checked');
+  document.getElementById('dlgWayError').hidden = true;
+});
+document.getElementById('dlgWayManual').addEventListener('click', function () {
+  this.classList.toggle('is-checked');
+  document.getElementById('dlgWayError').hidden = true;
+});
+document.querySelectorAll('#dlgCycle .busy-radio-button').forEach(function (lab, bi) {
+  lab.addEventListener('click', function () {
+    document.querySelectorAll('#dlgCycle .busy-radio-button').forEach(function (x) { x.classList.remove('is-checked'); });
+    lab.classList.add('is-checked');
+    editCycle = ['daily', 'weekly', 'monthly'][bi];
+    document.getElementById('dlgWeekday').hidden = editCycle !== 'weekly';
+    document.getElementById('dlgMonthday').hidden = editCycle !== 'monthly';
+  });
+});
+document.getElementById('dlgEnabled').addEventListener('click', function () { this.classList.toggle('is-checked'); });
+document.getElementById('dlgSave').addEventListener('click', function () {
+  var r = CONFIGS[editIdx];
+  var cron = document.getElementById('dlgWayCron').classList.contains('is-checked');
+  var manual = document.getElementById('dlgWayManual').classList.contains('is-checked');
+  var err = document.getElementById('dlgError');
+  if (!cron && !manual) { document.getElementById('dlgWayError').hidden = false; err.textContent = '保存失败：请至少选择一种触发方式'; err.hidden = false; return; }
+  var timeVal = document.getElementById('dlgTime').value.trim();
+  if (cron && !/^\d{2}:\d{2}$/.test(timeVal)) { document.getElementById('dlgCronError').hidden = false; err.textContent = '保存失败：请补全定时规则'; err.hidden = false; return; }
+  var paramVal = editParam;
+  if (r.type === 'CONSISTENCY') {
+    var d = document.getElementById('dlgParamDays').value.trim();
+    if (!/^[1-9]\d*$/.test(d)) { document.getElementById('dlgParamError').hidden = false; err.textContent = '保存失败：类型参数格式不正确'; err.hidden = false; return; }
+    paramVal = d;
+  }
+  var btn = this;
+  btn.classList.add('is-disabled');
+  btn.innerHTML = '<span class="busy-button__loading"></span><span>保存中…</span>';
+  setTimeout(function () {
+    btn.classList.remove('is-disabled');
+    btn.innerHTML = '<span>保 存</span>';
+    r.cron = cron; r.manual = manual; r.cycle = editCycle; r.time = timeVal; r.param = paramVal;
+    r.weekday = editCycle === 'weekly' ? document.querySelector('#dlgWeekday input').value : '';
+    r.monthday = editCycle === 'monthly' ? document.querySelector('#dlgMonthday input').value : '';
+    r.rule = editCycle === 'daily' ? '每日 ' + timeVal : editCycle === 'weekly' ? '每' + r.weekday + ' ' + timeVal : '每月 ' + r.monthday + ' ' + timeVal;
+    r.enabled = document.getElementById('dlgEnabled').classList.contains('is-checked');
+    closeMask('editMask');
+    renderConfigs();
+    toast('success', '配置已保存');
+  }, 600);
+});
+
+/* ===== 触发配置：查询 / 重置 / Mock 重置 ===== */
+document.getElementById('btnQuery').addEventListener('click', function () {
+  var btn = this;
+  btn.classList.add('is-disabled');
+  btn.innerHTML = '<span class="busy-button__loading"></span><span>查询中…</span>';
+  setTimeout(function () { btn.classList.remove('is-disabled'); btn.innerHTML = '<span>查 询</span>'; renderConfigs(); }, 300);
+});
+document.getElementById('btnReset').addEventListener('click', function () {
+  ['type', 'project', 'status'].forEach(function (k) { document.querySelector('[data-select="' + k + '"] input').value = '全部'; });
+  fType = fProject = fStatus = '全部';
+  renderConfigs();
+});
+document.getElementById('btnMockReset').addEventListener('click', function () {
+  CONFIGS = JSON.parse(JSON.stringify(DEFAULT_CONFIGS));
+  RECORDS = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
+  STAFF = JSON.parse(JSON.stringify(DEFAULT_STAFF));
+  renderConfigs(); renderStaff();
+  toast('info', 'Mock 数据已重置');
+});
+
+/* ===== 人员范围：名单渲染 / 新增编辑 / 启停 ===== */
+function renderStaff() {
+  var tbody = document.getElementById('staffTbody');
+  var rows = STAFF.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) {
+    if (sStatus !== '全部' && (x.r.enabled ? '启用' : '停用') !== sStatus) return false;
+    if (sKeyword && (x.r.name + ' ' + x.r.alias.join(' ')).toLowerCase().indexOf(sKeyword.toLowerCase()) < 0) return false;
+    return true;
+  });
+  document.getElementById('staffEmpty').hidden = rows.length > 0;
+  document.getElementById('staffEnabled').textContent = STAFF.filter(function (x) { return x.enabled; }).length;
+  document.getElementById('staffTotal').textContent = STAFF.length;
+  tbody.innerHTML = rows.map(function (x) {
+    var r = x.r;
+    return '<tr' + (r.enabled ? '' : ' class="tpl-row-disabled"') + '>' +
+      '<td class="u-strong">' + r.name + '</td>' +
+      '<td>' + (r.alias.length ? r.alias.join('、') : '<span class="u-muted">—</span>') + '</td>' +
+      '<td class="u-center"><button class="busy-switch' + (r.enabled ? ' is-checked' : '') + '" data-staff-switch="' + x.i + '" type="button"><span class="busy-switch__core"></span></button></td>' +
+      '<td><div class="tpl-row-actions"><button class="busy-button is-link" data-staff-edit="' + x.i + '" type="button"><span>编辑</span></button></div></td>' +
+      '</tr>';
+  }).join('');
+  tbody.querySelectorAll('[data-staff-switch]').forEach(function (sw) {
+    sw.addEventListener('click', function () {
+      var r = STAFF[Number(sw.getAttribute('data-staff-switch'))];
+      if (r.enabled) {
+        confirmAction('停用确认', '停用后「' + r.name + '」不再计入报告与 Token 管理统计；历史数据保留。', function () {
+          sw.classList.add('is-disabled');
+          setTimeout(function () { r.enabled = false; renderStaff(); toast('success', '已停用「' + r.name + '」'); }, 400);
+        });
+      } else {
+        sw.classList.add('is-disabled');
+        setTimeout(function () { r.enabled = true; renderStaff(); toast('success', '已启用「' + r.name + '」'); }, 400);
+      }
+    });
+  });
+  tbody.querySelectorAll('[data-staff-edit]').forEach(function (b) {
+    b.addEventListener('click', function () { openStaffDlg(Number(b.getAttribute('data-staff-edit'))); });
+  });
+}
+var staffEditIdx = -1;
+function openStaffDlg(i) {
+  staffEditIdx = i;
+  var isNew = i < 0;
+  document.getElementById('staffDlgTitle').textContent = isNew ? '新增人员' : '编辑人员';
+  document.getElementById('staffName').value = isNew ? '' : STAFF[i].name;
+  document.getElementById('staffAlias').value = isNew ? '' : STAFF[i].alias.join('，');
+  document.getElementById('staffEnabledSw').classList.toggle('is-checked', isNew ? true : STAFF[i].enabled);
+  document.getElementById('staffNameError').hidden = true;
+  document.getElementById('staffAliasError').hidden = true;
+  document.getElementById('staffDlgError').hidden = true;
+  openMask('staffMask');
+}
+document.getElementById('btnStaffAdd').addEventListener('click', function () { openStaffDlg(-1); });
+document.getElementById('staffEnabledSw').addEventListener('click', function () { this.classList.toggle('is-checked'); });
+document.getElementById('staffName').addEventListener('blur', function () {
+  var v = this.value.trim(), err = document.getElementById('staffNameError');
+  if (!v) { err.textContent = '姓名必填'; err.hidden = false; return; }
+  var dup = STAFF.some(function (r, i) { return i !== staffEditIdx && r.name === v; });
+  if (dup) { err.textContent = '人员姓名必填且不可重复'; err.hidden = false; return; }
+  err.hidden = true;
+});
+document.getElementById('staffDlgSave').addEventListener('click', function () {
+  var name = document.getElementById('staffName').value.trim();
+  var aliasRaw = document.getElementById('staffAlias').value;
+  var err = document.getElementById('staffDlgError');
+  if (!name || name.length > 64) {
+    document.getElementById('staffNameError').textContent = '姓名必填';
+    document.getElementById('staffNameError').hidden = false;
+    err.textContent = '保存失败：姓名必填'; err.hidden = false; return;
+  }
+  if (STAFF.some(function (r, i) { return i !== staffEditIdx && r.name === name; })) {
+    err.textContent = '保存失败：人员姓名必填且不可重复'; err.hidden = false; return;
+  }
+  var alias = aliasRaw.split(/[,，\n]/).map(function (x) { return x.trim(); }).filter(Boolean);
+  var seen = {}, dedup = [];
+  for (var k = 0; k < alias.length; k++) { var a = alias[k]; if (a.length > 128 || dedup.length >= 50 || seen[a.toLowerCase()]) continue; seen[a.toLowerCase()] = 1; dedup.push(a); }
+  var btn = this;
+  btn.classList.add('is-disabled');
+  btn.innerHTML = '<span class="busy-button__loading"></span><span>保存中…</span>';
+  setTimeout(function () {
+    btn.classList.remove('is-disabled');
+    btn.innerHTML = '<span>保 存</span>';
+    var row = { name: name, alias: dedup, enabled: document.getElementById('staffEnabledSw').classList.contains('is-checked') };
+    if (staffEditIdx < 0) STAFF.push(row); else STAFF[staffEditIdx] = row;
+    closeMask('staffMask');
+    renderStaff();
+    toast('success', '人员已保存');
+  }, 600);
+});
+document.getElementById('btnStaffQuery').addEventListener('click', function () {
+  sKeyword = document.getElementById('staffKeyword').value.trim();
+  renderStaff();
+});
+document.getElementById('btnStaffReset').addEventListener('click', function () {
+  document.getElementById('staffKeyword').value = '';
+  document.querySelector('[data-select="staffStatus"] input').value = '全部';
+  sKeyword = ''; sStatus = '全部';
+  renderStaff();
+});
+
+renderConfigs();
+renderStaff();
+</script>
 </body>
 </html>
