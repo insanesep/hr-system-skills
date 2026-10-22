@@ -878,7 +878,10 @@ function openMergeTitle(nos) {
     var btn = this;
     P.btnLoading(btn, function () {
       var newNo = 'FS-20261021-002';
-      D.scheduled.push({ no: newNo, title: v, module: module, project: findCard(nos[0]).project, start: '2026-10-26', end: '2026-10-26', status: 'PENDING', submitter: D.user, merged: true, childCount: nos.length, nature: '业务功能', bizContact: '' });
+      /* 合并卡项目归属：全部子卡同属一个项目时归属该项目，否则未归属（business-rule §8.3） */
+      var pset = nos.map(function (n) { return findCard(n).project; }).filter(function (v, i, a) { return a.indexOf(v) === i; });
+      var mproject = pset.length === 1 ? pset[0] : 'none';
+      D.scheduled.push({ no: newNo, title: v, module: module, project: mproject, start: '2026-10-26', end: '2026-10-26', status: 'PENDING', submitter: D.user, merged: true, childCount: nos.length, nature: '业务功能', bizContact: '' });
       P.closeOverlay('ovMerge');
       S.mergeMode = false; S.selected = {}; renderBars();
       P.toast('已生成合并卡 ' + newNo, 'success');
