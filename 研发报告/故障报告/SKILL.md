@@ -41,9 +41,9 @@ metadata:
 
 | 页面 | 原型 | 功能 |
 |------|------|------|
-| 故障列表 | [assets/web/fault-list.html](assets/web/fault-list.html) | KPI 卡（处理中 / 待复盘 / 逾期未复盘 / 本月新增）+ 筛选（状态 / 定级 / 发生日期 / 负责人 / 关键词）+ 故障表格 + 登记入口；详见 [references/web-ui.md §故障列表](references/web-ui.md#故障列表) |
-| 故障登记 / 编辑弹窗 | 同故障列表原型 | 标题、现象、影响范围、定级、发生 / 发现时间、负责人、关联项目；详见 [references/web-ui.md §故障登记--编辑弹窗](references/web-ui.md#故障登记--编辑弹窗) |
-| 故障详情 | [assets/web/fault-detail.html](assets/web/fault-detail.html) | 信息头 + 处置过程记录 + 运维证据关联区（跳转溯源）+ 复盘区（时间线 / 根因 / 改进措施 checklist）+ 状态操作（标记已恢复 / 提交复盘 / 打回 / 闭环确认）；详见 [references/web-ui.md §故障详情](references/web-ui.md#故障详情) |
+| 故障列表 | [assets/web/fault-list.html](assets/web/fault-list.html) | KPI 卡（处理中 / 待复盘 / 逾期未复盘 / 本月新增）+ 筛选（状态 / 定级 / 发生日期 / 负责人 / 关键词）+ 故障表格（服务端分页，带数据更新时间戳）+ 登记入口；详见 [references/web-ui.md §故障列表](references/web-ui.md#故障列表) |
+| 故障登记 / 编辑弹窗 | 同故障列表原型 | 标题、现象、影响范围、定级、发生 / 发现时间、负责人、关联项目；详情页进入为简版模式（隐藏定级与发生 / 发现时间）；详见 [references/web-ui.md §故障登记--编辑弹窗](references/web-ui.md#故障登记--编辑弹窗) |
+| 故障详情 | [assets/web/fault-detail.html](assets/web/fault-detail.html) | 页头 + 生命周期步骤条 + 逾期警示 + 故障信息 + 处置过程记录 + 运维证据关联区（只读引用，不提供跳转）+ 复盘区（时间线 / 根因 / 处置回顾 / 改进措施 checklist）+ 状态操作（标记已恢复 / 提交复盘 / 打回 / 闭环确认）；详见 [references/web-ui.md §故障详情](references/web-ui.md#故障详情) |
 
 ## Tips
 

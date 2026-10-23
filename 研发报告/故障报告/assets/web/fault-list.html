@@ -7,14 +7,17 @@
 <!--
   故障报告 · 故障列表（页型 order-list · 静态原型，数据为 Mock，Mock 今天 = 2026-10-21）
   需求真源：references/web-ui.md「故障列表 / 故障登记--编辑弹窗」、references/business-rule.md、references/data.md
+  页面路由：/subapp/devhub/report/fault ｜ 权限：路由 devhubFaultReport；按钮 devhubFaultEdit（登记 / 编辑）
   骨架依据：busyming-skills-design/templates/web/order-list.html（.tpl-* 骨架类保留）
   组件清单（registry/prototype.json · platform=pc 逐条核对）：
     Button / BusyInput / Form(busy-form-item) / Radio(定级单选) / DatePicker(busy-range-editor) /
     DateTimePicker(发生·发现时间触发器) / SimpleUserSelector(负责人) / PageableSelect(状态下拉契约) /
     Table / Tag / Pagination / Empty(busy-empty) / Dialog(busy-dialog) / MessageBox(确认框) / Message(busy-message)
-  布局流：页头（主 CTA + 故障登记）→ 筛选卡（状态/定级/发生日期/负责人/关键词）→ KPI 区（处理中/待复盘/逾期未复盘/本月新增）
-    → 表格卡（工具栏 → busy-table[逾期未复盘行首红标/措施逾期列高亮/操作列] → busy-empty 空态 → 分页）
+  布局流：页头（主 CTA + 故障登记）→ 筛选卡（状态/定级/发生日期/负责人/关键词）→ KPI 区（处理中/待复盘/逾期未复盘/本月新增，单位「起」）
+    → 表格卡（标题栏「共 N 条 · 数据更新于 HH:mm」+ 刷新 → busy-table[操作列：查看/编辑(仅未闭环)] → busy-empty 空态 → 分页）
     → 故障登记/编辑弹窗（表单六态：初态默认 P3 / blur·change 校验 / 提交 loading / 成功关窗刷新 / 失败保留 / 脏离开确认）
+  分页：研发报告菜单中唯一服务端分页的列表，默认 20 条/页，页大小档位取分页组件默认集
+  色板说明：busy-tag 仅 4 语义色（默认蓝/success 绿/warning 橙/danger 红）；状态「复盘中 · 紫」以 danger 近似（语义色近似映射先例见功能排期原型）
   样式链偏差说明：为承载弹窗遮罩引入 docs-site/site.css 的 .ds-mask（组件 demos.json stage 真源同款遮罩类）；
     页面内无私有 CSS、无硬编码色值，反馈浮层 DOM 与 docs-site/pc/Dialog.html · MessageBox.html 演示一致。
 -->
@@ -112,7 +115,7 @@
   <!-- 表格卡 -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
-      <div class="tpl-toolbar__left">共 <b id="rowTotal">6</b> 条 · 数据更新于 2026-10-21 10:00（Mock）</div>
+      <div class="tpl-toolbar__left">共 <b id="rowTotal">6</b> 条 · 数据更新于 2026-10-21 10:00</div>
       <div class="tpl-toolbar__right">
         <button class="busy-button" type="button" id="btnRefresh"><span>刷新</span></button>
       </div>
@@ -127,7 +130,6 @@
           <th>负责人</th>
           <th>发生时间</th>
           <th>恢复时间</th>
-          <th>改进措施进度</th>
           <th>操作</th>
         </tr>
       </thead>
@@ -138,6 +140,7 @@
       <div>该条件下暂无故障</div>
     </div>
 
+    <!-- 分页：研发报告菜单中唯一服务端分页的列表，默认 20 条/页 -->
     <div class="tpl-table-foot">
       <div class="busy-pagination">
         <span>共 <span id="pageTotal">6</span> 条</span>
@@ -235,19 +238,20 @@
 </div>
 <script>
 /* ================= Mock 数据（字段口径：references/data.md） ================= */
-/* Mock 今天 = 2026-10-21（周三）；逾期未复盘 = P1/P2 恢复超 3 个工作日未复盘 */
+/* Mock 今天 = 2026-10-21（周三）；逾期未复盘 = P1 / P2 故障恢复超 3 个工作日未复盘 */
 var NOW = '2026-10-21 10:00';
 var LEVEL_TAG = { P1: 'busy-tag busy-tag--danger', P2: 'busy-tag busy-tag--warning', P3: 'busy-tag', P4: 'busy-tag busy-tag--info' };
 var LEVEL_TXT = { P1: 'P1 重大', P2: 'P2 严重', P3: 'P3 一般', P4: 'P4 轻微' };
-var STATUS_TAG = { processing: 'busy-tag busy-tag--danger', pending: 'busy-tag busy-tag--warning', reviewing: 'busy-tag', closed: 'busy-tag busy-tag--success' };
+/* 状态色口径：处理中 蓝 / 待复盘 橙 / 复盘中 紫 / 已闭环 绿；色板无紫，复盘中以 danger 红近似（见头注释） */
+var STATUS_TAG = { processing: 'busy-tag', pending: 'busy-tag busy-tag--warning', reviewing: 'busy-tag busy-tag--danger', closed: 'busy-tag busy-tag--success' };
 var STATUS_TXT = { processing: '处理中', pending: '待复盘', reviewing: '复盘中', closed: '已闭环' };
 var DATA = [
-  { id: 'F-20261020-002', title: '门店 POS 离线收银数据积压', level: 'P2', status: 'processing', owner: '李航', occur: '2026-10-20 08:12', found: '2026-10-20 08:40', recover: '', project: '要货导出优化', phenom: '华东战区约 120 家门店离线收银单回传积压，营业数据延迟超 2 小时。', scope: '华东战区 120 家门店', measures: null, overdueReview: false, overdueMeasure: false },
-  { id: 'F-20261015-001', title: '订单履约网关 504 大面积超时', level: 'P1', status: 'pending', owner: '王倩', occur: '2026-10-15 02:13', found: '2026-10-15 02:31', recover: '2026-10-15 06:40', project: '网关灰度发布', phenom: '履约网关 504 集中爆发，下单 / 支付回调链路不可用约 4.5 小时。', scope: '全部门店线上履约链路', measures: { done: 0, total: 3 }, overdueReview: true, overdueMeasure: false },
-  { id: 'F-20261017-005', title: '库存同步延迟超 30 分钟', level: 'P2', status: 'pending', owner: '张敏', occur: '2026-10-17 14:02', found: '2026-10-17 14:20', recover: '2026-10-19 10:10', project: '', phenom: '库存中心 → 门店可售库存同步延迟，部分门店超卖 37 单。', scope: '长沙 / 武汉战区', measures: { done: 0, total: 2 }, overdueReview: false, overdueMeasure: false },
-  { id: 'F-20261014-003', title: '会员积分流水重复入账', level: 'P3', status: 'reviewing', owner: '陈刚', occur: '2026-10-14 11:26', found: '2026-10-14 11:50', recover: '2026-10-14 12:05', project: '会员积分重构', phenom: '消费送积分消息重复消费，约 860 个会员积分翻倍入账。', scope: '全量会员中 860 人', measures: { done: 1, total: 3 }, overdueReview: false, overdueMeasure: true },
-  { id: 'F-20261012-007', title: '要货单导出任务偶发失败', level: 'P3', status: 'reviewing', owner: '刘洋', occur: '2026-10-12 16:47', found: '2026-10-12 17:05', recover: '2026-10-12 17:20', project: '要货导出优化', phenom: '大批量导出任务偶发超时失败，重试可成功。', scope: '总部运营导出场景', measures: { done: 2, total: 2 }, overdueReview: false, overdueMeasure: false },
-  { id: 'F-20261008-002', title: '商品主图 CDN 缓存未刷新', level: 'P4', status: 'closed', owner: '王倩', occur: '2026-10-08 09:31', found: '2026-10-08 09:45', recover: '2026-10-08 10:02', project: '商品图床迁移', phenom: '新品主图替换后 App 端仍展示旧图约 30 分钟。', scope: 'App 端商品详情页', measures: { done: 2, total: 2 }, overdueReview: false, overdueMeasure: false }
+  { id: 'F-20261020-002', title: '门店 POS 离线收银数据积压', level: 'P2', status: 'processing', owner: '李航', occur: '2026-10-20 08:12', found: '2026-10-20 08:40', recover: '', project: '要货导出优化', phenom: '华东战区约 120 家门店离线收银单回传积压，营业数据延迟超 2 小时。', scope: '华东战区 120 家门店', overdueReview: false },
+  { id: 'F-20261015-001', title: '订单履约网关 504 大面积超时', level: 'P1', status: 'pending', owner: '王倩', occur: '2026-10-15 02:13', found: '2026-10-15 02:31', recover: '2026-10-15 06:40', project: '网关灰度发布', phenom: '履约网关 504 集中爆发，下单 / 支付回调链路不可用约 4.5 小时。', scope: '全部门店线上履约链路', overdueReview: true },
+  { id: 'F-20261017-005', title: '库存同步延迟超 30 分钟', level: 'P2', status: 'pending', owner: '张敏', occur: '2026-10-17 14:02', found: '2026-10-17 14:20', recover: '2026-10-19 10:10', project: '', phenom: '库存中心 → 门店可售库存同步延迟，部分门店超卖 37 单。', scope: '长沙 / 武汉战区', overdueReview: false },
+  { id: 'F-20261014-003', title: '会员积分流水重复入账', level: 'P3', status: 'reviewing', owner: '陈刚', occur: '2026-10-14 11:26', found: '2026-10-14 11:50', recover: '2026-10-14 12:05', project: '会员积分重构', phenom: '消费送积分消息重复消费，约 860 个会员积分翻倍入账。', scope: '全量会员中 860 人', overdueReview: false },
+  { id: 'F-20261012-007', title: '要货单导出任务偶发失败', level: 'P3', status: 'reviewing', owner: '刘洋', occur: '2026-10-12 16:47', found: '2026-10-12 17:05', recover: '2026-10-12 17:20', project: '要货导出优化', phenom: '大批量导出任务偶发超时失败，重试可成功。', scope: '总部运营导出场景', overdueReview: false },
+  { id: 'F-20261008-002', title: '商品主图 CDN 缓存未刷新', level: 'P4', status: 'closed', owner: '王倩', occur: '2026-10-08 09:31', found: '2026-10-08 09:45', recover: '2026-10-08 10:02', project: '商品图床迁移', phenom: '新品主图替换后 App 端仍展示旧图约 30 分钟。', scope: 'App 端商品详情页', overdueReview: false }
 ];
 
 /* ================= 通用：toast（busy-message） ================= */
@@ -299,12 +303,7 @@ document.addEventListener('click', function () {
 /* ================= 列表渲染 ================= */
 var FILTERS = { status: '', level: '', owner: '', range: '', keyword: '' };
 function rowHtml(r) {
-  var titleCell = '<td><span class="chip-group">' +
-    (r.overdueReview ? '<span class="busy-tag busy-tag--danger busy-tag--small">逾期未复盘</span>' : '') +
-    '<a href="fault-detail.html">' + r.title + '</a></span><div class="u-sub u-mono">' + r.id + '</div></td>';
-  var progress = r.measures
-    ? '<span class="u-mono">' + r.measures.done + '/' + r.measures.total + '</span>' + (r.overdueMeasure ? ' <span class="busy-tag busy-tag--danger busy-tag--small">措施逾期</span>' : '')
-    : '<span class="u-muted">—</span>';
+  var titleCell = '<td><a href="fault-detail.html">' + r.title + '</a><div class="u-sub u-mono">' + r.id + '</div></td>';
   var actions = '<div class="tpl-row-actions"><a href="fault-detail.html">查看</a>' +
     (r.status !== 'closed' ? '<button class="busy-button is-link" type="button" data-act="edit" data-id="' + r.id + '" data-permission="devhubFaultEdit"><span>编辑</span></button>' : '') + '</div>';
   return '<tr>' + titleCell +
@@ -313,7 +312,6 @@ function rowHtml(r) {
     '<td>' + (r.owner || '<span class="u-muted">—</span>') + '</td>' +
     '<td class="u-mono">' + r.occur + '</td>' +
     '<td class="u-mono">' + (r.recover || '<span class="u-muted">—</span>') + '</td>' +
-    '<td>' + progress + '</td>' +
     '<td>' + actions + '</td></tr>';
 }
 function matchFilters(r) {
@@ -520,7 +518,7 @@ document.getElementById('dlgSubmit').addEventListener('click', function () {
       DATA.unshift({
         id: 'F-20261021-0' + (DATA.length + 1), title: v.title, level: v.level, status: 'processing',
         owner: v.owner, occur: v.occur, found: v.found, recover: '', project: v.project,
-        phenom: v.phenom, scope: v.scope, measures: null, overdueReview: false, overdueMeasure: false
+        phenom: v.phenom, scope: v.scope, overdueReview: false
       });
       close('faultDialog'); render();
       toast('登记成功');

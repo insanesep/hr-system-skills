@@ -7,19 +7,22 @@
 <!--
   故障报告 · 故障详情（页型 order-detail · 操作型，状态操作沉底操作栏 · 静态原型 Mock，Mock 今天 = 2026-10-21）
   需求真源：references/web-ui.md「故障详情」、references/business-rule.md §4 状态机 / §5 时限高亮 / §6 约束
+  页面路由：/subapp/devhub/report/fault/detail/:id ｜ 权限：路由 devhubFaultReport；
+    按钮 devhubFaultEdit（编辑/追加处置记录/添加与移除证据/标记已恢复）、devhubFaultReview（提交复盘/打回/添加改进措施）、devhubFaultClose（闭环确认）
   骨架依据：busyming-skills-design/templates/web/order-detail.html（.tpl-* 骨架类保留）
   组件清单（registry/prototype.json · platform=pc 逐条核对）：
     Button / Steps(busy-steps 生命周期) / Descriptions(busy-descriptions 信息头) / Tag(定级/状态/证据类型) /
-    Table(busy-table--border 证据与改进措施) / Checkbox(措施完成勾选) / Radio(证据类型/定级) /
+    Table(busy-table--border 证据与改进措施) / Checkbox(措施完成勾选) / Radio(证据类型) /
     DateTimePicker(时间触发器) / SimpleUserSelector(负责人) / BusyInput / Form(busy-form-item 校验) /
     Dialog(busy-dialog 编辑/打回/添加证据) / MessageBox(标记恢复/闭环/移除/脏离开确认) / Message(busy-message) / Empty(busy-empty)
-  布局流：页头（返回 + 标题 + 定级/状态 Tag + 编辑）→ 生命周期 busy-steps（登记→处理→复盘→闭环）
-    → 逾期未复盘警示（P1/P2 恢复超 3 个工作日）→ 信息头 → 处置过程记录（倒序时间线 + 追加）
-    → 运维证据关联区（跳转溯源 · 只读引用不回写）→ 复盘区（时间线四段 / 根因 / 改进措施 checklist / 打回记录）
+  布局流：页头（返回 + 标题 + 定级/状态 Tag + 编辑[非闭环可见，简版弹窗]）→ 生命周期 busy-steps（登记→处理与恢复→复盘→闭环）
+    → 逾期未复盘红 Alert（P1/P2 恢复超 3 个工作日）→ 信息头（右上留痕）→ 处置过程记录（[MM-DD HH:mm] 倒序时间线 + 追加）
+    → 运维证据关联区（只读引用不回写，不提供跳转溯源）→ 复盘区（时间线四段 / 根因 / 处置回顾 / 改进措施 checklist / 打回记录；复盘中表单整体只读）
     → 沉底操作栏（按状态机：标记已恢复 / 提交复盘 / 打回 / 闭环确认 / 闭环只读）
   演示：导航栏可切换 处理中 / 待复盘 / 复盘中 / 已闭环 四种状态，全页区块随状态联动。
+  色板说明：busy-tag 仅 4 语义色；状态「复盘中 · 紫」与证据类型「黑灯工厂工单 · 紫」以语义色近似映射（先例见功能排期原型）。
   样式链偏差说明：为承载弹窗遮罩引入 docs-site/site.css 的 .ds-mask（组件 demos.json stage 真源同款遮罩类）；
-    证据区「卡片列表」因骨架无卡片容器类，以 busy-table--border 列表呈现同等元素（类型 Tag / 摘要 / 跳转溯源 / 移除）。
+    证据区「卡片列表」因骨架无卡片容器类，以 busy-table--border 列表呈现同等元素（类型 Tag / 标识 / 备注 / 移除）。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
@@ -100,6 +103,10 @@
       <div class="tpl-toolbar__right"><span class="u-sub">按时间倒序</span></div>
     </div>
     <div class="tpl-timeline" id="timelineList"></div>
+    <div class="busy-empty" id="timelineEmpty" hidden>
+      <div class="busy-empty__image">☁</div>
+      <div>暂无处置记录</div>
+    </div>
     <div id="appendArea">
       <hr class="tpl-divider">
       <div class="busy-form-item" data-field="append">
@@ -115,18 +122,18 @@
     </div>
   </div>
 
-  <!-- 运维证据关联区（只读引用，状态变更不回写故障单） -->
+  <!-- 运维证据关联区（证据只读引用，不复制内容、不回写状态；不提供「跳转溯源」） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
       <span class="tpl-toolbar__title">运维证据关联</span>
       <div class="tpl-toolbar__right">
-        <span class="u-sub">证据只读引用，不复制内容、不回写状态；点击「跳转溯源」查看来源模块详情</span>
+        <span class="u-sub">证据只读引用，不复制内容、不回写状态</span>
         <button class="busy-button" type="button" id="btnAddEvi" data-permission="devhubFaultEdit"><span>添加关联</span></button>
       </div>
     </div>
     <table class="busy-table busy-table--border">
       <thead>
-        <tr><th>证据类型</th><th>证据标识</th><th>摘要</th><th>备注</th><th>操作</th></tr>
+        <tr><th>证据类型</th><th>证据标识</th><th>备注</th><th>操作</th></tr>
       </thead>
       <tbody id="eviTbody"></tbody>
     </table>
@@ -262,20 +269,11 @@
   </div>
 </section>
 
-<!-- 弹窗：标记已恢复（二次确认：确认恢复时间） -->
+<!-- 弹窗：标记已恢复（二次确认：以当前时间记录恢复时间） -->
 <div class="ds-mask" id="recoverDialog" hidden>
   <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="标记已恢复">
     <div class="busy-dialog__header"><span class="busy-dialog__title">标记已恢复</span><button class="busy-dialog__close" type="button" data-close="recoverDialog">✕</button></div>
-    <div class="busy-dialog__body">
-      <div class="busy-form-item" data-field="recTime">
-        <div class="busy-form-item__label is-required">恢复时间</div>
-        <div class="busy-form-item__content">
-          <div class="busy-select" data-dd="recTime"><div class="busy-input"><input readonly id="recTime" placeholder="确认恢复时间"></div><span class="busy-select__caret">📅</span></div>
-          <div class="busy-form-item__error" hidden>请确认恢复时间（不可晚于当前时间）</div>
-        </div>
-      </div>
-      <div class="u-sub">确认后状态流转为「待复盘」，恢复时间写入故障单。</div>
-    </div>
+    <div class="busy-dialog__body">将以当前时间记录恢复时间；确认后状态流转为「待复盘」，恢复时间写入故障单。</div>
     <div class="busy-dialog__footer">
       <button class="busy-button" type="button" data-close="recoverDialog"><span>取 消</span></button>
       <button class="busy-button busy-button--primary" type="button" id="recoverOk"><span>确 定</span></button>
@@ -307,7 +305,7 @@
 <div class="ds-mask" id="closeDialog" hidden>
   <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="闭环确认">
     <div class="busy-dialog__header"><span class="busy-dialog__title">闭环确认</span><button class="busy-dialog__close" type="button" data-close="closeDialog">✕</button></div>
-    <div class="busy-dialog__body">确认全部改进措施已完成并闭环？闭环后故障单转为只读，不可再编辑（审计留痕，不允许删除）。</div>
+    <div class="busy-dialog__body">全部改进措施已完成并闭环？闭环后故障单转为只读，不可再编辑（审计留痕，不允许删除）。</div>
     <div class="busy-dialog__footer">
       <button class="busy-button" type="button" data-close="closeDialog"><span>取 消</span></button>
       <button class="busy-button busy-button--primary" type="button" id="closeOk"><span>确认闭环</span></button>
@@ -357,7 +355,10 @@
 <div class="ds-mask" id="eviRemoveDialog" hidden>
   <div class="busy-dialog" role="dialog" aria-modal="true" aria-label="移除证据关联">
     <div class="busy-dialog__header"><span class="busy-dialog__title">移除证据关联</span><button class="busy-dialog__close" type="button" data-close="eviRemoveDialog">✕</button></div>
-    <div class="busy-dialog__body" id="eviRemoveText">确认移除该证据引用？仅移除关联，不影响来源模块数据。</div>
+    <div class="busy-dialog__body">
+      <div id="eviRemoveText">确认移除证据「FP-a3f9c8d1」的引用？</div>
+      <div class="u-sub">仅移除关联，不影响来源模块数据。</div>
+    </div>
     <div class="busy-dialog__footer">
       <button class="busy-button" type="button" data-close="eviRemoveDialog"><span>取 消</span></button>
       <button class="busy-button busy-button--danger" type="button" id="eviRemoveOk"><span>确认移除</span></button>
@@ -447,6 +448,7 @@ function attachDropdown(ddId, triggerSel, items, onPick) {
   var input = trigger.querySelector('input');
   trigger.addEventListener('click', function (e) {
     e.stopPropagation();
+    if (trigger.classList.contains('is-disabled')) return; /* 复盘中表单整体只读：时间触发器禁用 */
     document.querySelectorAll('.busy-select-dropdown').forEach(function (d) { if (d.id !== ddId) d.hidden = true; });
     dd.hidden = !dd.hidden;
   });
@@ -476,8 +478,11 @@ function clearErr(field) {
 }
 
 /* ================= Mock 数据（references/data.md 口径） ================= */
-var STATUS_TAG = { processing: 'busy-tag busy-tag--danger', pending: 'busy-tag busy-tag--warning', reviewing: 'busy-tag', closed: 'busy-tag busy-tag--success' };
+/* 状态色口径：处理中 蓝 / 待复盘 橙 / 复盘中 紫 / 已闭环 绿；色板无紫，复盘中以 danger 红近似（见头注释） */
+var STATUS_TAG = { processing: 'busy-tag', pending: 'busy-tag busy-tag--warning', reviewing: 'busy-tag busy-tag--danger', closed: 'busy-tag busy-tag--success' };
 var STATUS_TXT = { processing: '处理中', pending: '待复盘', reviewing: '复盘中', closed: '已闭环' };
+/* 证据类型色口径：错误日志指纹报表项 红 / 服务器监控快照 橙 / 黑灯工厂工单 紫（紫以主色蓝近似） */
+var EVI_TAG = { '错误日志指纹报表项': 'busy-tag busy-tag--danger', '服务器监控快照': 'busy-tag busy-tag--warning', '黑灯工厂工单': 'busy-tag' };
 var USERS = [{ v: '王倩', t: '王倩' }, { v: '李航', t: '李航' }, { v: '张敏', t: '张敏' }, { v: '陈刚', t: '陈刚' }, { v: '刘洋', t: '刘洋' }];
 var TIME_OPTS = [
   { v: '2026-10-15 02:13', t: '2026-10-15 02:13（发生）' },
@@ -494,15 +499,16 @@ var reviewDirty = false;     /* 复盘表单脏标记 */
 var recoverTime = '2026-10-15 06:40';
 var rejectText = '2026-10-16 16:20 研发负责人 陈国坚 打回：根因未定位到代码级，需补充连接池泄漏点分析';
 
+/* 处置时间线：条目按时间倒序，格式 [MM-DD HH:mm] 内容（不记录展示记录人） */
 var timeline = [
-  { time: '2026-10-15 06:40', user: '王倩', text: '网关回滚至稳定版本 v2.4.1，核心指标恢复基线，标记恢复。' },
-  { time: '2026-10-15 04:05', user: '李航', text: '定位到灰度节点连接池耗尽，临时扩容并对非核心链路限流。' },
-  { time: '2026-10-15 02:31', user: '王倩', text: '告警触发，确认 504 集中爆发，启动应急响应并登记故障。' }
+  { time: '2026-10-15 06:40', text: '网关回滚至稳定版本 v2.4.1，核心指标恢复基线，标记恢复。' },
+  { time: '2026-10-15 04:05', text: '定位到灰度节点连接池耗尽，临时扩容并对非核心链路限流。' },
+  { time: '2026-10-15 02:31', text: '告警触发，确认 504 集中爆发，启动应急响应并登记故障。' }
 ];
 var evidences = [
-  { type: '错误日志指纹报表项', key: 'FP-a3f9c8d1', summary: 'FeignException$ServiceUnavailable · 履约网关调用链 428 次 / 日', note: '故障时段指纹爆发与 504 峰值吻合', target: '错误日志管理' },
-  { type: '服务器监控快照', key: 'SNAP-20261015-0231', summary: 'gw-node-07 CPU 98% · 连接池活跃连接打满', note: '异常快照对应故障发生时刻', target: '服务器监控' },
-  { type: '黑灯工厂工单', key: 'BL-20261015-014', summary: '连接池自动扩容工单 · 已自动修复', note: '同一事件两边互相引用、不重复展开', target: '黑灯工厂管理' }
+  { type: '错误日志指纹报表项', key: 'FP-a3f9c8d1', note: '故障时段指纹爆发与 504 峰值吻合' },
+  { type: '服务器监控快照', key: 'SNAP-20261015-0231', note: '异常快照对应故障发生时刻' },
+  { type: '黑灯工厂工单', key: 'BL-20261015-014', note: '同一事件两边互相引用、不重复展开' }
 ];
 var measuresBase = [
   { content: '网关连接池增加连接泄漏检测与告警', owner: '李航', deadline: '2026-10-22', done: false, doneTime: '' },
@@ -512,32 +518,37 @@ var measuresBase = [
 var measures = [];
 
 /* ================= 渲染 ================= */
-var STEPS = {
-  processing: [
-    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
-    { t: '处理与恢复', d: '进行中 · 已记录 3 条处置', c: 'is-process' },
-    { t: '复盘', d: '待开始', c: '' },
-    { t: '闭环', d: '待开始', c: '' }
-  ],
-  pending: [
-    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
-    { t: '处理与恢复', d: '已恢复 10-15 06:40', c: 'is-finish' },
-    { t: '复盘', d: '待提交复盘 · 已逾期', c: 'is-process' },
-    { t: '闭环', d: '待开始', c: '' }
-  ],
-  reviewing: [
-    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
-    { t: '处理与恢复', d: '已恢复 10-15 06:40', c: 'is-finish' },
-    { t: '复盘', d: '已提交 10-16 14:00 · 待研发负责人确认', c: 'is-process' },
-    { t: '闭环', d: '待全部措施完成', c: '' }
-  ],
-  closed: [
-    { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
-    { t: '处理与恢复', d: '已恢复 10-15 06:40', c: 'is-finish' },
-    { t: '复盘', d: '已提交 10-16 14:00', c: 'is-finish' },
-    { t: '闭环', d: '陈国坚 · 10-20 10:00 闭环确认', c: 'is-finish' }
-  ]
-};
+/* 生命周期步骤条：登记（时间 · 登记人）→ 处理与恢复 → 复盘 → 闭环（描述文案随状态机与恢复时间联动） */
+function stepsFor(s) {
+  var rec = '已恢复 ' + recoverTime.slice(5, 16);
+  var map = {
+    processing: [
+      { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+      { t: '处理与恢复', d: '进行中 · 已记录 ' + timeline.length + ' 条处置', c: 'is-process' },
+      { t: '复盘', d: '待开始', c: '' },
+      { t: '闭环', d: '待开始', c: '' }
+    ],
+    pending: [
+      { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+      { t: '处理与恢复', d: rec, c: 'is-finish' },
+      { t: '复盘', d: '待提交复盘 · 已逾期', c: 'is-process' },
+      { t: '闭环', d: '待开始', c: '' }
+    ],
+    reviewing: [
+      { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+      { t: '处理与恢复', d: rec, c: 'is-finish' },
+      { t: '复盘', d: '已提交 10-16 14:00 · 待研发负责人确认', c: 'is-process' },
+      { t: '闭环', d: '待全部措施完成', c: '' }
+    ],
+    closed: [
+      { t: '登记', d: '10-15 09:00 · 王倩', c: 'is-finish' },
+      { t: '处理与恢复', d: rec, c: 'is-finish' },
+      { t: '复盘', d: '已提交 10-16 14:00', c: 'is-finish' },
+      { t: '闭环', d: '已闭环确认 · 陈国坚 10-20 10:00', c: 'is-finish' }
+    ]
+  };
+  return map[s];
+}
 var HINTS = {
   processing: '当前状态：处理中。故障恢复后点「标记已恢复」记录恢复时间，状态流转为待复盘。',
   pending: '当前状态：待复盘（P1 恢复超 3 个工作日未复盘，已逾期）。请完善复盘时间线 / 根因 / 改进措施后提交复盘。',
@@ -547,41 +558,35 @@ var HINTS = {
 function isOverdue(m) { return !m.done && m.deadline < '2026-10-21'; }
 
 function renderSteps() {
-  document.getElementById('stepsBar').innerHTML = STEPS[state].map(function (s, i) {
+  document.getElementById('stepsBar').innerHTML = stepsFor(state).map(function (s, i) {
     var icon = s.c === 'is-finish' ? '✓' : String(i + 1);
     return '<div class="busy-step ' + s.c + '"><span class="busy-step__icon">' + icon + '</span>' +
       '<div><div class="busy-step__title">' + s.t + '</div><div class="busy-step__desc u-mono">' + s.d + '</div></div>' +
       (i < 3 ? '<span class="busy-step__line"></span>' : '') + '</div>';
   }).join('');
 }
+/* 处置时间线：倒序，条目格式 [MM-DD HH:mm] 内容；空态「暂无处置记录」 */
 function renderTimeline() {
+  document.getElementById('timelineEmpty').hidden = timeline.length > 0;
   document.getElementById('timelineList').innerHTML = timeline.map(function (r, i) {
     return '<div class="tpl-timeline__item"><span class="tpl-timeline__dot ' + (i === 0 ? 'is-primary' : '') + '"></span>' +
-      '<div class="tpl-timeline__content"><div class="tpl-timeline__title">' + r.text + '</div>' +
-      '<div class="tpl-timeline__meta u-mono">' + r.user + ' · ' + r.time + '</div></div></div>';
+      '<div class="tpl-timeline__content"><div class="tpl-timeline__title"><span class="u-mono">[' + r.time.slice(5, 16) + ']</span> ' + r.text + '</div></div></div>';
   }).join('');
 }
 function renderEvidences() {
   var editable = state !== 'closed';
   document.getElementById('eviTbody').innerHTML = evidences.map(function (e, i) {
-    return '<tr><td><span class="busy-tag busy-tag--info is-plain">' + e.type + '</span></td>' +
-      '<td class="u-mono">' + e.key + '</td><td>' + e.summary + '</td><td>' + (e.note || '<span class="u-muted">—</span>') + '</td>' +
+    return '<tr><td><span class="' + (EVI_TAG[e.type] || 'busy-tag') + '">' + e.type + '</span></td>' +
+      '<td class="u-mono">' + e.key + '</td><td>' + (e.note || '<span class="u-muted">—</span>') + '</td>' +
       '<td><div class="tpl-row-actions">' +
-      '<button class="busy-button is-link" type="button" data-trace="' + i + '"><span>跳转溯源</span></button>' +
-      (editable ? '<button class="busy-button busy-button--danger is-link" type="button" data-remove="' + i + '" data-permission="devhubFaultEdit"><span>移除</span></button>' : '') +
+      (editable ? '<button class="busy-button busy-button--danger is-link" type="button" data-remove="' + i + '" data-permission="devhubFaultEdit"><span>移除</span></button>' : '<span class="u-muted">—</span>') +
       '</div></td></tr>';
   }).join('');
   document.getElementById('btnAddEvi').hidden = !editable;
-  document.querySelectorAll('[data-trace]').forEach(function (b) {
-    b.addEventListener('click', function () {
-      var e = evidences[Number(b.getAttribute('data-trace'))];
-      toast('原型：跳转「' + e.target + '」查看 ' + e.key + '（跨模块溯源，证据只读引用）', 'info');
-    });
-  });
   document.querySelectorAll('[data-remove]').forEach(function (b) {
     b.addEventListener('click', function () {
       removeIdx = Number(b.getAttribute('data-remove'));
-      document.getElementById('eviRemoveText').textContent = '确认移除证据「' + evidences[removeIdx].key + '」的引用？仅移除关联，不影响来源模块数据。';
+      document.getElementById('eviRemoveText').textContent = '确认移除证据「' + evidences[removeIdx].key + '」的引用？';
       open('eviRemoveDialog');
     });
   });
@@ -621,6 +626,8 @@ function toggleMeasure(i) {
 }
 
 /* 状态渲染（导航栏四态演示 + 状态操作后的原地刷新） */
+var REVIEW_INPUTS = ['rvOccurD', 'rvFoundD', 'rvHandleD', 'rvRecoverD', 'rvRoot', 'rvReview'];
+var REVIEW_TIME_DDS = ['rvOccurT', 'rvFoundT', 'rvHandleT', 'rvRecoverT'];
 function renderState() {
   document.getElementById('dStateTag').className = STATUS_TAG[state];
   document.getElementById('dStateTag').textContent = STATUS_TXT[state];
@@ -637,6 +644,14 @@ function renderState() {
   document.getElementById('reviewEmpty').hidden = state !== 'processing';
   document.getElementById('reviewForm').hidden = !(state === 'pending' || state === 'reviewing');
   document.getElementById('reviewReadonly').hidden = state !== 'closed';
+  /* 复盘中表单整体只读：文本域 readOnly + 时间触发器禁用；改进措施添加行仅待复盘可见 */
+  var ro = state === 'reviewing';
+  REVIEW_INPUTS.forEach(function (id) { document.getElementById(id).readOnly = ro; });
+  REVIEW_TIME_DDS.forEach(function (k) {
+    var t = document.querySelector('[data-dd="' + k + '"]');
+    if (t) t.classList.toggle('is-disabled', ro);
+  });
+  document.getElementById('measureAddRow').hidden = state !== 'pending';
   /* 打回记录（曾被打回即展示） */
   var showReject = wasRejected && state !== 'processing';
   var rn = document.getElementById('rejectNote');
@@ -674,7 +689,6 @@ attachDropdown('rvHandleT', '[data-dd="rvHandleT"]', TIME_OPTS, function () { cl
 attachDropdown('rvRecoverT', '[data-dd="rvRecoverT"]', TIME_OPTS, function () { clearErr('segRecover'); reviewDirty = true; });
 attachDropdown('mOwner', '[data-dd="mOwner"]', USERS);
 attachDropdown('mDeadline', '[data-dd="mDeadline"]', DATE_OPTS);
-attachDropdown('recTime', '[data-dd="recTime"]', TIME_OPTS, function () { clearErr('recTime'); });
 attachDropdown('edOwner', '[data-dd="edOwner"]', USERS);
 attachDropdown('edProject', '[data-dd="edProject"]', [
   { v: '网关灰度发布', t: '网关灰度发布' }, { v: '会员积分重构', t: '会员积分重构' },
@@ -716,7 +730,7 @@ document.getElementById('btnAppend').addEventListener('click', function () {
   var btn = this; btnLoading(btn, true);
   setTimeout(function () {
     btnLoading(btn, false);
-    timeline.unshift({ time: NOW.slice(0, 16), user: '王倩', text: v });
+    timeline.unshift({ time: NOW.slice(0, 16), text: v });
     document.getElementById('appendInput').value = '';
     renderTimeline();
     toast('已追加处置记录');
@@ -746,7 +760,7 @@ document.getElementById('eviOk').addEventListener('click', function () {
   var btn = this; btnLoading(btn, true);
   setTimeout(function () {
     btnLoading(btn, false);
-    evidences.push({ type: typeEl.textContent.trim(), key: key, summary: key + '（Mock 摘要）', note: document.getElementById('eviNote').value.trim(), target: '来源模块' });
+    evidences.push({ type: typeEl.textContent.trim(), key: key, note: document.getElementById('eviNote').value.trim() });
     close('eviDialog'); renderEvidences();
     toast('已关联证据');
   }, 600);
@@ -783,19 +797,15 @@ document.getElementById('btnAddMeasure').addEventListener('click', function () {
 });
 
 /* ================= 状态操作（沉底操作栏，五阶段反馈链） ================= */
-/* 标记已恢复：处理中 → 待复盘（二次确认：确认恢复时间） */
+/* 标记已恢复：处理中 → 待复盘（二次确认：以当前时间记录恢复时间） */
 document.getElementById('btnRecover').addEventListener('click', function () {
-  document.getElementById('recTime').value = '2026-10-15 06:40';
-  clearErr('recTime');
   open('recoverDialog');
 });
 document.getElementById('recoverOk').addEventListener('click', function () {
-  var t = document.getElementById('recTime').value.trim();
-  if (!t || t > NOW) { setErr('recTime'); toast('请确认恢复时间（不可晚于当前时间）', 'error'); return; }
   var btn = this; btnLoading(btn, true);
   setTimeout(function () {
     btnLoading(btn, false);
-    recoverTime = t; state = 'pending';
+    recoverTime = NOW; state = 'pending';
     close('recoverDialog'); renderState();
     toast('已标记恢复，进入待复盘');
   }, 700);
