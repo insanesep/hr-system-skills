@@ -239,9 +239,9 @@ var BATCH = /[?&]mode=batch(&|$)/.test(QS);
 var MOCK_FAIL = /[?&]fail=1(&|$)/.test(QS);
 
 var BIZ_DOMAINS = ['商品', '采购', '营运', '门店', '客服', '系统', '库存', '要货', '产研', '公共'];
-var ENV_ORDER = ['生产', '预发', '测试'];
+var ENV_ORDER = ['生产', '预发', '测试', '开发'];
 var ENV_LIMITS = ['全部环境', '仅生产', '仅非生产'];
-var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info' };
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info', '开发': 'busy-tag--info' };
 
 /* 业务系统：仅已启用的服务与工具（type: query / write） */
 var BIZ = [

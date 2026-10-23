@@ -107,6 +107,7 @@
               <div class="busy-select-dropdown__item" data-value="生产">生产</div>
               <div class="busy-select-dropdown__item" data-value="预发">预发</div>
               <div class="busy-select-dropdown__item" data-value="测试">测试</div>
+              <div class="busy-select-dropdown__item" data-value="开发">开发</div>
             </div>
           </div>
         </div>
@@ -223,6 +224,7 @@
               <label class="busy-radio" data-value="生产"><span class="busy-radio__inner"></span>生产</label>
               <label class="busy-radio" data-value="预发"><span class="busy-radio__inner"></span>预发</label>
               <label class="busy-radio" data-value="测试"><span class="busy-radio__inner"></span>测试</label>
+              <label class="busy-radio" data-value="开发"><span class="busy-radio__inner"></span>开发</label>
             </div>
             <div class="busy-form-item__error" data-err="env" hidden></div>
             <div class="u-sub u-warning page-field-hint" id="dEnvHint" hidden>建议登记只读副本地址</div>
@@ -442,7 +444,7 @@ function setSelectValue(root, value) {
 }
 
 /* ============ 列表：渲染 / 查询 / 重置 ============ */
-var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info' };
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info', '开发': 'busy-tag--info' };
 var CONN_TAG = { '正常': 'busy-tag--success', '异常': 'busy-tag--danger' };
 function detailHref(d) { return 'datasource-detail.html?ds=' + encodeURIComponent(d.name); }
 function rowHtml(d) {

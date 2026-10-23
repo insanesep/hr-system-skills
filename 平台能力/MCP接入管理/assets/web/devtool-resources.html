@@ -127,6 +127,7 @@
               <div class="busy-select-dropdown__item" data-value="生产">生产</div>
               <div class="busy-select-dropdown__item" data-value="预发">预发</div>
               <div class="busy-select-dropdown__item" data-value="测试">测试</div>
+              <div class="busy-select-dropdown__item" data-value="开发">开发</div>
             </div>
           </div>
         </div>
@@ -361,6 +362,7 @@
               <div class="busy-select-dropdown__item" data-value="生产">生产</div>
               <div class="busy-select-dropdown__item" data-value="预发">预发</div>
               <div class="busy-select-dropdown__item" data-value="测试">测试</div>
+              <div class="busy-select-dropdown__item" data-value="开发">开发</div>
             </div>
           </div>
           <div class="busy-form-item__error" data-err="ruleTarget" hidden></div>
@@ -396,7 +398,7 @@
 <script>
 /* ============ Mock 数据（刷新即重置） ============ */
 var DOMAINS = ['商品', '采购', '营运', '门店', '客服', '系统', '库存', '要货', '产研', '公共'];
-var ENVS = ['生产', '预发', '测试'];
+var ENVS = ['生产', '预发', '测试', '开发'];
 
 /* SLS Project：归属单位，资源组与标签挂在 Project 上 */
 var PROJECTS = {
@@ -439,7 +441,9 @@ var RULES = [
   { id: 'r7', type: '标签', scope: '全部', match: 'domain=product', domain: '商品', env: '', enabled: true },
   { id: 'r8', type: '标签', scope: '全部', match: 'domain=requirement', domain: '要货', env: '', enabled: true },
   { id: 'r9', type: '标签', scope: '全部', match: 'env=test', domain: '', env: '测试', enabled: true },
-  { id: 'r10', type: '标签', scope: 'SLS', match: 'owner=store', domain: '门店', env: '', enabled: true }
+  { id: 'r10', type: '标签', scope: 'SLS', match: 'owner=store', domain: '门店', env: '', enabled: true },
+  { id: 'r11', type: '名称后缀', scope: '全部', match: '-dev', domain: '', env: '开发', enabled: true },
+  { id: 'r12', type: '标签', scope: '全部', match: 'env=dev', domain: '', env: '开发', enabled: true }
 ];
 
 /* 首次「同步资源」从阿里云发现的变化（Mock） */
@@ -642,7 +646,7 @@ var appliedFilter = clone(EMPTY_FILTER);
 $('fDomainList').innerHTML = optionsHtml([{ value: '', label: '全部' }].concat(DOMAINS.map(function (d) { return { value: d, label: d }; }), [{ value: '未归属', label: '未归属' }]));
 ['fDomain', 'fEnv', 'fSource', 'fOpen', 'fRegion'].forEach(function (id) { bindSelect($(id)); setSelectValue($(id), ''); });
 
-var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info' };
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info', '开发': 'busy-tag--info' };
 var SOURCE_TAG = {
   '手工': 'busy-tag',
   '标签规则': 'busy-tag busy-tag--info',

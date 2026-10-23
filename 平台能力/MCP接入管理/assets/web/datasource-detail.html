@@ -210,6 +210,7 @@
               <label class="busy-radio" data-value="生产"><span class="busy-radio__inner"></span>生产</label>
               <label class="busy-radio" data-value="预发"><span class="busy-radio__inner"></span>预发</label>
               <label class="busy-radio" data-value="测试"><span class="busy-radio__inner"></span>测试</label>
+              <label class="busy-radio" data-value="开发"><span class="busy-radio__inner"></span>开发</label>
             </div>
             <div class="busy-form-item__error" data-err="env" hidden></div>
             <div class="u-sub u-warning page-field-hint" id="dEnvHint" hidden>建议登记只读副本地址</div>
@@ -532,7 +533,7 @@ function setSelectValue(root, value) {
 }
 
 /* ============ 页头 / 基本信息 ============ */
-var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info' };
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info', '开发': 'busy-tag--info' };
 var CONN_TAG = { '正常': 'busy-tag--success', '异常': 'busy-tag--danger' };
 function renderHead() {
   $('dsTitle').textContent = DS.name;
