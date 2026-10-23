@@ -182,32 +182,32 @@
       <button class="busy-button demo-retry" type="button"><span>重 试</span></button>
     </div>
   </div>
-  <!-- 模型用量透视表：成员 × 模型等级（规则 business-rule.md §4，列按合计降序、「未标注」最后，数值两位小数） -->
+  <!-- 模型用量透视表：成员 × 模型等级（规则 business-rule.md §4，列按合计降序取前 5、其余含「未标注」归入「其他模型」列最后，数值两位小数，合计行带列占比） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
       <span class="tpl-toolbar__title">模型用量透视表</span>
-      <div class="tpl-toolbar__right"><span class="u-sub">成员 × 模型等级 · 单位 Credits（保留两位小数） · 复用顶部公共筛选</span></div>
+      <div class="tpl-toolbar__right"><span class="u-sub">成员 × 模型等级（前 5 + 其他模型） · 单位 Credits（保留两位小数，合计行含列占比） · 复用顶部公共筛选</span></div>
     </div>
     <table class="busy-table" data-view="data">
       <thead>
-        <tr><th>成员</th><th class="u-right">旗舰 MAX</th><th class="u-right">高级</th><th class="u-right">基础</th><th class="u-right">未标注</th><th class="u-right">合计</th></tr>
+        <tr><th>成员</th><th class="u-right">旗舰 MAX</th><th class="u-right">高级</th><th class="u-right">基础</th><th class="u-right">轻量</th><th class="u-right">极速</th><th class="u-right">其他模型</th><th class="u-right">合计</th></tr>
       </thead>
       <tbody>
-        <tr><td>张悦</td><td class="u-right u-mono">402.10</td><td class="u-right u-mono">158.40</td><td class="u-right u-mono">61.50</td><td class="u-right u-mono">11.00</td><td class="u-right u-mono u-strong">633.00</td></tr>
-        <tr><td>李思远</td><td class="u-right u-mono">358.20</td><td class="u-right u-mono">142.30</td><td class="u-right u-mono">68.00</td><td class="u-right u-mono">7.50</td><td class="u-right u-mono u-strong">576.00</td></tr>
-        <tr><td>王梓豪</td><td class="u-right u-mono">265.80</td><td class="u-right u-mono">132.50</td><td class="u-right u-mono">72.20</td><td class="u-right u-mono">9.50</td><td class="u-right u-mono u-strong">480.00</td></tr>
-        <tr><td>陈雨桐</td><td class="u-right u-mono">210.30</td><td class="u-right u-mono">160.20</td><td class="u-right u-mono">78.50</td><td class="u-right u-mono">8.00</td><td class="u-right u-mono u-strong">457.00</td></tr>
-        <tr><td>刘一帆</td><td class="u-right u-mono">150.10</td><td class="u-right u-mono">142.60</td><td class="u-right u-mono">85.30</td><td class="u-right u-mono">7.00</td><td class="u-right u-mono u-strong">385.00</td></tr>
-        <tr><td>赵启铭</td><td class="u-right u-mono">108.20</td><td class="u-right u-mono">128.50</td><td class="u-right u-mono">92.30</td><td class="u-right u-mono">8.00</td><td class="u-right u-mono u-strong">337.00</td></tr>
-        <tr><td>周明轩</td><td class="u-right u-mono">68.40</td><td class="u-right u-mono">112.30</td><td class="u-right u-mono">98.20</td><td class="u-right u-mono">7.10</td><td class="u-right u-mono u-strong">286.00</td></tr>
-        <tr><td>孙可欣</td><td class="u-right u-mono">22.50</td><td class="u-right u-mono">68.40</td><td class="u-right u-mono">102.10</td><td class="u-right u-mono">8.00</td><td class="u-right u-mono u-strong">201.00</td></tr>
-        <tr><td>吴雅静</td><td class="u-right u-mono">8.20</td><td class="u-right u-mono">30.50</td><td class="u-right u-mono">48.30</td><td class="u-right u-mono">6.00</td><td class="u-right u-mono u-strong">93.00</td></tr>
-        <tr><td>郑天佑</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">12.40</td><td class="u-right u-mono">18.60</td><td class="u-right u-mono">4.00</td><td class="u-right u-mono u-strong">35.00</td></tr>
-        <tr><td>何俊熙</td><td class="u-right u-mono">2.50</td><td class="u-right u-mono">4.80</td><td class="u-right u-mono">9.70</td><td class="u-right u-mono">1.00</td><td class="u-right u-mono u-strong">18.00</td></tr>
-        <tr><td>冯书瑶</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono u-strong">0.00</td></tr>
+        <tr><td>张悦</td><td class="u-right u-mono">320.10</td><td class="u-right u-mono">150.40</td><td class="u-right u-mono">61.50</td><td class="u-right u-mono">45.00</td><td class="u-right u-mono">36.00</td><td class="u-right u-mono">20.00</td><td class="u-right u-mono u-strong">633.00</td></tr>
+        <tr><td>李思远</td><td class="u-right u-mono">300.20</td><td class="u-right u-mono">142.30</td><td class="u-right u-mono">58.00</td><td class="u-right u-mono">35.50</td><td class="u-right u-mono">25.00</td><td class="u-right u-mono">15.00</td><td class="u-right u-mono u-strong">576.00</td></tr>
+        <tr><td>王梓豪</td><td class="u-right u-mono">230.80</td><td class="u-right u-mono">122.50</td><td class="u-right u-mono">62.20</td><td class="u-right u-mono">30.00</td><td class="u-right u-mono">22.00</td><td class="u-right u-mono">12.50</td><td class="u-right u-mono u-strong">480.00</td></tr>
+        <tr><td>陈雨桐</td><td class="u-right u-mono">200.30</td><td class="u-right u-mono">150.20</td><td class="u-right u-mono">48.50</td><td class="u-right u-mono">28.00</td><td class="u-right u-mono">18.00</td><td class="u-right u-mono">12.00</td><td class="u-right u-mono u-strong">457.00</td></tr>
+        <tr><td>刘一帆</td><td class="u-right u-mono">140.10</td><td class="u-right u-mono">132.60</td><td class="u-right u-mono">55.30</td><td class="u-right u-mono">27.00</td><td class="u-right u-mono">18.00</td><td class="u-right u-mono">12.00</td><td class="u-right u-mono u-strong">385.00</td></tr>
+        <tr><td>赵启铭</td><td class="u-right u-mono">98.20</td><td class="u-right u-mono">118.50</td><td class="u-right u-mono">62.30</td><td class="u-right u-mono">28.00</td><td class="u-right u-mono">18.00</td><td class="u-right u-mono">12.00</td><td class="u-right u-mono u-strong">337.00</td></tr>
+        <tr><td>周明轩</td><td class="u-right u-mono">58.40</td><td class="u-right u-mono">102.30</td><td class="u-right u-mono">68.20</td><td class="u-right u-mono">27.00</td><td class="u-right u-mono">18.00</td><td class="u-right u-mono">12.10</td><td class="u-right u-mono u-strong">286.00</td></tr>
+        <tr><td>孙可欣</td><td class="u-right u-mono">12.50</td><td class="u-right u-mono">58.40</td><td class="u-right u-mono">82.10</td><td class="u-right u-mono">23.00</td><td class="u-right u-mono">15.00</td><td class="u-right u-mono">10.00</td><td class="u-right u-mono u-strong">201.00</td></tr>
+        <tr><td>吴雅静</td><td class="u-right u-mono">4.20</td><td class="u-right u-mono">24.50</td><td class="u-right u-mono">38.30</td><td class="u-right u-mono">12.00</td><td class="u-right u-mono">8.00</td><td class="u-right u-mono">6.00</td><td class="u-right u-mono u-strong">93.00</td></tr>
+        <tr><td>郑天佑</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">8.40</td><td class="u-right u-mono">14.60</td><td class="u-right u-mono">5.00</td><td class="u-right u-mono">4.00</td><td class="u-right u-mono">3.00</td><td class="u-right u-mono u-strong">35.00</td></tr>
+        <tr><td>何俊熙</td><td class="u-right u-mono">1.50</td><td class="u-right u-mono">3.80</td><td class="u-right u-mono">6.70</td><td class="u-right u-mono">3.00</td><td class="u-right u-mono">2.00</td><td class="u-right u-mono">1.00</td><td class="u-right u-mono u-strong">18.00</td></tr>
+        <tr><td>冯书瑶</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono u-strong">0.00</td></tr>
       </tbody>
       <tfoot>
-        <tr><td><span class="u-strong">合计</span></td><td class="u-right u-mono u-strong">1,596.30</td><td class="u-right u-mono u-strong">1,092.90</td><td class="u-right u-mono u-strong">734.70</td><td class="u-right u-mono u-strong">77.10</td><td class="u-right u-mono u-strong">3,501.00</td></tr>
+        <tr><td><span class="u-strong">合计</span></td><td class="u-right u-mono u-strong">1,366.30(39%)</td><td class="u-right u-mono u-strong">1,013.90(29%)</td><td class="u-right u-mono u-strong">557.70(16%)</td><td class="u-right u-mono u-strong">263.50(8%)</td><td class="u-right u-mono u-strong">184.00(5%)</td><td class="u-right u-mono u-strong">115.60(3%)</td><td class="u-right u-mono u-strong">3,501.00(100%)</td></tr>
       </tfoot>
     </table>
     <div class="busy-empty" data-view="empty" hidden>

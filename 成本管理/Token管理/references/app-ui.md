@@ -19,7 +19,7 @@
   - KPI 统计卡片（5 卡，与 Web 一致）：总用量（Credits + 周环比）、总请求数（次 + 周环比）、次均消耗（Credits/次 + 周环比）、人均用量（Credits + 周环比）、活跃成员（人 + 周环比）；2 列网格，第 5 卡跨满一行
   - 日 Credits 消耗堆叠柱形图卡片：标题「日 Credits 消耗趋势」+ 各模型分类图例（换行排列）；每日一根堆叠柱按模型分段堆叠（分类归并与配色规则见 business-rule.md §6），Y 轴 0-1000 刻度，X 轴每日日期
   - Credits 用量透视表卡片：标题「Credits 用量透视表」+ hint「成员 × 日期 · Credits」；横向滚动表格、首列（成员）冻结，列 = 成员 | 日期列（按天升序，排序规则见 business-rule.md §3）| 合计；每成员一行 + 合计行
-  - 模型用量透视表卡片：标题「模型用量透视表」+ hint「成员 × 模型等级 · Credits」；横向滚动表格，首列成员冻结，列 = 成员 | 模型等级列（排序与空值规则见 business-rule.md §4）| 合计；每成员一行 + 合计行；数值两位小数
+  - 模型用量透视表卡片：标题「模型用量透视表」+ hint「成员 × 模型等级 · Credits」；横向滚动表格，首列成员冻结，列 = 成员 | 模型等级列（前 5 个 + 其他模型，归并与排序规则见 business-rule.md §4）| 合计；每成员一行 + 合计行（合计行带列占比，格式见 business-rule.md §4）；数值两位小数
 - **布局引用**：参见原型 `assets/app/qoder-usage-analysis.html`（页面类型 `dashboard`：整页范例 busyming-skills-design/mobile/templates/dashboard.html，DOM 依据 skeletons/app/dashboard-mobile.tsx.tpl；区块顺序：导航栏 → 筛选 → 统计卡片 → 图表与透视表卡片）
 
 #### 导航关系
