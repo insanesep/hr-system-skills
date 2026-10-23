@@ -6,11 +6,12 @@
 <title>报告详情 · 人员产出报告 · 研发报告</title>
 <!--
   人员产出报告 · 报告详情（Web 管理端 · 阅读型 · 静态原型，数据为 Mock）
-  页面对象定义：references/web-ui.md「报告详情」；渲染/版本口径：../报告配置/references/business-rule.md §5.5 / §6
-  布局流：页头（返回 + 标题 + 类型 Tag + 获取原件/返回列表）→ 元信息头（busy-descriptions + 版本下拉切换）
-    → 双栏（左：Markdown 渲染正文 panel；右：sticky 大纲锚点 panel；<1200px 折叠为顶部「大纲」按钮弹 Drawer）。
-  渲染口径：Web 端为前端实时渲染（marked(GFM) + DOMPurify 白名单 + GitHub 风格内联样式；
-  原型正文为渲染产物静态示意，锚点 h-{seq} 与图片占位「[图片已移除]」与服务端口径一致）。
+  路由：/subapp/devhub/report/member-output/detail/:id；权限：路由 devhubMemberOutputReport（仅管理层与研发负责人）
+  页面对象定义：references/web-ui.md「报告详情」
+  布局流：页头（返回 + 标题 + 类型 Tag + 获取原件/返回列表）→ 历史版本警示（黄 Alert，仅查看历史版本时展示）
+    → 元信息头（busy-descriptions + 版本下拉切换）→ 双栏（左：正文 panel；右：sticky 大纲锚点 panel；<1200px 折叠为顶部「大纲」按钮弹 Drawer）。
+  渲染口径：Web 端展示服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染）；
+  原型正文为服务端产物静态示意，锚点 h-{seq} 与图片占位「[图片已移除]」与服务端口径一致；内容为空时展示「报告内容为空」。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
@@ -81,7 +82,7 @@
           <div class="busy-select tpl-ver-select" id="verSelect">
             <div class="busy-input"><input readonly id="verLabel" value="v3 · 共 3 版（当前）"></div><span class="busy-select__caret">▾</span>
           </div>
-          <span class="u-sub">重复入库版本递增，历史版本只读可查</span>
+          <span class="u-sub">重复入库版本递增，历史版本只读可查，URL 带 ?v=N 可分享</span>
         </td>
         <th>文件大小</th><td class="u-mono">128 KB</td>
       </tr>
@@ -106,7 +107,7 @@
         <!-- 版本切换 loading 遮罩（AcSpin 语义；PC registry 暂无 Spin 组件，遮罩 + busy-button__loading 旋转体承接） -->
         <div id="mdLoading" hidden class="tpl-md-loading">
           <span class="busy-button__loading u-primary"></span>
-          <span class="u-sub">正在加载 <b id="mdLoadingVer">v2</b> 渲染产物…</span>
+          <span class="u-sub">正在加载所选版本内容…</span>
         </div>
         <div id="mdBody">
           <h2 id="h-1">一、本期概览</h2>
@@ -162,9 +163,9 @@
 
 <!-- 版本下拉（busy-select 下拉层；选项点击 = 版本切换） -->
 <div id="verMenu" hidden class="tpl-ver-menu">
-  <div class="js-ver tpl-ver-menu__item tpl-ver-menu__item--cur" data-ver="3">v3（当前 · 2026-10-18 21:05 入库）</div>
-  <div class="js-ver tpl-ver-menu__item" data-ver="2">v2（2026-10-15 09:12 补传入库）</div>
-  <div class="js-ver tpl-ver-menu__item" data-ver="1">v1（2026-10-14 08:30 服务端生成）</div>
+  <div class="js-ver tpl-ver-menu__item tpl-ver-menu__item--cur" data-ver="3">v3（当前 · 10-18 21:05 入库）</div>
+  <div class="js-ver tpl-ver-menu__item" data-ver="2">v2（10-15 09:12 手动补传）</div>
+  <div class="js-ver tpl-ver-menu__item" data-ver="1">v1（10-14 08:30 入库）</div>
 </div>
 
 <!-- 窄屏大纲 Drawer（<1200px 时侧栏折叠，由顶部「大纲」按钮唤起） -->
@@ -205,12 +206,13 @@ function btnLoading(btn, on) {
   else { btn.classList.remove('is-loading'); btn.disabled = false; var l = btn.querySelector('.busy-button__loading'); if (l) l.remove(); }
 }
 
-/* ================= 获取原件 ================= */
+/* ================= 获取原件（v1 演示失败路径：该版本无原始 Markdown 内容） ================= */
 function download(btn) {
   btnLoading(btn, true);
   setTimeout(function () {
     btnLoading(btn, false);
-    toast('已开始下载「weekly_dev_20261018.md」（Mock）');
+    if (curVer === 1) { toast('该版本无原始 Markdown 内容', 'error'); return; }
+    toast('已开始下载 weekly_dev_20261018.md');
   }, 600);
 }
 document.getElementById('btnDownload').addEventListener('click', function () { download(this); });
@@ -231,8 +233,7 @@ document.querySelectorAll('.js-ver').forEach(function (item) {
     var v = Number(item.getAttribute('data-ver'));
     verMenu.hidden = true;
     if (v === curVer) return;
-    /* 正文区全页 loading（Spin 语义）→ 切换正文与元信息 → URL ?v=N → toast */
-    document.getElementById('mdLoadingVer').textContent = 'v' + v;
+    /* 正文区加载指示（Spin 语义）→ 切换正文与元信息 → URL 追加 ?v=N → toast；失败路径（生产）：toast「版本加载失败」+ 停留当前版本 */
     document.getElementById('mdLoading').hidden = false;
     setTimeout(function () {
       curVer = v;
@@ -244,8 +245,7 @@ document.querySelectorAll('.js-ver').forEach(function (item) {
       document.getElementById('verBanner').hidden = !d.banner;
       if (d.banner) document.getElementById('verBannerText').textContent = 'v' + v;
       try { history.replaceState(null, '', '?v=' + v); } catch (e) { /* file:// 下忽略 */ }
-      toast('已切换到 v' + v);
-      /* 失败路径（生产）：toast error + 回退当前版本 */
+      toast('已切换到 v' + v + (v === 3 ? '（当前版本）' : '（历史版本，只读）'));
     }, 600);
   });
 });

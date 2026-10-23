@@ -6,12 +6,14 @@
 <title>人员产出报告 · 报告列表 · 研发报告</title>
 <!--
   人员产出报告 · 报告列表（Web 管理端 · 静态原型，数据为 Mock）
-  页面对象定义：references/web-ui.md「报告列表」；共享口径：../报告配置/references/business-rule.md
-  布局流：页头 → 筛选卡（发报日期范围 + 关键词 + 查询/重置）→ 类型 Tab（研发周报/研发日报）
-    → KPI 区（口径随类型 Tab 切换）→ 表格卡（视角 Tab：按周/日索引 = 分组手风琴 / 报告明细 = 平铺表格
-    → 未入库灰显行「立即生成 / 补传」（按钮权限 devhubReportTrigger / devhubReportUpload，Mock 按已授权展示）
-    → 分页 → 空态）→ 手动补传弹窗（Upload 拖拽 + 文件名识别 + 发报日）→ 立即生成确认弹窗。
-  Mock 日期基准：今天 = 2026-10-21（周三）；本周 W43 周中不展示，周索引最晚到上周 W42（10-12 ~ 10-18）。
+  路由：/subapp/devhub/report/member-output；权限：路由 devhubMemberOutputReport（仅管理层与研发负责人），按钮 devhubReportUpload（手动补传）/ devhubReportTrigger（立即生成）
+  页面对象定义：references/web-ui.md「报告列表」；手动补传弹窗共用口径：报告配置 references/web-ui.md「手动补传弹窗（报告模块共用）」
+  布局流：页头 → 筛选卡（发报日期范围默认近 90 天 + 关键词「报告标题模糊搜索」回车即查 + 查询/重置）→ 类型 Tab（研发周报/研发日报）
+    → KPI 区（口径随类型 Tab 切换）→ 表格卡（视角 Tab：按周/日索引 = 分组手风琴默认全展开 / 报告明细 = 平铺表格；
+    全部表格不分页：按周索引取近 8 周、按日索引取近 14 天、报告明细上限 200 条，发报日期区间为前端过滤；
+    未入库灰显行「立即生成 / 补传」）→ 手动补传弹窗（Upload 拖拽 + 文件名识别 + 发报日）→ 立即生成确认弹窗。
+  Mock 日期基准：今天 = 2026-10-21（周三）；本周 W43 周中不展示，周索引最晚到上周 W42（10-12 ~ 10-18）；
+  日索引当日行固定置顶展示（已入库也保留「立即生成 / 补传」，重复生成 / 补传按版本递增）。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
@@ -23,8 +25,6 @@
 .tpl-kpi__value--date { font-size: 20px; }
 .tpl-col-week { width: 260px; }
 .tpl-col-ops { width: 180px; }
-.tpl-pager-total { color: var(--busy-text-secondary); }
-.tpl-pagesize { width: 110px; }
 .tpl-mask { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--busy-popper-bg-dark) 45%, transparent); }
 .tpl-mask--top { z-index: 2100; }
 .tpl-dialog--560 { width: 560px; }
@@ -70,7 +70,8 @@
       <div class="busy-form-item tpl-filter__item--wide">
         <div class="busy-form-item__label">发报日期</div>
         <div class="busy-form-item__content">
-          <div class="busy-date-editor busy-range-editor busy-input"><input readonly placeholder="开始日期 ~ 结束日期" value="2026-09-21 ~ 2026-10-21"></div>
+          <!-- 默认近 90 天 -->
+          <div class="busy-date-editor busy-range-editor busy-input"><input readonly placeholder="开始日期 ~ 结束日期" value="2026-07-23 ~ 2026-10-21"></div>
         </div>
       </div>
       <div class="busy-form-item">
@@ -86,7 +87,7 @@
     </div>
   </div>
 
-  <!-- 类型 Tab：研发周报（默认）/ 研发日报；切换时视角重置为索引视角、筛选与页码重置 -->
+  <!-- 类型 Tab：研发周报（默认）/ 研发日报；切换时视角重置为索引视角、筛选重置 -->
   <div class="busy-tabs tpl-tabs-card" id="typeTabs">
     <div class="busy-tabs__item is-active" data-type="weekly">研发周报</div>
     <div class="busy-tabs__item" data-type="daily">研发日报</div>
@@ -100,15 +101,16 @@
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text" id="kpiCycleFoot">周中窗口，本周报告将于周日发报后展示</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">累计报告</span><span class="tpl-kpi__hint" title="当前类型 Tab 已入库报告总数">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">累计报告</span><span class="tpl-kpi__hint" title="按报告项 × 发报日计（不含历史版本）">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiTotal">42</span><span class="tpl-kpi__unit">份</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">按报告项 × 发报日计（不含历史版本）</span></div>
     </div>
     <div class="tpl-kpi">
       <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">最近发报日</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value tpl-kpi__value--date u-mono" id="kpiLatest">2026-10-18</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">历史版本总数</span><span class="tpl-kpi__hint" title="重复入库版本递增，旧版本保留可查">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">历史版本总数</span><span class="tpl-kpi__hint" title="重复入库版本递增，旧版本保留可查，详情页可回溯">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiVersions">6</span><span class="tpl-kpi__unit">版</span></div>
     </div>
   </div>
@@ -127,17 +129,18 @@
     </div>
     <hr class="tpl-divider">
 
-    <!-- 视角 1：索引视角（周索引手风琴 / 日索引逐日行） -->
+    <!-- 视角 1：索引视角（周索引手风琴 / 日索引逐日行；默认全展开） -->
     <div id="viewIndex">
       <table class="busy-table busy-table--border">
         <thead id="indexHead">
-          <tr><th class="tpl-col-week">所属周</th><th>报告标题</th><th>发报日</th><th>来源</th><th class="u-center">版本</th><th class="u-right">文件大小</th><th>入库时间</th><th class="tpl-col-ops">操作</th></tr>
+          <tr><th class="tpl-col-week">所属周</th><th>报告标题</th><th>发报日</th><th>来源</th><th class="u-center">版本</th><th class="tpl-col-ops">操作</th></tr>
         </thead>
         <tbody id="indexBody"></tbody>
       </table>
+      <div class="tpl-table-foot"><span class="u-sub">全部表格不分页：按周索引取近 8 周、按日索引取近 14 天、报告明细上限 200 条，发报日期区间为前端过滤</span></div>
     </div>
 
-    <!-- 视角 2：报告明细（平铺表格） -->
+    <!-- 视角 2：报告明细（平铺表格，不分页，上限 200 条） -->
     <div id="viewDetail" hidden>
       <table class="busy-table busy-table--border">
         <thead id="detailHead"></thead>
@@ -147,17 +150,7 @@
         <div class="busy-empty__image">🔍</div>
         <div>该条件下暂无报告</div>
       </div>
-      <div class="tpl-table-foot" id="detailPager">
-        <div class="busy-pagination">
-          <span class="tpl-pager-total" id="pagerTotal">共 42 条</span>
-          <button>‹</button>
-          <button class="is-active">1</button>
-          <button>2</button>
-          <button>3</button>
-          <button>›</button>
-          <div class="busy-select tpl-pagesize"><div class="busy-input busy-input--small"><input readonly value="20 条/页"></div><span class="busy-select__caret">▾</span></div>
-        </div>
-      </div>
+      <div class="tpl-table-foot"><span class="u-sub">全部表格不分页：报告明细上限 200 条，发报日期区间为前端过滤</span></div>
     </div>
   </div>
 </section>
@@ -181,7 +174,7 @@
           <div id="dropZone" class="tpl-drop-zone">
             <div class="tpl-drop-zone__icon">⬆</div>
             <div class="tpl-drop-zone__text">将文件拖到此处，或<em class="tpl-drop-zone__link">点击上传</em></div>
-            <div class="tpl-drop-zone__tip">仅支持 .md 文件，且不超过 2MB</div>
+            <div class="tpl-drop-zone__tip">仅支持 .md（UTF-8），单文件不超过 2MB</div>
           </div>
           <input type="file" id="fileInput" accept=".md" hidden>
           <div id="fileLine" class="u-sub tpl-file-line" hidden></div>
@@ -194,7 +187,7 @@
           <div class="u-sub u-danger" id="uploadDateErr" hidden>发报日不可晚于今天</div>
         </div>
       </div>
-      <div class="busy-message busy-message--success" id="recogOk" hidden>✓ 已按文件名识别：<b id="recogText">研发周报 · 发报日 2026-10-18</b></div>
+      <div class="busy-message busy-message--success" id="recogOk" hidden>✓ <span id="recogPrefix">已按文件名识别：</span><b id="recogText">研发周报 · 发报日 2026-10-18</b></div>
       <div class="busy-message busy-message--warning" id="recogFail" hidden>⚠ 文件名无法识别，请手动指定发报日</div>
     </div>
     <div class="busy-dialog__footer">
@@ -210,7 +203,7 @@
     <div class="busy-dialog__header"><span class="busy-dialog__title">确认立即生成</span><button class="busy-dialog__close" id="genClose" type="button">✕</button></div>
     <div class="busy-dialog__body tpl-dialog__body--row">
       <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" class="tpl-msg-icon"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-1.5 0v-4zM8 11.9a.95.95 0 1 1 0-1.9.95.95 0 0 1 0 1.9z"/></svg>
-      <span id="genText">将为 2026 年第 40 周创建研发周报生成任务。<br>统计窗口：2026-09-28（周一）~ 2026-10-04（周日）。</span>
+      <span id="genText">将为「2026 年第 40 周」创建研发周报生成任务。<br>统计窗口：2026-09-28（周一）~ 2026-10-04（周日）。</span>
     </div>
     <div class="busy-dialog__footer">
       <button class="busy-button" type="button" id="genCancel"><span>取 消</span></button>
@@ -234,32 +227,32 @@
 <script>
 /* ================= Mock 数据（日期基准：今天 = 2026-10-21 周三） =================
  * 周索引口径：本周行仅周日当天起展示，周中最晚只到上周（W42 = 10-12 ~ 10-18）；
- * 日索引口径：当日行仅已入库时展示，未入库不渲染「待补」（2026-10-21 已入库故展示）。
+ * 日索引口径：当日行固定置顶展示（未入库也成行）；当日未入库不标「待补」，昨日及更早缺失日标「0/1 待补」。
  */
 var REPORTS = {
   weekly: {
     kpi: { cycleLabel: '本周已入库', cycleValue: '0/1', cycleFoot: '周中窗口，本周报告将于周日发报后展示', total: 42, latest: '2026-10-18', versions: 6 },
     viewLabel: '按周索引',
     groups: [
-      { key: 'w42', label: '2026 年第 42 周（10-12 ~ 10-18）', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'w42', title: '研发周报 · 2026 年第 42 周', date: '2026-10-18', week: '2026 年第 42 周', source: '服务端生成', ver: 'v2', size: '128 KB', time: '2026-10-18 21:05' } },
-      { key: 'w41', label: '2026 年第 41 周（10-05 ~ 10-11）', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'w41', title: '研发周报 · 2026 年第 41 周', date: '2026-10-11', week: '2026 年第 41 周', source: '服务端生成', ver: 'v1', size: '96 KB', time: '2026-10-11 20:58' } },
+      { key: 'w42', label: '2026 年第 42 周（10-12 ~ 10-18）', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'w42', title: '研发周报 · 2026 年第 42 周', date: '2026-10-18', week: '第 42 周', source: '服务端生成', ver: 'v2', file: 'weekly_dev_20261018.md' } },
+      { key: 'w41', label: '2026 年第 41 周（10-05 ~ 10-11）', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'w41', title: '研发周报 · 2026 年第 41 周', date: '2026-10-11', week: '第 41 周', source: '服务端生成', ver: 'v1', file: 'weekly_dev_20261011.md' } },
       { key: 'w40', label: '2026 年第 40 周（09-28 ~ 10-04）', badge: '0/1 待补', badgeCls: 'busy-tag--warning', report: null, genWindow: '2026-09-28（周一）~ 2026-10-04（周日）', genLabel: '2026 年第 40 周', prefillDate: '2026-10-04' },
-      { key: 'w39', label: '2026 年第 39 周（09-21 ~ 09-27）', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'w39', title: '研发周报 · 2026 年第 39 周', date: '2026-09-27', week: '2026 年第 39 周', source: '手动补传', ver: 'v3', size: '102 KB', time: '2026-09-29 10:12' } }
+      { key: 'w39', label: '2026 年第 39 周（09-21 ~ 09-27）', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'w39', title: '研发周报 · 2026 年第 39 周', date: '2026-09-27', week: '第 39 周', source: '手动补传', ver: 'v3', file: 'weekly_dev_20260927.md' } }
     ],
-    detailCols: ['发报日期', '所属周', '报告标题', '来源', '版本', '文件大小', '入库时间', '操作'],
-    pagerTotal: '共 42 条'
+    detailCols: ['发报日期', '所属周', '报告标题', '来源', '版本', '操作']
   },
   daily: {
     kpi: { cycleLabel: '今日已入库', cycleValue: '1/1', cycleFoot: '统计前一自然日，当日数据持续产生中', total: 18, latest: '2026-10-21', versions: 2 },
     viewLabel: '按日索引',
     groups: [
-      { key: 'd21', label: '2026-10-21 周三', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd21', title: '研发日报 · 2026-10-21', date: '2026-10-21', week: '', source: '服务端生成', ver: 'v1', size: '36 KB', time: '2026-10-22 09:12' } },
-      { key: 'd20', label: '2026-10-20 周二', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd20', title: '研发日报 · 2026-10-20', date: '2026-10-20', week: '', source: '推送上报', ver: 'v1', size: '34 KB', time: '2026-10-21 09:31' } },
-      { key: 'd19', label: '2026-10-19 周一', badge: '0/1 待补', badgeCls: 'busy-tag--warning', report: null, genWindow: '2026-10-19 00:00 至 24:00（前一自然日）', genLabel: '2026-10-19', prefillDate: '2026-10-19' },
-      { key: 'd18', label: '2026-10-18 周日', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd18', title: '研发日报 · 2026-10-18', date: '2026-10-18', week: '', source: '服务端生成', ver: 'v2', size: '38 KB', time: '2026-10-19 09:05' } }
+      { key: 'd21', label: '2026-10-21 周三', badge: '1/1', badgeCls: 'busy-tag--success', today: true, report: { id: 'd21', title: '研发日报 · 2026-10-21', date: '2026-10-21', week: '', source: '服务端生成', ver: 'v1', file: 'daily_dev_20261021.md' } },
+      { key: 'd20', label: '2026-10-20 周二', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd20', title: '研发日报 · 2026-10-20', date: '2026-10-20', week: '', source: '推送上报', ver: 'v1', file: 'daily_dev_20261020.md' } },
+      /* 演示「未找到联动触发配置」失败路径：该行点「立即生成」直接 toast error */
+      { key: 'd19', label: '2026-10-19 周一', badge: '0/1 待补', badgeCls: 'busy-tag--warning', report: null, noConfig: true, genWindow: '2026-10-19 00:00 ~ 24:00（前一自然日）', genLabel: '2026-10-19', prefillDate: '2026-10-19' },
+      /* 演示「该报告无原始 Markdown 内容」失败路径 */
+      { key: 'd18', label: '2026-10-18 周日', badge: '1/1', badgeCls: 'busy-tag--success', report: { id: 'd18', title: '研发日报 · 2026-10-18', date: '2026-10-18', week: '', source: '服务端生成', ver: 'v2', file: 'daily_dev_20261018.md', noFile: true } }
     ],
-    detailCols: ['发报日期', '报告标题', '来源', '版本', '文件大小', '入库时间', '操作'],
-    pagerTotal: '共 18 条'
+    detailCols: ['发报日期', '报告标题', '来源', '版本', '操作']
   }
 };
 var curType = 'weekly';
@@ -293,28 +286,32 @@ function renderIndex() {
   var html = data.groups.map(function (g) {
     var head = '<tr class="js-group tpl-group-head" data-group="' + g.key + '">' +
       '<td><b>' + g.label + '</b> <span class="u-sub">▾ 收起/展开</span></td>' +
-      '<td colspan="7" class="u-right"><span class="busy-tag ' + g.badgeCls + '">' + g.badge + '</span></td></tr>';
+      '<td colspan="5" class="u-right"><span class="busy-tag ' + g.badgeCls + '">' + g.badge + '</span></td></tr>';
     var row;
     if (g.report) {
       var r = g.report;
+      /* 当日行（日报）无论是否已入库，操作列均保留「立即生成 / 补传」，重复生成 / 补传按版本递增 */
+      var todayOps = g.today
+        ? '<button class="busy-button is-link js-gen" type="button" data-key="' + g.key + '"><span>立即生成</span></button>' +
+          '<button class="busy-button is-link js-upload" type="button" data-key="' + g.key + '"><span>补传</span></button>'
+        : '';
       row = '<tr data-group-row="' + g.key + '">' +
         '<td></td>' +
         '<td><a href="report-detail.html">' + r.title + '</a></td>' +
         '<td class="u-mono">' + r.date + '</td>' +
         '<td>' + sourceTag(r.source) + '</td>' +
         '<td class="u-center u-mono">' + r.ver + '</td>' +
-        '<td class="u-right u-mono">' + r.size + '</td>' +
-        '<td class="u-mono">' + r.time + '</td>' +
         '<td><div class="tpl-row-actions">' +
           '<a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>' +
-          '<button class="busy-button is-link js-download" type="button" data-name="' + r.title + '"><span>获取原件</span></button>' +
+          '<button class="busy-button is-link js-download" type="button" data-file="' + r.file + '"' + (r.noFile ? ' data-nofile="1"' : '') + '><span>获取原件</span></button>' +
+          todayOps +
         '</div></td></tr>';
     } else {
       /* 未入库灰显行：「立即生成」= devhubReportTrigger、「补传」= devhubReportUpload（Mock 按已授权展示） */
       row = '<tr data-group-row="' + g.key + '">' +
         '<td></td>' +
         '<td><span class="u-muted">研发' + (curType === 'weekly' ? '周报' : '日报') + '</span> <span class="busy-tag is-plain">未入库</span></td>' +
-        '<td class="u-muted u-mono">—</td><td class="u-muted">—</td><td class="u-center u-muted">—</td><td class="u-right u-muted">—</td><td class="u-muted">—</td>' +
+        '<td class="u-muted u-mono">—</td><td class="u-muted">—</td><td class="u-center u-muted">—</td>' +
         '<td><div class="tpl-row-actions">' +
           '<button class="busy-button is-link js-gen" type="button" data-key="' + g.key + '"><span>立即生成</span></button>' +
           '<button class="busy-button is-link js-upload" type="button" data-key="' + g.key + '"><span>补传</span></button>' +
@@ -333,12 +330,11 @@ function renderIndex() {
   bindRowActions();
 }
 
-/* ================= 明细视角渲染 ================= */
+/* ================= 明细视角渲染（平铺表格，不分页，上限 200 条） ================= */
 function renderDetail(kw) {
   var data = REPORTS[curType];
-  var headHtml = '<tr>' + data.detailCols.map(function (c, i) {
-    var cls = c === '文件大小' ? ' class="u-right"' : (c === '版本' ? ' class="u-center"' : '');
-    return '<th' + cls + '>' + c + '</th>';
+  var headHtml = '<tr>' + data.detailCols.map(function (c) {
+    return '<th' + (c === '版本' ? ' class="u-center"' : '') + '>' + c + '</th>';
   }).join('') + '</tr>';
   document.getElementById('detailHead').innerHTML = headHtml;
   var rows = [];
@@ -350,17 +346,13 @@ function renderDetail(kw) {
     cells += '<td><a href="report-detail.html">' + r.title + '</a></td>' +
       '<td>' + sourceTag(r.source) + '</td>' +
       '<td class="u-center u-mono">' + r.ver + '</td>' +
-      '<td class="u-right u-mono">' + r.size + '</td>' +
-      '<td class="u-mono">' + r.time + '</td>' +
       '<td><div class="tpl-row-actions">' +
         '<a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>' +
-        '<button class="busy-button is-link js-download" type="button" data-name="' + r.title + '"><span>获取原件</span></button>' +
+        '<button class="busy-button is-link js-download" type="button" data-file="' + r.file + '"' + (r.noFile ? ' data-nofile="1"' : '') + '><span>获取原件</span></button>' +
       '</div></td>';
     return '<tr>' + cells + '</tr>';
   }).join('');
   document.getElementById('detailEmpty').hidden = rows.length > 0;
-  document.getElementById('detailPager').hidden = rows.length === 0;
-  document.getElementById('pagerTotal').textContent = kw ? '共 ' + rows.length + ' 条（已按关键词筛选，Mock）' : data.pagerTotal;
   bindRowActions();
 }
 
@@ -368,25 +360,32 @@ function renderDetail(kw) {
 function bindRowActions() {
   document.querySelectorAll('.js-download').forEach(function (b) {
     b.onclick = function () {
+      /* 无原始 Markdown 内容时 toast error + 按钮恢复 */
+      if (b.getAttribute('data-nofile')) { toast('该报告无原始 Markdown 内容', 'error'); return; }
       btnLoading(b, true);
       setTimeout(function () {
         btnLoading(b, false);
-        toast('已开始下载「' + b.getAttribute('data-name') + '」原始 .md（Mock）');
+        toast('已开始下载 ' + b.getAttribute('data-file'));
       }, 600);
     };
   });
   document.querySelectorAll('.js-gen').forEach(function (b) {
     b.onclick = function () {
       var g = REPORTS[curType].groups.filter(function (x) { return x.key === b.getAttribute('data-key'); })[0];
+      /* 失败路径：无匹配联动触发配置 → toast error + 停留 */
+      if (g.noConfig) { toast('未找到联动触发配置，请先到「报告配置」页检查', 'error'); return; }
       pendingGen = { btn: b, group: g };
-      document.getElementById('genText').innerHTML = '将为 ' + g.genLabel + ' 创建研发' + (curType === 'weekly' ? '周报' : '日报') + '生成任务。<br>统计窗口：' + g.genWindow + '。';
+      var genWindow = g.genWindow;
+      if (!genWindow && g.today) genWindow = '2026-10-20 00:00 ~ 24:00（前一自然日）';
+      var genLabel = g.genLabel || (g.today ? '2026-10-21' : g.label);
+      document.getElementById('genText').innerHTML = '将为「' + genLabel + '」创建研发' + (curType === 'weekly' ? '周报' : '日报') + '生成任务。<br>统计窗口：' + genWindow + '。';
       openMask('genMask');
     };
   });
   document.querySelectorAll('.js-upload').forEach(function (b) {
     b.onclick = function () {
       var g = REPORTS[curType].groups.filter(function (x) { return x.key === b.getAttribute('data-key'); })[0];
-      openUpload(g.prefillDate);
+      openUpload(g.prefillDate || (g.today ? '2026-10-21' : ''));
     };
   });
 }
@@ -416,7 +415,7 @@ document.querySelectorAll('#typeTabs .busy-tabs__item').forEach(function (t) {
     document.querySelectorAll('#typeTabs .busy-tabs__item').forEach(function (x) { x.classList.remove('is-active'); });
     t.classList.add('is-active');
     curType = t.getAttribute('data-type');
-    /* 切换类型：视角重置为索引视角、筛选与页码重置 */
+    /* 切换类型：视角重置为索引视角、筛选重置（全部表格不分页，无页码） */
     curView = 'index';
     document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (x) { x.classList.toggle('is-active', x.getAttribute('data-view') === 'index'); });
     document.getElementById('viewIndex').hidden = false;
@@ -450,6 +449,10 @@ document.getElementById('btnReset').addEventListener('click', function () {
   renderDetail('');
   toast('筛选条件已重置', 'info');
 });
+/* 关键词：报告标题模糊搜索，回车即查 */
+document.getElementById('kwInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') document.getElementById('btnQuery').click();
+});
 
 /* ================= 手动补传弹窗 ================= */
 var uploadState = { file: null, date: '' };
@@ -464,6 +467,14 @@ function openUpload(prefillDate) {
   document.getElementById('recogOk').hidden = true;
   document.getElementById('recogFail').hidden = true;
   document.getElementById('fileInput').value = '';
+  /* 从索引行（缺失行或当日行）进入：发报日预填（周报预填该周周日，日报预填该日）并提示「已从缺口带入：发报日 X」 */
+  if (prefillDate) {
+    document.getElementById('recogPrefix').textContent = '已从缺口带入：';
+    document.getElementById('recogText').textContent = '发报日 ' + prefillDate;
+    document.getElementById('recogOk').hidden = false;
+  } else {
+    document.getElementById('recogPrefix').textContent = '已按文件名识别：';
+  }
   openMask('uploadMask');
 }
 function tryCloseUpload() {
@@ -479,13 +490,14 @@ document.getElementById('fileInput').addEventListener('change', function () {
   var f = this.files[0];
   if (!f) return;
   var ok = /\.md$/i.test(f.name) && f.size <= 2 * 1024 * 1024;
-  if (!ok) { toast('仅支持 .md 文件，且不超过 2MB', 'error'); this.value = ''; return; }
+  if (!ok) { toast('仅支持 .md（UTF-8），单文件不超过 2MB', 'error'); this.value = ''; return; }
   uploadState.file = f;
   var line = document.getElementById('fileLine');
   line.hidden = false;
   line.textContent = '📄 ' + f.name + '（' + Math.ceil(f.size / 1024) + ' KB）';
   /* 文件名识别：weekly_dev_ / daily_dev_ 前缀 + yyyyMMdd */
   var m = f.name.match(/^(weekly_dev|daily_dev)_(\d{4})(\d{2})(\d{2})/);
+  document.getElementById('recogPrefix').textContent = '已按文件名识别：';
   if (m) {
     var d = m[2] + '-' + m[3] + '-' + m[4];
     var typeText = m[1] === 'weekly_dev' ? '研发周报' : '研发日报';
@@ -505,18 +517,21 @@ document.getElementById('uploadDate').addEventListener('change', function () {
 });
 document.getElementById('uploadSubmit').addEventListener('click', function () {
   var date = document.getElementById('uploadDate').value;
-  if (!uploadState.file) { toast('仅支持 .md 文件，且不超过 2MB（请选择报告文件）', 'error'); return; }
+  if (!uploadState.file) { toast('仅支持 .md（UTF-8），单文件不超过 2MB（请选择报告文件）', 'error'); return; }
   if (!date) { toast('请选择发报日', 'error'); return; }
   if (date > '2026-10-21') {
     document.getElementById('uploadDateErr').hidden = false;
     toast('发报日不可晚于今天', 'error');
     return;
   }
+  /* 重复内容演示：发报日已有在库版本且内容一致 → 提示不产生新版本 */
+  var dup = REPORTS[curType].groups.some(function (g) { return g.report && g.report.date === date; });
   var btn = this;
   btnLoading(btn, true);
   setTimeout(function () {
     btnLoading(btn, false);
     closeMask('uploadMask');
+    if (dup) { toast('内容重复，与现有版本一致，未产生新版本', 'warning'); return; }
     toast('补传成功，已生成 v3');
     tableLoading(refreshAll);
   }, 800);
@@ -531,8 +546,8 @@ document.getElementById('genConfirm').addEventListener('click', function () {
   setTimeout(function () {
     btnLoading(btn, false);
     closeMask('genMask');
-    /* 成功去向：toast 后跳转报告触发配置页生成记录（跨模块，原型以 toast 声明） */
-    toast('已创建生成任务，即将跳转「报告触发配置 · 生成记录」（Mock 跳转）');
+    /* 成功去向：toast 后停留本页（不跳转），进度前往「报告配置 › 报告触发配置 · 生成记录」查看 */
+    toast('已创建生成任务，进度见「报告配置 › 报告触发配置 · 生成记录」');
     pendingGen = null;
   }, 800);
 });
