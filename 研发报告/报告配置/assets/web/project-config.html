@@ -5,10 +5,11 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>报告项目配置 · 研发报告 · 报告配置（静态原型 · Mock）</title>
 <!--
-  报告配置 / 报告项目配置（静态原型，数据为 Mock，可经右上角「重置 Mock」还原）
-  路由：/rnd-report/project-config；权限：路由 devhubReportTriggerConfig，按钮 devhubReportTrigger（编辑扩展 / 启停）
+  报告配置 / 项目配置页签（静态原型，数据为 Mock，可经右上角「重置 Mock」还原）
+  归属：本页内容已并入报告配置页「项目配置」页签（单页三 Tab：触发配置（默认）/ 项目配置 / 人员范围），本文件保留独立演示
+  路由：/subapp/devhub/report/trigger-config（报告配置页内「项目配置」页签）；权限：路由 devhubReportTriggerConfig，按钮 devhubReportTriggerConfig（编辑扩展 / 启停）
   页型：列表页（配置表格 + 编辑弹窗），骨架对齐 busyming-skills-design/templates/web/archive-list.html
-  规则真源：references/business-rule.md §3；字段真源：references/data.md §2
+  真源：references/web-ui.md「报告项目配置」
   要点：启用项目随功能排期自动成行（不可手工增删）；扩展维护项目 key（首次保存后不可改）与分支策略；启停联动触发配置行
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
@@ -31,7 +32,7 @@
 <body>
 <nav class="tpl-nav">
   <span class="tpl-nav__logo">鸣鸣很忙</span>
-  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / 报告配置 / <b>报告项目配置</b></span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / 报告配置 / <b>项目配置</b></span>
   <span class="tpl-nav__spacer"></span>
   <span class="tpl-nav__crumb">研发负责人 · 王倩</span>
 </nav>
@@ -40,12 +41,15 @@
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <h1 class="tpl-page-title">报告项目配置</h1>
-      <div class="tpl-page-subtitle">功能排期的启用项目自动成行（不可手工新增或删除）；本页维护报告侧扩展：项目 key 与分支策略。扩展未配置或已停用的项目不参与项目维度报告。</div>
+      <div class="tpl-page-subtitle">本页内容已并入报告配置页「项目配置」页签（本文件保留独立演示）。功能排期的启用项目自动成行（不可手工新增或删除）；本页维护报告侧扩展：项目 key 与分支策略。扩展未配置或已停用的项目不参与项目维度报告。</div>
     </div>
     <div class="tpl-page-head__actions">
       <a class="busy-button" href="report-trigger-config.html"><span>前往报告触发配置 →</span></a>
     </div>
   </div>
+
+  <!-- 顶部常驻提示条（警示样式）：联动规则 -->
+  <div class="busy-message busy-message--warning">联动规则：扩展「启用」即在「报告触发配置」页自动生成该项目维度报告的配置行（默认定时每周）；扩展「停用」同步停用关联配置行，历史报告保留可查。基础映射的新增与启停在功能排期维护，本页只读。</div>
 
   <!-- 筛选卡 -->
   <div class="tpl-panel">
@@ -71,8 +75,9 @@
 
   <!-- 配置表格卡 -->
   <div class="tpl-panel">
+    <div class="tpl-panel__title">报告项目配置</div>
     <div class="tpl-toolbar">
-      <div class="tpl-toolbar__left">项目基础映射（harness 工程 / 代码仓）只读引用自「排期管理 / 功能排期」项目配置 · 数据为 Mock 演示</div>
+      <div class="tpl-toolbar__left">项目基础映射（harness 工程 / 代码仓）只读引用自「排期管理 / 功能排期」项目配置 · 行随启用项目自动成行，不可手工新增或删除</div>
       <div class="tpl-toolbar__right">
         <button class="busy-button" id="btnMockReset" type="button"><span>重置 Mock</span></button>
       </div>
@@ -180,7 +185,7 @@
 
 <script>
 /* ===== Mock 数据（真实页面替换为接口数据；重置 Mock 按钮可还原） ===== */
-var BRANCH_TEXT = { master: 'master', release: '最近 release 且防回退' };
+var BRANCH_TEXT = { master: 'master', release: '最近 release 且防回退落后主干' };
 var DEFAULT_DATA = [
   { name: '门店系统', key: 'store-web', harness: 'busyming-skills-store', repos: ['store-web', 'store-server'], branch: 'master', enabled: true },
   { name: '供应链中台', key: 'supply', harness: 'busyming-skills-procurement', repos: ['supply-web', 'supply-server', 'supply-gateway'], branch: 'release', enabled: true },
@@ -243,9 +248,10 @@ function rowStatus(r) {
   return '已配置';
 }
 function triggerCell(r) {
+  /* 三种形态：未联动（待配置）/「N 行 · 已同步停用」/「N 行 · 定时每周、每月」；点击跳触发配置页签（原型内跳 report-trigger-config.html） */
   if (rowStatus(r) === '待配置') return '<span class="u-muted">未联动（待配置）</span>';
-  if (!r.enabled) return '<span class="u-muted">2 行 · 已同步停用</span>';
-  return '<a href="report-trigger-config.html">2 行 · 定时每周</a><div class="u-sub">扩展启停联动生成 / 停用</div>';
+  if (!r.enabled) return '<a href="report-trigger-config.html" class="u-muted">2 行 · 已同步停用</a>';
+  return '<a href="report-trigger-config.html">2 行 · 定时每周、每月</a><div class="u-sub">扩展启停联动生成 / 停用</div>';
 }
 
 /* ===== 列表渲染 ===== */
@@ -263,7 +269,8 @@ function render() {
     var keyCell = r.key
       ? '<span class="u-mono">' + r.key + '</span>'
       : '<span class="busy-tag busy-tag--warning">待配置</span>';
-    var repoCell = '<span class="busy-badge tpl-badge-inline" data-repos="' + r.repos.join('、') + '"><span class="u-muted">代码仓</span><sup class="busy-badge__content">' + r.repos.length + '</sup></span>';
+    /* 代码仓清单：「N 个」数量徽标，悬停展示完整仓名清单 */
+    var repoCell = '<span class="busy-badge tpl-badge-inline" data-repos="' + r.repos.join('、') + '"><span class="u-muted">' + r.repos.length + ' 个</span><sup class="busy-badge__content">' + r.repos.length + '</sup></span>';
     return '<tr>' +
       '<td>' + r.name + '</td>' +
       '<td>' + keyCell + '</td>' +
