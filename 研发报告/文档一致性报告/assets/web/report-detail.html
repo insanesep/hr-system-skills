@@ -6,8 +6,10 @@
 <title>报告详情 · 文档一致性报告 · Web 原型</title>
 <!--
   报告详情页（详情页 · 阅读型 · 静态原型，数据为 Mock）
-  页面描述：references/web-ui.md「报告详情」；渲染口径：../报告配置/references/business-rule.md §6（模块根相对；Web 端前端实时渲染：marked(GFM)+DOMPurify，本原型以静态渲染产物演示）
-  结构依据：busyming-skills-design/templates/web/archive-detail.html（页头返回 → 元信息卡 → 内容区）
+  路由：/subapp/devhub/report/consistency/detail/:id；权限：路由 devhubConsistencyReport
+  页面描述：references/web-ui.md「报告详情」
+  渲染口径：Web 端展示服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染；章节口径：本次检查范围明细 / 统计概览 / 文档三件套对齐表 / 功能覆盖度分析 / 总体摘要）
+  结构依据：busyming-skills-design/templates/web/archive-detail.html（页头返回 → 历史版本警示（黄 Alert，仅历史版本）→ 元信息卡 → 内容区）
   组件树：Descriptions(busy-descriptions) / Select(版本切换，el-select 原生 + convert) / Table(busy-table，横滚容器)
     / Button / Tag / Drawer(窄屏大纲) / Message(toast) / MessageBox(口径见列表页)
   布局：tpl-dual--side（左阅读区 + 右大纲 sticky）；≤1024px 按模板媒体查询单栏堆叠，生产窄屏折叠为顶部「大纲」按钮弹 Drawer（本页已内置 Drawer 演示入口）
@@ -73,6 +75,8 @@
 
   <!-- 元信息头（首个 panel） -->
   <div class="tpl-panel">
+    <!-- 历史版本警示（仅查看历史版本时展示，黄色警示条） -->
+    <div class="busy-message busy-message--warning" id="verBanner" hidden>⚠ 当前查看历史版本 <b id="verBannerText">v1</b>（只读），最新版本为 v2；切换版本不改变归档内容。</div>
     <table class="busy-descriptions is-border">
       <tr>
         <th class="tpl-th--120">报告标题</th>
@@ -97,12 +101,12 @@
             <div class="busy-select tpl-select--180" id="verSelect"><div class="busy-input"><input readonly value="v2 · 共 2 版" id="verInput"></div><span class="busy-select__caret">▾</span></div>
             <div id="verPanel" hidden class="tpl-select-pop">
               <div class="busy-select-dropdown__list">
-                <div class="busy-select-dropdown__item tpl-select-pop__item is-selected" data-ver="2">v2（当前版本 · 服务端生成 20:05）</div>
-                <div class="busy-select-dropdown__item tpl-select-pop__item" data-ver="1">v1（历史版本 · 推送上报 19:02）</div>
+                <div class="busy-select-dropdown__item tpl-select-pop__item is-selected" data-ver="2">v2（当前 · 10-18 20:05 入库）</div>
+                <div class="busy-select-dropdown__item tpl-select-pop__item" data-ver="1">v1（10-18 19:02 推送上报）</div>
               </div>
             </div>
           </div>
-          <span class="u-sub">同报告项同发报日重复入库递增；历史版本只读，URL 带 ?v=N 可分享</span>
+          <span class="u-sub">重复入库版本递增，历史版本只读可查，URL 带 ?v=N 可分享</span>
         </td>
         <th>文件大小</th>
         <td class="u-mono" id="metaSize">48.6 KB</td>
@@ -124,7 +128,7 @@
         <div id="readLoading" hidden class="rpt-read-loading">
           <div class="busy-message busy-message--info">正在加载所选版本内容…</div>
         </div>
-        <!-- Markdown 渲染正文（Mock：静态渲染产物；生产按 mdUrl 拉取原始 md 实时渲染，图片一律替换占位「[图片已移除]」） -->
+        <!-- 正文：服务端渲染的 HTML 产物页内直出（前端仅提供排版样式，不做 Markdown 实时渲染；Mock 为静态产物示意，图片一律替换占位「[图片已移除]」；内容为空时展示「报告内容为空」） -->
         <div id="reportBody" class="rpt-body">
 
           <div class="tpl-section" id="h-1">
@@ -409,6 +413,7 @@ document.querySelectorAll('[data-ver]').forEach(function (opt) {
       document.getElementById('metaSize').textContent = VER_META[v].size;
       document.getElementById('metaTime').textContent = VER_META[v].time;
       document.getElementById('verInput').value = VER_META[v].label;
+      document.getElementById('verBanner').hidden = v !== 1;
       document.getElementById('readLoading').hidden = true;
       history.replaceState(null, '', 'report-detail.html?v=' + v);
       document.getElementById('readPanel').scrollIntoView({ behavior: 'smooth' });
@@ -417,19 +422,20 @@ document.querySelectorAll('[data-ver]').forEach(function (opt) {
   });
 });
 
-/* ================= 获取原件（下载当前版本原始 .md，Mock Blob；失败=toast error+按钮恢复） ================= */
+/* ================= 获取原件（下载当前展示版本原始 .md，Mock Blob；无内容时 toast「该版本无原始 Markdown 内容」+ 按钮恢复，v1 演示失败路径） ================= */
 document.getElementById('btnDownload').addEventListener('click', function (e) {
   var btn = e.currentTarget;
   btn.classList.add('is-loading'); btn.disabled = true;
   setTimeout(function () {
     btn.classList.remove('is-loading'); btn.disabled = false;
+    if (currentVer === 1) { toast('该版本无原始 Markdown 内容', 'error'); return; }
     var blob = new Blob(['# 一致性检查报告（门店要货） - 2026-10-18\n\n（Mock 原始 Markdown · v' + currentVer + '）\n'], { type: 'text/markdown;charset=utf-8' });
     var a = document.createElement('a');
     a.href = URL.createObjectURL(blob);
     a.download = 'consistency_20261018_store.md';
     a.click();
     URL.revokeObjectURL(a.href);
-    toast('已开始下载 consistency_20261018_store.md（v' + currentVer + '）');
+    toast('已开始下载 consistency_20261018_store.md');
   }, 600);
 });
 
