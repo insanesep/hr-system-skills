@@ -8,9 +8,9 @@
   需求管理 · 需求列表页（Web 原型）
   页面描述真源：../../references/web-ui.md#需求列表页 ｜ 页面类型 order-list
   整页范例：busyming-skills-design/web/templates/order-list.html ｜ DOM 依据：skeletons/web/list-page.vue.tpl
-  区块：页头（导出 / 新增需求）→ KPI 统计卡 ×4（点击下钻）→ 视角 Tab ×5 → 筛选区（8 项）→ 数据表格（视角决定列集）→ 分页
+  区块：页头（导出 / 新增需求）→ KPI 统计卡 ×4（点击下钻）→ 视角 Tab ×5（对所有用户渲染，不做角色裁剪）→ 筛选区（7 项）→ 数据表格（视角决定列集）→ 分页
   演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为「陈默」（产品经理，兼实施负责人——用于演示「滞留需求」视角的手动催办）。
-  筛选条件与页码真实场景同步至页面地址（原型不做地址栏改写）；加载/错误三态见脚本内注释。
+  真实页面地址仅带入 view / productLine / bizLine（供 SLA 看板下钻），其余筛选与页码不入地址（原型不做地址栏改写）；加载/错误三态见脚本内注释。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
@@ -49,9 +49,9 @@
 
   <!-- KPI 统计卡（4 张横排，点击下钻；取数跟随当前角色可见范围，与表格筛选同源） -->
   <div class="tpl-kpi-grid" id="kpiGrid">
-    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="draft"><div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">待提交数</span><span class="tpl-kpi__hint" title="本人草稿数，点击筛选草稿">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiDraft">1</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">本人草稿，点击筛选</span></div></div>
+    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="draft"><div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">待提交数</span><span class="tpl-kpi__hint" title="本人草稿数，点击切「我提交的」视角并筛选草稿">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiDraft">1</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">本人草稿，点击筛选</span></div></div>
     <div class="tpl-kpi" role="button" tabindex="0" data-kpi="todo"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">待我审批数</span><span class="tpl-kpi__hint" title="当前登录人处于快照当前级次的待审数，点击切至「待我审批」视角">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiTodo">3</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">点击切至待我审批</span></div></div>
-    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="passed"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">已通过数</span><span class="tpl-kpi__hint" title="待关联排期 + 已关联排期，点击筛选该两状态">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiPassed">5</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">待关联 + 已关联排期</span></div></div>
+    <div class="tpl-kpi" role="button" tabindex="0" data-kpi="passed"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">已通过数</span><span class="tpl-kpi__hint" title="待关联排期 + 已关联排期合计；点击回填「待关联排期」筛选（接口仅支持单状态等值过滤）">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiPassed">5</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">待关联 + 已关联排期</span></div></div>
     <div class="tpl-kpi" role="button" tabindex="0" data-kpi="rejected"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">已驳回数</span><span class="tpl-kpi__hint" title="点击筛选已驳回">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiRejected">2</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">点击筛选已驳回</span></div></div>
   </div>
 
@@ -66,13 +66,13 @@
     </div>
   </div>
 
-  <!-- 筛选区（8 项；视角/筛选/页码真实场景同步至页面地址） -->
+  <!-- 筛选区（7 项，均单选；真实页面地址仅带入 view / productLine / bizLine） -->
   <div class="tpl-panel">
     <div class="tpl-filter">
       <div class="ac-form-item">
         <label class="ac-form-item__label">状态</label>
-        <div class="ac-select ac-select--medium is-multiple" data-ac="AcSelect" id="fStatus">
-          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部状态</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fStatus">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
           <div class="ac-select__popup" hidden><ul class="ac-select__list">
             <li class="ac-select__option" data-value="DRAFT"><span class="ac-select__option-label">草稿</span></li>
             <li class="ac-select__option" data-value="SUBMITTED"><span class="ac-select__option-label">已提交</span></li>
@@ -108,28 +108,6 @@
         </div>
       </div>
       <div class="ac-form-item">
-        <label class="ac-form-item__label">提交来源</label>
-        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fSource">
-          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-          <div class="ac-select__popup" hidden><ul class="ac-select__list">
-            <li class="ac-select__option" data-value="in"><span class="ac-select__option-label">内部提交</span></li>
-            <li class="ac-select__option" data-value="out"><span class="ac-select__option-label">外部提交</span></li>
-          </ul></div>
-        </div>
-      </div>
-      <div class="ac-form-item">
-        <label class="ac-form-item__label">优先级</label>
-        <div class="ac-select ac-select--medium is-multiple" data-ac="AcSelect" id="fPriority">
-          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部优先级</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-          <div class="ac-select__popup" hidden><ul class="ac-select__list">
-            <li class="ac-select__option" data-value="P0"><span class="ac-select__option-label">P0 紧急</span></li>
-            <li class="ac-select__option" data-value="P1"><span class="ac-select__option-label">P1 高</span></li>
-            <li class="ac-select__option" data-value="P2"><span class="ac-select__option-label">P2 中</span></li>
-            <li class="ac-select__option" data-value="P3"><span class="ac-select__option-label">P3 低</span></li>
-          </ul></div>
-        </div>
-      </div>
-      <div class="ac-form-item">
         <label class="ac-form-item__label">需求类型</label>
         <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fType">
           <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
@@ -143,12 +121,20 @@
         </div>
       </div>
       <div class="ac-form-item">
-        <label class="ac-form-item__label">提交人</label>
-        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fSubmitter" placeholder="内部姓名 / 外部手填姓名" autocomplete="off" /></span>
+        <label class="ac-form-item__label">优先级</label>
+        <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="fPriority">
+          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+          <div class="ac-select__popup" hidden><ul class="ac-select__list">
+            <li class="ac-select__option" data-value="P0"><span class="ac-select__option-label">P0 紧急</span></li>
+            <li class="ac-select__option" data-value="P1"><span class="ac-select__option-label">P1 高</span></li>
+            <li class="ac-select__option" data-value="P2"><span class="ac-select__option-label">P2 中</span></li>
+            <li class="ac-select__option" data-value="P3"><span class="ac-select__option-label">P3 低</span></li>
+          </ul></div>
+        </div>
       </div>
-      <div class="ac-form-item ac-form-item--wide">
-        <label class="ac-form-item__label">提交时间</label>
-        <span class="ac-input ac-range-picker" data-ac="AcDatePicker"><input class="ac-input__inner" id="fRange" value="2026-09-18 ~ 2026-10-18" readonly /></span>
+      <div class="ac-form-item">
+        <label class="ac-form-item__label">关键词</label>
+        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fKeyword" placeholder="标题 / 编号模糊搜索" autocomplete="off" /></span>
       </div>
       <div class="tpl-filter__actions">
         <button class="ac-btn ac-btn--primary" type="button" id="btnQuery">查询</button>
@@ -157,7 +143,7 @@
     </div>
   </div>
 
-  <!-- 数据表格：视角决定列集；「滞留需求」视角去掉附件列，增加 停留时长 / 滞留级次 / 催办情况，默认按停留时长倒序 -->
+  <!-- 数据表格：视角决定列集；「滞留需求」视角独立列集（无附件列，含 停留时长 / 滞留级次 / 提交时间，操作含手动催办） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
       <div class="tpl-toolbar__left" id="infoBar">共 16 条</div>
@@ -177,7 +163,7 @@
         <a class="tpl-pagination__page is-active">1</a>
         <a class="tpl-pagination__page">›</a>
       </div>
-      <span class="tpl-pagination__size">20 条/页 <span class="ac-select__arrow"><span class="ac-icon" data-ac="AcIcon" data-name="down"></span></span></span>
+      <span class="tpl-pagination__size" title="页大小档位：10 / 20 / 30 / 40 / 50 / 100">20 条/页 <span class="ac-select__arrow"><span class="ac-icon" data-ac="AcIcon" data-name="down"></span></span></span>
     </div>
   </div>
 </section>
@@ -262,7 +248,7 @@ window.addEventListener('keydown', (e) => {
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }, true);
 
-/* ---------- AcSelect 页面自管实现（单选 / 多选） ---------- */
+/* ---------- AcSelect 页面自管实现（单选） ---------- */
 function closeSelect(root) {
   root.classList.remove('is-open');
   const pop = $('.ac-select__popup', root);
@@ -289,23 +275,7 @@ function resetSelect(root) {
   single.classList.add('is-placeholder');
   $$('.ac-select__option', root).forEach((o) => o.classList.remove('is-selected'));
 }
-function multiValues(root) { return $$('.ac-select__tag', root).map((t) => t.getAttribute('data-value')); }
-function setMulti(root, values) {
-  const trigger = $('.ac-select__trigger', root);
-  $$('.ac-select__tag', trigger).forEach((t) => t.remove());
-  const single = $('.ac-select__single', trigger);
-  values.forEach((v) => {
-    const tag = document.createElement('span');
-    tag.className = 'ac-select__tag';
-    tag.setAttribute('data-value', v);
-    tag.innerHTML = '<span class="ac-select__tag-label">' + esc(v) + '</span><span class="ac-select__tag-close" role="button" tabindex="0">×</span>';
-    trigger.insertBefore(tag, single);
-  });
-  single.hidden = values.length > 0;
-  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', values.includes(o.getAttribute('data-value'))));
-}
 on('click', '.ac-select .ac-select__trigger', (e, el) => {
-  if (e.target.closest('.ac-select__tag-close')) return true;
   const root = el.closest('.ac-select');
   if (root.classList.contains('is-disabled')) return true;
   const willOpen = !root.classList.contains('is-open');
@@ -316,23 +286,8 @@ on('click', '.ac-select .ac-select__trigger', (e, el) => {
 });
 on('click', '.ac-select .ac-select__option', (e, el) => {
   const root = el.closest('.ac-select');
-  const v = el.getAttribute('data-value');
-  if (root.classList.contains('is-multiple')) {
-    const values = multiValues(root);
-    const i = values.indexOf(v);
-    if (i >= 0) values.splice(i, 1); else values.push(v);
-    setMulti(root, values);
-  } else {
-    setSelect(root, v);
-    closeSelect(root);
-  }
-  return true;
-});
-on('click', '.ac-select .ac-select__tag-close', (e, el) => {
-  const root = el.closest('.ac-select');
-  const tag = el.closest('.ac-select__tag');
-  const values = multiValues(root).filter((v) => v !== tag.getAttribute('data-value'));
-  setMulti(root, values);
+  setSelect(root, el.getAttribute('data-value'));
+  closeSelect(root);
   return true;
 });
 on('mousedown', null, (e, t) => {
@@ -349,28 +304,26 @@ const ME = '陈默';
 const STATUS_LABEL = { DRAFT: '草稿', SUBMITTED: '已提交', BU_REVIEWING: '业务线审批中', IMPL_REVIEWING: '实施确认中', PM_REVIEWING: '产品确认中', PM_SUBMITTED: '待关联排期', LINKED: '已关联排期', REJECTED: '已驳回' };
 const STATUS_TONE = { DRAFT: '', SUBMITTED: 'processing', BU_REVIEWING: 'processing', IMPL_REVIEWING: 'processing', PM_REVIEWING: 'processing', PM_SUBMITTED: 'warning', LINKED: 'success', REJECTED: 'danger' };
 const PRI_TAG = { P0: ['red', 'P0 紧急'], P1: ['orange', 'P1 高'], P2: ['blue', 'P2 中'], P3: ['gray', 'P3 低'] };
-const LINE_TAG = { 运营: 'blue', 财务: 'purple', 供应链: 'green', 数字化: 'orange' };   /* 数字化「金」以 orange 近似（ac-tag 五色约束） */
-const DEV_TAG = { 待开发: '', 开发中: 'processing', 开发完成: 'success' };
-const STALE_TAG = { 正常: '', 已催办: 'warning', 已升级: 'danger' };
+const LINE_TAG = { 运营: 'blue', 财务: 'purple', 供应链: 'green', 数字化: 'orange' };
 
-/* stayH：当前级次停留时长（小时）；level：滞留级次；urge：已催办次数；lastUrge：最近催办时间；esc：已升级 */
+/* stayH：当前级次停留时长（小时）；level：滞留级次；urge：已催办次数（演示去重窗口命中） */
 const ROWS = [
   { no: null, title: '门店夜间补货流程优化（草稿）', product: 'mm', line: '供应链', source: 'in', submitter: '陈默', status: 'DRAFT', approver: null, priority: 'P2', type: '功能优化', attach: 0, time: '2026-10-17 21:08', stayH: 0 },
   { no: null, title: '门店盘点差异自动预警（草稿）', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'DRAFT', approver: null, priority: 'P3', type: '新功能', attach: 1, time: '2026-10-16 18:40', stayH: 0 },
   { no: 'REQ-20261017-004', title: '会员积分兑换页面加载优化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'SUBMITTED', approver: '周文杰', priority: 'P2', type: '功能优化', attach: 2, time: '2026-10-17 15:22', stayH: 20, level: '业务线审批', urge: 0 },
   { no: 'REQ-20261016-009', title: '要货审批增加批量通过', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'BU_REVIEWING', approver: '周文杰', priority: 'P1', type: '功能优化', attach: 0, time: '2026-10-16 09:12', stayH: 30, level: '业务线审批', urge: 0 },
-  { no: 'REQ-20261015-006', title: '门店报损流程线上化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'IMPL_REVIEWING', approver: '李思远 等 2 人', priority: 'P2', type: '新功能', attach: 3, time: '2026-10-15 11:05', stayH: 54, level: '实施确认', urge: 1, lastUrge: '2026-10-17 10:00' },
-  { no: 'REQ-20261016-012', title: '门店要货单支持按周转天数智能建议补货量', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'PM_REVIEWING', approver: '陈默', priority: 'P1', type: '功能优化', attach: 4, time: '2026-10-16 08:30', stayH: 76, level: '产品确认', urge: 2, lastUrge: '2026-10-17 16:12', esc: true },
+  { no: 'REQ-20261015-006', title: '门店报损流程线上化', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'IMPL_REVIEWING', approver: '李思远 等 2 人', priority: 'P2', type: '新功能', attach: 3, time: '2026-10-15 11:05', stayH: 54, level: '实施确认', urge: 1 },
+  { no: 'REQ-20261016-012', title: '门店要货单支持按周转天数智能建议补货量', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'PM_REVIEWING', approver: '陈默', priority: 'P1', type: '功能优化', attach: 4, time: '2026-10-16 08:30', stayH: 76, level: '产品确认', urge: 0 },
   { no: 'REQ-20261014-002', title: '要货历史数据看板', product: 'mm', line: '数字化', source: 'in', submitter: '陈默', status: 'PM_SUBMITTED', approver: null, priority: 'P2', type: '数据报表', attach: 1, time: '2026-10-14 14:47', stayH: 0 },
   { no: 'REQ-20261013-011', title: '要货单导出增加成本列', product: 'mm', line: '财务', source: 'in', submitter: '陈默', status: 'LINKED', approver: null, priority: 'P3', type: '功能优化', card: 'SCH-202610-023', dev: '开发中', attach: 0, time: '2026-10-13 10:18', stayH: 0 },
-  { no: 'REQ-20261012-007', title: '盘点任务 App 推送', product: 'mm', line: '运营', source: 'in', submitter: '王五', status: 'LINKED', approver: null, priority: 'P2', type: '新功能', card: 'SCH-202610-018', cardInvalid: true, dev: '待开发', attach: 2, time: '2026-10-12 16:55', stayH: 0 },
+  { no: 'REQ-20261012-007', title: '盘点任务 App 推送', product: 'mm', line: '运营', source: 'in', submitter: '王五', status: 'LINKED', approver: null, priority: 'P2', type: '新功能', card: 'SCH-202610-018', dev: '待开发', attach: 2, time: '2026-10-12 16:55', stayH: 0 },
   { no: 'REQ-20261010-003', title: '要货审批超时自动提醒', product: 'mm', line: '运营', source: 'in', submitter: '张三', status: 'LINKED', approver: null, priority: 'P1', type: '功能优化', card: 'SCH-202609-044', dev: '开发完成', attach: 1, time: '2026-10-10 09:26', stayH: 0 },
   { no: 'REQ-20261016-003', title: '要货单自动合并相同商品', product: 'mm', line: '运营', source: 'in', submitter: '陈默', status: 'REJECTED', approver: null, priority: 'P3', type: '功能优化', attach: 0, time: '2026-10-16 10:41', stayH: 0 },
   { no: 'REQ-20261011-015', title: '门店自主定价申请', product: 'mm', line: '财务', source: 'in', submitter: '张三', status: 'REJECTED', approver: null, priority: 'P2', type: '新功能', attach: 2, time: '2026-10-11 13:29', stayH: 0 },
   { no: 'REQ-20261017-001', title: '要货提交偶发重复扣减库存', product: 'mm', line: '供应链', source: 'in', submitter: '张三', status: 'PM_REVIEWING', approver: '陈默', priority: 'P0', type: '缺陷修复', attach: 2, time: '2026-10-17 09:14', stayH: 26, level: '产品确认', urge: 0 },
   { no: 'REQ-20261015-019', title: '盘点单拍照上传失败', product: 'mm', line: '数字化', source: 'in', submitter: '李四', status: 'LINKED', approver: null, priority: 'P1', type: '缺陷修复', ticket: 'BL-20261016-045', attach: 1, time: '2026-10-15 17:36', stayH: 0 },
-  { no: 'REQ-20261017-002', title: '希望有点推荐支持按小区筛选商品', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'BU_REVIEWING', approver: '何静', priority: 'P2', type: '功能优化', attach: 2, time: '2026-10-17 11:58', stayH: 50, level: '业务线审批', urge: 1, lastUrge: '2026-10-18 09:05' },
-  { no: 'REQ-20261016-014', title: '有点推荐小程序首页加载白屏', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'PM_REVIEWING', approver: '陈默', priority: 'P1', type: '新功能', attach: 3, time: '2026-10-16 15:03', stayH: 80, level: '产品确认', urge: 2, lastUrge: '2026-10-17 18:30', esc: true },
+  { no: 'REQ-20261017-002', title: '希望有点推荐支持按小区筛选商品', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'BU_REVIEWING', approver: '何静', priority: 'P2', type: '功能优化', attach: 2, time: '2026-10-17 11:58', stayH: 50, level: '业务线审批', urge: 1 },
+  { no: 'REQ-20261016-014', title: '有点推荐小程序首页加载白屏', product: 'yd', line: null, source: 'out', submitter: '刘洋', dept: '长沙优选便利店', status: 'PM_REVIEWING', approver: '陈默', priority: 'P1', type: '新功能', attach: 3, time: '2026-10-16 15:03', stayH: 80, level: '产品确认', urge: 0 },
 ];
 
 /* ==================== 筛选与视角状态 ==================== */
@@ -379,20 +332,18 @@ const TODO_SET = new Set(['REQ-20261016-012', 'REQ-20261017-001', 'REQ-20261016-
 const STALE_SET = new Set(ROWS.filter((r) => ['BU_REVIEWING', 'IMPL_REVIEWING', 'PM_REVIEWING'].includes(r.status)).map((r) => r.no));
 
 function passFilters(r) {
-  const sts = multiValues($('#fStatus'));
-  if (sts.length && !sts.includes(r.status)) return false;
+  const st = selectValue($('#fStatus'));
+  if (st && r.status !== st) return false;
   const prod = selectValue($('#fProduct'));
   if (prod && r.product !== prod) return false;
   const line = selectValue($('#fLine'));
   if (line && r.line !== line) return false;
-  const src = selectValue($('#fSource'));
-  if (src && r.source !== src) return false;
-  const pri = multiValues($('#fPriority'));
-  if (pri.length && !pri.includes(r.priority)) return false;
   const type = selectValue($('#fType'));
   if (type && r.type !== type) return false;
-  const sub = ($('#fSubmitter').value || '').trim();
-  if (sub && !r.submitter.includes(sub)) return false;
+  const pri = selectValue($('#fPriority'));
+  if (pri && r.priority !== pri) return false;
+  const kw = ($('#fKeyword').value || '').trim();
+  if (kw && !((r.no || '').includes(kw) || r.title.includes(kw))) return false;
   return true;
 }
 function viewRows() {
@@ -400,7 +351,7 @@ function viewRows() {
   if (S.view === 'mine') rows = rows.filter((r) => r.source === 'in' && r.submitter === ME);
   else if (S.view === 'todo') rows = rows.filter((r) => TODO_SET.has(r.no));
   else if (S.view === 'external') rows = rows.filter((r) => r.source === 'out');
-  else if (S.view === 'stale') rows = rows.filter((r) => STALE_SET.has(r.no)).sort((a, b) => b.stayH - a.stayH);
+  else if (S.view === 'stale') rows = rows.filter((r) => STALE_SET.has(r.no));
   return rows.filter(passFilters);
 }
 
@@ -420,50 +371,44 @@ function lineTag(r) {
 function priTag(r) { const p = PRI_TAG[r.priority]; return `<span class="ac-tag ac-tag--${p[0]}">${p[1]}</span>`; }
 function noCell(r) {
   const no = r.no ? `<a class="ac-link mono" href="requirement-detail.html">${r.no}</a>` : '<span class="u-muted">—</span>';
-  const ext = r.source === 'out' ? ' <span class="ac-tag ac-tag--orange">外部提交</span>' : '';
+  const ext = r.source === 'out' ? ' <span class="ac-tag ac-tag--yellow">外部提交</span>' : '';
   return no + ext;
 }
 function submitterCell(r) {
-  if (r.source === 'out') return `<div>${esc(r.submitter)}</div><div class="u-sub" title="${esc(r.dept)}">${esc(r.dept)}</div>`;
+  if (r.source === 'out') return `<div>${esc(r.submitter)}</div><div class="u-sub" title="${esc(r.dept)}">${esc(r.dept)} · 外部</div>`;
   return esc(r.submitter);
 }
 function relCell(r) {
   if (r.type === '缺陷修复') {
-    return r.ticket ? `<a class="ac-link mono" href="requirement-detail.html" title="黑灯工厂工单">${r.ticket}</a>` : '<span class="u-muted">—</span>';
+    return r.ticket ? `<span class="mono">${r.ticket}</span>` : '<span class="u-muted">—</span>';
   }
   if (!r.card) return '<span class="u-muted">—</span>';
-  const invalid = r.cardInvalid ? ' <span class="ac-tag ac-tag--orange">已失效</span>' : '';
-  const dev = r.dev ? ` <span class="tpl-cell-status${DEV_TAG[r.dev] ? ' is-' + DEV_TAG[r.dev] : ''}">${r.dev}</span>` : '';
-  return `<a class="ac-link mono" href="requirement-detail.html" title="新标签页打开功能排期">${r.card}</a>${invalid}${dev}`;
+  return `<a class="ac-link mono" href="requirement-detail.html" title="页内跳功能排期卡片详情">${r.card}</a>`;
 }
 function attachCell(r) {
   if (!r.attach) return '<span class="u-muted">—</span>';
-  return `<a class="ac-link" href="requirement-detail.html" title="查看附件"><span class="ac-icon" data-ac="AcIcon" data-name="paperclip" data-size="sm"></span> ${r.attach}</a>`;
+  return `<span class="u-secondary"><span class="ac-icon" data-ac="AcIcon" data-name="paperclip" data-size="sm"></span> ${r.attach}</span>`;
 }
 function stayText(h) {
   if (h >= 48) return `${Math.floor(h / 24)} 天 ${h % 24} 小时`;
   return `${h} 小时`;
 }
-function staleDegree(r) {
-  if (r.esc) return '已升级';
-  if (r.urge > 0) return '已催办';
-  return '正常';
-}
 function rowActions(r) {
   const acts = [];
   acts.push('<a class="ac-btn ac-btn--text ac-btn--sm" href="requirement-detail.html">查看详情</a>');
-  if (r.source === 'in') {
-    const own = r.submitter === ME;
-    if (own && (r.status === 'DRAFT' || r.status === 'REJECTED')) acts.push('<a class="ac-btn ac-btn--text ac-btn--sm" href="requirement-submit.html">编辑</a>');
-    if (own && (r.status === 'SUBMITTED' || r.status === 'BU_REVIEWING')) acts.push(`<button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="withdraw" data-no="${r.no}">撤回</button>`);
-    if (own && r.status === 'DRAFT') acts.push('<button class="ac-btn ac-btn--text ac-btn--sm ac-btn--text-danger" type="button" data-act="del" data-no="draft">删除</button>');
+  /* 编辑 / 撤回 / 删除：仅「我提交的」视角的内部单行展示（服务端二次校验） */
+  if (S.view === 'mine' && r.source === 'in') {
+    if (r.status === 'DRAFT' || r.status === 'REJECTED') acts.push('<a class="ac-btn ac-btn--text ac-btn--sm" href="requirement-submit.html">编辑</a>');
+    if (['SUBMITTED', 'BU_REVIEWING', 'IMPL_REVIEWING', 'PM_REVIEWING'].includes(r.status)) acts.push(`<button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="withdraw" data-no="${r.no}">撤回</button>`);
+    if (r.status === 'DRAFT') acts.push('<button class="ac-btn ac-btn--text ac-btn--sm ac-btn--text-danger" type="button" data-act="del" data-no="draft">删除</button>');
   }
+  /* 手动催办：「滞留需求」视角全部行；无前端权限点，服务端按管理员口径拦截 */
   if (S.view === 'stale') acts.push(`<button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="urge" data-no="${r.no}">手动催办</button>`);
   return `<div class="ac-row-actions" data-ac="AcRowActions">${acts.join('')}</div>`;
 }
 
-const COLS_NORMAL = ['需求编号', '标题', '产品线', '所属业务线', '提交人', '当前状态', '当前审批人', '优先级', '关联排期 / 工单', '附件', '操作'];
-const COLS_STALE = ['需求编号', '标题', '产品线', '优先级', '当前状态', '停留时长', '滞留级次', '催办情况', '操作'];
+const COLS_NORMAL = ['需求编号', '标题', '产品线', '所属业务线', '提交人', '当前状态', '当前审批人', '附件', '优先级', '关联排期 / 工单', '提交时间', '操作'];
+const COLS_STALE = ['需求编号', '标题', '产品线', '优先级', '当前状态', '停留时长', '滞留级次', '提交时间', '操作'];
 
 function renderHead() {
   const cols = S.view === 'stale' ? COLS_STALE : COLS_NORMAL;
@@ -480,27 +425,25 @@ function renderTable() {
   renderHead();
   $('#infoBar').textContent = `共 ${rows.length} 条`;
   $('#pageInfo').textContent = `共 ${rows.length} 条 · 第 1 / 1 页`;
-  $('#viewNote').textContent = stale ? '滞留程度相对命中阈值（服务端返回）展示；默认按停留时长倒序' : '';
+  $('#viewNote').textContent = stale ? '停留时长为当前级次停留时长，≥48h 换算「N 天 M 小时」' : '';
   const tbody = $('#listTbody');
   if (!rows.length) {
     const text = stale ? '很好，当前没有超时未处理的需求' : '暂无符合条件的需求';
-    const guide = stale ? '' : '<div style="margin-top:8px"><a class="ac-btn ac-btn--primary ac-btn--sm" href="requirement-submit.html">新增需求</a></div>';
     const cols = stale ? COLS_STALE.length : COLS_NORMAL.length;
-    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">${text}</div>${guide}</div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="${cols}"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">${text}</div></div></td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map((r) => {
     if (stale) {
-      const deg = staleDegree(r);
       return `<tr>
         <td>${noCell(r)}</td>
         <td><span title="${esc(r.title)}">${esc(r.title)}</span></td>
         <td>${productTag(r)}</td>
         <td>${priTag(r)}</td>
         <td>${statusCell(r)}</td>
-        <td><span class="mono">${stayText(r.stayH)}</span> <span class="tpl-cell-status${STALE_TAG[deg] ? ' is-' + STALE_TAG[deg] : ''}">${deg}</span></td>
-        <td>${esc(r.level || '')}（${esc(r.approver || '—')}）</td>
-        <td>${r.urge ? `已催办 ${r.urge} 次 · 最近 ${esc(r.lastUrge)}` : '未催办'}${r.esc ? ' <span class="ac-tag ac-tag--red">已升级</span>' : ''}</td>
+        <td><span class="mono">${stayText(r.stayH)}</span></td>
+        <td>${esc(r.level || '')}</td>
+        <td class="mono">${esc(r.time)}</td>
         <td>${rowActions(r)}</td>
       </tr>`;
     }
@@ -512,9 +455,10 @@ function renderTable() {
       <td>${submitterCell(r)}</td>
       <td>${statusCell(r)}</td>
       <td>${approverCell(r)}</td>
+      <td>${attachCell(r)}</td>
       <td>${priTag(r)}</td>
       <td>${relCell(r)}</td>
-      <td>${attachCell(r)}</td>
+      <td class="mono">${esc(r.time)}</td>
       <td>${rowActions(r)}</td>
     </tr>`;
   }).join('');
@@ -533,29 +477,25 @@ function renderKpis() {
   $('#todoBadge').textContent = ROWS.filter((r) => TODO_SET.has(r.no)).length;
 }
 /* ==================== 事件绑定与初始化 ==================== */
-/* 视角 Tab 切换：表格骨架（加载指示）+ 页码重置为 1 */
+/* 视角 Tab 切换：表格骨架（加载指示）+ 页码重置为 1；五个视角对所有用户渲染，不做角色裁剪 */
 on('click', '#viewTabs .ac-tab', (e, el) => {
   $$('#viewTabs .ac-tab').forEach((t) => t.classList.remove('is-active'));
   el.classList.add('is-active');
   S.view = el.getAttribute('data-view');
   S.page = 1;
-  /* 「外部提交」视角下提交来源锁定为外部提交并置灰 */
-  const src = $('#fSource');
-  if (S.view === 'external') { setSelect(src, 'out', true); src.classList.add('is-disabled'); }
-  else { src.classList.remove('is-disabled'); }
   renderWithLoading();
   return true;
 });
 
-/* KPI 下钻：筛选回填并刷新，被选卡片高亮 */
+/* KPI 下钻：筛选回填并刷新，被选卡片高亮（已通过数回填「待关联排期」单状态筛选） */
 on('click', '[data-kpi]', (e, el) => {
   const k = el.getAttribute('data-kpi');
   $$('#kpiGrid .tpl-kpi').forEach((c) => c.classList.remove('is-active'));
   el.classList.add('is-active');
-  if (k === 'draft') { switchView('mine'); setMulti($('#fStatus'), ['DRAFT']); }
-  else if (k === 'todo') { switchView('todo'); setMulti($('#fStatus'), []); }
-  else if (k === 'passed') { switchView('all'); setMulti($('#fStatus'), ['PM_SUBMITTED', 'LINKED']); }
-  else if (k === 'rejected') { switchView('all'); setMulti($('#fStatus'), ['REJECTED']); }
+  if (k === 'draft') { switchView('mine'); setSelect($('#fStatus'), 'DRAFT', true); }
+  else if (k === 'todo') { switchView('todo'); resetSelect($('#fStatus')); }
+  else if (k === 'passed') { switchView('all'); setSelect($('#fStatus'), 'PM_SUBMITTED', true); }
+  else if (k === 'rejected') { switchView('all'); setSelect($('#fStatus'), 'REJECTED', true); }
   renderWithLoading();
   return true;
 });
@@ -564,13 +504,16 @@ function switchView(v) {
   $$('#viewTabs .ac-tab').forEach((t) => t.classList.toggle('is-active', t.getAttribute('data-view') === v));
 }
 
-/* 查询 / 重置 */
+/* 查询 / 重置（重置清空除视角外全部筛选并重新查询）；关键词回车触发查询 */
 on('click', '#btnQuery', () => { S.page = 1; renderWithLoading(); return true; });
+on('keydown', '#fKeyword', (e) => {
+  if (e.key === 'Enter') { S.page = 1; renderWithLoading(); }
+  return false;
+});
 on('click', '#btnReset', () => {
-  resetSelect($('#fProduct')); resetSelect($('#fLine')); resetSelect($('#fSource')); resetSelect($('#fType'));
-  setMulti($('#fStatus'), []); setMulti($('#fPriority'), []);
-  $('#fSubmitter').value = '';
-  $('#fRange').value = '2026-09-18 ~ 2026-10-18';   /* 默认近 30 天 */
+  resetSelect($('#fStatus')); resetSelect($('#fProduct')); resetSelect($('#fLine'));
+  resetSelect($('#fType')); resetSelect($('#fPriority'));
+  $('#fKeyword').value = '';
   $('#fLine').classList.remove('is-disabled');
   S.page = 1;
   renderWithLoading();
@@ -586,7 +529,7 @@ document.body.addEventListener('ac:change', (e) => {
   }
 });
 
-/* 撤回（提交人本人 + 已提交 / 业务线审批中） */
+/* 撤回（「我提交的」视角 + 内部单 + 审批中四态） */
 on('click', '[data-act="withdraw"]', async (e, el) => {
   const no = el.getAttribute('data-no');
   const ok = await askPop(el, '撤回需求', '撤回后需求回到草稿、审批链作废，确认撤回？', '确认撤回');
@@ -619,7 +562,7 @@ on('click', '[data-act="del"]', async (e, el) => {
   return true;
 });
 
-/* 手动催办（滞留需求视角 + 管理员 / 实施负责人） */
+/* 手动催办（「滞留需求」视角全部行；去重窗口内已催办过则 warning 不重复发送） */
 on('click', '[data-act="urge"]', async (e, el) => {
   const no = el.getAttribute('data-no');
   const row = ROWS.find((r) => r.no === no);
@@ -629,8 +572,12 @@ on('click', '[data-act="urge"]', async (e, el) => {
   busy(el, true);
   await wait(500);
   busy(el, false);
-  if (row) { row.urge = (row.urge || 0) + 1; row.lastUrge = '2026-10-18 10:26'; }
-  toast(`已向 ${row ? row.approver : '审批人'} 发送催办`);
+  if (row && row.urge > 0) {
+    toast('去重窗口内已催办过，本次未重复发送', 'warning');
+    return true;
+  }
+  if (row) row.urge = 1;
+  toast('已向当前审批人发送催办');
   renderTable();
   return true;
 });

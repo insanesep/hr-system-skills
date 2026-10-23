@@ -7,14 +7,16 @@
 <!--
   页面名：审批链配置页（需求管理 Web 原型，管理员视角）
   页面描述真源：../../references/web-ui.md「### 审批链配置页」（业务规则：business-rule.md §3 审批链配置规则；
-    other-rule-ai-plan.md §8 per-PM 开关；other-rule-flow-center.md §6 配置镜像同步纪律；data.md §12 枚举；permission-rules.md §1）
+    data.md §12 枚举；permission-rules.md §1）
   页面类型：archive-list（fork 范例：busyming-skills-design/web/templates/archive-list.html）
   DOM 依据骨架：busyming-skills-design/.skills/page-blueprint/skeletons/web/list-page.vue.tpl（Tab 形态附录 §A）
   演示基准日：2026-10-18；页面数据全部为虚构演示样例，仅用于表达交互与规则。
-  覆盖要点：产品线/业务线两级 Tab（Tab 切换页内 JS 驱动演示数据）；群消息配置（inline 编辑 + 未配置警示）；
-    审批链配置（先选提交对象 / 默认链与专属链说明 / 匹配优先级 inline / AI 辅助开关 / 7 列配置表格）；
-    审批统计（区间筛选 + 导出 + 驳回率分级下钻）；完整性校验提示（有点推荐红色缺级 + 供应链黄色缺级 + 数字化无专属链）；
-    配置弹窗（新增/编辑共用）、删除/停用 AcPopconfirm、重建 AcModal、写操作五阶段反馈（文案取文档原文）。
+  覆盖要点：产品线/业务线两级 Tab（Tab 切换页内 JS 驱动演示数据）；群消息配置（inline 编辑 + 未配置警示，
+    编辑态 Key 输入框为空不回填脱敏值、群名称默认「{归属}需求审批群」）；
+    审批链配置（先选提交对象：默认链 / 指定产品经理手填姓名与门户用户 ID、匹配优先级 inline 说明、6 列配置表格）；
+    配置弹窗（新增/编辑共用，各级审批人为「姓名 + 门户用户 ID」行，每级至少 1 行、多人即或签）；
+    删除/停用 AcPopconfirm；审批统计 4 卡（各带「?」口径 hint，受理量脚注含内部/外部构成、驳回率脚注含 L1/L2/L3 分级占比，
+    统计口径近 30 天按提交时间）；写操作反馈文案取文档原文。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
@@ -47,7 +49,7 @@
     </div>
   </div>
 
-  <!-- 一级 Tab（产品线）：鸣鸣很忙 / 有点推荐；红点冒泡：二级 Tab 缺级/无专属链时冒泡至一级 -->
+  <!-- 一级 Tab（产品线）：鸣鸣很忙 / 有点推荐 -->
   <div class="ac-tabs" id="pTabs">
     <div class="ac-tabs__nav" id="pTabsNav"></div>
   </div>
@@ -60,8 +62,6 @@
     <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="info"></span></div>
     <div class="ac-alert__body"><div class="ac-alert__content">有点推荐不区分业务线</div></div>
   </div>
-  <!-- 完整性校验提示（缺级 / 无专属链，按当前 Tab 动态渲染） -->
-  <div id="alertHost"></div>
 
   <!-- 卡片一：群消息配置 -->
   <div class="tpl-panel" id="groupCard"></div>
@@ -75,7 +75,7 @@
       </div>
     </div>
 
-    <!-- 先选提交对象：默认链（兜底）/ 指定产品经理 + 人员选择器；AI 辅助开关仅指定产品经理时渲染 -->
+    <!-- 先选提交对象：默认链（兜底）/ 指定产品经理（手填姓名与门户用户 ID，不使用人员选择器） -->
     <div class="tpl-filter">
       <div class="ac-form-item ac-form-item--wide">
         <label class="ac-form-item__label">提交对象</label>
@@ -84,22 +84,17 @@
             <span class="ac-radio ac-radio--dot is-checked" role="radio" aria-checked="true" data-ac="AcRadio" data-value="default" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">默认链（兜底）</span></span>
             <span class="ac-radio ac-radio--dot" role="radio" aria-checked="false" data-ac="AcRadio" data-value="pm" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">指定产品经理</span></span>
           </div>
-          <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="搜索并选择产品经理（全员人员搜索）" id="pmSelect" hidden>
-            <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">搜索并选择产品经理（全员人员搜索）</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-            <div class="ac-select__popup" hidden><ul class="ac-select__list" id="pmSelectList"></ul></div>
-          </div>
-          <span id="aiSwitchWrap" hidden>
-            <button class="ac-btn ac-switch" type="button" role="switch" aria-checked="false" data-ac="AcSwitch" data-size="medium" data-shape="rounded" id="aiSwitch"><span class="ac-switch__thumb"></span></button>
-            <span class="u-secondary">AI 辅助方案确认</span>
+          <span id="pmInputs" hidden>
+            <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="pmNameInput" placeholder="产品经理姓名" autocomplete="off" /></span>
+            <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" id="pmIdInput" placeholder="门户用户 ID（数字）" inputmode="numeric" autocomplete="off" /></span>
           </span>
         </div>
       </div>
     </div>
-    <div class="u-secondary u-sm">默认链仅承接外部提交与防御兜底（内部单只能选本归属有专属链的产品经理）；为产品经理配置专属链后，提交给他的需求走专属链。本页人员选择器为全员人员搜索，不使用提交页的提交对象候选集。</div>
-    <div class="u-secondary u-sm" id="aiSwitchHint" hidden>立即生效，仅影响开启后进入产品确认节点的需求；AI 生成内容需产品经理确认后才触达提交人。</div>
+    <div class="u-secondary u-sm">默认链仅承接外部提交与防御兜底（内部单只能选本归属有专属链的产品经理）；为产品经理配置专属链后，提交给他的需求走专属链。提交对象为手填维护，不使用人员选择器，也不与提交页的提交对象候选集联动。</div>
     <div class="u-secondary u-sm">匹配优先级：提交需求时按提交对象匹配专属链（内部单必中专属链，不回退默认链；外部提交走默认链）；同一链内按 类型+优先级精确 → 类型精确+优先级通配 → 类型通配+优先级精确 → 全通配 降级，命中即止。</div>
 
-    <!-- 配置表格（7 列）；空态、加载态见 render 实现与页尾注释 -->
+    <!-- 配置表格（6 列）；空态、加载态见 render 实现 -->
     <div class="ac-table-wrap">
       <table class="ac-table" id="cfgTable">
         <thead>
@@ -108,7 +103,6 @@
             <th>优先级</th>
             <th>审批级次</th>
             <th>各级审批人</th>
-            <th>审批模式</th>
             <th>状态</th>
             <th>操作</th>
           </tr>
@@ -125,23 +119,12 @@
     </div>
   </div>
 
-  <!-- 卡片三：审批统计（统计范围跟随当前产品线、业务线 Tab 与时间区间） -->
+  <!-- 卡片三：审批统计（统计范围跟随当前产品线、业务线 Tab，近 30 天按提交时间过滤） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
       <div class="tpl-toolbar__left">
         <span class="tpl-toolbar__title">审批统计</span>
         <span class="u-sub" id="statScope">鸣鸣很忙 · 运营 · 近 30 天（按提交时间过滤）</span>
-      </div>
-      <div class="tpl-toolbar__right">
-        <div class="tpl-filter__row">
-          <span class="ac-input ac-range-picker" data-ac="AcDatePicker"><input class="ac-input__inner" id="statRange" value="2026-09-18 ~ 2026-10-18" readonly /></span>
-          <span class="ac-segmented" id="statQuick">
-            <span class="ac-segmented__item" data-days="7">近 7 天</span>
-            <span class="ac-segmented__item is-active" data-days="30">近 30 天</span>
-            <span class="ac-segmented__item" data-days="90">近 90 天</span>
-          </span>
-        </div>
-        <button class="ac-btn" type="button" id="statExportBtn"><span class="ac-icon" data-ac="AcIcon" data-name="export" data-size="sm"></span> 导出统计</button>
       </div>
     </div>
     <div class="tpl-kpi-grid" id="statGrid"></div>
@@ -202,9 +185,9 @@
               <span class="ac-checkbox" role="checkbox" tabindex="0" aria-checked="false" data-ac="AcCheckbox" data-value="1"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">L1 业务线审批</span></span>
               <span class="ac-checkbox" role="checkbox" tabindex="0" aria-checked="false" data-ac="AcCheckbox" data-value="2"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">L2 实施确认</span></span>
               <span class="ac-checkbox" role="checkbox" tabindex="0" aria-checked="false" data-ac="AcCheckbox" data-value="3"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">L3 产品确认</span></span>
-            </div><div class="ac-form-item__help" data-help id="cfgLevelsHelp">至少勾一级；默认链 L1 / L2 固定勾选不可取消，有点推荐默认链三级全勾且不可取消</div></div>
+            </div><div class="ac-form-item__help" data-help></div></div>
           </div>
-          <!-- 各级审批人：按勾选级次动态渲染人员选择器（多选，多人即或签），每级至少 1 人 -->
+          <!-- 各级审批人：按勾选级次动态渲染「姓名 + 门户用户 ID」行，每级至少 1 行不可删，多人即或签 -->
           <div id="cfgApprovers"></div>
           <div class="ac-form-item ac-form-item--horizontal" data-field="note">
             <label class="ac-form-item__label is-right">配置说明</label>
@@ -220,24 +203,6 @@
       <div class="ac-modal__footer">
         <button class="ac-btn" type="button" data-close="cfgModal">取消</button>
         <button class="ac-btn ac-btn--primary" type="button" id="cfgOkBtn">确认保存</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 重建在途需求审批链确认弹窗 -->
-<div class="ac-modal ac-modal--center" data-ac="AcModal" id="rebuildModal" hidden>
-  <div class="ac-modal__mask" data-close="rebuildModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="440">
-      <div class="ac-modal__header"><div class="ac-modal__title">重建在途需求审批链</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="rebuildModal">×</button></div>
-      <div class="ac-modal__body ac-modal__body--semantic">
-        <span class="ac-modal__sem-icon ac-modal__sem-icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></span>
-        <div class="ac-modal__body-text" id="rebuildContent"></div>
-      </div>
-      <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" data-close="rebuildModal">取消</button>
-        <button class="ac-btn ac-btn--primary" type="button" id="rebuildOkBtn">确认重建</button>
       </div>
     </div>
   </div>
@@ -382,7 +347,6 @@ function onEscape() {
   if (popOpen()) { settlePop(false); return; }
   if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
   if (OPEN.has('cfgModal')) { requestCloseCfg(); return; }
-  if (OPEN.has('rebuildModal')) { hideLayer('rebuildModal'); return; }
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }
 
@@ -413,26 +377,8 @@ function resetSelect(root) {
   single.classList.add('is-placeholder');
   $$('.ac-select__option', root).forEach((o) => o.classList.remove('is-selected'));
 }
-/* 多选（各级审批人）：trigger 内标签并列 */
-function multiValues(root) { return $$('.ac-select__tag', root).map((t) => t.getAttribute('data-value')); }
-function setMulti(root, values) {
-  const trigger = $('.ac-select__trigger', root);
-  $$('.ac-select__tag', trigger).forEach((t) => t.remove());
-  const single = $('.ac-select__single', trigger);
-  values.forEach((v) => {
-    const tag = document.createElement('span');
-    tag.className = 'ac-select__tag';
-    tag.setAttribute('data-value', v);
-    tag.innerHTML = '<span class="ac-select__tag-label">' + esc(v) + '</span><span class="ac-select__tag-close" role="button" tabindex="0">×</span>';
-    trigger.insertBefore(tag, single);
-  });
-  single.hidden = values.length > 0;
-  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', values.includes(o.getAttribute('data-value'))));
-  root.dispatchEvent(new CustomEvent('ac:change', { bubbles: true, detail: { values } }));
-}
 
 on('click', '.ac-select .ac-select__trigger', (e, el) => {
-  if (e.target.closest('.ac-select__tag-close')) return true;
   const root = el.closest('.ac-select');
   if (root.classList.contains('is-disabled')) return true;
   const willOpen = !root.classList.contains('is-open');
@@ -443,23 +389,8 @@ on('click', '.ac-select .ac-select__trigger', (e, el) => {
 });
 on('click', '.ac-select .ac-select__option', (e, el) => {
   const root = el.closest('.ac-select');
-  const v = el.getAttribute('data-value');
-  if (root.classList.contains('is-multiple')) {
-    const values = multiValues(root);
-    const i = values.indexOf(v);
-    if (i >= 0) values.splice(i, 1); else values.push(v);
-    setMulti(root, values);
-  } else {
-    setSelect(root, v);
-    closeSelect(root);
-  }
-  return true;
-});
-on('click', '.ac-select .ac-select__tag-close', (e, el) => {
-  const root = el.closest('.ac-select');
-  const tag = el.closest('.ac-select__tag');
-  const values = multiValues(root).filter((v) => v !== tag.getAttribute('data-value'));
-  setMulti(root, values);
+  setSelect(root, el.getAttribute('data-value'));
+  closeSelect(root);
   return true;
 });
 on('mousedown', null, (e, t) => {
@@ -471,134 +402,108 @@ on('mousedown', null, (e, t) => {
 });
 /* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
 const PRODUCTS = [
-  { key: 'mm', label: '鸣鸣很忙', dot: true },   /* dot：数字化无专属链红点冒泡至一级 Tab */
-  { key: 'yd', label: '有点推荐', dot: true },   /* dot：默认链缺级 */
+  { key: 'mm', label: '鸣鸣很忙' },
+  { key: 'yd', label: '有点推荐' },
 ];
 const LINES = [
   { key: 'yy', label: '运营' },
   { key: 'cw', label: '财务' },
   { key: 'gyl', label: '供应链' },
-  { key: 'sz', label: '数字化', dot: true },     /* dot：无任何启用中专属链 */
+  { key: 'sz', label: '数字化' },
 ];
-const PMS = ['陈默', '李娜', '赵磊', '孙倩'];              /* 配置页人员选择器 = 全员人员搜索（business-rule §3.2），此处为演示子集 */
-const APPROVERS = ['周文杰', '王芳', '郑凯', '吴迪', '何静', '李思远', '孙浩', '陈默', '李娜', '赵磊'];
 const LEVEL_NAMES = { 1: 'L1 业务线审批', 2: 'L2 实施确认', 3: 'L3 产品确认' };
+const AP = (name, id) => ({ name, id });
 
-/* 配置行：{ id, type('*' 通配), priority('*' 通配), levels[1..3], ap{level:[names]}, enabled, note } */
+/* 配置行：{ id, type('*' 通配), priority('*' 通配), levels[1..3], ap{level:[{name,id}]}, enabled, note } */
 const DATA = {
   'mm|yy': {
-    group: { name: '需求审批 · 运营线群', key: 'a3f9' },
-    alerts: [],
+    group: { name: '鸣鸣很忙 · 运营需求审批群', key: 'a3f9' },
     def: [
-      { id: 'd-yy-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: ['周文杰'], 2: ['李思远', '孙浩'] }, enabled: true, note: '默认链兜底：外部无入口，仅防御' },
+      { id: 'd-yy-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('周文杰', '10231')], 2: [AP('李思远', '10312'), AP('孙浩', '10358')] }, enabled: true, note: '默认链兜底：外部无入口，仅防御' },
     ],
     pm: {
       '陈默': [
-        { id: 'p-yy-1', type: '*', priority: '*', levels: [1, 2, 3], ap: { 1: ['周文杰'], 2: ['李思远'], 3: ['陈默'] }, enabled: true, note: '陈默全量专属链' },
-        { id: 'p-yy-2', type: '缺陷修复', priority: 'P0', levels: [3], ap: { 3: ['陈默'] }, enabled: true, note: 'P0 缺陷直送产品确认' },
+        { id: 'p-yy-1', type: '*', priority: '*', levels: [1, 2, 3], ap: { 1: [AP('周文杰', '10231')], 2: [AP('李思远', '10312')], 3: [AP('陈默', '10086')] }, enabled: true, note: '陈默全量专属链' },
+        { id: 'p-yy-2', type: '缺陷修复', priority: 'P0', levels: [3], ap: { 3: [AP('陈默', '10086')] }, enabled: true, note: 'P0 缺陷直送产品确认' },
       ],
       '李娜': [
-        { id: 'p-yy-3', type: '数据报表', priority: '*', levels: [2, 3], ap: { 2: ['孙浩'], 3: ['李娜'] }, enabled: false, note: '' },
+        { id: 'p-yy-3', type: '数据报表', priority: '*', levels: [2, 3], ap: { 2: [AP('孙浩', '10358')], 3: [AP('李娜', '10124')] }, enabled: false, note: '' },
       ],
     },
-    ai: { '陈默': true, '李娜': false },
-    stats: { accept: 86, inOut: null, pass: '74.4%', reject: '12.8%', rejectLv: { 1: '6.1%', 2: '4.2%', 3: '2.5%' }, avg: '18 小时 24 分' },
+    stats: { accept: 86, inOut: [70, 16], pass: '74.4%', reject: '12.8%', rejectLv: { 1: '6.1%', 2: '4.2%', 3: '2.5%' }, avg: '18 小时 24 分' },
   },
   'mm|cw': {
     group: null,   /* 未配置企微群 → 警示条演示 */
-    alerts: [],
     def: [
-      { id: 'd-cw-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: ['王芳'], 2: ['李思远', '孙浩'] }, enabled: true, note: '' },
+      { id: 'd-cw-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('王芳', '10255')], 2: [AP('李思远', '10312'), AP('孙浩', '10358')] }, enabled: true, note: '' },
     ],
     pm: {
       '陈默': [
-        { id: 'p-cw-1', type: '*', priority: '*', levels: [2, 3], ap: { 2: ['李思远'], 3: ['陈默'] }, enabled: true, note: '' },
+        { id: 'p-cw-1', type: '*', priority: '*', levels: [2, 3], ap: { 2: [AP('李思远', '10312')], 3: [AP('陈默', '10086')] }, enabled: true, note: '' },
       ],
     },
-    ai: { '陈默': false },
-    stats: { accept: 23, inOut: null, pass: '82.6%', reject: '8.7%', rejectLv: { 1: '4.3%', 2: '2.9%', 3: '1.5%' }, avg: '12 小时 06 分' },
+    stats: { accept: 23, inOut: [20, 3], pass: '82.6%', reject: '8.7%', rejectLv: { 1: '4.3%', 2: '2.9%', 3: '1.5%' }, avg: '12 小时 06 分' },
   },
   'mm|gyl': {
-    group: { name: '需求审批 · 供应链群', key: 'b7e2' },
-    alerts: [{ kind: 'warning', text: '该归属默认链缺级（当前仅配置 L1 业务线审批，缺 L2 实施确认）；内部提交不经过默认链，不受影响，仅防御兜底能力降级' }],
+    group: { name: '鸣鸣很忙 · 供应链需求审批群', key: 'b7e2' },
     def: [
-      { id: 'd-gyl-1', type: '*', priority: '*', levels: [1], ap: { 1: ['郑凯'] }, enabled: true, note: '默认链缺级演示行' },
+      { id: 'd-gyl-1', type: '*', priority: '*', levels: [1], ap: { 1: [AP('郑凯', '10287')] }, enabled: true, note: '' },
     ],
     pm: {
       '陈默': [
-        { id: 'p-gyl-1', type: '*', priority: '*', levels: [1, 2, 3], ap: { 1: ['郑凯'], 2: ['孙浩'], 3: ['陈默'] }, enabled: true, note: '' },
+        { id: 'p-gyl-1', type: '*', priority: '*', levels: [1, 2, 3], ap: { 1: [AP('郑凯', '10287')], 2: [AP('孙浩', '10358')], 3: [AP('陈默', '10086')] }, enabled: true, note: '' },
       ],
     },
-    ai: { '陈默': true },
-    stats: { accept: 31, inOut: null, pass: '71.0%', reject: '16.1%', rejectLv: { 1: '9.7%', 2: '3.8%', 3: '2.6%' }, avg: '26 小时 41 分' },
+    stats: { accept: 31, inOut: [26, 5], pass: '71.0%', reject: '16.1%', rejectLv: { 1: '9.7%', 2: '3.8%', 3: '2.6%' }, avg: '26 小时 41 分' },
   },
   'mm|sz': {
-    group: { name: '需求审批 · 数字化群', key: 'c1d8' },
-    alerts: [{ kind: 'error', text: '该归属未配置产品经理专属链，内部提交将无可选提交对象' }],
+    group: { name: '鸣鸣很忙 · 数字化需求审批群', key: 'c1d8' },
     def: [
-      { id: 'd-sz-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: ['吴迪'], 2: ['孙浩'] }, enabled: true, note: '' },
+      { id: 'd-sz-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('吴迪', '10301')], 2: [AP('孙浩', '10358')] }, enabled: true, note: '' },
     ],
     pm: { '陈默': [] },   /* 专属链空态演示：「该产品经理尚未配置专属链，不能被选为提交对象」 */
-    ai: { '陈默': false },
-    stats: { accept: 12, inOut: null, pass: '66.7%', reject: '25.0%', rejectLv: { 1: '16.7%', 2: '5.6%', 3: '2.7%' }, avg: '31 小时 12 分' },
+    stats: { accept: 12, inOut: [12, 0], pass: '66.7%', reject: '25.0%', rejectLv: { 1: '16.7%', 2: '5.6%', 3: '2.7%' }, avg: '31 小时 12 分' },
   },
   'yd|*': {
     group: { name: '有点推荐需求审批群', key: 'e5k2' },
-    alerts: [{
-      kind: 'error',
-      text: '该归属默认链缺级，外部提交将被拒绝',
-      extra: '外链将无法生成，且已发出的链接提交会失败',
-      link: { href: 'requirement-public-link.html', label: '前往外链管理' },
-    }],
     def: [
-      { id: 'd-yd-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: ['何静'], 2: ['李思远'] }, enabled: true, note: '缺 L3 → 默认链缺级演示' },
+      { id: 'd-yd-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('何静', '10299')], 2: [AP('李思远', '10312')] }, enabled: true, note: '' },
     ],
     pm: {
       '陈默': [
-        { id: 'p-yd-1', type: '*', priority: '*', levels: [3], ap: { 3: ['陈默'] }, enabled: true, note: '有点推荐内部单仅产品确认' },
+        { id: 'p-yd-1', type: '*', priority: '*', levels: [3], ap: { 3: [AP('陈默', '10086')] }, enabled: true, note: '有点推荐内部单仅产品确认' },
       ],
     },
-    ai: { '陈默': true },
     stats: { accept: 41, inOut: [9, 32], pass: '68.3%', reject: '19.5%', rejectLv: { 1: '7.3%', 2: '7.3%', 3: '4.9%' }, avg: '22 小时 03 分' },
   },
 };
-/* 重建影响条数（演示映射） */
-const REBUILD_N = { 'd-yy-1': 0, 'p-yy-1': 3, 'p-yy-2': 1, 'p-yy-3': 0, 'd-cw-1': 0, 'p-cw-1': 1, 'd-gyl-1': 0, 'p-gyl-1': 2, 'd-sz-1': 0, 'd-yd-1': 2, 'p-yd-1': 1 };
 
-const S = { product: 'mm', line: 'yy', obj: 'default', pm: '', statDays: 30, editing: null };
+const S = { product: 'mm', line: 'yy', obj: 'default', pmName: '', pmId: '', editing: null };
 const curKey = () => S.product === 'yd' ? 'yd|*' : `mm|${S.line}`;
 const curData = () => DATA[curKey()];
 const curScopeLabel = () => S.product === 'yd' ? '有点推荐' : `鸣鸣很忙 · ${LINES.find((l) => l.key === S.line).label}`;
+/* null = 指定产品经理但未填写姓名与门户用户 ID（表格空态一） */
 const curRows = () => {
   const d = curData();
   if (S.obj === 'default') return d.def;
-  return (d.pm && d.pm[S.pm]) || [];
+  if (!S.pmName.trim()) return null;
+  return (d.pm && d.pm[S.pmName.trim()]) || [];
 };
 
 /* ==================== 渲染 ==================== */
 function renderTabs() {
   $('#pTabsNav').innerHTML = PRODUCTS.map((p) =>
-    `<span class="ac-tab${S.product === p.key ? ' is-active' : ''}" data-ptab="${p.key}">${p.label}${p.dot ? '<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-tab__badge"><span class="ac-badge__dot"></span></span>' : ''}</span>`).join('');
+    `<span class="ac-tab${S.product === p.key ? ' is-active' : ''}" data-ptab="${p.key}">${p.label}</span>`).join('');
   const showLines = S.product === 'mm';
   $('#lTabs').hidden = !showLines;
   if (showLines) {
     $('#lTabsNav').innerHTML = LINES.map((l) =>
-      `<span class="ac-tab${S.line === l.key ? ' is-active' : ''}" data-ltab="${l.key}">${l.label}${l.dot ? '<span data-ac="AcBadge" class="ac-badge ac-badge--standalone ac-tab__badge"><span class="ac-badge__dot"></span></span>' : ''}</span>`).join('');
+      `<span class="ac-tab${S.line === l.key ? ' is-active' : ''}" data-ltab="${l.key}">${l.label}</span>`).join('');
   }
   $('#ydTip').hidden = S.product !== 'yd';
 }
 
-function alertHtml(a) {
-  const iconName = a.kind === 'error' ? 'attention' : 'remind';
-  const extra = a.extra ? `<div class="ac-alert__content"><strong class="u-danger">${esc(a.extra)}</strong></div>` : '';
-  const link = a.link ? `<div class="ac-alert__action"><a class="ac-link" href="${a.link.href}">${esc(a.link.label)}</a></div>` : '';
-  return `<div class="ac-alert ac-alert--${a.kind}" data-ac="AcAlert" role="alert"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="${iconName}"></span></div><div class="ac-alert__body"><div class="ac-alert__content">${esc(a.text)}</div>${extra}</div>${link}</div>`;
-}
-function renderAlerts() {
-  $('#alertHost').innerHTML = curData().alerts.map(alertHtml).join('');
-}
-
-/* ---- 卡片一：群消息配置（已配置 / 未配置 / inline 编辑三态） ---- */
+/* ---- 卡片一：群消息配置（已配置 / 未配置 / inline 编辑三态；编辑态 Key 输入框为空不回填脱敏值） ---- */
 let groupEditing = false;
 function renderGroup() {
   const d = curData();
@@ -608,9 +513,13 @@ function renderGroup() {
   if (groupEditing) {
     body = `
       <div class="tpl-filter">
+        <div class="ac-form-item">
+          <label class="ac-form-item__label">企微群名称</label>
+          <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="groupNameInput" value="${esc((g && g.name) || curScopeLabel() + '需求审批群')}" /></span>
+        </div>
         <div class="ac-form-item ac-form-item--wide">
           <label class="ac-form-item__label">Webhook Key</label>
-          <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="groupKeyInput" placeholder="请输入企业微信群机器人 Webhook Key" /></span>
+          <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="groupKeyInput" placeholder="请输入完整 Webhook Key（不回填脱敏值）" /></span>
         </div>
         <div class="tpl-filter__actions">
           <button class="ac-btn ac-btn--primary ac-btn--sm" type="button" id="groupSaveBtn">保存</button>
@@ -644,15 +553,7 @@ function renderObjArea() {
     r.classList.toggle('is-checked', on);
     r.setAttribute('aria-checked', String(on));
   });
-  $('#pmSelect').hidden = S.obj !== 'pm';
-  if (S.obj === 'pm' && S.pm) setSelect($('#pmSelect'), S.pm, true);
-  const d = curData();
-  const aiOn = S.obj === 'pm' && S.pm && d.ai && d.ai[S.pm];
-  $('#aiSwitchWrap').hidden = !(S.obj === 'pm' && S.pm);
-  $('#aiSwitchHint').hidden = !(S.obj === 'pm' && S.pm);
-  const sw = $('#aiSwitch');
-  sw.classList.toggle('is-checked', !!aiOn);
-  sw.setAttribute('aria-checked', String(!!aiOn));
+  $('#pmInputs').hidden = S.obj !== 'pm';
 }
 
 function levelsLabel(levels) {
@@ -661,10 +562,9 @@ function levelsLabel(levels) {
   return levels.map((l) => 'L' + l).join('+');
 }
 function approversCell(row) {
-  return row.levels.map((lv) => {
-    const tags = (row.ap[lv] || []).map((n) => `<span class="ac-tag ac-tag--blue">${esc(n)}</span>`).join(' ');
-    return `<span class="u-strong">L${lv}：</span>${tags}`;
-  }).join(' <span class="u-muted">｜</span> ');
+  return row.levels.map((lv) =>
+    `<span class="u-strong">L${lv}</span> ${(row.ap[lv] || []).map((a) => esc(a.name)).join('/')}`
+  ).join(' <span class="u-muted">·</span> ');
 }
 function typeCell(row) {
   return row.type === '*' ? '<span class="ac-tag ac-tag--gray">* 全部类型</span>' : esc(row.type);
@@ -679,14 +579,20 @@ function priorityCell(row) {
 function renderTable() {
   const rows = curRows();
   const tbody = $('#cfgTbody');
+  /* 空态一：指定产品经理但未填姓名与门户用户 ID */
+  if (rows === null) {
+    $('#cfgPageInfo').textContent = '共 0 条';
+    tbody.innerHTML = `<tr><td colspan="6"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">请输入产品经理姓名与门户用户 ID 以查看其专属链配置</div></div></td></tr>`;
+    return;
+  }
   $('#cfgPageInfo').textContent = `共 ${rows.length} 条`;
   if (!rows.length) {
-    /* 空态：默认链 →「该归属默认链尚未配置，外部提交与防御兜底不可用」（有点推荐默认链额外追加「外链也将无法生成」）；
+    /* 空态二：默认链 →「该归属默认链尚未配置，外部提交与防御兜底不可用」；
        指定产品经理 →「该产品经理尚未配置专属链，不能被选为提交对象」 */
     const text = S.obj === 'default'
-      ? ('该归属默认链尚未配置，外部提交与防御兜底不可用' + (S.product === 'yd' ? '；外链也将无法生成' : ''))
+      ? '该归属默认链尚未配置，外部提交与防御兜底不可用'
       : '该产品经理尚未配置专属链，不能被选为提交对象';
-    tbody.innerHTML = `<tr><td colspan="7"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">${text}</div><div class="ac-empty__desc">点击右上角「新增配置」建立第一条审批链</div><button class="ac-btn ac-btn--primary ac-btn--sm" type="button" data-empty-add>新增配置</button></div></td></tr>`;
+    tbody.innerHTML = `<tr><td colspan="6"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">${text}</div><div class="ac-empty__desc">点击右上角「新增配置」建立第一条审批链</div><button class="ac-btn ac-btn--primary ac-btn--sm" type="button" data-empty-add>新增配置</button></div></td></tr>`;
     return;
   }
   tbody.innerHTML = rows.map((r) => `
@@ -695,31 +601,23 @@ function renderTable() {
       <td>${priorityCell(r)}</td>
       <td><span class="ac-tag ac-tag--bordered">${levelsLabel(r.levels)}</span></td>
       <td>${approversCell(r)}</td>
-      <td><span class="ac-tag ac-tag--gray" title="同级多名审批人任一人通过即视为该级通过，只读不可切换">或签</span></td>
       <td><button class="ac-btn ac-switch${r.enabled ? ' is-checked' : ''}" type="button" role="switch" aria-checked="${r.enabled}" data-ac="AcSwitch" data-size="small" data-shape="rounded" data-toggle-row="${r.id}" aria-label="启用或停用该配置"><span class="ac-switch__thumb"></span></button></td>
       <td><div class="ac-row-actions" data-ac="AcRowActions">
         <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-edit-row="${r.id}">编辑</button>
         <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-del-row="${r.id}">删除</button>
-        <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-rebuild-row="${r.id}">重建在途需求审批链</button>
       </div></td>
     </tr>`).join('');
 }
 
-/* ---- 卡片三：审批统计 ---- */
-let rejectDrill = 0;   /* 0=总驳回率；1/2/3=分级下钻 */
+/* ---- 卡片三：审批统计（4 卡，各带「?」口径 hint；近 30 天按提交时间过滤） ---- */
 function renderStats() {
   const d = curData().stats;
-  $('#statScope').textContent = `${curScopeLabel()} · 近 ${S.statDays} 天（按提交时间过滤）`;
-  const drill = rejectDrill;
-  const rejectValue = drill ? d.rejectLv[drill] : d.reject;
-  const subsLv = [1, 2, 3].map((lv) =>
-    `<span>L${lv} <b class="ac-link" data-reject-drill="${lv}" role="button" tabindex="0">${d.rejectLv[lv]}</b></span>`).join('');
+  $('#statScope').textContent = `${curScopeLabel()} · 近 30 天（按提交时间过滤）`;
   const cards = [
-    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">受理量</span><span class="tpl-kpi__hint" title="区间内该归属已提交需求条数（不含草稿）" data-tip="区间内该归属已提交需求条数（不含草稿）">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.accept}</span><span class="tpl-kpi__unit">条</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">不含草稿</span></div></div>`,
-    d.inOut ? `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">内部 / 外部构成</span><span class="tpl-kpi__hint" title="受理量按提交来源拆分，仅有点推荐 Tab 展示" data-tip="受理量按提交来源拆分，仅有点推荐 Tab 展示">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.accept}</span><span class="tpl-kpi__unit">条</span></div><div class="tpl-kpi__subs"><span>内部 <b>${d.inOut[0]} 条</b></span><span>外部 <b>${d.inOut[1]} 条</b></span></div></div>` : '',
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">受理量</span><span class="tpl-kpi__hint" title="近 30 天该归属已提交需求条数（不含草稿）" data-tip="近 30 天该归属已提交需求条数（不含草稿）">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.accept}</span><span class="tpl-kpi__unit">条</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">内部 ${d.inOut[0]} 条 · 外部 ${d.inOut[1]} 条</span></div></div>`,
     `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">通过率</span><span class="tpl-kpi__hint" title="全级审批通过（待关联排期 + 已关联排期）条数 ÷ 受理量" data-tip="全级审批通过（待关联排期 + 已关联排期）条数 ÷ 受理量">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.pass}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">全级通过 ÷ 受理量</span></div></div>`,
-    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">驳回率${drill ? ` · L${drill}` : ''}</span><span class="tpl-kpi__hint" title="驳回条数 ÷ 受理量；点击下方 L1 / L2 / L3 分级下钻" data-tip="驳回条数 ÷ 受理量；点击下方 L1 / L2 / L3 分级下钻">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${rejectValue}</span></div><div class="tpl-kpi__subs">${subsLv}</div></div>`,
-    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">平均审批时长</span><span class="tpl-kpi__hint" title="按级次聚合的本级等待时长均值" data-tip="按级次聚合的本级等待时长均值">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.avg}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">本级等待时长均值</span></div></div>`,
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">驳回率</span><span class="tpl-kpi__hint" title="驳回条数 ÷ 受理量" data-tip="驳回条数 ÷ 受理量">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.reject}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">L1 ${d.rejectLv[1]} · L2 ${d.rejectLv[2]} · L3 ${d.rejectLv[3]}</span></div></div>`,
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">平均审批时长</span><span class="tpl-kpi__hint" title="提交至末级通过的时长均值" data-tip="提交至末级通过的时长均值">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.avg}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">提交 → 末级通过</span></div></div>`,
   ];
   $('#statGrid').innerHTML = cards.join('');
 }
@@ -728,11 +626,11 @@ function findRow(id) {
   const d = curData();
   const inDef = d.def.find((r) => r.id === id);
   if (inDef) return { row: inDef, list: d.def };
-  const arr = (d.pm && d.pm[S.pm]) || [];
+  const arr = (d.pm && d.pm[S.pmName.trim()]) || [];
   const inPm = arr.find((r) => r.id === id);
   return inPm ? { row: inPm, list: arr } : { row: null, list: null };
 }
-function refreshAll() { renderTabs(); renderAlerts(); renderGroup(); renderObjArea(); renderTable(); renderStats(); }
+function refreshAll() { renderTabs(); renderGroup(); renderObjArea(); renderTable(); renderStats(); }
 
 /* ---------- 一级 / 二级 Tab ---------- */
 on('click', '[data-ptab]', (e, el) => {
@@ -746,35 +644,15 @@ on('click', '[data-ltab]', (e, el) => {
   return true;
 });
 
-/* ---------- 提交对象选择（默认链 / 指定产品经理） ---------- */
-function populatePmSelect() {
-  $('#pmSelectList').innerHTML = PMS.map((n) => `<li class="ac-select__option" data-value="${esc(n)}"><span class="ac-select__option-label">${esc(n)}</span></li>`).join('');
-}
+/* ---------- 提交对象选择（默认链 / 指定产品经理手填姓名与门户用户 ID） ---------- */
 on('click', '#objRadios .ac-radio', (e, el) => {
   S.obj = el.getAttribute('data-value');
-  if (S.obj === 'pm' && !S.pm) S.pm = PMS[0];   /* 切换后默认选中首位产品经理，下方表格即展示其配置行 */
   renderObjArea();
   renderTable();
   return true;
 });
-document.body.addEventListener('ac:change', (e) => {
-  if (e.target && e.target.id === 'pmSelect') {
-    S.pm = e.detail.value;
-    renderObjArea();
-    renderTable();
-  }
-});
-
-/* ---------- AI 辅助方案确认开关（产品经理粒度，批量生效其全部专属链） ---------- */
-on('click', '#aiSwitch', (e, el) => {
-  const d = curData();
-  if (!d.ai) d.ai = {};
-  const next = !(d.ai[S.pm]);
-  d.ai[S.pm] = next;
-  renderObjArea();
-  toast(`已为 ${S.pm} ${next ? '开启' : '关闭'} AI 辅助方案确认`);
-  return true;
-});
+on('input', '#pmNameInput', (e, el) => { S.pmName = el.value; renderTable(); return false; });
+on('input', '#pmIdInput', (e, el) => { S.pmId = el.value; return false; });
 
 /* ---------- 卡片一：群消息配置（inline 编辑） ---------- */
 on('click', '#groupSetBtn', () => { groupEditing = true; renderGroup(); return true; });
@@ -787,7 +665,7 @@ on('click', '#groupSaveBtn', async () => {
   err.hidden = true;
   const btn = $('#groupSaveBtn');
   busy(btn, true);
-  await wait(600);   /* 演示：服务端校验机器人有效性 */
+  await wait(600);   /* 演示：保存时服务端校验机器人有效性 */
   busy(btn, false);
   if (v.length < 6) {   /* 演示失败分支：Webhook Key 无效或机器人已移出群，输入保留 */
     err.textContent = 'Webhook Key 无效或机器人已移出群';
@@ -795,21 +673,17 @@ on('click', '#groupSaveBtn', async () => {
     return true;
   }
   const d = curData();
-  d.group = { name: (d.group && d.group.name) || `${curScopeLabel()}需求审批群`, key: v.slice(-4) };
+  const name = ($('#groupNameInput').value || '').trim() || `${curScopeLabel()}需求审批群`;
+  d.group = { name, key: v.slice(-4) };
   groupEditing = false;
   renderGroup();
   toast(`${curScopeLabel()}企微群已绑定`);
   return true;
 });
 
-/* ---------- 配置弹窗：级次勾选与各级审批人 ---------- */
+/* ---------- 配置弹窗：级次勾选与各级审批人（姓名 + 门户用户 ID 行） ---------- */
 function checkedLevels() {
   return $$('#cfgLevels .ac-checkbox.is-checked').map((c) => Number(c.getAttribute('data-value')));
-}
-function isFixedLevel(lv) {
-  if (S.obj !== 'default') return false;
-  if (S.product === 'yd') return true;                    /* 有点推荐默认链三级全勾且不可取消 */
-  return lv === 1 || lv === 2;                            /* 鸣鸣很忙默认链 L1 / L2 固定勾选不可取消 */
 }
 function renderLevelChecks(levels) {
   $$('#cfgLevels .ac-checkbox').forEach((c) => {
@@ -817,45 +691,78 @@ function renderLevelChecks(levels) {
     const on = levels.includes(lv);
     c.classList.toggle('is-checked', on);
     c.setAttribute('aria-checked', String(on));
-    c.classList.toggle('is-disabled', isFixedLevel(lv));
   });
 }
-function renderApproverSelectors(levels, ap) {
-  $('#cfgApprovers').innerHTML = levels.map((lv) => `
+/* 每级审批人行：姓名 + 门户用户 ID；每级至少 1 行不可删，多人即或签 */
+function apRowHtml(lv, a, removable) {
+  return `<div class="tpl-filter__row" style="margin-bottom:8px" data-ap-row>
+    <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" data-ap-name placeholder="审批人姓名" value="${a ? esc(a.name) : ''}" autocomplete="off" /></span>
+    <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" data-ap-id placeholder="门户用户 ID（数字）" value="${a ? esc(a.id) : ''}" inputmode="numeric" autocomplete="off" /></span>
+    ${removable ? '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-ap-del>删除</button>' : ''}
+  </div>`;
+}
+function renderApproverRows(levels, ap) {
+  $('#cfgApprovers').innerHTML = levels.map((lv) => {
+    const list = (ap && ap[lv] && ap[lv].length ? ap[lv] : [null]);
+    return `
     <div class="ac-form-item ac-form-item--horizontal is-required" data-field="ap${lv}">
       <label class="ac-form-item__label is-right"><span class="ac-form-item__required">*</span>${LEVEL_NAMES[lv]}审批人</label>
-      <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
-        <div class="ac-select ac-select--medium is-multiple" data-ac="AcSelect" data-level="${lv}">
-          <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">请选择审批人（多人即或签）</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-          <div class="ac-select__popup" hidden><ul class="ac-select__list">
-            ${APPROVERS.map((n) => `<li class="ac-select__option" data-value="${esc(n)}"><span class="ac-select__option-label">${esc(n)}</span></li>`).join('')}
-          </ul></div>
-        </div>
+      <div class="ac-form-item__wrapper"><div class="ac-form-item__control" data-ap-list="${lv}">
+        ${list.map((a, i) => apRowHtml(lv, a, list.length > 1)).join('')}
+        <button class="ac-btn ac-btn--sm" type="button" data-ap-add="${lv}">+ 加审批人（多人即或签）</button>
       </div><div class="ac-form-item__help" data-help></div></div>
-    </div>`).join('');
-  levels.forEach((lv) => {
-    const names = (ap && ap[lv]) || [];
-    if (names.length) setMulti($(`#cfgApprovers .ac-select[data-level="${lv}"]`), names);
+    </div>`;
+  }).join('');
+}
+function refreshApRowDel(listEl) {
+  const rows = $$('[data-ap-row]', listEl);
+  rows.forEach((r, i) => {
+    const del = $('[data-ap-del]', r);
+    if (rows.length > 1 && !del) r.insertAdjacentHTML('beforeend', '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-ap-del>删除</button>');
+    if (rows.length <= 1 && del) del.remove();
   });
 }
+on('click', '[data-ap-add]', (e, el) => {
+  const listEl = el.closest('[data-ap-list]');
+  el.insertAdjacentHTML('beforebegin', apRowHtml(Number(listEl.getAttribute('data-ap-list')), null, true));
+  refreshApRowDel(listEl);
+  return true;
+});
+on('click', '[data-ap-del]', (e, el) => {
+  const listEl = el.closest('[data-ap-list]');
+  el.closest('[data-ap-row]').remove();
+  refreshApRowDel(listEl);
+  return true;
+});
 on('click', '#cfgLevels .ac-checkbox', (e, el) => {
-  if (el.classList.contains('is-disabled')) return true;
   const lv = Number(el.getAttribute('data-value'));
   const on = !el.classList.contains('is-checked');
   el.classList.toggle('is-checked', on);
   el.setAttribute('aria-checked', String(on));
+  /* 保留已填写行的输入 */
   const prev = {};
-  $$('#cfgApprovers .ac-select[data-level]').forEach((s) => { prev[s.getAttribute('data-level')] = multiValues(s); });
-  renderApproverSelectors(checkedLevels(), prev);
+  $$('#cfgApprovers [data-ap-list]').forEach((listEl) => {
+    prev[listEl.getAttribute('data-ap-list')] = $$('[data-ap-row]', listEl).map((r) => ({
+      name: $('[data-ap-name]', r).value, id: $('[data-ap-id]', r).value,
+    })).filter((a) => a.name || a.id);
+  });
+  renderApproverRows(checkedLevels(), prev);
   return true;
 });
 
 /* ---------- 配置弹窗：打开 / 校验 / 保存 / 脏关闭 ---------- */
 let cfgSnapshot = '';
-function cfgFormState() {
+function readApprovers() {
   const ap = {};
-  $$('#cfgApprovers .ac-select[data-level]').forEach((s) => { ap[s.getAttribute('data-level')] = multiValues(s); });
-  return JSON.stringify({ type: selectValue($('#cfgType')), priority: selectValue($('#cfgPriority')), levels: checkedLevels(), ap, note: $('#cfgNote').value });
+  $$('#cfgApprovers [data-ap-list]').forEach((listEl) => {
+    ap[listEl.getAttribute('data-ap-list')] = $$('[data-ap-row]', listEl).map((r) => ({
+      name: $('[data-ap-name]', r).value.trim(), id: $('[data-ap-id]', r).value.trim(),
+    }));
+  });
+  return ap;
+}
+function cfgFormState() {
+  return JSON.stringify({ type: selectValue($('#cfgType')), priority: selectValue($('#cfgPriority')), levels: checkedLevels(), ap: readApprovers(), note: $('#cfgNote').value });
 }
 function fieldErr(field, msg) {
   const item = $(`#cfgForm [data-field="${field}"]`) || $(`#cfgApprovers [data-field="${field}"]`);
@@ -866,20 +773,20 @@ function fieldErr(field, msg) {
 }
 function clearCfgErrs() {
   $$('#cfgModal .ac-form-item.is-error').forEach((i) => i.classList.remove('is-error'));
-  $$('#cfgModal [data-help]').forEach((h) => { if (h.id !== 'cfgLevelsHelp') h.textContent = ''; });
+  $$('#cfgModal [data-help]').forEach((h) => { h.textContent = ''; });
   $('#cfgModalAlert').innerHTML = '';
 }
 function openCfgModal(row) {
   S.editing = row ? row.id : null;
   $('#cfgModalTitle').textContent = row ? '编辑配置' : '新增配置';
   $('#cfgLineText').textContent = curScopeLabel();
-  $('#cfgObjText').textContent = S.obj === 'default' ? '默认链（兜底）' : `指定产品经理 · ${S.pm}`;
+  $('#cfgObjText').textContent = S.obj === 'default' ? '默认链（兜底）' : `指定产品经理 · ${S.pmName.trim()}`;
   clearCfgErrs();
   if (row) { setSelect($('#cfgType'), row.type, true); setSelect($('#cfgPriority'), row.priority, true); }
   else { resetSelect($('#cfgType')); resetSelect($('#cfgPriority')); }
-  const levels = row ? row.levels.slice() : (S.obj === 'default' ? (S.product === 'yd' ? [1, 2, 3] : [1, 2]) : []);
+  const levels = row ? row.levels.slice() : [];
   renderLevelChecks(levels);
-  renderApproverSelectors(levels, row && row.ap);
+  renderApproverRows(levels, row && row.ap);
   $('#cfgNote').value = (row && row.note) || '';
   $('#cfgNoteCount').textContent = `${$('#cfgNote').value.length}/256`;
   showLayer('cfgModal');
@@ -895,8 +802,15 @@ function requestCloseCfg() {
     hideLayer('cfgModal');
   }
 }
-on('click', '#addCfgBtn', () => { openCfgModal(null); return true; });
-on('click', '[data-empty-add]', () => { openCfgModal(null); return true; });
+/* 新增指定产品经理专属链前置校验 */
+function pmPrecheck() {
+  if (S.obj !== 'pm') return true;
+  if (!S.pmName.trim()) { toast('请先填写产品经理姓名与门户用户 ID', 'error'); return false; }
+  if (!/^\d+$/.test(S.pmId.trim())) { toast('门户用户 ID 需为数字', 'error'); return false; }
+  return true;
+}
+on('click', '#addCfgBtn', () => { if (pmPrecheck()) openCfgModal(null); return true; });
+on('click', '[data-empty-add]', () => { if (pmPrecheck()) openCfgModal(null); return true; });
 on('click', '[data-edit-row]', (e, el) => {
   const { row } = findRow(el.getAttribute('data-edit-row'));
   if (row) openCfgModal(row);
@@ -914,10 +828,12 @@ on('click', '#cfgOkBtn', async (e, btn) => {
   if (!levels.length) { fieldErr('levels', '请至少勾选一个审批级次'); firstBad = firstBad || 'levels'; }
   const ap = {};
   levels.forEach((lv) => {
-    const sel = $(`#cfgApprovers .ac-select[data-level="${lv}"]`);
-    const values = sel ? multiValues(sel) : [];
-    ap[lv] = values;
-    if (!values.length) { fieldErr(`ap${lv}`, `请选择 L${lv} 级至少一名审批人`); firstBad = firstBad || `ap${lv}`; }
+    const rows = (readApprovers()[lv] || []);
+    const filled = rows.filter((r) => r.name && r.id);
+    const partial = rows.some((r) => (r.name && !r.id) || (!r.name && r.id) || (r.id && !/^\d+$/.test(r.id)));
+    ap[lv] = filled;
+    if (!filled.length && !partial) { fieldErr(`ap${lv}`, `请选择 L${lv} 级至少一名审批人`); firstBad = firstBad || `ap${lv}`; }
+    else if (partial || !filled.length) { fieldErr(`ap${lv}`, `L${lv} 级审批人需同时填写姓名与数字用户 ID`); firstBad = firstBad || `ap${lv}`; }
   });
   if (firstBad) {
     const item = $(`#cfgModal [data-field="${firstBad}"]`);
@@ -925,7 +841,7 @@ on('click', '#cfgOkBtn', async (e, btn) => {
     return true;
   }
   /* 同条件同级次审批人唯一性校验（演示：同类型 + 同优先级即视为同条件） */
-  const dup = curRows().some((r) => r.id !== S.editing && r.type === type && r.priority === priority);
+  const dup = curRows() && curRows().some((r) => r.id !== S.editing && r.type === type && r.priority === priority);
   if (dup) {
     $('#cfgModalAlert').innerHTML = '<div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></div><div class="ac-alert__body"><div class="ac-alert__content">该条件下已存在相同审批人配置</div></div></div>';
     return true;
@@ -937,26 +853,24 @@ on('click', '#cfgOkBtn', async (e, btn) => {
   if (S.editing) {
     const { row } = findRow(S.editing);
     if (row) Object.assign(row, { type, priority, levels, ap, note: $('#cfgNote').value.trim() });
-    hideLayer('cfgModal');
-    toast('配置已更新，仅对新提交需求生效');
   } else {
     const row = { id: 'x-' + Date.now(), type, priority, levels, ap, enabled: true, note: $('#cfgNote').value.trim() };
     if (S.obj === 'default') d.def.push(row);
-    else { if (!d.pm) d.pm = {}; if (!d.pm[S.pm]) d.pm[S.pm] = []; d.pm[S.pm].push(row); }
-    hideLayer('cfgModal');
-    toast(`${curScopeLabel()} · ${S.obj === 'default' ? '默认链' : S.pm}审批链配置已新增`);
+    else { if (!d.pm) d.pm = {}; if (!d.pm[S.pmName.trim()]) d.pm[S.pmName.trim()] = []; d.pm[S.pmName.trim()].push(row); }
   }
+  hideLayer('cfgModal');
+  toast('配置已更新，仅对新提交需求生效');
   renderTable();
   return true;
 });
 
-/* ---------- 行操作：删除 / 启停 / 重建 ---------- */
+/* ---------- 行操作：删除 / 启停 ---------- */
 on('click', '[data-del-row]', async (e, el) => {
   const id = el.getAttribute('data-del-row');
   const { row, list } = findRow(id);
   if (!row) return true;
   if (S.obj === 'default') {
-    /* 默认链缺级校验：删除后该归属默认链不得缺 L1（鸣鸣很忙还需 L2；有点推荐三级全需） */
+    /* 默认链缺级校验：删除后该归属默认链不得缺 L1（鸣鸣很忙还需 L2；有点推荐三级全需）；专属链不受限 */
     const need = S.product === 'yd' ? [1, 2, 3] : [1, 2];
     const rest = list.filter((r) => r.id !== id);
     const missing = need.find((lv) => !rest.some((r) => r.levels.includes(lv)));
@@ -989,48 +903,6 @@ on('click', '[data-toggle-row]', async (e, el) => {
   renderTable();
   return true;
 });
-let rebuildId = null;
-on('click', '[data-rebuild-row]', (e, el) => {
-  rebuildId = el.getAttribute('data-rebuild-row');
-  const n = REBUILD_N[rebuildId] || 0;
-  $('#rebuildContent').textContent = `将对该条件下在途需求重新生成审批链快照，级次保持不变，影响 ${n} 条需求，确认重建？`;
-  showLayer('rebuildModal');
-  return true;
-});
-on('click', '#rebuildOkBtn', async (e, btn) => {
-  busy(btn, true);
-  await wait(600);
-  busy(btn, false);
-  hideLayer('rebuildModal');
-  toast(`已重建 ${REBUILD_N[rebuildId] || 0} 条在途需求的审批链`);
-  return true;
-});
-
-/* ---------- 卡片三：统计区间 / 导出 / 驳回率分级下钻 ---------- */
-const BASE = new Date('2026-10-18T12:00:00');
-function fmtDay(d) { return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
-on('click', '#statQuick .ac-segmented__item', (e, el) => {
-  $$('#statQuick .ac-segmented__item').forEach((i) => i.classList.remove('is-active'));
-  el.classList.add('is-active');
-  S.statDays = Number(el.getAttribute('data-days'));
-  const start = new Date(BASE.getTime() - (S.statDays - 1) * 86400000);
-  $('#statRange').value = `${fmtDay(start)} ~ ${fmtDay(BASE)}`;
-  renderStats();
-  return true;
-});
-on('click', '[data-reject-drill]', (e, el) => {
-  const lv = Number(el.getAttribute('data-reject-drill'));
-  rejectDrill = rejectDrill === lv ? 0 : lv;
-  renderStats();
-  return true;
-});
-on('click', '#statExportBtn', async (e, btn) => {
-  busy(btn, true);
-  await wait(600);
-  busy(btn, false);
-  toast('导出任务已提交，请在下载中心查看');
-  return true;
-});
 
 /* ---------- proto-bar 页间互联 / 弹层关闭 / 通用确认 ---------- */
 on('click', '#protoBtn', () => {
@@ -1053,7 +925,6 @@ on('click', '#pcOkBtn', () => { settlePop(true); return true; });
 on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
 
 /* ---------- 初始化 ---------- */
-populatePmSelect();
 refreshAll();
 </script>
 </body>

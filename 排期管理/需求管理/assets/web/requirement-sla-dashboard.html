@@ -8,11 +8,16 @@
   需求管理 · SLA 仪表盘页（Web 原型）
   页面描述真源：../../references/web-ui.md#sla-仪表盘页 ｜ 页面类型 report（无看板模板，取 report 页型）
   整页范例：busyming-skills-design/web/templates/report.html ｜ DOM 依据：skeletons/web/dashboard-multi.vue.tpl
-  区块：筛选栏（产品线 / 业务线 / 时间区间默认近 90 天 / 聚合粒度按周|按月 / SLA 配置链接）→ 指标卡 ×4 → 各业务线平均审批耗时（分组柱状）→ 趋势图（双轴折线）
-  纯只读页：不提供催办 / 审批 / 配置写操作；阈值比较以服务端返回的命中阈值为准，前端不写死 48/72 小时。
+  区块（自上而下）：页头（「SLA 配置」文字链接 +「刷新」）→ 筛选栏（产品线 / 业务线 / 提交时间默认近 90 天 / 聚合粒度按周|按月）
+    → 统计卡区 4 卡（审批中 / 当前滞留条数·实时·整卡可下钻 / 已关联排期 / 已驳回）
+    → 审批时效统计区（按提交时间过滤，默认近 90 天：平均审批耗时 / 端到端平均周期 / 超时率·整卡可下钻 / 受理需求）
+    → 图表一 各业务线平均审批耗时（分组柱状）→ 图表二 趋势图（双折线）→ 滞留需求表（超 SLA 未审批，手动催办）
+  下钻：超时率与当前滞留条数两卡 → 需求列表页「滞留需求」视角（原型 href requirement-list.html）。
+  滞留需求表是本页唯一写入口（手动催办），与需求列表「滞留需求」视角同规则、同去重窗口；本页不提供审批或配置写操作。
+  阈值比较以服务端返回的命中阈值为准，前端不写死 48/72 小时。
   图表说明：柱高 / 折线坐标为数据驱动，行内 style 仅承载数据百分比与 token 变量（var(--ac-*)），无硬编码色值；
-    悬浮用 title 展示均值与样本量（真实页面由 AcChart tooltip 承接）。
-  三态：筛选变更时指标卡与图表区各自局部加载（骨架屏语义）；区间内无数据时指标卡展示 —、图表区空态「当前筛选下暂无审批数据」且导出置灰（原型演示有数据路径，空态结构见脚本注释）。
+    悬浮用 title 展示均值与样本量（真实页面由 AcChart tooltip 承接）；X 轴严格日期正序，无数据区间不补 0。
+  三态：筛选变更时指标卡与图表区各自局部加载（骨架屏语义）；区间内无数据时图表区空态「当前筛选下暂无审批数据」（原型演示有数据路径）。
   演示基准日 2026-10-18，数据为虚构样例。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
@@ -46,11 +51,11 @@
     </div>
     <div class="tpl-page-head__actions">
       <a class="ac-btn ac-btn--text" data-ac="AcButton" href="requirement-sla-config.html">SLA 配置</a>
-      <button class="ac-btn ac-btn--primary" type="button" id="exportBtn"><span class="ac-icon" data-ac="AcIcon" data-name="export" data-size="sm"></span> 导出</button>
+      <button class="ac-btn" type="button" id="refreshBtn">刷新</button>
     </div>
   </div>
 
-  <!-- 筛选栏 -->
+  <!-- 筛选栏：修改任一筛选项即按新条件刷新（无查询按钮）；业务线在产品线=有点推荐时置灰清空 -->
   <div class="tpl-panel">
     <div class="tpl-filter">
       <div class="ac-form-item">
@@ -76,9 +81,9 @@
         </div>
       </div>
       <div class="ac-form-item ac-form-item--wide">
-        <label class="ac-form-item__label">时间区间</label>
+        <label class="ac-form-item__label">提交时间</label>
         <span class="ac-input ac-range-picker" data-ac="AcDatePicker"><input class="ac-input__inner" id="fRange" value="2026-07-20 ~ 2026-10-18" readonly /></span>
-        <span class="ac-form-item__hint">按提交时间过滤，默认近 90 天</span>
+        <span class="ac-form-item__hint">默认近 90 天</span>
       </div>
       <div class="ac-form-item">
         <label class="ac-form-item__label">聚合粒度</label>
@@ -87,35 +92,57 @@
           <span class="ac-segmented__item" data-gran="month">按月</span>
         </span>
       </div>
-      <div class="tpl-filter__actions">
-        <button class="ac-btn ac-btn--primary" type="button" id="btnQuery">查询</button>
-        <button class="ac-btn" type="button" id="btnReset">重置</button>
+    </div>
+  </div>
+
+  <!-- 统计卡区（4 张横排，复用需求列表口径） -->
+  <div class="tpl-panel">
+    <div class="tpl-kpi-grid tpl-kpi-grid--embedded" id="kpiGrid">
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">审批中</span><span class="tpl-kpi__hint" title="已提交 + 业务线审批中 + 实施确认中 + 产品确认中四态合计">?</span></div>
+        <div class="tpl-kpi__number"><span class="tpl-kpi__value">23</span><span class="tpl-kpi__unit">条</span></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">四态合计</span></div>
+      </div>
+      <div class="tpl-kpi" role="button" tabindex="0" id="kpiStale" title="点击下钻至需求列表「滞留需求」视角（带当前产品线、业务线筛选）">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">当前滞留条数</span><span class="tpl-kpi__hint" title="实时值，不受时间区间筛选影响；点击下钻至需求列表「滞留需求」视角">?</span></div>
+        <div class="tpl-kpi__number"><span class="tpl-kpi__value">7</span><span class="tpl-kpi__unit">条</span></div>
+        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">实时</span></div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">已关联排期</span><span class="tpl-kpi__hint" title="区间内已达「已关联排期」的需求条数">?</span></div>
+        <div class="tpl-kpi__number"><span class="tpl-kpi__value">148</span><span class="tpl-kpi__unit">条</span></div>
+      </div>
+      <div class="tpl-kpi">
+        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">已驳回</span><span class="tpl-kpi__hint" title="区间内被驳回的需求条数">?</span></div>
+        <div class="tpl-kpi__number"><span class="tpl-kpi__value">32</span><span class="tpl-kpi__unit">条</span></div>
       </div>
     </div>
   </div>
 
-  <!-- 指标卡区（4 张横排） -->
+  <!-- 审批时效统计区（按提交时间过滤，默认近 90 天） -->
   <div class="tpl-panel">
-    <div class="tpl-kpi-grid tpl-kpi-grid--embedded" id="kpiGrid">
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">平均审批耗时</span><span class="tpl-kpi__hint" title="全级次汇总的本级等待时长均值">?</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiAvg">21.4</span><span class="tpl-kpi__unit">小时</span></div>
-        <div class="tpl-kpi__subs"><span>L1 <b class="mono" id="kpiL1">16.2h</b></span><span>L2 <b class="mono" id="kpiL2">22.8h</b></span><span>L3 <b class="mono" id="kpiL3">25.1h</b></span></div>
-      </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">端到端平均周期</span><span class="tpl-kpi__hint" title="仅统计已达已关联排期的需求，在途需求不入分母">?</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiE2e">4.6</span><span class="tpl-kpi__unit">天</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">首次提交 → 已关联排期</span></div>
-      </div>
-      <div class="tpl-kpi" role="button" tabindex="0" id="kpiTimeout" title="点击下钻至需求列表「滞留需求」视角（带当前产品线、业务线筛选）">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">超时率</span><span class="tpl-kpi__hint" title="节点实际耗时超过命中催办阈值的节点数 ÷ 受理需求数；点击下钻至滞留需求">?</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiRate">18.6</span><span class="tpl-kpi__unit">%</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text mono" id="kpiRateSub">32 / 172 条</span></div>
-      </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">当前滞留条数</span><span class="tpl-kpi__hint" title="实时值，不受时间区间筛选影响">?</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiStale">7</span><span class="tpl-kpi__unit">条</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">实时</span></div>
+    <div class="tpl-section">
+      <div class="tpl-section__head">审批时效统计<span class="u-sub">（按提交时间过滤，默认近 90 天）</span></div>
+      <div class="tpl-kpi-grid tpl-kpi-grid--embedded" id="effGrid">
+        <div class="tpl-kpi">
+          <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">平均审批耗时</span><span class="tpl-kpi__hint" title="L1 / L2 / L3 各级等待时长均值的再平均">?</span></div>
+          <div class="tpl-kpi__number"><span class="tpl-kpi__value">8.3</span><span class="tpl-kpi__unit">小时</span></div>
+          <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text mono">L1 12h · L2 8h · L3 5h</span></div>
+        </div>
+        <div class="tpl-kpi">
+          <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">端到端平均周期</span><span class="tpl-kpi__hint" title="仅统计已达已关联排期的需求，在途需求不入分母">?</span></div>
+          <div class="tpl-kpi__number"><span class="tpl-kpi__value">4.6</span><span class="tpl-kpi__unit">天</span></div>
+          <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">首次提交 → 已关联排期</span></div>
+        </div>
+        <div class="tpl-kpi" role="button" tabindex="0" id="kpiTimeout" title="点击下钻至需求列表「滞留需求」视角（带当前产品线、业务线筛选）">
+          <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">超时率</span><span class="tpl-kpi__hint" title="超催办阈值节点数 ÷ 受理需求数；点击下钻至需求列表「滞留需求」视角">?</span></div>
+          <div class="tpl-kpi__number"><span class="tpl-kpi__value">18.6</span><span class="tpl-kpi__unit">%</span></div>
+          <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text mono">32 / 172 条</span></div>
+        </div>
+        <div class="tpl-kpi">
+          <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">受理需求</span><span class="tpl-kpi__hint" title="区间内非草稿需求条数">?</span></div>
+          <div class="tpl-kpi__number"><span class="tpl-kpi__value">172</span><span class="tpl-kpi__unit">条</span></div>
+        </div>
       </div>
     </div>
   </div>
@@ -136,22 +163,47 @@
     </div>
   </div>
 
-  <!-- 图表二 · 趋势图（折线，双 Y 轴；X 轴严格日期正序，无数据区间留空不补 0） -->
+  <!-- 图表二 · 趋势图（双折线：平均耗时（小时）/ 超时率（%）；X 轴严格日期正序，无数据区间不补 0） -->
   <div class="tpl-panel">
     <div class="tpl-section">
       <div class="tpl-section__head">审批耗时与超时率趋势</div>
       <div class="ac-chart" data-ac="AcChart" id="lineChart">
         <div class="ac-chart-demo">
-          <div class="ac-chart-demo__legend"><span><i style="background:var(--ac-primary-6)"></i>平均审批耗时（左轴 · 小时）</span><span><i style="background:var(--ac-warning-6)"></i>超时率（右轴 · %）</span></div>
+          <div class="ac-chart-demo__legend"><span><i style="background:var(--ac-primary-6)"></i>平均耗时（左轴 · 小时）</span><span><i style="background:var(--ac-warning-6)"></i>超时率（右轴 · %）</span></div>
           <div class="ac-chart-demo__plot"><div class="ac-chart-demo__line" id="linePlot"></div></div>
           <div class="u-secondary u-sm" id="lineX"></div>
         </div>
         <div class="ac-chart__state" id="lineLoading" hidden><span class="ac-table__spinner" aria-label="加载中"></span></div>
       </div>
-      <div class="u-secondary u-sm">X 轴按日期正序（最早在左）；无数据区间已留空（折线断开，不补 0 值点）。</div>
+      <div class="u-secondary u-sm">X 轴按日期正序（最早在左）；无数据区间不补 0（折线断开）。</div>
+    </div>
+  </div>
+
+  <!-- 滞留需求表：本页唯一写入口（手动催办），与需求列表「滞留需求」视角同规则、同去重窗口 -->
+  <div class="tpl-panel">
+    <div class="tpl-section">
+      <div class="tpl-section__head">滞留需求（超 SLA 未审批）</div>
+      <div class="ac-table-wrap">
+        <table class="ac-table">
+          <thead>
+            <tr><th>需求编号</th><th>标题</th><th>优先级</th><th>当前状态</th><th>滞留级次</th><th>停留时长</th><th>提交人</th><th>提交时间</th><th>操作</th></tr>
+          </thead>
+          <tbody id="staleTbody"></tbody>
+        </table>
+        <div class="ac-table__loading" aria-live="polite" id="staleLoading" hidden><span class="ac-table__spinner" aria-label="加载中"></span></div>
+      </div>
     </div>
   </div>
 </section>
+
+<!-- 通用 AcPopconfirm 浮层（手动催办二次确认） -->
+<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
+  <div class="ac-popconfirm__inner">
+    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
+    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
+  </div>
+  <span class="ac-popconfirm__arrow"></span>
+</div>
 
 <!-- 全局提示宿主 -->
 <div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
@@ -191,10 +243,32 @@ const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([se
     e.stopPropagation();
   });
 });
+/* ---------- 通用 Popconfirm（固定定位到触发元素上方） ---------- */
+let popResolve = null;
+function askPop(anchor, title, content, okText) {
+  const p = $('#popconfirm');
+  $('#pcTitle').textContent = title;
+  $('#pcContent').textContent = content || '';
+  $('#pcOkBtn').textContent = okText || '确认';
+  p.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
+  p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
+  return new Promise((res) => { popResolve = res; });
+}
+function settlePop(v) {
+  if (!popResolve) return;
+  const r = popResolve;
+  popResolve = null;
+  if (!v) $('#popconfirm').hidden = true;
+  r(v);
+}
+const popOpen = () => !$('#popconfirm').hidden;
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$$('.ac-select.is-open').length) return;
+  if (!popOpen() && !$$('.ac-select.is-open').length) return;
   e.stopPropagation();
+  if (popOpen()) { settlePop(false); return; }
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }, true);
 function closeSelect(root) {
@@ -239,6 +313,7 @@ on('click', '.ac-select .ac-select__option', (e, el) => {
   return true;
 });
 on('mousedown', null, (e, t) => {
+  if (popOpen() && !(t && t.closest('#popconfirm'))) settlePop(false);
   $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
   const menu = $('#protoMenu');
   if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
@@ -264,6 +339,13 @@ const MONTH_DATA = [
   ['2026-07', 25.7, 22.6], ['2026-08', 23.5, 19.9], ['2026-09', 21.2, 17.4], ['2026-10', 19.9, 15.8],
 ];
 let gran = 'week';
+/* 滞留需求表（超 SLA 未审批）；stay 为当前级次停留时长（≥ 48h 换算「N 天 M 小时」）；urged 演示去重窗口命中 */
+const PRI_TAG = { P0: ['red', 'P0 紧急'], P1: ['orange', 'P1 高'], P2: ['blue', 'P2 中'], P3: ['gray', 'P3 低'] };
+const STALE_ROWS = [
+  { no: 'REQ-20261012-008', title: '库存预警短信通知开关', pri: 'P2', status: '实施确认中', level: 'L2 实施确认', stay: '6 天 1 小时', submitter: '吴倩', at: '2026-10-12 15:03', urged: false },
+  { no: 'REQ-20261015-003', title: '门店要货单导出增加成本列', pri: 'P1', status: '业务线审批中', level: 'L1 业务线审批', stay: '3 天 4 小时', submitter: '周文杰', at: '2026-10-15 09:22', urged: false },
+  { no: 'REQ-20261016-014', title: '供应商对账接口超时优化', pri: 'P0', status: '产品确认中', level: 'L3 产品确认', stay: '2 天 6 小时', submitter: '郑爽（外部）', at: '2026-10-16 11:40', urged: true },
+];
 
 function renderBars() {
   const max = 32;
@@ -280,7 +362,7 @@ function renderLine() {
   const maxH = 30, maxR = 30;
   const W = 100 / (data.length - 1);
   const pts = data.map((d, i) => d[1] == null ? null : [i * W, 100 - (d[1] / maxH) * 100, 100 - (d[2] / maxR) * 100, d]);
-  /* 分段：遇 null 断开（无数据区间留空） */
+  /* 分段：遇 null 断开（无数据区间不补 0） */
   function segments(idx) {
     const segs = [];
     let cur = [];
@@ -301,37 +383,55 @@ function renderLine() {
   $('#linePlot').innerHTML = `<svg viewBox="0 0 100 100" preserveAspectRatio="none">${durSegs}${rateSegs}${dots}</svg>`;
   $('#lineX').innerHTML = `<div style="display:flex;justify-content:space-between">${data.map((d) => `<span class="mono">${d[0]}</span>`).join('')}</div>`;
 }
+
+function renderStale() {
+  const tbody = $('#staleTbody');
+  if (!STALE_ROWS.length) {
+    tbody.innerHTML = `<tr><td colspan="9"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">很好，当前没有超时未处理的需求</div></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = STALE_ROWS.map((r) => `<tr>
+    <td><a class="ac-link mono" href="requirement-detail.html">${esc(r.no)}</a></td>
+    <td><span title="${esc(r.title)}">${esc(r.title)}</span></td>
+    <td><span class="ac-tag ac-tag--${PRI_TAG[r.pri][0]}">${PRI_TAG[r.pri][1]}</span></td>
+    <td><span class="tpl-cell-status is-processing">${esc(r.status)}</span></td>
+    <td>${esc(r.level)}</td>
+    <td class="mono">${esc(r.stay)}</td>
+    <td>${esc(r.submitter)}</td>
+    <td class="mono">${esc(r.at)}</td>
+    <td><div class="ac-row-actions" data-ac="AcRowActions">
+      <button class="ac-btn ac-btn--text ac-btn--sm ac-btn--text-danger" type="button" data-urge="${esc(r.no)}">手动催办</button>
+    </div></td>
+  </tr>`).join('');
+}
 /* ==================== 事件绑定与初始化 ==================== */
-/* 筛选变更：指标卡与图表区各自局部加载后按新条件刷新（失败时各区块 inline「加载失败，点击重试」，互不影响——原型演示成功路径） */
+/* 筛选变更：修改任一筛选项即按新条件刷新；指标卡与图表区各自局部加载（失败时各区块 inline「加载失败，点击重试」，互不影响——原型演示成功路径） */
 function refreshAll() {
   $('#barLoading').hidden = false;
   $('#lineLoading').hidden = false;
+  $('#staleLoading').hidden = false;
   $('#kpiGrid').setAttribute('aria-busy', 'true');
+  $('#effGrid').setAttribute('aria-busy', 'true');
   setTimeout(() => {
     $('#barLoading').hidden = true;
     $('#lineLoading').hidden = true;
+    $('#staleLoading').hidden = true;
     $('#kpiGrid').removeAttribute('aria-busy');
+    $('#effGrid').removeAttribute('aria-busy');
     renderBars();
     renderLine();
+    renderStale();
   }, 400);
 }
-on('click', '#btnQuery', () => { refreshAll(); return true; });
-on('click', '#btnReset', () => {
-  resetSelect($('#fProduct')); resetSelect($('#fLine'));
-  $('#fLine').classList.remove('is-disabled');
-  $('#fRange').value = '2026-07-20 ~ 2026-10-18';
-  gran = 'week';
-  $$('#granSeg .ac-segmented__item').forEach((i) => i.classList.toggle('is-active', i.getAttribute('data-gran') === 'week'));
-  refreshAll();
-  return true;
-});
-/* 产品线 = 有点推荐 → 业务线置灰清空 */
+/* 产品线 = 有点推荐 → 业务线置灰清空；任一筛选变更即刷新 */
 document.body.addEventListener('ac:change', (e) => {
   if (e.target && e.target.id === 'fProduct') {
     const line = $('#fLine');
     if (e.detail.value === 'yd') { resetSelect(line); line.classList.add('is-disabled'); }
     else line.classList.remove('is-disabled');
+    refreshAll();
   }
+  if (e.target && e.target.id === 'fLine') refreshAll();
 });
 /* 聚合粒度切换：仅趋势图重绘，指标卡不刷新 */
 on('click', '#granSeg .ac-segmented__item', (e, el) => {
@@ -342,19 +442,26 @@ on('click', '#granSeg .ac-segmented__item', (e, el) => {
   setTimeout(() => { $('#lineLoading').hidden = true; renderLine(); }, 300);
   return true;
 });
-/* 超时率下钻：需求列表「滞留需求」视角（带当前筛选；原型跳转列表页） */
-on('click', '#kpiTimeout', () => {
-  location.href = 'requirement-list.html';
+/* 页头「刷新」：重载全部区块 */
+on('click', '#refreshBtn', () => { refreshAll(); return true; });
+/* 下钻：超时率 / 当前滞留条数 → 需求列表「滞留需求」视角（带当前筛选；原型跳转列表页） */
+on('click', '#kpiTimeout', () => { location.href = 'requirement-list.html'; return true; });
+on('click', '#kpiStale', () => { location.href = 'requirement-list.html'; return true; });
+/* 手动催办（滞留需求表行内；无前端权限点，服务端按管理员口径拦截） */
+on('click', '[data-urge]', async (e, el) => {
+  const row = STALE_ROWS.find((r) => r.no === el.getAttribute('data-urge'));
+  const ok = await askPop(el, '手动催办', '将向当前审批人发送企微催办消息，确认催办？', '确认催办');
+  $('#popconfirm').hidden = true;
+  if (!ok) return true;
+  busy(el, true);
+  await wait(500);
+  busy(el, false);
+  if (row && row.urged) toast('去重窗口内已催办过，本次未重复发送', 'warning');
+  else { if (row) row.urged = true; toast('已向当前审批人发送催办'); }
   return true;
 });
-/* 导出 */
-on('click', '#exportBtn', async (e, btn) => {
-  busy(btn, true);
-  await wait(600);
-  busy(btn, false);
-  toast('导出任务已提交，请在下载中心查看');
-  return true;
-});
+on('click', '#pcOkBtn', () => { settlePop(true); return true; });
+on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
 /* proto-bar */
 on('click', '#protoBtn', () => {
   const menu = $('#protoMenu');
@@ -367,6 +474,7 @@ on('click', '#protoBtn', () => {
 /* 初始化 */
 renderBars();
 renderLine();
+renderStale();
 </script>
 </body>
 </html>

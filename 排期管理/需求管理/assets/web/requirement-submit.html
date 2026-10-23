@@ -8,10 +8,11 @@
   需求管理 · 需求提交页（Web 原型）
   页面描述真源：../../references/web-ui.md#需求提交页 ｜ 页面类型 order-form
   整页范例：busyming-skills-design/web/templates/order-form.html ｜ DOM 依据：skeletons/web/form-grouped.vue.tpl
-  区块：页头（返回）→ 需求信息组 → 归属与分级组（含审批链预览，只读）→ 附件组 → 底部固定操作栏（取消 / 暂存草稿 / 提交审批）
+  区块：页头（返回）→ 需求信息组 → 归属与分级组（含审批链预览，只读）→ 附件组（仅说明文案，本页不提供上传入口）→ 底部固定操作栏（取消 / 暂存草稿 / 提交审批，栏上常驻提示，无二次确认弹窗）
   本页仅用于内部提交：提交人与部门取登录态，不提供手填入口；外部提交走公开 H5（assets/app/requirement-public-submit.html）。
-  编辑态差异（真实页面以需求标识直达回填）：编辑态标题换「编辑需求」并展示需求编号与当前状态；已驳回进入时顶部红色警示条展示驳回意见，
-    产品线与业务线只读（气泡提示「提交后不可修改，如需变更请新建需求」），已有附件只能新增不能删除（删除按钮置灰）。原型演示新增态。
+  进入守卫：编辑 / 重提态加载后需求状态非草稿或已驳回时，AcMessage「当前状态不可编辑」并弹回需求详情页。
+  编辑态差异（真实页面以 ?id= 需求标识直达回填）：编辑态标题换「编辑需求」；已驳回进入重提态时顶部红色警示条「该需求已被驳回，请按驳回意见修改后重新提交」并展示驳回意见，
+    产品线与所属业务线禁用不可改；提交对象回填原值、允许更换（更换后按新对象重新匹配审批链）。原型演示新增态。
   演示基准日 2026-10-18，数据为虚构样例。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
@@ -87,9 +88,9 @@
         <div class="ac-form-item" data-field="line" id="lineItem">
           <label class="ac-form-item__label ac-form-item__label--required">所属业务线</label>
           <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="请选择所属业务线" id="fLine">
-            <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single">运营</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+            <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">请选择所属业务线</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
             <div class="ac-select__popup" hidden><ul class="ac-select__list">
-              <li class="ac-select__option is-selected" data-value="运营"><span class="ac-select__option-label">运营</span></li>
+              <li class="ac-select__option" data-value="运营"><span class="ac-select__option-label">运营</span></li>
               <li class="ac-select__option" data-value="财务"><span class="ac-select__option-label">财务</span></li>
               <li class="ac-select__option" data-value="供应链"><span class="ac-select__option-label">供应链</span></li>
               <li class="ac-select__option" data-value="数字化"><span class="ac-select__option-label">数字化</span></li>
@@ -99,7 +100,7 @@
         </div>
         <div class="ac-form-item" data-field="pm">
           <label class="ac-form-item__label ac-form-item__label--required">提交对象（产品经理）</label>
-          <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="搜索并选择产品经理" id="fPm">
+          <div class="ac-select ac-select--medium is-disabled" data-ac="AcSelect" data-placeholder="搜索并选择产品经理" id="fPm">
             <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">搜索并选择产品经理</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
             <div class="ac-select__popup" hidden><ul class="ac-select__list">
               <li class="ac-select__option" data-value="陈默"><span class="ac-select__option-label">陈默 · 运营线产品经理</span></li>
@@ -107,7 +108,7 @@
               <li class="ac-select__option" data-value="孙倩"><span class="ac-select__option-label">孙倩 · 运营线产品经理</span></li>
             </ul></div>
           </div>
-          <span class="ac-form-item__hint">候选为当前「产品线 × 业务线」下配有启用中专属链的产品经理</span>
+          <span class="ac-form-item__hint" id="pmHint">请先选择产品线与业务线</span>
           <div class="ac-form-item__help" data-help></div>
         </div>
         <div class="ac-form-item" data-field="type">
@@ -150,50 +151,18 @@
     </div>
   </div>
 
-  <!-- 附件组：新增页进入即可上传，无需先暂存草稿 -->
+  <!-- 附件组：本页不提供上传入口，仅展示说明文案 -->
   <div class="tpl-panel">
     <div class="tpl-section">
-      <div class="tpl-toolbar">
-        <span class="tpl-toolbar__title">附件 <span class="u-sub" id="attachCount">（4）</span></span>
-        <div class="tpl-toolbar__right"><span class="u-sub">选填；附件不阻塞提交</span></div>
-      </div>
-      <div class="ac-upload" data-ac="AcUpload">
-        <div class="ac-upload__dragger" id="dropzone" role="button" tabindex="0">
-          <span class="ac-icon" data-ac="AcIcon" data-name="upload" data-size="lg"></span>
-          <div>拖拽文件到此处，或点击选择文件</div>
-          <div class="u-secondary u-sm">图片 ≤10MB/张（最多20张）、文档 ≤50MB/个（最多10个）、视频 ≤200MB/个（最多3个）；支持多选与粘贴图片</div>
-        </div>
-      </div>
-      <div class="ac-file-group" id="fileList">
-        <div class="ac-file-item" data-state="done">
-          <span class="ac-file-item__type ac-file-item__type--img"><span class="ac-icon" data-ac="AcIcon" data-name="picture"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name" title="要货页现状截图.png">要货页现状截图.png</span><span class="ac-file-item__meta">1.2 MB · 陈默上传 · 2026-10-18 09:40</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-file="preview">预览</button><button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-file="del">删除</button></span>
-        </div>
-        <div class="ac-file-item" data-state="done">
-          <span class="ac-file-item__type ac-file-item__type--pdf"><span class="ac-icon" data-ac="AcIcon" data-name="file-text"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name" title="周转天数口径说明_v2.docx">周转天数口径说明_v2.docx</span><span class="ac-file-item__meta">356 KB · 陈默上传 · 2026-10-18 09:41</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-file="down">下载</button><button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-file="del">删除</button></span>
-        </div>
-        <div class="ac-file-item" data-state="uploading" id="uploadingRow">
-          <span class="ac-file-item__type"><span class="ac-icon" data-ac="AcIcon" data-name="picture"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name">期望效果原型图.png</span><span class="ac-progress ac-progress--line" data-ac="AcProgress"><span class="ac-progress__track"><span class="ac-progress__bar" id="uploadBar" style="width: 46%"></span></span><span class="ac-progress__text" id="uploadPct">46%</span></span></span>
-          <span class="ac-file-item__ops"><span class="u-sub">上传中</span></span>
-        </div>
-        <div class="ac-file-item is-error" data-state="fail" id="failRow">
-          <span class="ac-file-item__type"><span class="ac-icon" data-ac="AcIcon" data-name="preview-open"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name">现场录屏.mp4</span><span class="ac-file-item__meta u-danger">单张图片不得超过 10MB，当前 12.4MB（服务端原文演示）</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-file="retry">重试</button><button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-file="del">移除</button></span>
-        </div>
-      </div>
-      <div class="u-secondary u-sm">上传限制为体验前置，以服务端校验结果为准；已驳回编辑态下已有附件不可删除（删除按钮置灰并气泡提示「需求已提交，附件不可删除」）。</div>
+      <div class="tpl-section__head">附件</div>
+      <div class="u-secondary u-sm">选填；附件不阻塞提交。附件可在需求详情页追加。</div>
     </div>
   </div>
 
-  <!-- 底部固定操作栏 -->
+  <!-- 底部固定操作栏（提交审批无二次确认，栏上常驻提示承担告知） -->
   <div class="tpl-actionbar tpl-actionbar--stack">
     <div class="tpl-actionbar__inner">
-      <span class="tpl-actionbar__hint">暂存草稿不生成审批链快照；提交审批后将按提交对象的审批链流转（预览所示级次），产品线与业务线不可修改。</span>
+      <span class="tpl-actionbar__hint">暂存草稿不生成审批链快照；提交审批后将按提交对象的审批链流转，产品线与业务线不可修改。</span>
       <div class="tpl-actionbar__row">
         <button class="ac-btn ac-btn--text" type="button" id="cancelBtn">取消</button>
         <button class="ac-btn" type="button" id="draftBtn">暂存草稿</button>
@@ -202,33 +171,6 @@
     </div>
   </div>
 </section>
-
-<!-- 提交审批二次确认（AcPopconfirm，锚定提交按钮） -->
-<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
-  <div class="ac-popconfirm__inner">
-    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
-    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
-  </div>
-  <span class="ac-popconfirm__arrow"></span>
-</div>
-
-<!-- 脏数据离开确认 -->
-<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
-  <div class="ac-modal__mask"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="440">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="confirmTitle">确认离开</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="confirmCloseBtn">×</button></div>
-      <div class="ac-modal__body ac-modal__body--semantic">
-        <span class="ac-modal__sem-icon ac-modal__sem-icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></span>
-        <div class="ac-modal__body-text" id="confirmContent">您有未保存的修改，确认离开？</div>
-      </div>
-      <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" id="confirmCancelBtn">继续编辑</button>
-        <button class="ac-btn ac-btn--danger" type="button" id="confirmOkBtn">离开</button>
-      </div>
-    </div>
-  </div>
-</div>
 
 <!-- 全局提示宿主 -->
 <div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
@@ -257,56 +199,6 @@ function busy(btn, on) {
   if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
   if (!on && sp) sp.remove();
 }
-const OPEN = new Set();
-function showLayer(id) {
-  const el = $('#' + id);
-  clearTimeout(el.__leaveTimer);
-  el.hidden = false;
-  void el.offsetWidth;
-  el.classList.add('is-open');
-  OPEN.add(id);
-}
-function hideLayer(id) {
-  const el = $('#' + id);
-  if (!el || el.hidden) return;
-  OPEN.delete(id);
-  el.classList.remove('is-open');
-  el.__leaveTimer = setTimeout(() => { el.hidden = true; }, 220);
-}
-
-/* ---------- 通用 Popconfirm / Confirm ---------- */
-let popResolve = null;
-function askPop(anchor, title, content, okText) {
-  const p = $('#popconfirm');
-  $('#pcTitle').textContent = title;
-  $('#pcContent').textContent = content || '';
-  $('#pcOkBtn').textContent = okText || '确认';
-  p.hidden = false;
-  const r = anchor.getBoundingClientRect();
-  p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
-  p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
-  return new Promise((res) => { popResolve = res; });
-}
-function settlePop(v) {
-  if (!popResolve) return;
-  const r = popResolve;
-  popResolve = null;
-  if (!v) $('#popconfirm').hidden = true;
-  r(v);
-}
-const popOpen = () => !$('#popconfirm').hidden;
-let confirmResolve = null;
-function askConfirm() {
-  showLayer('confirmModal');
-  return new Promise((r) => { confirmResolve = r; });
-}
-function settleConfirm(v) {
-  if (!confirmResolve) return;
-  const r = confirmResolve;
-  confirmResolve = null;
-  if (!v) hideLayer('confirmModal');
-  r(v);
-}
 
 /* ---------- 事件委托 ---------- */
 const HANDLERS = {};
@@ -321,13 +213,11 @@ const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([se
     e.stopPropagation();
   }, type === 'blur');
 });
-/* 含表单弹窗在捕获阶段接管 Esc：阻止设计仓全局 Esc 把弹窗变成透明拦截层 */
+/* 捕获阶段接管 Esc：阻止设计仓全局 Esc 干扰，仅关闭展开的下拉 */
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!OPEN.size && !popOpen() && !$$('.ac-select.is-open').length) return;
+  if (!$$('.ac-select.is-open').length) return;
   e.stopPropagation();
-  if (popOpen()) { settlePop(false); return; }
-  if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }, true);
 
@@ -374,7 +264,6 @@ on('click', '.ac-select .ac-select__option', (e, el) => {
   return true;
 });
 on('mousedown', null, (e, t) => {
-  if (popOpen() && !(t && t.closest('#popconfirm'))) settlePop(false);
   $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
   const menu = $('#protoMenu');
   if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
@@ -382,9 +271,8 @@ on('mousedown', null, (e, t) => {
 });
 
 /* ==================== 表单状态与校验 ==================== */
-let dirty = false;
+/* 初态：产品线默认鸣鸣很忙；业务线默认为空（不按登录人组织预填）；优先级默认 P2；提交对象为空 */
 $('#fProduct').setAttribute('data-value', 'mm');
-$('#fLine').setAttribute('data-value', '运营');
 
 function fieldErr(field, msg) {
   const item = $(`[data-field="${field}"]`);
@@ -418,37 +306,45 @@ on('blur', '#fDesc', (e, el) => {
   else clearErr('desc');
   return false;
 });
-on('input', '#fDesc', (e, el) => { $('#fDescCount').textContent = `${el.value.length}/2000`; dirty = true; return false; });
-on('input', '#fTitle', () => { dirty = true; return false; });
+on('input', '#fDesc', (e, el) => { $('#fDescCount').textContent = `${el.value.length}/2000`; return false; });
 
 /* 优先级单选组 */
 on('click', '#fPriority .ac-radio', (e, el) => {
   $$('#fPriority .ac-radio').forEach((r) => { r.classList.remove('is-checked'); r.setAttribute('aria-checked', 'false'); });
   el.classList.add('is-checked');
   el.setAttribute('aria-checked', 'true');
-  dirty = true;
   return true;
 });
+
+/* 提交对象可选闸门：未选归属（产品线 + 业务线，有点推荐仅需产品线）时置灰 */
+function syncPmGate() {
+  const prod = selectValue($('#fProduct'));
+  const ready = prod === 'yd' || (prod === 'mm' && !!selectValue($('#fLine')));
+  $('#fPm').classList.toggle('is-disabled', !ready);
+  $('#pmHint').textContent = ready ? '候选为当前「产品线 × 业务线」下配有启用中专属链的产品经理' : '请先选择产品线与业务线';
+  if (!ready) resetSelect($('#fPm'));
+}
 
 /* 产品线变更：联动业务线显隐并清空已选业务线 */
 document.body.addEventListener('ac:change', (e) => {
   if (e.target && e.target.id === 'fProduct') {
-    dirty = true;
     if (e.detail.value === 'yd') {
       resetSelect($('#fLine'));
       $('#lineItem').hidden = true;   /* 有点推荐：业务线整行隐藏且不参与校验 */
     } else {
       $('#lineItem').hidden = false;
     }
+    syncPmGate();
   }
+  if (e.target && e.target.id === 'fLine') syncPmGate();
   if (e.target && e.target.id === 'fPm') renderChainPreview(e.detail.value);
 });
 
-/* 审批链预览（只读）：选定提交对象后系统预检并展示将命中的审批链 */
+/* 审批链预览（只读）：选定提交对象后系统预检并展示将命中的审批链，变更归属字段实时刷新 */
 const CHAINS = {
-  '陈默': 'L1 业务线审批：周文杰 ｜ L3 产品确认：陈默（提交对象）',
-  '李娜': 'L2 实施确认：孙浩 ｜ L3 产品确认：李娜（提交对象）',
-  '孙倩': 'L1 业务线审批：周文杰 ｜ L2 实施确认：李思远、孙浩（或签） ｜ L3 产品确认：孙倩（提交对象）',
+  '陈默': 'L1 周文杰 · L3 陈默',
+  '李娜': 'L2 孙浩 · L3 李娜',
+  '孙倩': 'L1 周文杰 · L2 李思远/孙浩 · L3 孙倩',
 };
 function renderChainPreview(pm) {
   const chain = CHAINS[pm];
@@ -458,73 +354,8 @@ function renderChainPreview(pm) {
   /* 未命中任何配置时：红色警示条「当前归属未配置审批链，请联系管理员」且「提交审批」置灰（本演示候选均为有专属链的 PM，不演示该分支） */
 }
 
-/* ==================== 附件（演示：上传中 / 失败 / 删除 / 重试） ==================== */
-function hasUploading() { return !!$('.ac-file-item[data-state="uploading"]'); }
-function refreshSubmitGate() {
-  const btn = $('#submitBtn');
-  btn.disabled = hasUploading();
-  btn.title = hasUploading() ? '附件上传中，请稍候' : '';
-}
-function attachCountSync() {
-  $('#attachCount').textContent = `（${$$('#fileList .ac-file-item').length}）`;
-}
-/* 上传中演示行：2s 后完成 */
-setTimeout(() => {
-  const row = $('#uploadingRow');
-  if (!row) return;
-  row.setAttribute('data-state', 'done');
-  row.querySelector('.ac-file-item__meta') && (row.querySelector('.ac-file-item__meta').textContent = '2.4 MB · 陈默上传 · 刚刚');
-  const meta = row.querySelector('.ac-progress');
-  if (meta) meta.outerHTML = '<span class="ac-file-item__meta">2.4 MB · 陈默上传 · 刚刚</span>';
-  row.querySelector('.ac-file-item__ops').innerHTML = '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-file="preview">预览</button><button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-file="del">删除</button>';
-  refreshSubmitGate();
-}, 2000);
-
-on('click', '#dropzone', async () => {
-  /* 演示：新增一个上传中文件行，1.6s 后完成 */
-  const list = $('#fileList');
-  const row = document.createElement('div');
-  row.className = 'ac-file-item';
-  row.setAttribute('data-state', 'uploading');
-  row.innerHTML = `<span class="ac-file-item__type"><span class="ac-icon" data-ac="AcIcon" data-name="picture"></span></span>
-    <span class="ac-file-item__info"><span class="ac-file-item__name">新上传图片_${Date.now() % 1000}.png</span><span class="ac-progress ac-progress--line" data-ac="AcProgress"><span class="ac-progress__track"><span class="ac-progress__bar" style="width: 12%"></span></span><span class="ac-progress__text">12%</span></span></span>
-    <span class="ac-file-item__ops"><span class="u-sub">上传中</span></span>`;
-  list.appendChild(row);
-  attachCountSync();
-  refreshSubmitGate();
-  await wait(1600);
-  row.setAttribute('data-state', 'done');
-  const prog = row.querySelector('.ac-progress');
-  if (prog) prog.outerHTML = '<span class="ac-file-item__meta">860 KB · 陈默上传 · 刚刚</span>';
-  row.querySelector('.ac-file-item__ops').innerHTML = '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-file="preview">预览</button><button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-file="del">删除</button>';
-  refreshSubmitGate();
-  return true;
-});
-on('click', '[data-file="del"]', async (e, el) => {
-  const ok = await askPop(el, '删除附件', '删除后需重新上传，确认删除？', '确认删除');
-  $('#popconfirm').hidden = true;
-  if (!ok) return true;
-  el.closest('.ac-file-item').remove();
-  attachCountSync();
-  return true;
-});
-on('click', '[data-file="retry"]', async (e, el) => {
-  const row = el.closest('.ac-file-item');
-  row.classList.remove('is-error');
-  row.setAttribute('data-state', 'uploading');
-  row.querySelector('.ac-file-item__meta').textContent = '重新上传中…';
-  refreshSubmitGate();
-  await wait(1500);
-  row.setAttribute('data-state', 'done');
-  row.querySelector('.ac-file-item__meta').textContent = '9.8 MB · 陈默上传 · 刚刚';
-  row.querySelector('.ac-file-item__ops').innerHTML = '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-file="preview">预览</button><button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-file="del">删除</button>';
-  refreshSubmitGate();
-  return true;
-});
-on('click', '[data-file="preview"]', () => { toast('打开图片查看层（支持左右切图、缩放、Esc 关闭）', 'info'); return true; });
-on('click', '[data-file="down"]', () => { toast('浏览器接管下载', 'info'); return true; });
-
 /* ==================== 暂存草稿 / 提交审批 / 取消 ==================== */
+/* 暂存草稿：标题非空即可；成功 toast 后直接跳需求列表页 */
 on('click', '#draftBtn', async (e, btn) => {
   if (!$('#fTitle').value.trim()) {
     fieldErr('title', '请输入需求标题（不超过 128 字）');
@@ -535,12 +366,12 @@ on('click', '#draftBtn', async (e, btn) => {
   busy(btn, true);
   await wait(500);
   busy(btn, false);
-  dirty = false;   /* 暂存成功后清除脏标记 */
   toast('草稿已保存');
-  setTimeout(() => { location.href = 'requirement-list.html'; }, 1500);
+  location.href = 'requirement-list.html';
   return true;
 });
 
+/* 提交审批：无二次确认（操作栏常驻提示承担告知）；成功 toast 后直接跳需求列表页 */
 on('click', '#submitBtn', async (e, btn) => {
   /* 全表单校验，滚动定位至首个错误字段 */
   let firstBad = null;
@@ -549,7 +380,7 @@ on('click', '#submitBtn', async (e, btn) => {
   const desc = $('#fDesc').value.trim();
   if (desc.length < 10) { fieldErr('desc', '请填写需求描述，不少于 10 字'); firstBad = firstBad || 'desc'; } else clearErr('desc');
   if (!selectValue($('#fProduct'))) { fieldErr('product', '请选择产品线'); firstBad = firstBad || 'product'; } else clearErr('product');
-  if (selectValue($('#fProduct') || 'mm') === 'mm' && !selectValue($('#fLine'))) { fieldErr('line', '请选择所属业务线'); firstBad = firstBad || 'line'; } else clearErr('line');
+  if (selectValue($('#fProduct')) === 'mm' && !selectValue($('#fLine'))) { fieldErr('line', '请选择所属业务线'); firstBad = firstBad || 'line'; } else clearErr('line');
   if (!selectValue($('#fPm'))) { fieldErr('pm', '请选择提交对象（产品经理）'); firstBad = firstBad || 'pm'; } else clearErr('pm');
   if (!selectValue($('#fType'))) { fieldErr('type', '请选择需求类型'); firstBad = firstBad || 'type'; } else clearErr('type');
   if (!radioValue('fPriority')) { fieldErr('priority', '请选择优先级'); firstBad = firstBad || 'priority'; } else clearErr('priority');
@@ -559,31 +390,22 @@ on('click', '#submitBtn', async (e, btn) => {
     if (item) item.scrollIntoView({ block: 'center' });
     return true;
   }
-  if (hasUploading()) { toast('附件上传中，请稍候', 'warning'); return true; }
-  const ok = await askPop(btn, '提交审批', '提交后将按提交对象的审批链流转（预览所示级次），产品线与业务线不可修改，确认提交？', '确认提交');
-  $('#popconfirm').hidden = true;
-  if (!ok) return true;
   busy(btn, true);
   await wait(700);
   busy(btn, false);
-  dirty = false;
-  /* {链首级次名称}：取命中审批链的第一级名称；本演示链首为 L1 →「业务线审批」 */
+  /* {链首级次名称}：取命中审批链的第一级名称（业务线审批 / 实施确认 / 产品确认），取不到兜底「审批人」；本演示链首为 L1 →「业务线审批」 */
   toast('需求已提交，将由业务线审批审批');
-  setTimeout(() => { location.href = 'requirement-list.html'; }, 1500);
-  return true;
-});
-
-on('click', '#cancelBtn', async () => {
-  if (dirty) {
-    const ok = await askConfirm();
-    hideLayer('confirmModal');
-    if (!ok) return true;
-  }
   location.href = 'requirement-list.html';
   return true;
 });
 
-/* ==================== proto-bar / 弹层按钮 ==================== */
+/* 取消：新增 / 编辑 / 重提态一致，一律回需求列表页 */
+on('click', '#cancelBtn', () => {
+  location.href = 'requirement-list.html';
+  return true;
+});
+
+/* ==================== proto-bar ==================== */
 on('click', '#protoBtn', () => {
   const menu = $('#protoMenu');
   const willOpen = menu.hidden;
@@ -591,15 +413,6 @@ on('click', '#protoBtn', () => {
   $('#protoDd').classList.toggle('is-open', willOpen);
   return true;
 });
-on('click', '#pcOkBtn', () => { settlePop(true); return true; });
-on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
-on('click', '#confirmOkBtn', () => { settleConfirm(true); return true; });
-on('click', '#confirmCancelBtn', () => { settleConfirm(false); return true; });
-on('click', '#confirmCloseBtn', () => { settleConfirm(false); return true; });
-
-/* 初始化 */
-refreshSubmitGate();
-attachCountSync();
 </script>
 </body>
 </html>

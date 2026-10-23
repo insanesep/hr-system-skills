@@ -8,10 +8,13 @@
   需求管理 · SLA 配置页（Web 原型）
   页面描述真源：../../references/web-ui.md#sla-配置页 ｜ 页面类型 archive-list
   整页范例：busyming-skills-design/web/templates/archive-list.html ｜ DOM 依据：skeletons/web/list-page.vue.tpl
-  区块：顶部提示条（与审批链配置分工 + 立即生效声明）→ 缺配黄色警示 → 筛选区 → 配置表格（9 列）→ 默认阈值参考卡 → 分页
-  弹窗：新增 / 编辑配置（编辑调紧阈值时 AcModal 二次确认）；删除与停用走 AcPopconfirm。
+  区块：顶部提示条（与审批链配置分工 + 立即生效声明）→ 缺配黄色警示（仅当该产品线已有部分级次配置时出现）→ 筛选区（纯前端过滤）→ 配置表格（9 列）→ 默认阈值参考卡 → 分页
+  操作区：新增配置（主按钮）/ 初始化默认规则 / 刷新。
+  弹窗：新增 / 编辑配置（无二次确认，保存即在途生效）；删除与停用走 AcPopconfirm。
+  权限：页面不按角色隐藏写按钮，全部读写接口携带 devhubRequirementSlaConfig 请求头由服务端按管理员口径校验。
+  筛选为纯前端过滤：配置列表一次全量返回，「查询」不发请求，「重置」清空即生效。
   SLA 配置不做快照：保存后立即对在途需求生效；缺配仅提示不阻断催办，与审批链缺级直接拒绝提交的红色告警严格区分。
-  演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为管理员「王强」（非管理员仅只读、全部写操作不渲染）。
+  演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为管理员「王强」。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
@@ -43,6 +46,8 @@
       <div class="tpl-page-subtitle">审批超时催办阈值维护：一屏回答「哪类需求多久没审就催、多久就升级」</div>
     </div>
     <div class="tpl-page-head__actions">
+      <button class="ac-btn" type="button" id="initBtn">初始化默认规则</button>
+      <button class="ac-btn" type="button" id="refreshBtn">刷新</button>
       <button class="ac-btn ac-btn--primary" type="button" id="addBtn"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span> 新增配置</button>
     </div>
   </div>
@@ -54,13 +59,10 @@
     <button class="ac-btn ac-btn--sm ac-btn--text ac-alert__close" type="button" id="topTipClose" aria-label="关闭提示"><span class="ac-icon" data-ac="AcIcon" data-name="close-small"></span></button>
   </div>
 
-  <!-- 缺配提示（黄色，仅提示不阻断；与审批链缺级红色告警区分） -->
-  <div class="ac-alert ac-alert--warning" data-ac="AcAlert" role="alert" id="gapTip">
-    <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="remind"></span></div>
-    <div class="ac-alert__body"><div class="ac-alert__content">有点推荐 L2 级无 SLA 配置，将按系统默认 48h/72h 催办</div></div>
-  </div>
+  <!-- 缺配提示（黄色，仅提示不阻断；仅当该产品线已有部分级次配置、但仍有级次未被覆盖时出现，由 JS 按数据计算） -->
+  <div id="gapHost"></div>
 
-  <!-- 筛选区 -->
+  <!-- 筛选区（纯前端过滤：配置列表一次全量返回，「查询」不发请求，「重置」清空即生效） -->
   <div class="tpl-panel">
     <div class="tpl-filter">
       <div class="ac-form-item">
@@ -99,6 +101,7 @@
         <button class="ac-btn" type="button" id="btnReset">重置</button>
       </div>
     </div>
+    <div class="u-secondary u-sm">筛选为纯前端过滤：配置列表一次全量返回，「查询」不发请求，「重置」清空即生效。</div>
   </div>
 
   <!-- 配置表格 -->
@@ -234,19 +237,19 @@
   </div>
 </div>
 
-<!-- 调紧阈值影响确认 -->
-<div class="ac-modal ac-modal--center" data-ac="AcModal" id="tightenModal" hidden>
+<!-- 通用确认弹窗（脏数据关闭确认） -->
+<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
   <div class="ac-modal__mask"></div>
   <div class="ac-modal__wrap" role="dialog" aria-modal="true">
     <div class="ac-modal__panel" data-width="440">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="tightenTitle">调紧阈值确认</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="tightenCloseBtn">×</button></div>
+      <div class="ac-modal__header"><div class="ac-modal__title">确认关闭</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="confirmCloseBtn">×</button></div>
       <div class="ac-modal__body ac-modal__body--semantic">
         <span class="ac-modal__sem-icon ac-modal__sem-icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></span>
-        <div class="ac-modal__body-text" id="tightenContent"></div>
+        <div class="ac-modal__body-text" id="confirmContent">您有未保存的配置修改，确认关闭？</div>
       </div>
       <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" id="tightenCancelBtn">取消</button>
-        <button class="ac-btn ac-btn--primary" type="button" id="tightenOkBtn">确认保存</button>
+        <button class="ac-btn" type="button" id="confirmCancelBtn">继续填写</button>
+        <button class="ac-btn ac-btn--danger" type="button" id="confirmOkBtn">放弃并关闭</button>
       </div>
     </div>
   </div>
@@ -336,13 +339,13 @@ const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([se
     e.stopPropagation();
   });
 });
-/* 含表单弹窗捕获阶段接管 Esc（cfgModal 脏关闭；tightenModal 直接关） */
+/* 含表单弹窗捕获阶段接管 Esc（cfgModal 脏关闭走确认弹窗；confirmModal 直接关） */
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
   if (!OPEN.size && !popOpen() && !$$('.ac-select.is-open').length) return;
   e.stopPropagation();
   if (popOpen()) { settlePop(false); return; }
-  if (OPEN.has('tightenModal')) { hideLayer('tightenModal'); return; }
+  if (OPEN.has('confirmModal')) { hideLayer('confirmModal'); return; }
   if (OPEN.has('cfgModal')) { requestCloseCfg(); return; }
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }, true);
@@ -420,6 +423,22 @@ const ROWS = [
 function hoursText(h) {
   return h >= 48 ? `${h} 小时（≈${Math.round(h / 24 * 10) / 10} 天）` : `${h} 小时`;
 }
+/* 缺配提示：某产品线已配置部分级次、但仍有未被任何配置行覆盖的级次时出现（仅提示、不阻断催办） */
+function renderGapTip() {
+  const msgs = [];
+  ['mm', 'yd'].forEach((p) => {
+    const covered = new Set(ROWS.filter((r) => r.product === p).map((r) => r.level));
+    if (!covered.size || covered.size >= 3) return;
+    [1, 2, 3].filter((lv) => !covered.has(lv)).forEach((lv) => {
+      msgs.push(`${PRODUCT_LABEL[p]} L${lv} 级无 SLA 配置，将按系统默认 48h/72h 催办`);
+    });
+  });
+  $('#gapHost').innerHTML = msgs.map((m) => `
+    <div class="ac-alert ac-alert--warning" data-ac="AcAlert" role="alert">
+      <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="remind"></span></div>
+      <div class="ac-alert__body"><div class="ac-alert__content">${esc(m)}</div></div>
+    </div>`).join('');
+}
 function passFilters(r) {
   const p = selectValue($('#fProduct'));
   if (p && r.product !== p) return false;
@@ -432,6 +451,7 @@ function passFilters(r) {
 }
 function renderTable() {
   const rows = ROWS.filter(passFilters);
+  renderGapTip();
   $('#infoBar').textContent = `共 ${rows.length} 条`;
   $('#pageInfo').textContent = `共 ${rows.length} 条 · 第 1 / 1 页`;
   const tbody = $('#slaTbody');
@@ -462,6 +482,15 @@ function renderWithLoading() {
 on('click', '#btnQuery', () => { renderWithLoading(); return true; });
 on('click', '#btnReset', () => {
   resetSelect($('#fProduct')); resetSelect($('#fLevel')); resetSelect($('#fStatus'));
+  renderWithLoading();
+  return true;
+});
+on('click', '#refreshBtn', () => { renderWithLoading(); return true; });
+on('click', '#initBtn', async (e, btn) => {
+  busy(btn, true);
+  await wait(600);
+  busy(btn, false);
+  toast('已初始化 12 条默认规则');
   renderWithLoading();
   return true;
 });
@@ -517,10 +546,7 @@ function openCfg(row) {
 }
 function requestCloseCfg() {
   if (cfgFormState() !== cfgSnapshot) {
-    $('#tightenTitle').textContent = '确认关闭';
-    $('#tightenContent').textContent = '您有未保存的配置修改，确认关闭？';
-    showLayer('tightenModal');
-    tightenMode = 'close';
+    showLayer('confirmModal');
     return;
   }
   hideLayer('cfgModal');
@@ -534,8 +560,6 @@ on('click', '[data-edit]', (e, el) => {
 });
 on('input', '#cfgNote', (e, el) => { $('#cfgNoteCount').textContent = `${el.value.length}/256`; return false; });
 
-let tightenMode = '';   /* 'save' | 'close' */
-let pendingSave = null;
 on('click', '#cfgOkBtn', async (e, btn) => {
   clearCfgErrs();
   const product = selectValue($('#cfgProduct'));
@@ -560,42 +584,24 @@ on('click', '#cfgOkBtn', async (e, btn) => {
     $('#cfgAlert').innerHTML = '<div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></div><div class="ac-alert__body"><div class="ac-alert__content">该产品线 / 优先级 / 级次已存在配置，请直接编辑</div></div></div>';
     return true;
   }
-  const doSave = async () => {
-    busy(btn, true);
-    await wait(600);
-    busy(btn, false);
-    if (editingId) {
-      const row = ROWS.find((r) => r.id === editingId);
-      if (row) Object.assign(row, { urge: Number(urge), escalate: Number(escalate), dedup: Number(dedup) || 24, note: $('#cfgNote').value.trim(), by: '王强', at: '2026-10-18 10:30' });
-      toast('SLA 配置已更新，已对在途需求生效');
-    } else {
-      ROWS.unshift({ id: ++SEQ, product, priority, level: Number(level), urge: Number(urge), escalate: Number(escalate), dedup: Number(dedup) || 24, enabled: true, by: '王强', at: '2026-10-18 10:30', note: $('#cfgNote').value.trim() });
-      toast('SLA 配置已新增，已对在途需求生效');
-    }
-    hideLayer('cfgModal');
-    renderTable();
-  };
-  /* 编辑调紧阈值（新值小于旧值）：AcModal 二次确认（N 为保存前只读影响预检，演示取固定值） */
-  const old = editingId ? ROWS.find((r) => r.id === editingId) : null;
-  if (old && (Number(urge) < old.urge || Number(escalate) < old.escalate)) {
-    pendingSave = doSave;
-    tightenMode = 'save';
-    $('#tightenTitle').textContent = '调紧阈值确认';
-    $('#tightenContent').textContent = '调紧后将有 3 条在途需求立即进入催办范围，下一个整点即发送，确认保存？';
-    showLayer('tightenModal');
-    return true;
+  /* 无二次确认：保存后立即对在途需求生效 */
+  busy(btn, true);
+  await wait(600);
+  busy(btn, false);
+  if (editingId) {
+    const row = ROWS.find((r) => r.id === editingId);
+    if (row) Object.assign(row, { urge: Number(urge), escalate: Number(escalate), dedup: Number(dedup) || 24, note: $('#cfgNote').value.trim(), by: '王强', at: '2026-10-18 10:30' });
+  } else {
+    ROWS.unshift({ id: ++SEQ, product, priority, level: Number(level), urge: Number(urge), escalate: Number(escalate), dedup: Number(dedup) || 24, enabled: true, by: '王强', at: '2026-10-18 10:30', note: $('#cfgNote').value.trim() });
   }
-  await doSave();
+  hideLayer('cfgModal');
+  toast('SLA 配置已保存，已对在途需求生效');
+  renderTable();
   return true;
 });
-on('click', '#tightenOkBtn', async () => {
-  hideLayer('tightenModal');
-  if (tightenMode === 'save' && pendingSave) { await pendingSave(); pendingSave = null; }
-  else if (tightenMode === 'close') hideLayer('cfgModal');
-  return true;
-});
-on('click', '#tightenCancelBtn', () => { hideLayer('tightenModal'); return true; });
-on('click', '#tightenCloseBtn', () => { hideLayer('tightenModal'); return true; });
+on('click', '#confirmOkBtn', () => { hideLayer('confirmModal'); hideLayer('cfgModal'); return true; });
+on('click', '#confirmCancelBtn', () => { hideLayer('confirmModal'); return true; });
+on('click', '#confirmCloseBtn', () => { hideLayer('confirmModal'); return true; });
 on('click', '#cfgCancelBtn', () => { requestCloseCfg(); return true; });
 on('click', '#cfgCloseBtn', () => { requestCloseCfg(); return true; });
 

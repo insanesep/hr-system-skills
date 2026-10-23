@@ -8,11 +8,11 @@
   需求管理 · 外链管理页（Web 原型）
   页面描述真源：../../references/web-ui.md#外链管理页 ｜ 页面类型 order-list
   整页范例：busyming-skills-design/web/templates/order-list.html ｜ DOM 依据：skeletons/web/list-page.vue.tpl
-  区块：顶部提示条（常驻可关闭）→ 筛选区（链接状态 / 邀约对象 / 生成人 / 生成时间）→ 操作区（生成外链）→ 台账表格 → 分页
-  弹窗：生成外链（确认后就地切换为生成结果态）/ 二维码 / 撤销原因；均在本页弹窗内完成，不跳页。
-  台账不展示完整链接凭证（仅在复制与二维码弹窗内可见）；不提供删除，台账为溯源证据只能撤销。
-  高亮定位演示：第 2 行默认高亮 3 秒（真实场景由需求详情页「来源外链」进入时定位并高亮该外链行）。
-  演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为管理员「王强」（可见生成人筛选与撤销他人链接）。
+  区块：顶部提示条（常驻可关闭）→ 筛选区（链接状态 / 邀约对象 / 生成时间）→ 操作区（生成外链）→ 台账表格 → 分页
+  弹窗：生成外链（确认后就地切换为生成结果态）/ 撤销原因；均在本页弹窗内完成，不跳页。
+  筛选：生成时间为日期范围，服务端暂不支持区间参数，选择后点查询演示 warning 提示且不按时间过滤。
+  交互约束：台账列表不展示完整链接凭证，完整链接仅在生成结果态展示一次；不提供复制链接、二维码与删除，台账为溯源证据只能撤销。
+  演示基准日 2026-10-18，数据为虚构样例；当前登录人演示为管理员「王强」。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
@@ -41,7 +41,7 @@
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <h1 class="tpl-page-title">需求外链管理</h1>
-      <div class="tpl-page-subtitle">向外采集有点推荐需求的外链台账：一屏回答「发给了谁、对方看了没、提交了什么」</div>
+      <div class="tpl-page-subtitle">向外采集有点推荐需求的外链台账：一屏回答「发给了谁、对方看了没、有没有提交」</div>
     </div>
     <div class="tpl-page-head__actions">
       <button class="ac-btn ac-btn--primary" type="button" id="genBtn"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span> 生成外链</button>
@@ -72,15 +72,11 @@
       </div>
       <div class="ac-form-item">
         <label class="ac-form-item__label">邀约对象</label>
-        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fInvitee" placeholder="模糊搜索邀约对象备注" autocomplete="off" /></span>
-      </div>
-      <div class="ac-form-item">
-        <label class="ac-form-item__label">生成人</label>
-        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fCreator" placeholder="模糊搜索（管理员可见）" autocomplete="off" /></span>
+        <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="fInvitee" placeholder="模糊搜索邀约对象备注，回车触发" autocomplete="off" /></span>
       </div>
       <div class="ac-form-item ac-form-item--wide">
         <label class="ac-form-item__label">生成时间</label>
-        <span class="ac-input ac-range-picker" data-ac="AcDatePicker"><input class="ac-input__inner" id="fRange" value="2026-09-18 ~ 2026-10-18" readonly /></span>
+        <span class="ac-input ac-range-picker" data-ac="AcDatePicker"><input class="ac-input__inner" id="fRange" placeholder="开始日期 ~ 结束日期" readonly /></span>
       </div>
       <div class="tpl-filter__actions">
         <button class="ac-btn ac-btn--primary" type="button" id="btnQuery">查询</button>
@@ -93,12 +89,12 @@
   <div class="tpl-panel">
     <div class="tpl-toolbar">
       <div class="tpl-toolbar__left" id="infoBar">共 7 条</div>
-      <div class="tpl-toolbar__right"><span class="u-sub">默认按生成时间倒序；完整链接凭证仅在复制与二维码弹窗内可见</span></div>
+      <div class="tpl-toolbar__right"><span class="u-sub">默认按生成时间倒序；台账列表不展示完整链接凭证，完整链接仅在生成结果态展示一次</span></div>
     </div>
     <div class="ac-table-wrap">
       <table class="ac-table">
         <thead>
-          <tr><th>邀约对象</th><th>链接状态</th><th>提交进度</th><th>访问情况</th><th>产生需求</th><th>有效期至</th><th>生成人</th><th>操作</th></tr>
+          <tr><th>邀约对象</th><th>链接状态</th><th>提交进度</th><th>访问情况</th><th>有效期至</th><th>生成人</th><th>生成时间</th><th>操作</th></tr>
         </thead>
         <tbody id="linkTbody"></tbody>
       </table>
@@ -116,7 +112,7 @@
   </div>
 </section>
 
-<!-- 生成外链弹窗：表单态 → 确认后就地切换为生成结果态（链接全文 + 二维码 + 复制按钮 +「我已复制，关闭」） -->
+<!-- 生成外链弹窗：表单态 → 确认后就地切换为生成结果态（成功提示 + 链接全文只读输入框 + 复制链接 +「链接仅此时完整展示一次」+「我已复制，关闭」） -->
 <div class="ac-modal" data-ac="AcModal" id="genModal" hidden>
   <div class="ac-modal__mask"></div>
   <div class="ac-modal__wrap" role="dialog" aria-modal="true">
@@ -170,21 +166,17 @@
             </div><div class="ac-form-item__help">默认仅可提交 1 次；超过上限后链接仍可打开但不再受理提交（1–10 的整数）</div><div class="ac-form-item__help u-danger" data-help></div></div>
           </div>
         </div>
-        <!-- 生成结果态（只展示一次；关闭后可从台账行「复制链接」重新取得，链接不重新生成） -->
+        <!-- 生成结果态：只展示一次，关闭后无法再次取得完整链接（不重新生成、台账不展示），未复制只能撤销后重新生成 -->
         <div id="genResult" hidden>
           <div class="ac-alert ac-alert--success" data-ac="AcAlert" role="status">
             <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="check-one"></span></div>
             <div class="ac-alert__body"><div class="ac-alert__content">外链已生成，请复制发送给邀约对象</div></div>
           </div>
-          <div class="ac-descriptions" data-ac="AcDescriptions">
-            <div class="ac-descriptions__item"><span class="ac-descriptions__label">邀约对象</span><span class="ac-descriptions__value" id="rsInvitee"></span></div>
-            <div class="ac-descriptions__item"><span class="ac-descriptions__label">有效期至</span><span class="ac-descriptions__value mono" id="rsExpire"></span></div>
-          </div>
           <div class="ac-input-group">
             <span class="ac-input"><input class="ac-input__inner mono" id="rsLink" readonly /></span>
             <button class="ac-btn ac-btn--primary" type="button" id="rsCopyBtn">复制链接</button>
           </div>
-          <div class="u-secondary u-sm">二维码已同步生成，可在台账行「二维码」中查看与下载。</div>
+          <div class="u-secondary u-sm">链接仅此时完整展示一次</div>
         </div>
       </div>
       <div class="ac-modal__footer" id="genFooterForm">
@@ -193,26 +185,6 @@
       </div>
       <div class="ac-modal__footer" id="genFooterResult" hidden>
         <button class="ac-btn ac-btn--primary" type="button" id="genDoneBtn">我已复制，关闭</button>
-      </div>
-    </div>
-  </div>
-</div>
-
-<!-- 二维码弹窗（台账不展示链接凭证，二维码内嵌凭证，仅待使用行可见入口） -->
-<div class="ac-modal ac-modal--center" data-ac="AcModal" id="qrModal" hidden>
-  <div class="ac-modal__mask" data-close="qrModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="380">
-      <div class="ac-modal__header"><div class="ac-modal__title">外链二维码</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="qrModal">×</button></div>
-      <div class="ac-modal__body ac-modal__body--center">
-        <div class="ac-qrcode" data-ac="AcQRCode"><span class="ac-icon" data-ac="AcIcon" data-name="scan-code" data-size="lg"></span></div>
-        <div class="u-strong" id="qrInvitee"></div>
-        <div class="u-secondary u-sm">有效期至 <span class="mono" id="qrExpire"></span></div>
-        <div class="u-secondary u-sm">真实场景二维码由服务端按链接凭证生成图片（原型以图标占位，禁止外链图片）</div>
-      </div>
-      <div class="ac-modal__footer">
-        <button class="ac-btn" type="button" data-close="qrModal">关闭</button>
-        <button class="ac-btn ac-btn--primary" type="button" id="qrDownBtn">下载图片</button>
       </div>
     </div>
   </div>
@@ -376,7 +348,6 @@ window.addEventListener('keydown', (e) => {
   if (popOpen()) { settlePop(false); return; }
   if (OPEN.has('revokeModal')) { requestCloseRevoke(); return; }
   if (OPEN.has('genModal')) { requestCloseGen(); return; }
-  if (OPEN.has('qrModal')) { hideLayer('qrModal'); return; }
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }, true);
 
@@ -469,13 +440,13 @@ const LINK_STATUS = {
   revoked: ['已撤销', 'danger'],
 };
 const LINKS = [
-  { id: 1, invitee: '长沙优选便利店 · 刘洋', status: 'submitted', used: 1, quota: 1, visits: 4, firstVisit: '2026-10-17 20:12', reqNo: 'REQ-20261017-002', reqStatus: '业务线审批中', expire: '2026-11-16 10:30', creator: '陈默', created: '2026-10-17 10:30', token: 'a8f3' },
-  { id: 2, invitee: '湘潭鲜果时光 · 王芳', status: 'pending', used: 0, quota: 1, visits: 2, firstVisit: '2026-10-18 08:44', reqNo: null, expire: '2026-10-21 14:00', soonExpire: true, creator: '陈默', created: '2026-10-14 14:00', token: 'c21e', highlight: true },
-  { id: 3, invitee: '株洲便利之家 · 李强', status: 'pending', used: 0, quota: 3, visits: 0, firstVisit: null, reqNo: null, expire: '2026-12-12 09:00', creator: '王强', created: '2026-10-13 09:00', token: 'e77a' },
-  { id: 4, invitee: '岳阳零食集 · 张敏', status: 'expired', used: 0, quota: 1, visits: 1, firstVisit: '2026-09-30 16:20', reqNo: null, expire: '2026-10-10 18:00', creator: '陈默', created: '2026-09-10 18:00', token: 'f09b' },
-  { id: 5, invitee: '衡阳惠万家 · 周杰', status: 'revoked', used: 0, quota: 1, visits: 3, firstVisit: '2026-10-01 09:15', reqNo: null, expire: '2026-10-30 12:00', creator: '王强', created: '2026-09-30 12:00', token: 'b35d' },
-  { id: 6, invitee: '常德好又多 · 吴倩', status: 'submitted', used: 2, quota: 2, visits: 6, firstVisit: '2026-10-05 14:08', reqNo: 'REQ-20261016-014', reqStatus: '产品确认中', expire: '2026-11-05 11:00', creator: '陈默', created: '2026-10-06 11:00', token: 'd64c' },
-  { id: 7, invitee: '益阳惠民生鲜 · 郑爽', status: 'pending', used: 0, quota: 1, visits: 0, firstVisit: null, reqNo: null, expire: '2026-11-17 10:00', creator: '王强', created: '2026-10-18 10:00', token: 'g82h' },
+  { id: 1, invitee: '长沙优选便利店 · 刘洋', status: 'submitted', used: 1, quota: 1, visits: 4, firstVisit: '2026-10-17 20:12', expire: '2026-11-16 10:30', creator: '陈默', created: '2026-10-17 10:30', token: 'a8f3' },
+  { id: 2, invitee: '湘潭鲜果时光 · 王芳', status: 'pending', used: 0, quota: 1, visits: 2, firstVisit: '2026-10-18 08:44', expire: '2026-10-21 14:00', soonExpire: true, creator: '陈默', created: '2026-10-14 14:00', token: 'c21e' },
+  { id: 3, invitee: '株洲便利之家 · 李强', status: 'pending', used: 0, quota: 3, visits: 0, firstVisit: null, expire: '2026-12-12 09:00', creator: '王强', created: '2026-10-13 09:00', token: 'e77a' },
+  { id: 4, invitee: '岳阳零食集 · 张敏', status: 'expired', used: 0, quota: 1, visits: 1, firstVisit: '2026-09-30 16:20', expire: '2026-10-10 18:00', creator: '陈默', created: '2026-09-10 18:00', token: 'f09b' },
+  { id: 5, invitee: '衡阳惠万家 · 周杰', status: 'revoked', used: 0, quota: 1, visits: 3, firstVisit: '2026-10-01 09:15', expire: '2026-10-30 12:00', creator: '王强', created: '2026-09-30 12:00', token: 'b35d' },
+  { id: 6, invitee: '常德好又多 · 吴倩', status: 'submitted', used: 2, quota: 2, visits: 6, firstVisit: '2026-10-05 14:08', expire: '2026-11-05 11:00', creator: '陈默', created: '2026-10-06 11:00', token: 'd64c' },
+  { id: 7, invitee: '益阳惠民生鲜 · 郑爽', status: 'pending', used: 0, quota: 1, visits: 0, firstVisit: null, expire: '2026-11-17 10:00', creator: '王强', created: '2026-10-18 10:00', token: 'g82h' },
 ];
 
 function linkStatusTag(s) {
@@ -489,17 +460,12 @@ function progressCell(l) {
 function visitCell(l) {
   return l.visits ? `<span class="mono">${l.visits} 次</span> · 首访 <span class="mono">${l.firstVisit}</span>` : '<span class="u-muted">未访问</span>';
 }
-function reqCell(l) {
-  return l.reqNo ? `<a class="ac-link mono" href="requirement-detail.html">${l.reqNo}</a> <span class="tpl-cell-status is-processing">${l.reqStatus}</span>` : '<span class="u-muted">—</span>';
-}
 function expireCell(l) {
   return `<span class="mono">${l.expire}</span>${l.soonExpire ? ' <span class="ac-tag ac-tag--orange">即将过期</span>' : ''}`;
 }
 function linkOps(l) {
   if (l.status !== 'pending') return '<span class="u-muted">—</span>';
   return `<div class="ac-row-actions" data-ac="AcRowActions">
-    <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="copy" data-id="${l.id}">复制链接</button>
-    <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-act="qr" data-id="${l.id}">二维码</button>
     <button class="ac-btn ac-btn--text ac-btn--sm ac-btn--text-danger" type="button" data-act="revoke" data-id="${l.id}">撤销</button>
   </div>`;
 }
@@ -508,8 +474,6 @@ function passFilters(l) {
   if (sts.length && !sts.includes(l.status)) return false;
   const inv = ($('#fInvitee').value || '').trim();
   if (inv && !l.invitee.includes(inv)) return false;
-  const cr = ($('#fCreator').value || '').trim();
-  if (cr && !l.creator.includes(cr)) return false;
   return true;
 }
 function renderTable() {
@@ -521,14 +485,14 @@ function renderTable() {
     tbody.innerHTML = `<tr><td colspan="8"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">暂无外链记录</div><div style="margin-top:8px"><button class="ac-btn ac-btn--primary ac-btn--sm" type="button" data-empty-gen>生成外链</button></div></div></td></tr>`;
     return;
   }
-  tbody.innerHTML = rows.map((l) => `<tr${l.highlight ? ' class="is-selected" id="hlRow"' : ''}>
+  tbody.innerHTML = rows.map((l) => `<tr>
     <td><span title="${esc(l.invitee)}">${esc(l.invitee)}</span></td>
     <td>${linkStatusTag(l.status)}</td>
     <td>${progressCell(l)}</td>
     <td>${visitCell(l)}</td>
-    <td>${reqCell(l)}</td>
     <td>${expireCell(l)}</td>
-    <td><div>${esc(l.creator)}</div><div class="u-sub mono">${esc(l.created)}</div></td>
+    <td>${esc(l.creator)}</td>
+    <td class="mono">${esc(l.created)}</td>
     <td>${linkOps(l)}</td>
   </tr>`).join('');
 }
@@ -536,15 +500,19 @@ function renderWithLoading() {
   $('#tableLoading').hidden = false;
   setTimeout(() => { $('#tableLoading').hidden = true; renderTable(); }, 300);
 }
-/* 高亮定位：由需求详情页「来源外链」进入时自动定位该外链行并高亮 3 秒（原型默认演示） */
-setTimeout(() => { const r = $('#hlRow'); if (r) r.classList.remove('is-selected'); }, 3000);
 /* ==================== 事件绑定与初始化 ==================== */
-on('click', '#btnQuery', () => { renderWithLoading(); return true; });
+/* 生成时间：日期范围（原型点击填入演示区间）；服务端暂不支持区间参数，选择后查询提示且不按时间过滤 */
+on('click', '#fRange', (e, el) => { if (!el.value) el.value = '2026-09-18 ~ 2026-10-18'; return false; });
+on('click', '#btnQuery', () => {
+  if ($('#fRange').value) toast('生成时间筛选待后端接口支持区间参数后生效，本次未按时间过滤', 'warning');
+  renderWithLoading();
+  return true;
+});
+on('keydown', '#fInvitee', (e) => { if (e.key === 'Enter') { $('#btnQuery').click(); return true; } return false; });
 on('click', '#btnReset', () => {
   setMulti($('#fStatus'), []);
   $('#fInvitee').value = '';
-  $('#fCreator').value = '';
-  $('#fRange').value = '2026-09-18 ~ 2026-10-18';
+  $('#fRange').value = '';
   renderWithLoading();
   return true;
 });
@@ -607,10 +575,8 @@ on('click', '#genOkBtn', async (e, btn) => {
   busy(btn, false);
   /* 幂等：按钮点击后立即 disabled 直至返回，不产生多条外链 */
   const days = $('#genDays .is-checked').getAttribute('data-value');
-  const link = { id: Date.now(), invitee, status: 'pending', used: 0, quota: Number(quota), visits: 0, firstVisit: null, reqNo: null, expire: expireText(days), creator: '王强', created: '2026-10-18 10:30', token: Math.random().toString(16).slice(2, 6) };
+  const link = { id: Date.now(), invitee, status: 'pending', used: 0, quota: Number(quota), visits: 0, firstVisit: null, expire: expireText(days), creator: '王强', created: '2026-10-18 10:30', token: Math.random().toString(16).slice(2, 6) };
   LINKS.unshift(link);
-  $('#rsInvitee').textContent = invitee;
-  $('#rsExpire').textContent = link.expire;
   $('#rsLink').value = `https://r.mmhm.example.cn/req/youdian?t=${link.token}`;
   $('#genForm').hidden = true;
   $('#genResult').hidden = false;
@@ -623,38 +589,17 @@ on('click', '#genOkBtn', async (e, btn) => {
 });
 on('click', '#rsCopyBtn', async (e, btn) => {
   busy(btn, true);
-  try { await navigator.clipboard.writeText($('#rsLink').value); } catch (err) { /* 原型环境降级 */ }
+  let ok = true;
+  try { await navigator.clipboard.writeText($('#rsLink').value); } catch (err) { ok = false; }
   await wait(200);
   busy(btn, false);
-  toast('链接已复制');
+  if (ok) toast('链接已复制');
+  else toast('复制失败，请手动选中链接文本', 'error');
   return true;
 });
 on('click', '#genDoneBtn', () => { hideLayer('genModal'); renderTable(); return true; });
 
-/* ---------- 行操作：复制链接 / 二维码 / 撤销 ---------- */
-on('click', '[data-act="copy"]', async (e, el) => {
-  busy(el, true);
-  const l = LINKS.find((x) => x.id === Number(el.getAttribute('data-id')));
-  try { await navigator.clipboard.writeText(`https://r.mmhm.example.cn/req/youdian?t=${l.token}`); } catch (err) { /* 降级 */ }
-  await wait(200);
-  busy(el, false);
-  toast('链接已复制');
-  return true;
-});
-on('click', '[data-act="qr"]', (e, el) => {
-  const l = LINKS.find((x) => x.id === Number(el.getAttribute('data-id')));
-  $('#qrInvitee').textContent = l.invitee;
-  $('#qrExpire').textContent = l.expire;
-  showLayer('qrModal');
-  return true;
-});
-on('click', '#qrDownBtn', async (e, btn) => {
-  busy(btn, true);
-  await wait(500);
-  busy(btn, false);
-  toast('二维码图片已下载');
-  return true;
-});
+/* ---------- 行操作：撤销（仅「待使用」行渲染操作列） ---------- */
 let revokeId = null;
 let revokeSnapshot = '';
 on('click', '[data-act="revoke"]', (e, el) => {

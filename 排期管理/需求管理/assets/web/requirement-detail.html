@@ -8,16 +8,16 @@
   需求管理 · 需求详情页（Web 原型）
   页面描述真源：../../references/web-ui.md#需求详情页 ｜ 页面类型 order-detail
   整页范例：busyming-skills-design/web/templates/order-detail.html ｜ DOM 依据：skeletons/web/detail-page.vue.tpl
-  区块（自上而下）：需求信息卡 → 外部提交区块（仅外部单）→ 附件区块（折叠面板）→ AI 方案确认面板（仅当前级次审批人与管理员）
-    → 审批进度时间线（驳回重提按轮次分组）→ 排期关联区（缺陷修复单替换为黑灯工厂工单区）→ 底部固定操作栏
-  弹窗 ×6：通过确认 / 驳回意见 / 关联排期 / 追加附件 / 确认并通过 / 请求补充材料。
+  区块（自上而下）：需求信息卡（草稿编号位展示「未提交草稿」，编辑入口不在本卡）→ 外部提交区块（仅外部单）→ 附件区块（只读列表，无上传/追加/删除/页内预览）→ AI 方案确认面板（仅当前级次审批人与管理员）
+    → 审批进度时间线（首节点「提交申请（发起）」；驳回重提按轮次分组；草稿态展示「草稿态尚未生成审批链快照，提交后展示审批进度」）→ 排期关联区（缺陷修复单替换为黑灯工厂工单区）→ 底部固定操作栏
+  弹窗 ×5：通过确认 / 驳回意见 / 关联排期（仅卡片编号精确匹配）/ 确认并通过 / 请求补充材料。
   演示形态切换（proto-bar 旁「演示形态」下拉，仅原型用途；真实页面由服务端数据与可执行操作驱动）：
     ① 内部功能单 · 审批人（陈默）· 产品确认中（默认：AI 方案待确认 + 通过/驳回）
-    ② 内部功能单 · 提交人（张三）· 已驳回（驳回警示条 + 重新提交 + 编辑入口）
+    ② 内部功能单 · 提交人（张三）· 已驳回（驳回警示条 + 重新提交跳需求提交页重提态）
     ③ 内部功能单 · 产品经理（陈默）· 待关联排期（AI 已确认 + 关联排期可点）
     ④ 外部提交单 · 审批人（陈默）· 产品确认中（外部提交区块 + 单向收口口径）
     ⑤ 缺陷修复单 · 已转黑灯工厂（排期区替换为工单区）
-  演示基准日 2026-10-18，数据为虚构样例。附件预览/下载链接真实有效期 1 小时，前端不缓存不复用。
+  演示基准日 2026-10-18，数据为虚构样例。附件预览/下载链接真实有效期 1 小时，每次点击重新获取。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
 </head>
@@ -57,11 +57,7 @@
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <a class="ac-link u-sm" href="requirement-list.html"><span class="ac-icon" data-ac="AcIcon" data-name="left"></span> 返回需求工单管理</a>
-      <h1 class="tpl-page-title"><span class="mono" id="reqNo">REQ-20261016-012</span> <span id="reqTitleInline">门店要货单支持按周转天数智能建议补货量</span> <span id="reqStatusTag"><span class="tpl-cell-status is-processing">产品确认中</span></span> <span id="reqExtTag" hidden><span class="ac-tag ac-tag--orange">外部提交</span></span></h1>
-    </div>
-    <div class="tpl-page-head__actions">
-      <!-- 编辑：提交人本人 + 草稿或已驳回时可见；外部单永不渲染（模式②可见，其余隐藏） -->
-      <a class="ac-btn" data-ac="AcButton" href="requirement-submit.html" id="editBtn" hidden><span class="ac-icon" data-ac="AcIcon" data-name="edit" data-size="sm"></span> 编辑</a>
+      <h1 class="tpl-page-title"><span class="mono" id="reqNo">REQ-20261016-012</span> <span id="reqTitleInline">门店要货单支持按周转天数智能建议补货量</span> <span id="reqStatusTag"><span class="tpl-cell-status is-processing">产品确认中</span></span> <span id="reqExtTag" hidden><span class="ac-tag ac-tag--yellow">外部提交</span></span></h1>
     </div>
   </div>
 
@@ -96,28 +92,23 @@
   <!-- 外部提交区块（仅外部单渲染，模式④） -->
   <div class="tpl-panel" id="extPanel" hidden>
     <div class="tpl-section">
-      <div class="tpl-section__head">外部提交信息 <span class="ac-tag ac-tag--orange">外部提交</span></div>
+      <div class="tpl-section__head">外部提交信息 <span class="ac-tag ac-tag--yellow">外部提交</span></div>
       <div class="ac-descriptions" data-ac="AcDescriptions">
         <div class="ac-desc-item"><span class="ac-desc-label">提交人姓名</span><span class="ac-desc-value">刘洋</span></div>
         <div class="ac-desc-item"><span class="ac-desc-label">所属部门</span><span class="ac-desc-value">长沙优选便利店 <span class="u-muted u-sm">手填，未关联组织架构</span></span></div>
         <div class="ac-desc-item"><span class="ac-desc-label">手机号</span><span class="ac-desc-value mono">138****6021 <span class="u-muted u-sm">仅内部可见，系统不向外部提交人发送任何短信或通知</span></span></div>
         <div class="ac-desc-item"><span class="ac-desc-label">提交时间</span><span class="ac-desc-value mono">2026-10-17 11:58</span></div>
-        <div class="ac-desc-item"><span class="ac-desc-label">来源 IP</span><span class="ac-desc-value mono">113.246.**.**</span></div>
-        <div class="ac-desc-item ac-desc-item--full"><span class="ac-desc-label">邀约溯源</span><span class="ac-desc-value">邀约人：陈默 · 邀约对象备注「长沙优选便利店 · 刘洋」 · <a class="ac-link" href="requirement-public-link.html">来源外链</a></span></div>
+        <div class="ac-desc-item ac-desc-item--full"><span class="ac-desc-label">邀约溯源</span><span class="ac-desc-value">邀约人：陈默 · 邀约对象备注「长沙优选便利店 · 刘洋」 · <a class="ac-link" href="requirement-public-link.html">来源外链</a> <span class="u-muted u-sm">（外链台账中按提交进度反查）</span></span></div>
       </div>
     </div>
   </div>
 
-  <!-- 附件区块（折叠面板，N>0 默认展开） -->
+  <!-- 附件区块（只读列表：文件名链接 + 大小 + 上传人 + 上传时间 + 审批中追加 Tag；点击文件名获取签名链接新窗口打开。
+       详情页不提供上传、追加与删除入口；无附件时显示灰字「无附件」） -->
   <div class="tpl-panel" id="attachPanel">
     <div class="tpl-toolbar">
       <div class="tpl-toolbar__left">
-        <span class="ac-collapse__head" id="attachToggle" role="button" tabindex="0"><span class="ac-icon" data-ac="AcIcon" data-name="down" id="attachArrow"></span> 附件（<span id="attachCount">4</span>）</span>
-      </div>
-      <div class="tpl-toolbar__right">
-        <!-- 追加附件：提交人本人 + 已提交/业务线审批中/实施确认中/产品确认中 时渲染（模式②提交人视角演示；已驳回不渲染） -->
-        <button class="ac-btn ac-btn--sm" type="button" id="appendBtn" hidden title="追加后将通知当前审批人，不会重置审批计时"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span> 追加附件</button>
-        <button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="gridToggleBtn" title="图片组切换缩略图网格">缩略图网格</button>
+        <span class="tpl-toolbar__title">附件（<span id="attachCount">4</span>）</span>
       </div>
     </div>
     <div id="attachBody">
@@ -126,22 +117,19 @@
         <div class="ac-file-group__head"><span class="ac-file-group__name">图片</span><span class="ac-file-group__count">2 个文件</span></div>
         <div class="ac-file-item">
           <span class="ac-file-item__type ac-file-item__type--img"><span class="ac-icon" data-ac="AcIcon" data-name="picture"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name" title="要货页现状截图.png">要货页现状截图.png</span><span class="ac-file-item__meta">1.2 MB · 张三上传 · 2026-10-16 08:31</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-preview="img" data-name="要货页现状截图.png">预览</button><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-down>下载</button></span>
+          <span class="ac-file-item__info"><a class="ac-link ac-file-item__name" href="#" onclick="return false" data-open title="要货页现状截图.png">要货页现状截图.png</a><span class="ac-file-item__meta">1.2 MB · 张三上传 · 2026-10-16 08:31</span></span>
         </div>
         <div class="ac-file-item">
           <span class="ac-file-item__type ac-file-item__type--img"><span class="ac-icon" data-ac="AcIcon" data-name="picture"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name" title="期望效果示意图.png">期望效果示意图.png</span><span class="ac-file-item__meta">860 KB · 张三上传 · 2026-10-17 09:12</span><span class="ac-tag ac-tag--orange">审批中追加</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-preview="img" data-name="期望效果示意图.png">预览</button><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-down>下载</button></span>
+          <span class="ac-file-item__info"><a class="ac-link ac-file-item__name" href="#" onclick="return false" data-open title="期望效果示意图.png">期望效果示意图.png</a><span class="ac-file-item__meta">860 KB · 张三上传 · 2026-10-17 09:12</span><span class="ac-tag ac-tag--orange">审批中追加</span></span>
         </div>
       </div>
-      <!-- 文档组（不提供在线预览，只渲染下载） -->
+      <!-- 文档组 -->
       <div class="ac-file-group">
         <div class="ac-file-group__head"><span class="ac-file-group__name">文档</span><span class="ac-file-group__count">1 个文件</span></div>
         <div class="ac-file-item">
           <span class="ac-file-item__type ac-file-item__type--pdf"><span class="ac-icon" data-ac="AcIcon" data-name="file-text"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name" title="周转天数口径说明_v2.docx">周转天数口径说明_v2.docx</span><span class="ac-file-item__meta">356 KB · 张三上传 · 2026-10-16 08:32</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-down>下载</button></span>
+          <span class="ac-file-item__info"><a class="ac-link ac-file-item__name" href="#" onclick="return false" data-open title="周转天数口径说明_v2.docx">周转天数口径说明_v2.docx</a><span class="ac-file-item__meta">356 KB · 张三上传 · 2026-10-16 08:32</span></span>
         </div>
       </div>
       <!-- 视频组 -->
@@ -149,11 +137,10 @@
         <div class="ac-file-group__head"><span class="ac-file-group__name">视频</span><span class="ac-file-group__count">1 个文件</span></div>
         <div class="ac-file-item">
           <span class="ac-file-item__type"><span class="ac-icon" data-ac="AcIcon" data-name="preview-open"></span></span>
-          <span class="ac-file-item__info"><span class="ac-file-item__name" title="门店要货操作录屏.mp4">门店要货操作录屏.mp4</span><span class="ac-file-item__meta">48 MB · 张三上传 · 2026-10-16 08:33</span></span>
-          <span class="ac-file-item__ops"><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-preview="video" data-name="门店要货操作录屏.mp4">预览</button><button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-down>下载</button></span>
+          <span class="ac-file-item__info"><a class="ac-link ac-file-item__name" href="#" onclick="return false" data-open title="门店要货操作录屏.mp4">门店要货操作录屏.mp4</a><span class="ac-file-item__meta">48 MB · 张三上传 · 2026-10-16 08:33</span></span>
         </div>
       </div>
-      <div class="u-secondary u-sm">详情页不提供删除附件入口（删除仅草稿态且在编辑页操作）；预览与下载链接有效期 1 小时，每次点击重新获取。</div>
+      <div class="u-secondary u-sm">预览与下载链接有效期 1 小时，每次点击重新获取。</div>
     </div>
   </div>
 
@@ -201,7 +188,7 @@
         </div>
       </div>
     </div>
-    <!-- 生成中态（每 5 秒刷新生成状态，离开页面即停止） -->
+    <!-- 生成中态（页面不自动轮询，刷新页面获取最新状态） -->
     <div id="aiLoading" hidden>
       <div class="ac-skeleton"><div class="ac-skeleton__line ac-skeleton__line--title"></div><div class="ac-skeleton__line"></div><div class="ac-skeleton__line ac-skeleton__line--short"></div></div>
       <div class="u-secondary u-sm">AI 方案生成中，通常 1–3 分钟；您也可以直接人工审批，AI 结果将自动作废。</div>
@@ -235,15 +222,15 @@
         </div>
         <div class="ac-timeline__item">
           <div class="ac-timeline__rail"><span class="ac-timeline__dot is-done"></span><span class="ac-timeline__line"></span></div>
-          <div class="ac-timeline__content"><div class="ac-timeline__head">L1 业务线审批 <span class="ac-timeline__tag ac-timeline__tag--mode">已通过</span></div><div class="ac-timeline__meta">周文杰 · 运营负责人</div><div class="ac-timeline__opinion is-pass">补货智能化方向认可，同意进入实施评估。</div><div class="ac-timeline__meta mono">2026-10-16 18:42 · 用时 10 小时</div></div>
+          <div class="ac-timeline__content"><div class="ac-timeline__head">L1 业务线审批 <span class="ac-timeline__tag ac-timeline__tag--mode">已通过</span></div><div class="ac-timeline__meta">周文杰 · 运营负责人</div><div class="ac-timeline__opinion is-pass">补货智能化方向认可，同意进入实施评估。</div><div class="ac-timeline__meta mono">2026-10-16 18:42 · 用时 10 小时 12 分</div></div>
         </div>
         <div class="ac-timeline__item">
           <div class="ac-timeline__rail"><span class="ac-timeline__dot is-done"></span><span class="ac-timeline__line"></span></div>
-          <div class="ac-timeline__content"><div class="ac-timeline__head">L2 实施确认 <span class="ac-timeline__tag ac-timeline__tag--mode">或签 · 已通过</span></div><div class="ac-timeline__meta">李思远（候选人：李思远、孙浩）</div><div class="ac-timeline__opinion is-pass">门店侧培训成本可控，建议先灰度 50 家。</div><div class="ac-timeline__meta mono">2026-10-17 15:20 · 用时 21 小时</div></div>
+          <div class="ac-timeline__content"><div class="ac-timeline__head">L2 实施确认 <span class="ac-timeline__tag ac-timeline__tag--mode">或签 · 已通过</span></div><div class="ac-timeline__meta">李思远（候选人：李思远、孙浩）</div><div class="ac-timeline__opinion is-pass">门店侧培训成本可控，建议先灰度 50 家。</div><div class="ac-timeline__meta mono">2026-10-17 15:20 · 用时 20 小时 38 分</div></div>
         </div>
         <div class="ac-timeline__item" id="tlCurrent">
           <div class="ac-timeline__rail"><span class="ac-timeline__dot is-current"></span><span class="ac-timeline__line is-future"></span></div>
-          <div class="ac-timeline__content"><div class="ac-timeline__head">L3 产品确认 <span class="ac-timeline__tag ac-timeline__tag--mode">当前节点</span><span class="ac-badge ac-badge--count ac-tab__badge">审批中</span><span class="ac-timeline__waited">已等待 26 小时</span></div><div class="ac-timeline__cands"><div class="ac-timeline__cand"><span class="ac-timeline__cand-avatar is-wait">陈</span><span class="ac-timeline__cand-name">陈默 <span class="ac-timeline__cand-dept">产品经理 · 提交对象</span></span><span class="ac-timeline__cand-state is-wait">待审批</span></div></div></div>
+          <div class="ac-timeline__content"><div class="ac-timeline__head">L3 产品确认 <span class="ac-timeline__tag ac-timeline__tag--mode">当前节点</span><span class="ac-badge ac-badge--count ac-tab__badge">待审</span><span class="ac-timeline__waited">已等待 26 小时</span></div><div class="ac-timeline__cands"><div class="ac-timeline__cand"><span class="ac-timeline__cand-avatar is-wait">陈</span><span class="ac-timeline__cand-name">陈默 <span class="ac-timeline__cand-dept">产品经理 · 提交对象</span></span><span class="ac-timeline__cand-state is-wait">待审批</span></div></div></div>
         </div>
       </div>
       <!-- 驳回重提历史轮次（模式②演示第 1 轮驳回记录） -->
@@ -271,36 +258,35 @@
         <div class="ac-alert ac-alert--warning" data-ac="AcAlert" role="status"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="remind"></span></div><div class="ac-alert__body"><div class="ac-alert__content">需求已通过全部审批，待关联排期卡片</div></div></div>
         <div class="tpl-toolbar"><div class="tpl-toolbar__right"><button class="ac-btn ac-btn--primary" type="button" id="linkBtn"><span class="ac-icon" data-ac="AcIcon" data-name="link" data-size="sm"></span> 关联排期</button></div></div>
       </div>
-      <!-- 已关联：卡片编号 / 排期日期 / 开发状态 / 开发人 + 解除关联 + 刷新 + Qoder 开发会话 -->
+      <!-- 已关联：卡片编号（页内跳功能排期卡片详情）/ 卡片标题 / 排期日期区间 / 开发状态 / 开发人 + 解除关联 -->
       <div id="schLinked" hidden>
         <div class="ac-descriptions" data-ac="AcDescriptions">
-          <div class="ac-desc-item"><span class="ac-desc-label">排期卡片</span><span class="ac-desc-value"><a class="ac-link mono" href="#" onclick="return false" title="新标签页打开功能排期" id="cardNo">SCH-202610-023</a></span></div>
+          <div class="ac-desc-item"><span class="ac-desc-label">排期卡片</span><span class="ac-desc-value"><a class="ac-link mono" href="#" onclick="return false" title="页内跳功能排期卡片详情" id="cardNo">SCH-202610-023</a></span></div>
+          <div class="ac-desc-item"><span class="ac-desc-label">卡片标题</span><span class="ac-desc-value">要货体验优化合集</span></div>
           <div class="ac-desc-item"><span class="ac-desc-label">排期日期</span><span class="ac-desc-value mono" id="cardDate">2026-10-20 ~ 2026-10-24</span></div>
           <div class="ac-desc-item"><span class="ac-desc-label">开发状态</span><span class="ac-desc-value"><span class="tpl-cell-status is-processing">开发中</span></span></div>
           <div class="ac-desc-item"><span class="ac-desc-label">开发人</span><span class="ac-desc-value">李工</span></div>
-          <div class="ac-desc-item ac-desc-item--full"><span class="ac-desc-label">Qoder 开发会话</span><span class="ac-desc-value"><a class="ac-link" href="#" onclick="return false" id="qoderLink">打开 Qoder 开发会话</a> <span class="u-muted u-sm">（仅产品经理、管理员与卡片开发人可见；重新关联后保留旧会话链接备查）</span></span></div>
         </div>
         <div class="tpl-toolbar">
           <div class="tpl-toolbar__right">
-            <button class="ac-btn ac-btn--sm ac-btn--text" type="button" id="schRefreshBtn" title="刷新排期状态"><span class="ac-icon" data-ac="AcIcon" data-name="refresh" data-size="sm"></span> 刷新</button>
             <button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" id="unlinkBtn">解除关联</button>
           </div>
         </div>
       </div>
-      <!-- 卡片已失效（列表行「已失效」角标对应场景） -->
+      <!-- 卡片已失效（关联仅余编号） -->
       <div id="schInvalid" hidden>
         <div class="ac-alert ac-alert--warning" data-ac="AcAlert" role="alert"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="remind"></span></div><div class="ac-alert__body"><div class="ac-alert__content">关联卡片已失效，请重新关联</div></div><div class="ac-alert__action"><button class="ac-btn ac-btn--sm" type="button" id="relinkBtn">重新关联</button></div></div>
       </div>
-      <!-- 缺陷修复单：黑灯工厂工单区（模式⑤） -->
+      <!-- 缺陷修复单：黑灯工厂工单区（模式⑤，不渲染关联与解除按钮）。
+           已转单（本演示）：「已转黑灯工厂自动化修复」+ 工单号与优先级（纯文本）；
+           待关联排期状态展示「已通过全部审批，待系统转黑灯工厂建单」；
+           更早状态展示「缺陷修复单审批通过后将由系统转黑灯工厂建单，无需关联排期」 -->
       <div id="schTicket" hidden>
         <div class="ac-alert ac-alert--info" data-ac="AcAlert" role="status"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="info"></span></div><div class="ac-alert__body"><div class="ac-alert__content">已转黑灯工厂自动化修复</div></div></div>
         <div class="ac-descriptions" data-ac="AcDescriptions">
-          <div class="ac-desc-item"><span class="ac-desc-label">工单号</span><span class="ac-desc-value"><a class="ac-link mono" href="#" onclick="return false" title="跳转黑灯工厂工单">BL-20261016-045</a></span></div>
-          <div class="ac-desc-item"><span class="ac-desc-label">工单级别</span><span class="ac-desc-value"><span class="ac-tag ac-tag--orange">P1</span></span></div>
-          <div class="ac-desc-item"><span class="ac-desc-label">工单状态</span><span class="ac-desc-value"><span class="tpl-cell-status is-processing">修复中</span></span></div>
-          <div class="ac-desc-item"><span class="ac-desc-label">负责人</span><span class="ac-desc-value">黑灯工厂 · 自动修复Agent</span></div>
+          <div class="ac-desc-item"><span class="ac-desc-label">工单号</span><span class="ac-desc-value mono">BL-20261016-045</span></div>
+          <div class="ac-desc-item"><span class="ac-desc-label">优先级</span><span class="ac-desc-value">P1 高</span></div>
         </div>
-        <div class="u-secondary u-sm">工单级别 / 状态 / 负责人为黑灯工厂只读回传；建单失败时此处展示红色警示条「转黑灯工厂建单失败，系统将自动重试」。</div>
       </div>
     </div>
   </div>
@@ -308,7 +294,7 @@
   <!-- 底部固定操作栏（无可执行操作时不渲染） -->
   <div class="tpl-actionbar tpl-actionbar--stack" id="actionBar">
     <div class="tpl-actionbar__inner">
-      <span class="tpl-actionbar__hint" id="actionHint">您是当前节点（L3 产品确认）审批人；审批类操作幂等，重复提交返回当前状态。</span>
+      <span class="tpl-actionbar__hint" id="actionHint">您是当前节点审批人；审批类操作幂等，重复提交返回当前状态。</span>
       <div class="tpl-actionbar__row" id="actionRow">
         <!-- 审批人：通过 / 驳回 -->
         <button class="ac-btn ac-btn--outline-danger" type="button" id="rejectBtn" data-act-group="approver">驳回</button>
@@ -378,95 +364,25 @@
   </div>
 </div>
 
-<!-- 关联排期弹窗（方式一编号搜索 / 方式二候选列表，互斥；确认前可选） -->
+<!-- 关联排期弹窗（仅一种方式：卡片编号精确匹配；一条需求只能关联一张卡片） -->
 <div class="ac-modal" data-ac="AcModal" id="linkModal" hidden>
   <div class="ac-modal__mask"></div>
   <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="720">
+    <div class="ac-modal__panel" data-width="520">
       <div class="ac-modal__header"><div class="ac-modal__title">关联排期卡片</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="linkModal">×</button></div>
       <div class="ac-modal__body">
         <div id="linkAlert"></div>
-        <div class="ac-tabs" id="linkTabs">
-          <div class="ac-tabs__nav">
-            <span class="ac-tab is-active" data-ltab="no">按编号搜索</span>
-            <span class="ac-tab" data-ltab="pick">从候选卡片选择</span>
-          </div>
-        </div>
-        <!-- 方式一：编号精确搜索 -->
-        <div data-ltab="no" id="linkPaneNo">
-          <div class="ac-form ac-form--horizontal" data-ac="AcForm">
-            <div class="ac-form-item ac-form-item--horizontal" data-field="cardNo">
-              <label class="ac-form-item__label is-right">卡片编号</label>
-              <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
-                <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" id="linkNo" placeholder="输入排期卡片编号精确搜索，如 SCH-202610-023" autocomplete="off" /></span>
-              </div><div class="ac-form-item__help u-danger" data-help></div></div>
-            </div>
-          </div>
-          <div class="ac-descriptions" data-ac="AcDescriptions" id="linkNoSummary" hidden>
-            <div class="ac-desc-item"><span class="ac-desc-label">排期日期</span><span class="ac-desc-value mono">2026-10-20 ~ 2026-10-24</span></div>
-            <div class="ac-desc-item"><span class="ac-desc-label">开发状态</span><span class="ac-desc-value"><span class="tpl-cell-status is-processing">开发中</span></span></div>
-            <div class="ac-desc-item"><span class="ac-desc-label">开发人</span><span class="ac-desc-value">李工</span></div>
-          </div>
-        </div>
-        <!-- 方式二：候选排期卡片列表 -->
-        <div data-ltab="pick" id="linkPanePick" hidden>
-          <div class="tpl-filter">
-            <div class="ac-form-item">
-              <label class="ac-form-item__label">月份</label>
-              <span class="ac-input ac-date-picker" data-ac="AcDatePicker"><input class="ac-input__inner mono" value="2026-10" readonly /></span>
-            </div>
-            <div class="ac-form-item">
-              <label class="ac-form-item__label">开发人</label>
-              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部" id="linkDev">
-                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-                <div class="ac-select__popup" hidden><ul class="ac-select__list">
-                  <li class="ac-select__option" data-value="李工"><span class="ac-select__option-label">李工</span></li>
-                  <li class="ac-select__option" data-value="赵工"><span class="ac-select__option-label">赵工</span></li>
-                </ul></div>
-              </div>
-            </div>
-            <div class="ac-form-item">
-              <label class="ac-form-item__label">需求提交人</label>
-              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="全部（仅内部提交人）" id="linkSubmitter">
-                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">全部（仅内部提交人）</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
-                <div class="ac-select__popup" hidden><ul class="ac-select__list">
-                  <li class="ac-select__option" data-value="张三"><span class="ac-select__option-label">张三</span></li>
-                  <li class="ac-select__option" data-value="陈默"><span class="ac-select__option-label">陈默</span></li>
-                </ul></div>
-              </div>
-            </div>
-          </div>
-          <div class="u-secondary u-sm">仅已被领取开发 / 已完成的卡片有开发人，待开发卡片不参与该筛选。切换月份或筛选条件时清空已选行并重新查询。</div>
-          <div class="ac-table-wrap">
-            <table class="ac-table">
-              <thead><tr><th></th><th>卡片编号</th><th>标题</th><th>排期日期</th><th>开发状态</th><th>开发人</th><th>已关联需求数</th></tr></thead>
-              <tbody id="linkTbody"></tbody>
-            </table>
+        <div class="ac-form ac-form--horizontal" data-ac="AcForm">
+          <div class="ac-form-item ac-form-item--horizontal" data-field="cardNo">
+            <label class="ac-form-item__label is-right">卡片编号</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+              <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" id="linkNo" placeholder="输入排期卡片编号" autocomplete="off" /></span>
+              <span class="ac-form-item__hint">输入排期卡片编号精确匹配，如 FS-20261020-001，可在「功能排期管理」页查看</span>
+            </div><div class="ac-form-item__help u-danger" data-help></div></div>
           </div>
         </div>
       </div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="linkModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="linkOkBtn" disabled>确认关联</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- 追加附件弹窗 -->
-<div class="ac-modal" data-ac="AcModal" id="appendModal" hidden>
-  <div class="ac-modal__mask"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="560">
-      <div class="ac-modal__header"><div class="ac-modal__title">追加附件</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="appendCloseBtn">×</button></div>
-      <div class="ac-modal__body">
-        <div class="ac-upload" data-ac="AcUpload">
-          <div class="ac-upload__dragger" id="appendDrop" role="button" tabindex="0">
-            <span class="ac-icon" data-ac="AcIcon" data-name="upload" data-size="lg"></span>
-            <div>拖拽文件到此处，或点击选择文件</div>
-            <div class="u-secondary u-sm">图片 ≤10MB/张（最多20张）、文档 ≤50MB/个（最多10个）、视频 ≤200MB/个（最多3个）；计数含已有附件</div>
-          </div>
-        </div>
-        <div class="ac-file-group" id="appendList"></div>
-      </div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" id="appendCancelBtn">取消</button><button class="ac-btn ac-btn--primary" type="button" id="appendOkBtn">确认追加</button></div>
+      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="linkModal">取消</button><button class="ac-btn ac-btn--primary" type="button" id="linkOkBtn">确认关联</button></div>
     </div>
   </div>
 </div>
@@ -513,35 +429,6 @@
         </div>
       </div>
       <div class="ac-modal__footer"><button class="ac-btn" type="button" id="suppCancelBtn">取消</button><button class="ac-btn ac-btn--primary" type="button" id="suppOkBtn">发送给提交人</button></div>
-    </div>
-  </div>
-</div>
-
-<!-- 图片查看层（左右切图、缩放、Esc 关闭） -->
-<div class="ac-image__preview" data-ac="AcImagePreview" id="imgViewer" hidden>
-  <button class="ac-btn ac-btn--text" type="button" id="imgPrevBtn" aria-label="上一张"><span class="ac-icon" data-ac="AcIcon" data-name="left" data-size="lg"></span></button>
-  <div class="ac-result">
-    <div class="ac-result__icon"><span class="ac-icon" data-ac="AcIcon" data-name="picture" data-size="lg"></span></div>
-    <div class="ac-result__title" id="imgViewerName">要货页现状截图.png</div>
-    <div class="ac-result__desc"><span class="mono" id="imgViewerIdx">1/2</span> · 原型以图标占位图片内容；支持缩放与 Esc 关闭 · 点击空白处关闭</div>
-  </div>
-  <button class="ac-btn ac-btn--text" type="button" id="imgNextBtn" aria-label="下一张"><span class="ac-icon" data-ac="AcIcon" data-name="right" data-size="lg"></span></button>
-</div>
-
-<!-- 视频 / PDF 预览弹层（内嵌，不自动播放） -->
-<div class="ac-modal" data-ac="AcModal" id="mediaModal" hidden>
-  <div class="ac-modal__mask" data-close="mediaModal"></div>
-  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
-    <div class="ac-modal__panel" data-width="640">
-      <div class="ac-modal__header"><div class="ac-modal__title" id="mediaTitle">附件预览</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="mediaModal">×</button></div>
-      <div class="ac-modal__body">
-        <div class="ac-result">
-          <div class="ac-result__icon"><span class="ac-icon" data-ac="AcIcon" data-name="preview-open" data-size="lg"></span></div>
-          <div class="ac-result__title" id="mediaName">门店要货操作录屏.mp4</div>
-          <div class="ac-result__desc">原型以图标占位媒体内容；真实场景为弹层内嵌预览 / 播放（不自动播放），预览链接失效时此处展示「预览链接已失效，点击重试」。</div>
-        </div>
-      </div>
-      <div class="ac-modal__footer"><button class="ac-btn" type="button" data-close="mediaModal">关闭</button></div>
     </div>
   </div>
 </div>
@@ -663,10 +550,9 @@ const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([se
     e.stopPropagation();
   });
 });
-/* 含表单弹窗捕获阶段接管 Esc：阻止设计仓全局 Esc 把弹窗变成透明拦截层；图片查看层允许 Esc 关闭 */
+/* 含表单弹窗捕获阶段接管 Esc：阻止设计仓全局 Esc 把弹窗变成透明拦截层 */
 window.addEventListener('keydown', (e) => {
   if (e.key !== 'Escape') return;
-  if (!$('#imgViewer').hidden) { $('#imgViewer').hidden = true; e.stopPropagation(); return; }
   if (!OPEN.size && !popOpen() && !$$('.ac-select.is-open').length) return;
   e.stopPropagation();
   if (popOpen()) { settlePop(false); return; }
@@ -676,8 +562,6 @@ window.addEventListener('keydown', (e) => {
   if (OPEN.has('suppModal')) { requestCloseSupp(); return; }
   if (OPEN.has('approveModal')) { hideLayer('approveModal'); return; }
   if (OPEN.has('linkModal')) { hideLayer('linkModal'); return; }
-  if (OPEN.has('appendModal')) { requestCloseAppend(); return; }
-  if (OPEN.has('mediaModal')) { hideLayer('mediaModal'); return; }
   $$('.ac-select.is-open').forEach((s) => closeSelect(s));
 }, true);
 
@@ -757,8 +641,6 @@ function applyMode(m) {
   $('#aiConfirmed').hidden = !(m === 'c' || m === 'e');
   $('#aiLoading').hidden = true;
   $('#aiFailed').hidden = true;
-  $('#editBtn').hidden = !isRejected;
-  $('#appendBtn').hidden = isRejected || isExt ? true : false;
   /* 时间线：提交人 meta 外部单差异 */
   $('#tlSubmitMeta').textContent = isExt ? '刘洋（外部提交） · 已提交' : '张三 · 已提交';
   $('#roundCollapse').hidden = !isRejected;
@@ -777,8 +659,8 @@ function applyMode(m) {
   $('#actionBar').hidden = noAction;
   $('#detailPage').classList.toggle('tpl-page--with-actionbar', !noAction);
   $('#actionHint').textContent = isExt
-    ? '您是当前节点（L3 产品确认）审批人；外部提交单驳回即终态，仅通知邀约人。'
-    : '您是当前节点（L3 产品确认）审批人；审批类操作幂等，重复提交返回当前状态。';
+    ? '您是当前节点审批人；外部提交单驳回即终态，仅通知邀约人。'
+    : '您是当前节点审批人；审批类操作幂等，重复提交返回当前状态。';
 }
 on('click', '#modeBtn', () => {
   const menu = $('#modeMenu');
@@ -851,16 +733,22 @@ on('click', '#rejectOkBtn', async (e, btn) => {
   return true;
 });
 
-/* 重新提交（提交人本人 + 已驳回） */
-on('click', '#resubmitBtn', async (e, btn) => {
-  const ok = await askPop(btn, '重新提交', '重新提交将按提交对象重新匹配审批链并逐级重审，确认提交？', '确认提交');
+/* 重新提交（提交人本人 + 已驳回，非外部单）：跳需求提交页重提态，修改后点「提交审批」生效 */
+on('click', '#resubmitBtn', () => {
+  location.href = 'requirement-submit.html';
+  return true;
+});
+
+/* 撤回（提交人本人 + 已提交 / 业务线审批中，非外部单）：成功后返回需求列表页 */
+on('click', '#withdrawBtn', async (e, btn) => {
+  const ok = await askPop(btn, '撤回需求', '撤回后需求回到草稿、审批链作废，确认撤回？', '确认撤回');
   $('#popconfirm').hidden = true;
   if (!ok) return true;
   busy(btn, true);
   await wait(700);
   busy(btn, false);
-  toast('需求 REQ-20261016-012 已重新提交，将由业务线审批审批');
-  setTimeout(() => { location.href = 'requirement-list.html'; }, 1500);
+  toast('需求 REQ-20261016-012 已撤回至草稿');
+  location.href = 'requirement-list.html';
   return true;
 });
 
@@ -922,113 +810,43 @@ on('click', '#suppOkBtn', async (e, btn) => {
   toast('补材请求已发送给提交人，需求仍在产品确认节点');
   return true;
 });
-/* 重新生成方案：面板局部 loading → 生成中态 → 3s 后回到待确认（V3） */
+/* 重新生成方案：面板转为生成中态；页面不自动轮询，刷新页面获取最新状态（同轮已有生成中任务时直接复用，不报错） */
 on('click', '#aiRegenBtn', async (e, btn) => {
   const ok = await askPop(btn, '重新生成方案', '将基于当前需求信息重新分析并生成新版本方案，确认重新生成？', '确认');
   $('#popconfirm').hidden = true;
   if (!ok) return true;
   $('#aiPending').hidden = true;
   $('#aiLoading').hidden = false;
-  setTimeout(() => {
-    $('#aiLoading').hidden = true;
-    $('#aiPending').hidden = false;
-    const tag = $('#aiPanel .ac-tag--bordered');
-    if (tag) tag.textContent = 'V3';
-  }, 3000);
   return true;
 });
 
 /* ==================== 排期关联 ==================== */
-const LINK_CARDS = [
-  { no: 'SCH-202610-023', title: '要货体验优化合集', date: '2026-10-20 ~ 2026-10-24', dev: '开发中', devBy: '李工', linked: 2, linkedBy: '张三、刘洋' },
-  { no: 'SCH-202610-018', title: '盘点 App 体验专项', date: '2026-10-20 ~ 2026-10-24', dev: '待开发', devBy: '', linked: 0 },
-  { no: 'SCH-202610-031', title: '要货数据报表补齐', date: '2026-10-27 ~ 2026-10-31', dev: '待开发', devBy: '', linked: 0 },
-];
-let linkTab = 'no';
-let linkSelected = null;
-function renderLinkRows() {
-  const dev = selectValue($('#linkDev'));
-  const sub = selectValue($('#linkSubmitter'));
-  let rows = LINK_CARDS.slice();
-  if (dev) rows = rows.filter((c) => c.devBy === dev);
-  if (sub) rows = rows.filter((c) => (c.linkedBy || '').includes(sub));
-  const tbody = $('#linkTbody');
-  if (!rows.length) {
-    tbody.innerHTML = `<tr><td colspan="7"><div class="ac-empty" data-ac="AcEmpty"><div class="ac-empty__art"></div><div class="ac-empty__title">${dev || sub ? '无符合条件的卡片，可调整筛选或改用编号搜索' : '当月暂无排期卡片'}</div></div></td></tr>`;
-  } else {
-    tbody.innerHTML = rows.map((c) => `<tr data-card="${c.no}" class="${linkSelected === c.no ? 'is-selected' : ''}" role="button" tabindex="0">
-      <td><span class="ac-radio ac-radio--dot${linkSelected === c.no ? ' is-checked' : ''}" role="radio" aria-checked="${linkSelected === c.no}"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span></span></td>
-      <td class="mono">${c.no}</td>
-      <td>${esc(c.title)}</td>
-      <td class="mono">${c.date}</td>
-      <td><span class="tpl-cell-status${c.dev === '待开发' ? '' : c.dev === '开发中' ? ' is-processing' : ' is-success'}">${c.dev}</span></td>
-      <td>${c.devBy || '<span class="u-muted">—</span>'}</td>
-      <td>${c.linked ? `<span class="ac-tag ac-tag--orange" title="已关联需求提交人：${esc(c.linkedBy)}">已关联 ${c.linked} 条需求</span>` : '<span class="u-muted">—</span>'}</td>
-    </tr>`).join('');
-  }
-  syncLinkOk();
-}
-function syncLinkOk() {
-  let ok = null;
-  if (linkTab === 'no') ok = !$('#linkNoSummary').hidden ? 'SCH-202610-023' : null;
-  else ok = linkSelected;
-  $('#linkOkBtn').disabled = !ok;
-  return ok;
-}
-on('click', '#linkBtn', () => { linkTab = 'no'; linkSelected = null; $('#linkNo').value = ''; $('#linkNoSummary').hidden = true; $('#linkAlert').innerHTML = ''; switchLinkTab('no'); renderLinkRows(); showLayer('linkModal'); return true; });
-on('click', '#relinkBtn', () => { $('#linkBtn').click(); return true; });
-function switchLinkTab(t) {
-  linkTab = t;
-  $$('#linkTabs .ac-tab').forEach((x) => x.classList.toggle('is-active', x.getAttribute('data-ltab') === t));
-  $('#linkPaneNo').hidden = t !== 'no';
-  $('#linkPanePick').hidden = t !== 'pick';
-  syncLinkOk();
-}
-on('click', '#linkTabs .ac-tab', (e, el) => { switchLinkTab(el.getAttribute('data-ltab')); return true; });
-on('click', '#linkTbody tr[data-card]', (e, el) => {
-  linkSelected = el.getAttribute('data-card');
-  renderLinkRows();
+/* 关联排期弹窗：仅「卡片编号精确匹配」一种方式，提交时做存在性校验（失败弹窗内提示并保留输入） */
+on('click', '#linkBtn', () => {
+  $('#linkNo').value = '';
+  $('#linkAlert').innerHTML = '';
+  const it = $('[data-field="cardNo"]');
+  it.classList.remove('is-error');
+  $('[data-help]', it).textContent = '';
+  showLayer('linkModal');
   return true;
 });
-document.body.addEventListener('ac:change', (e) => {
-  if (e.target && (e.target.id === 'linkDev' || e.target.id === 'linkSubmitter')) {
-    linkSelected = null;   /* 切换筛选清空已选行并重新查询 */
-    renderLinkRows();
-  }
-});
-/* 方式一：编号精确搜索（存在性校验） */
-on('change', '#linkNo', (e, el) => {
-  const v = el.value.trim();
+on('click', '#relinkBtn', () => { $('#linkBtn').click(); return true; });
+on('click', '#linkOkBtn', async (e, btn) => {
+  const v = $('#linkNo').value.trim();
   const it = $('[data-field="cardNo"]');
-  if (v === 'SCH-202610-023') {
-    it.classList.remove('is-error');
-    $('[data-help]', it).textContent = '';
-    $('#linkNoSummary').hidden = false;
-  } else {
-    $('#linkNoSummary').hidden = true;
+  /* 演示数据：SCH-202610-023 为有效卡片 */
+  if (v !== 'SCH-202610-023') {
     it.classList.add('is-error');
     $('[data-help]', it).textContent = '卡片不存在或已删除';
+    return true;
   }
-  syncLinkOk();
-  return false;
-});
-on('click', '#linkOkBtn', async (e, btn) => {
-  const cardNo = syncLinkOk();
-  if (!cardNo) return true;
-  const card = LINK_CARDS.find((c) => c.no === cardNo);
-  /* 同挂确认：卡片已承载其他需求时弹窗内确认 */
-  if (card && card.linked > 0) {
-    hideLayer('linkModal');
-    const ok2 = await askConfirm(`该卡片已承载 ${card.linked} 条需求（提交人：${card.linkedBy}），确认将本需求同挂到该卡片？`);
-    hideLayer('confirmModal');
-    if (!ok2) { showLayer('linkModal'); return true; }
-    showLayer('linkModal');
-  }
+  it.classList.remove('is-error');
   busy(btn, true);
   await wait(700);
   busy(btn, false);
   hideLayer('linkModal');
-  toast(`已关联排期卡片 ${cardNo}`);
+  toast(`已关联排期卡片 ${v}`);
   $('#schLink').hidden = true;
   $('#schLinked').hidden = false;
   $('#reqStatusTag').innerHTML = '<span class="tpl-cell-status is-success">已关联排期</span>';
@@ -1048,81 +866,13 @@ on('click', '#unlinkBtn', async (e, btn) => {
   $('#reqStatusTag').innerHTML = '<span class="tpl-cell-status is-warning">待关联排期</span>';
   return true;
 });
-/* 刷新排期状态：局部加载，无提示（失败时区内 inline「排期状态获取失败，点击重试」——原型演示成功路径） */
-on('click', '#schRefreshBtn', async (e, btn) => {
-  busy(btn, true);
-  await wait(500);
-  busy(btn, false);
-  return true;
-});
-on('click', '#qoderLink', () => { toast('打开 Qoder 开发会话（原型演示）', 'info'); return true; });
 
-/* ==================== 附件 ==================== */
-on('click', '#attachToggle', () => { const b = $('#attachBody'); b.hidden = !b.hidden; $('#attachArrow').setAttribute('data-name', b.hidden ? 'right' : 'down'); return true; });
-on('click', '#gridToggleBtn', () => { $('#imgGroup').classList.toggle('is-grid'); toast('图片组切换缩略图网格（原型演示）', 'info'); return true; });
-const IMGS = ['要货页现状截图.png', '期望效果示意图.png'];
-let imgIdx = 0;
-on('click', '[data-preview]', (e, el) => {
-  const type = el.getAttribute('data-preview');
-  const name = el.getAttribute('data-name');
-  if (type === 'img') {
-    imgIdx = IMGS.indexOf(name);
-    renderImgViewer();
-    $('#imgViewer').hidden = false;
-  } else {
-    $('#mediaTitle').textContent = type === 'video' ? '视频预览' : '附件预览';
-    $('#mediaName').textContent = name;
-    showLayer('mediaModal');
-  }
-  return true;
-});
-function renderImgViewer() {
-  $('#imgViewerName').textContent = IMGS[imgIdx];
-  $('#imgViewerIdx').textContent = `${imgIdx + 1}/${IMGS.length}`;
-}
-on('click', '#imgPrevBtn', () => { imgIdx = (imgIdx + IMGS.length - 1) % IMGS.length; renderImgViewer(); return true; });
-on('click', '#imgNextBtn', () => { imgIdx = (imgIdx + 1) % IMGS.length; renderImgViewer(); return true; });
-on('click', '#imgViewer', (e) => { if (e.target.id === 'imgViewer') $('#imgViewer').hidden = true; return false; });
-on('click', '[data-down]', async (e, el) => {
+/* ==================== 附件（只读：点击文件名获取签名链接新窗口打开，有效期 1 小时，每次点击重新获取） ==================== */
+on('click', '[data-open]', async (e, el) => {
   busy(el, true);
   await wait(400);
   busy(el, false);
-  return true;   /* 浏览器接管下载，无提示 */
-});
-/* 追加附件 */
-let appendSnapshot = '';
-on('click', '#appendBtn', () => { $('#appendList').innerHTML = ''; showLayer('appendModal'); appendSnapshot = ''; return true; });
-function requestCloseAppend() {
-  if ($('#appendList').children.length) {
-    askConfirm('已选文件尚未追加，确认关闭？').then((ok) => { hideLayer('confirmModal'); if (ok) hideLayer('appendModal'); });
-    return;
-  }
-  hideLayer('appendModal');
-}
-on('click', '#appendCloseBtn', () => { requestCloseAppend(); return true; });
-on('click', '#appendCancelBtn', () => { requestCloseAppend(); return true; });
-on('click', '#appendDrop', async () => {
-  const row = document.createElement('div');
-  row.className = 'ac-file-item';
-  row.innerHTML = `<span class="ac-file-item__type ac-file-item__type--img"><span class="ac-icon" data-ac="AcIcon" data-name="picture"></span></span>
-    <span class="ac-file-item__info"><span class="ac-file-item__name">追加图片_${Date.now() % 1000}.png</span><span class="ac-file-item__meta">上传中…</span></span>
-    <span class="ac-file-item__ops"><span class="u-sub">上传中</span></span>`;
-  $('#appendList').appendChild(row);
-  await wait(1200);
-  row.querySelector('.ac-file-item__meta').textContent = '640 KB · 待追加';
-  row.querySelector('.ac-file-item__ops').innerHTML = '<button class="ac-btn ac-btn--sm ac-btn--text ac-btn--text-danger" type="button" data-append-del>移除</button>';
-  return true;
-});
-on('click', '[data-append-del]', (e, el) => { el.closest('.ac-file-item').remove(); return true; });
-on('click', '#appendOkBtn', async (e, btn) => {
-  const n = $('#appendList').children.length;
-  if (!n) { toast('请至少选择 1 个附件', 'warning'); return true; }
-  busy(btn, true);
-  await wait(700);
-  busy(btn, false);
-  hideLayer('appendModal');
-  $('#attachCount').textContent = String(Number($('#attachCount').textContent) + n);
-  toast(`已追加 ${n} 个附件，已通知当前审批人`);
+  toast('已获取签名链接，新窗口打开（原型演示）', 'info');
   return true;
 });
 

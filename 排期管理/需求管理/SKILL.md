@@ -14,7 +14,7 @@ metadata:
 
 ## 端
 
-- **web**：「研发 / 需求管理」下 5 个菜单共 7 页，承担提交与草稿、审批、排期关联、外链、审批链与 SLA 配置、统计导出，为主操作端
+- **web**：「研发 / 需求管理」下 5 个菜单共 7 页，承担提交与草稿、审批、排期关联、外链、审批链与 SLA 配置、列表导出，为主操作端；Web 端不提供附件上传（附件来源为公开 H5 外部提交）
 - **app**：App 员工端 3 页（轻量提交、审批、进度查看，仅图片附件）；公开 H5 3 页（外部人凭外链免登录提交，单向收口）
 - **server**：SLA 定时扫描催办、AI 方案生成、流程中心事件回写、黑灯工厂建单与 Qoder 会话生成，无前端
 
@@ -55,13 +55,13 @@ metadata:
 
 | 端 | 页面 | 页面类型 | 原型 | 功能 |
 |----|------|---------|------|------|
-| web | [需求列表页](references/web-ui.md#需求列表页) | `order-list` | [requirement-list.html](assets/web/requirement-list.html) | KPI、五视角、多维筛选、导出与滞留催办 |
-| web | [需求详情页](references/web-ui.md#需求详情页) | `order-detail` | [requirement-detail.html](assets/web/requirement-detail.html) | 需求信息、附件、AI 方案、审批时间线、排期或工单回传与审批操作 |
-| web | [需求提交页](references/web-ui.md#需求提交页) | `order-form` | [requirement-submit.html](assets/web/requirement-submit.html) | 新增与编辑、提交对象与审批链预览、附件上传 |
-| web | [外链管理页](references/web-ui.md#外链管理页) | `order-list` | [requirement-public-link.html](assets/web/requirement-public-link.html) | 外链生成、台账、二维码与撤销 |
-| web | [审批链配置页](references/web-ui.md#审批链配置页) | `archive-list` | [requirement-config.html](assets/web/requirement-config.html) | 归属 Tab、群消息映射、专属链与默认链、AI 开关、审批统计 |
-| web | [SLA 配置页](references/web-ui.md#sla-配置页) | `archive-list` | [requirement-sla-config.html](assets/web/requirement-sla-config.html) | 催办与升级阈值、去重窗口维护 |
-| web | [SLA 仪表盘页](references/web-ui.md#sla-仪表盘页) | `report` | [requirement-sla-dashboard.html](assets/web/requirement-sla-dashboard.html) | 时效指标、业务线对比与趋势 |
+| web | [需求列表页](references/web-ui.md#需求列表页) | `order-list` | [requirement-list.html](assets/web/requirement-list.html) | KPI、五视角、多维筛选、列表导出与滞留催办 |
+| web | [需求详情页](references/web-ui.md#需求详情页) | `order-detail` | [requirement-detail.html](assets/web/requirement-detail.html) | 需求信息、附件只读展示、AI 方案、审批时间线、排期或工单回传与审批操作 |
+| web | [需求提交页](references/web-ui.md#需求提交页) | `order-form` | [requirement-submit.html](assets/web/requirement-submit.html) | 新增 / 编辑 / 驳回重提、提交对象与审批链预览（附件不在本页上传） |
+| web | [外链管理页](references/web-ui.md#外链管理页) | `order-list` | [requirement-public-link.html](assets/web/requirement-public-link.html) | 外链生成（结果态展示并复制）、台账与撤销 |
+| web | [审批链配置页](references/web-ui.md#审批链配置页) | `archive-list` | [requirement-config.html](assets/web/requirement-config.html) | 归属 Tab、群消息映射、专属链与默认链、审批统计 |
+| web | [SLA 配置页](references/web-ui.md#sla-配置页) | `archive-list` | [requirement-sla-config.html](assets/web/requirement-sla-config.html) | 催办与升级阈值、去重窗口维护、默认规则初始化 |
+| web | [SLA 仪表盘页](references/web-ui.md#sla-仪表盘页) | `report` | [requirement-sla-dashboard.html](assets/web/requirement-sla-dashboard.html) | 时效指标、业务线对比与趋势、滞留需求表与手动催办 |
 | app | [我的需求列表](references/app-ui.md#我的需求列表) | `list` | [requirement-list.html](assets/app/requirement-list.html) | 三视角卡片列表 |
 | app | [需求详情](references/app-ui.md#需求详情) | `detail` | [requirement-detail.html](assets/app/requirement-detail.html) | 只读详情、审批与 AI 方案操作 |
 | app | [需求提交](references/app-ui.md#需求提交) | `form` | [requirement-submit.html](assets/app/requirement-submit.html) | 精简提交与图片上传 |
