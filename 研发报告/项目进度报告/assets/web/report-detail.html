@@ -6,12 +6,14 @@
 <title>报告详情 · 项目进度报告 · 鸣鸣很忙</title>
 <!--
   项目进度报告 · 报告详情（Web 管理端 · 静态原型，数据为 Mock）
-  页面描述真源：../../references/web-ui.md#报告详情 ｜ 页面路由 /rnd-report/progress/detail/:id
+  页面描述真源：../../references/web-ui.md#报告详情 ｜ 页面路由 /subapp/devhub/report/project-progress/detail/:id
   页面类型：详情页（阅读型）｜ 骨架依据：busyming-skills-design/templates/web/archive-detail.html（detail 页型族 + tpl-dual--side 右栏大纲）
-  布局流：页头（返回 + 标题 + 操作）→ 元信息卡（busy-descriptions + 版本切换 busy-select）
-    → tpl-dual--side[阅读区 panel（Markdown 前端实时渲染产物 mock）| 大纲 panel（sticky 锚点目录）]
-  渲染口径（报告配置 business-rule.md §6）：marked(GFM) + DOMPurify 白名单 + 图片占位「[图片已移除]」+ 大纲锚点 h-{seq}
+  布局流：页头（返回 + 标题 + 报告类型/项目 Tag + 操作）→ 历史版本警示（黄 Alert，仅查看历史版本时）
+    → 元信息卡（busy-descriptions + 版本切换 busy-select）→ tpl-dual--side[阅读区 panel | 大纲 panel（sticky 锚点目录）]
+  渲染口径：Web 端展示服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染）；
+    内容为空时展示「报告内容为空」；切换版本加载文案「正在加载所选版本内容…」
   示例报告：项目进度报告（研发效能平台） - 2026-08-30（v2 · 共 2 版，演示版本回溯）
+  演示彩蛋：版本选项 Shift+点击 → 演示「版本加载失败」（停留当前版本）；获取原件 Shift+点击 → 演示「该版本无原始 Markdown 内容」
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
@@ -26,7 +28,7 @@
 .tpl-toast-host { position: fixed; top: 16px; left: 0; right: 0; display: flex; flex-direction: column; align-items: center; gap: 8px; z-index: 3000; pointer-events: none; }
 .tpl-select-pop { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; background: var(--busy-bg-color-overlay); }
 .rpt-meta__th { width: 110px; }
-.rpt-meta__version { width: 160px; }
+.rpt-meta__version { width: 240px; }
 .rpt-quote { margin: 0 0 16px; padding: 8px 16px; border-left: 4px solid var(--busy-border-color-light); color: var(--busy-text-secondary); background: var(--busy-bg-subtle); }
 #article h2 { scroll-margin-top: 64px; }
 .rpt-divider { margin: 16px 0; }
@@ -48,8 +50,8 @@
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <a class="tpl-page-head__back" href="report-list.html">‹ 返回报告列表</a>
-      <h1 class="tpl-page-title"><span class="busy-tag tpl-page-title__tag">项目进度</span> 项目进度报告（研发效能平台） - 2026-08-30</h1>
-      <div class="tpl-page-subtitle">静态产物只读渲染 · 指标口径问题回溯生成侧（Mock 演示数据）</div>
+      <h1 class="tpl-page-title">项目进度报告（研发效能平台） - 2026-08-30 <span class="busy-tag tpl-page-title__tag">项目进度报告</span> <span class="busy-tag busy-tag--info is-plain tpl-page-title__tag">研发效能平台</span></h1>
+      <div class="tpl-page-subtitle">服务端渲染产物只读直出 · Mock 演示数据</div>
     </div>
     <div class="tpl-page-head__actions">
       <button class="busy-button" type="button" id="btnDownload"><span>获取原件</span></button>
@@ -57,33 +59,37 @@
     </div>
   </div>
 
+  <!-- 历史版本警示（仅查看历史版本时展示，黄色警示条） -->
+  <div class="busy-message busy-message--warning" id="historyAlert" hidden>当前查看历史版本 v1（只读），最新版本为 v2；切换版本不改变归档内容。</div>
+
   <!-- 元信息头（首个 panel；只读信息用 busy-descriptions） -->
   <div class="tpl-panel">
     <table class="busy-descriptions is-border">
       <tr>
         <th class="rpt-meta__th">项目</th><td>研发效能平台（<span class="u-mono">devops</span>）</td>
-        <th class="rpt-meta__th">统计周期</th><td><span class="busy-tag is-plain">周</span></td>
         <th class="rpt-meta__th">发报日</th><td class="u-mono">2026-08-30</td>
+        <th class="rpt-meta__th">所属周</th><td>2026 年第 35 周（08-24 ~ 08-30）</td>
       </tr>
       <tr>
-        <th>所属周</th><td>2026 年第 35 周（08-24 ~ 08-30）</td>
+        <!-- 统计区间：起止同日展示为「YYYY-MM-DD 00:00 ~ 24:00」 -->
         <th>统计区间</th><td class="u-mono" id="metaRange">2026-08-24（周一）~ 2026-08-30（周日）</td>
         <th>来源</th><td>服务端生成</td>
+        <th>文件大小</th><td class="u-mono">34.8 KB</td>
       </tr>
       <tr>
         <th>当前版本</th>
-        <td>
+        <td colspan="3">
           <!-- 多版时可下拉切换历史版本（只读，URL 带 ?v=N 可分享） -->
           <div class="busy-select rpt-meta__version" id="versionSelect">
             <div class="busy-input busy-input--small"><input readonly value="v2 · 共 2 版" id="versionInput"></div>
             <span class="busy-select__caret">▾</span>
             <div class="busy-select-dropdown tpl-select-pop" id="versionDropdown" hidden>
-              <div class="busy-select-dropdown__item is-selected" data-v="2">v2（当前版本）</div>
-              <div class="busy-select-dropdown__item" data-v="1">v1 · 2026-08-30 07:26 入库</div>
+              <div class="busy-select-dropdown__item is-selected" data-v="2">v2（当前 · 09-01 10:02 入库）</div>
+              <div class="busy-select-dropdown__item" data-v="1">v1（08-30 07:26 入库）</div>
             </div>
           </div>
+          <div class="u-sub">重复入库版本递增，历史版本只读可查，URL 带 ?v=N 可分享</div>
         </td>
-        <th>文件大小</th><td class="u-mono">34.8 KB</td>
         <th>入库时间</th><td class="u-mono" id="metaArchived">2026-09-01 10:02</td>
       </tr>
     </table>
@@ -95,10 +101,15 @@
       <div class="tpl-panel tpl-panel--reading" id="readingPanel">
         <!-- 版本切换 loading（正文区遮罩；PC 无 Spin 组件，spinner 复用 busy-button__loading） -->
         <div id="readingLoading" class="tpl-loading--cover" hidden>
-          <span class="busy-button__loading"></span><span>版本加载中…</span>
+          <span class="busy-button__loading"></span><span>正在加载所选版本内容…</span>
+        </div>
+        <!-- 空态：服务端产物内容为空时展示「报告内容为空」（本示例恒有内容，仅占位结构） -->
+        <div class="busy-empty" id="articleEmpty" hidden>
+          <div class="busy-empty__image">☁</div>
+          <div>报告内容为空</div>
         </div>
         <div id="article">
-<!-- Markdown 渲染正文 mock：章节顺序与锚点 h-{seq} 口径同服务端（统计概览/进度总览/需求吞吐/实施进度/延期清单/发版回顾） -->
+<!-- 正文为服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染）；章节顺序与锚点 h-{seq} 口径同服务端（统计概览/进度总览/需求吞吐/实施进度/延期清单/发版回顾） -->
 <blockquote class="rpt-quote">
   统计区间：2026-08-24（周一）~ 2026-08-30（周日）
 </blockquote>
@@ -208,7 +219,7 @@ window.addEventListener('scroll', function () {
   });
 });
 
-/* ================= 版本切换（BusySelect 下拉 → 正文遮罩 loading → 元信息/正文切换，URL 追加 ?v=N；失败 toast error + 回退） ================= */
+/* ================= 版本切换（BusySelect 下拉 → 正文遮罩 loading → 元信息/正文切换，URL 追加 ?v=N；失败 toast error + 停留当前版本） ================= */
 var vs = document.getElementById('versionSelect');
 var vd = document.getElementById('versionDropdown');
 vs.querySelector('.busy-input').addEventListener('click', function (e) { e.stopPropagation(); vd.hidden = !vd.hidden; });
@@ -218,32 +229,38 @@ vd.querySelectorAll('.busy-select-dropdown__item').forEach(function (item) {
     e.stopPropagation(); vd.hidden = true;
     var v = item.getAttribute('data-v');
     if (item.classList.contains('is-selected')) return;
+    var failDemo = e.shiftKey; /* 演示彩蛋：Shift+点击 → 版本加载失败，停留当前版本 */
     var loading = document.getElementById('readingLoading');
     loading.hidden = false;
     setTimeout(function () {
+      loading.hidden = true;
+      if (failDemo) { toast('版本加载失败', 'error'); return; }
       vd.querySelectorAll('.busy-select-dropdown__item').forEach(function (x) { x.classList.remove('is-selected'); });
       item.classList.add('is-selected');
-      loading.hidden = true;
       document.getElementById('versionInput').value = 'v' + v + ' · 共 2 版';
       document.getElementById('metaArchived').textContent = v === '1' ? '2026-08-30 07:26' : '2026-09-01 10:02';
-      /* 生产行为：URL 追加 ?v=' + v + '（可分享）；原型以 toast 显式声明 */
-      toast('已切换至 v' + v + '，URL 已追加 ?v=' + v + '（只读历史版本）');
+      /* 历史版本警示：仅查看历史版本时展示，切换版本不改变归档内容 */
+      document.getElementById('historyAlert').hidden = v !== '1';
+      /* 生产行为：URL 追加 ?v=N（可分享）；原型以注释显式声明 */
+      toast(v === '1' ? '已切换到 v1（历史版本，只读）' : '已切换到 v2（当前版本）');
     }, 700);
   });
 });
 
-/* ================= 获取原件（按钮 loading → 浏览器下载原始 .md；失败 toast error + 按钮恢复） ================= */
-document.getElementById('btnDownload').addEventListener('click', function () {
+/* ================= 获取原件（按钮 loading → 浏览器下载当前展示版本原始 .md；失败 toast error + 按钮恢复） ================= */
+document.getElementById('btnDownload').addEventListener('click', function (e) {
   var btn = this;
+  var failDemo = e.shiftKey; /* 演示彩蛋：Shift+点击 → 该版本无原始 Markdown 内容 */
   btn.classList.add('is-disabled'); btn.innerHTML = '<span class="busy-button__loading"></span><span>获取中</span>';
   setTimeout(function () {
+    btn.classList.remove('is-disabled'); btn.innerHTML = '<span>获取原件</span>';
+    if (failDemo) { toast('该版本无原始 Markdown 内容', 'error'); return; }
     var md = '# 项目进度报告（研发效能平台） - 2026-08-30\n\n> 统计区间：2026-08-24（周一）~ 2026-08-30（周日）\n\n（Mock 原始文件）\n';
     var a = document.createElement('a');
     a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
     a.download = 'progress_20260830_devops.md';
     a.click(); URL.revokeObjectURL(a.href);
-    btn.classList.remove('is-disabled'); btn.innerHTML = '<span>获取原件</span>';
-    toast('已开始下载原始 .md 文件');
+    toast('已开始下载 progress_20260830_devops.md');
   }, 600);
 });
 </script>

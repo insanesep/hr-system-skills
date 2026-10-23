@@ -6,13 +6,17 @@
 <title>报告列表 · 项目进度报告 · 鸣鸣很忙</title>
 <!--
   项目进度报告 · 报告列表（Web 管理端 · 静态原型，数据为 Mock）
-  页面描述真源：../../references/web-ui.md#报告列表 ｜ 页面路由 /rnd-report/progress/list
+  页面描述真源：../../references/web-ui.md#报告列表 ｜ 页面路由 /subapp/devhub/report/project-progress
   页面类型：列表页（Tab 双视角）｜ 骨架依据：busyming-skills-design/templates/web/order-list.html（list 页型族）
-  布局流：页头（手动补传）→ 筛选卡（项目/统计周期/发报日期范围/关键词）→ KPI 区 ×4
-    → 表格卡（busy-tabs[按周索引(默认)|按项目分组] → 周/项目手风琴组 + 齐全度徽标 + busy-table + busy-empty）
-  浮层：手动补传弹窗（busy-dialog + Upload 拖拽区 + 文件名识别提示条）/ 立即生成确认框（MessageBox 形态）
+  布局流：页头（手动补传）→ 筛选卡（项目/发报日期范围[默认近 90 天]/关键词[回车即查]）→ KPI 区 ×4
+    → 表格卡（busy-tabs[按周索引(默认)|按项目分组] → 周/项目手风琴组 + 齐全度徽标 + busy-table + busy-empty；
+      全部表格不分页：按周索引取近 8 周，发报日期区间为前端过滤）
+  浮层：手动补传弹窗（busy-dialog + Upload 拖拽区 + 文件名识别提示条 + 缺口带入提示 + 脏数据关闭确认）
+    / 立即生成确认框（MessageBox 形态）
   权限：路由 devhubProjectProgressReport；按钮 devhubReportUpload（补传）、devhubReportTrigger（立即生成）——原型全量展示，生产按权限点控制可见性
   Mock 演示基准日：2026-09-06（周日，本周行自周日起展示）；启用项目 2 个（devops / store-yh），齐全度分母 = 2 + 1（_all 汇总项）= 3
+  演示彩蛋：立即生成「确 定」Shift+点击 → 演示失败 toast「未找到联动触发配置…」（弹窗保留）；
+    确认补传 Shift+点击 → 演示「内容重复，与现有版本一致，未产生新版本」提示
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
@@ -57,7 +61,7 @@
   <div class="tpl-page-head">
     <div class="tpl-page-head__main">
       <h1 class="tpl-page-title">项目进度报告</h1>
-      <div class="tpl-page-subtitle">项目 × 周期（周/月）双维索引 ·  Mock 演示基准日 2026-09-06（周日），数据为虚构样例</div>
+      <div class="tpl-page-subtitle">按周索引 / 按项目分组双视角 · Mock 演示基准日 2026-09-06（周日），数据为虚构样例</div>
     </div>
     <div class="tpl-page-head__actions">
       <!-- 手动补传：兜底入库通道，按钮权限 devhubReportUpload -->
@@ -75,21 +79,16 @@
         </div>
       </div>
       <div class="busy-form-item">
-        <div class="busy-form-item__label">统计周期</div>
-        <div class="busy-form-item__content">
-          <div class="busy-select" data-select="period"><div class="busy-input"><input readonly value="全部" id="selPeriod"></div><span class="busy-select__caret">▾</span></div>
-        </div>
-      </div>
-      <div class="busy-form-item">
         <div class="busy-form-item__label">发报日期</div>
         <div class="busy-form-item__content">
-          <div class="busy-date-editor busy-range-editor busy-input"><input readonly placeholder="开始日期 ~ 结束日期" id="selRange"></div>
+          <!-- RangePicker：默认近 90 天 -->
+          <div class="busy-date-editor busy-range-editor busy-input"><input readonly value="2026-06-08 ~ 2026-09-06" id="selRange"></div>
         </div>
       </div>
       <div class="busy-form-item">
         <div class="busy-form-item__label">关键词</div>
         <div class="busy-form-item__content">
-          <div class="busy-input"><input placeholder="报告标题模糊查询" id="kwInput"></div>
+          <div class="busy-input"><input placeholder="报告标题模糊搜索" id="kwInput"></div>
         </div>
       </div>
       <div class="tpl-filter__actions">
@@ -102,14 +101,14 @@
   <!-- KPI 区（筛选后 / 表格前；取数跟随筛选） -->
   <div class="tpl-kpi-grid">
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">本周已入库</span><span class="tpl-kpi__hint" title="分母 = 启用项目数 + 1 个 _all 汇总项">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">本周已入库</span><span class="tpl-kpi__hint" title="当前自然周每个启用项目应入库 1 份，另有 1 个全部项目汇总（_all）项">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiWeek">2/3</span></div>
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">2026 年第 36 周（08-31 ~ 09-06）</span></div>
     </div>
     <div class="tpl-kpi">
       <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">累计报告</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value">26</span><span class="tpl-kpi__unit">份</span></div>
-      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">含全部项目汇总（_all）</span></div>
+      <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">按报告项 × 发报日计（最新版本）· 含全部项目汇总（_all）</span></div>
     </div>
     <div class="tpl-kpi">
       <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">最近发报日</span></div>
@@ -117,7 +116,7 @@
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">服务端定时生成（每周日 07:00）</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">历史版本总数</span><span class="tpl-kpi__hint" title="同报告项同发报日重复入库产生旧版本，可溯">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">历史版本总数</span><span class="tpl-kpi__hint" title="重复入库版本递增，旧版本保留可查，详情页可回溯">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value">4</span><span class="tpl-kpi__unit">版</span></div>
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">详情页可下拉回溯</span></div>
     </div>
@@ -129,13 +128,14 @@
       <div class="busy-tabs__item is-active" data-view="week">按周索引</div>
       <div class="busy-tabs__item" data-view="project">按项目分组</div>
     </div>
+    <div class="u-sub">全部表格不分页：按周索引取近 8 周，发报日期区间为前端过滤</div>
 
     <!-- 表格 loading 遮罩（查询 / 切视角演示） -->
     <div id="tableLoading" class="tpl-loading" hidden>
       <span class="busy-button__loading"></span><span>加载中…</span>
     </div>
 
-    <!-- Tab1：按周索引（默认）——周分组手风琴，按所属周倒序 -->
+    <!-- Tab1：按周索引（默认）——周分组手风琴，按所属周倒序，默认全展开 -->
     <div id="weekView">
       <div class="tpl-section" id="weekGroups"></div>
       <!-- 空态：筛选无结果 -->
@@ -156,11 +156,18 @@
   </div>
 </section>
 
-<!-- 手动补传弹窗（BusyDialog；发报日不可晚于今天；文件仅 .md ≤2MB） -->
+<!-- 手动补传弹窗（BusyDialog；报告模块共用组件：类型固定=项目进度报告；发报日不可晚于今天；文件仅 .md ≤2MB） -->
 <div class="ds-mask" id="uploadDialog" hidden>
   <div class="busy-dialog tpl-dialog--md" role="dialog" aria-modal="true">
     <div class="busy-dialog__header"><span class="busy-dialog__title">手动补传</span><button class="busy-dialog__close" data-close="uploadDialog">✕</button></div>
     <div class="busy-dialog__body tpl-dialog__body--stack">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">报告类型</div>
+        <div class="busy-form-item__content">
+          <span class="busy-tag">项目进度报告</span>
+          <div class="u-sub">进入时按当前类型 Tab 预置；选择文件后按文件名识别结果为准</div>
+        </div>
+      </div>
       <div class="busy-form-item">
         <div class="busy-form-item__label is-required">项目</div>
         <div class="busy-form-item__content">
@@ -191,13 +198,27 @@
           <div class="busy-form-item__error" id="upFileErr" hidden>仅支持 Markdown 文件，且大小不超过 2MB</div>
         </div>
       </div>
-      <!-- 文件名识别提示条：按 progress_yyyyMMdd_<项目key>.md 自动识别（汇总为 __all） -->
+      <!-- 缺口带入提示（从缺失行「补传」进入时预填该项目与当周周日为发报日） -->
+      <div class="busy-message busy-message--info progress-upload__recognize" id="recognizeGap" hidden></div>
+      <!-- 文件名识别提示条：按 progress_yyyyMMdd_<项目key>.md 自动识别（汇总为 progress_yyyyMMdd__all.md） -->
       <div class="busy-message busy-message--success progress-upload__recognize" id="recognizeOk" hidden>已按文件名识别：项目 <b id="recogProject">研发效能平台</b> · 发报日 <b class="u-mono" id="recogDate">2026-09-06</b></div>
       <div class="busy-message busy-message--warning progress-upload__recognize" id="recognizeFail" hidden>文件名无法识别，请手动指定项目与发报日</div>
     </div>
     <div class="busy-dialog__footer">
       <button class="busy-button" data-close="uploadDialog"><span>取 消</span></button>
       <button class="busy-button busy-button--primary" id="uploadSubmit"><span>确认补传</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 补传脏数据关闭确认（MessageBox 形态：已选择文件或已填写发报日时拦截） -->
+<div class="ds-mask" id="uploadDirty" hidden>
+  <div class="busy-dialog tpl-dialog--sm" role="dialog" aria-modal="true">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">放弃补传</span><button class="busy-dialog__close" data-close="uploadDirty">✕</button></div>
+    <div class="busy-dialog__body">已选择文件或已填写发报日，放弃本次补传？</div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" data-close="uploadDirty"><span>取 消</span></button>
+      <button class="busy-button busy-button--danger" id="uploadDirtyOk"><span>放弃补传</span></button>
     </div>
   </div>
 </div>
@@ -227,6 +248,7 @@ var PROJECTS = [
   { key: 'devops', name: '研发效能平台' },
   { key: 'store-yh', name: '门店要货' }
 ];
+var DEFAULT_RANGE = '2026-06-08 ~ 2026-09-06'; /* 发报日期范围默认近 90 天 */
 /* 周索引口径（共享 business-rule.md §2）：按所属周倒序；组内 _all 固定最前，其余按项目 key 字典序；本周行仅周日起展示 */
 var WEEKS = [
   { id: 'w36', label: '2026 年第 36 周（08-31 ~ 09-06）' },
@@ -234,19 +256,19 @@ var WEEKS = [
   { id: 'w34', label: '2026 年第 34 周（08-17 ~ 08-23）' }
 ];
 var REPORTS = [
-  { id: 'r3601', week: 'w36', project: '_all', title: '项目进度报告（全部项目） - 2026-09-06', period: '周', reportDate: '2026-09-06', source: '服务端生成', version: 'v1', size: '48.2 KB', archivedAt: '2026-09-06 07:30' },
-  { id: 'r3602', week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-09-06', period: '周', reportDate: '2026-09-06', source: '服务端生成', version: 'v1', size: '36.5 KB', archivedAt: '2026-09-06 07:26' },
-  /* 同报告项同周两条：月报按发报日归入所属自然周（business-rule §9「同一周两条独立报告」） */
-  { id: 'r3603', week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-31', period: '月', reportDate: '2026-08-31', source: '服务端生成', version: 'v2', size: '52.1 KB', archivedAt: '2026-08-31 08:10' },
+  { id: 'r3601', week: 'w36', project: '_all', title: '项目进度报告（全部项目） - 2026-09-06', reportDate: '2026-09-06', source: '服务端生成', version: 'v1' },
+  { id: 'r3602', week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-09-06', reportDate: '2026-09-06', source: '服务端生成', version: 'v1' },
+  /* 同报告项同周两条：另一统计窗口报告按发报日归入所属自然周（business-rule §9「同一周两条独立报告」）；noRaw 演示「获取原件」无内容失败 */
+  { id: 'r3603', week: 'w36', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-31', reportDate: '2026-08-31', source: '服务端生成', version: 'v2', noRaw: true },
   { id: 'w36-store', week: 'w36', project: 'store-yh', missing: true },
-  { id: 'r3501', week: 'w35', project: '_all', title: '项目进度报告（全部项目） - 2026-08-30', period: '周', reportDate: '2026-08-30', source: '服务端生成', version: 'v1', size: '45.9 KB', archivedAt: '2026-08-30 07:31' },
-  { id: 'r3502', week: 'w35', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-30', period: '周', reportDate: '2026-08-30', source: '服务端生成', version: 'v2', size: '34.8 KB', archivedAt: '2026-09-01 10:02' },
-  { id: 'r3503', week: 'w35', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-30', period: '周', reportDate: '2026-08-30', source: '推送上报', version: 'v1', size: '28.4 KB', archivedAt: '2026-08-30 09:15' },
-  { id: 'r3401', week: 'w34', project: '_all', title: '项目进度报告（全部项目） - 2026-08-23', period: '周', reportDate: '2026-08-23', source: '服务端生成', version: 'v1', size: '44.1 KB', archivedAt: '2026-08-23 07:29' },
-  { id: 'r3402', week: 'w34', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-23', period: '周', reportDate: '2026-08-23', source: '服务端生成', version: 'v1', size: '33.6 KB', archivedAt: '2026-08-23 07:25' },
-  { id: 'r3403', week: 'w34', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-23', period: '周', reportDate: '2026-08-23', source: '手动补传', version: 'v1', size: '27.9 KB', archivedAt: '2026-08-24 14:40' }
+  { id: 'r3501', week: 'w35', project: '_all', title: '项目进度报告（全部项目） - 2026-08-30', reportDate: '2026-08-30', source: '服务端生成', version: 'v1' },
+  { id: 'r3502', week: 'w35', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-30', reportDate: '2026-08-30', source: '服务端生成', version: 'v2' },
+  { id: 'r3503', week: 'w35', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-30', reportDate: '2026-08-30', source: '推送上报', version: 'v1' },
+  { id: 'r3401', week: 'w34', project: '_all', title: '项目进度报告（全部项目） - 2026-08-23', reportDate: '2026-08-23', source: '服务端生成', version: 'v1' },
+  { id: 'r3402', week: 'w34', project: 'devops', title: '项目进度报告（研发效能平台） - 2026-08-23', reportDate: '2026-08-23', source: '服务端生成', version: 'v1' },
+  { id: 'r3403', week: 'w34', project: 'store-yh', title: '项目进度报告（门店要货） - 2026-08-23', reportDate: '2026-08-23', source: '手动补传', version: 'v1' }
 ];
-var state = { view: 'week', project: '全部', period: '全部', keyword: '' };
+var state = { view: 'week', project: '', range: DEFAULT_RANGE, keyword: '' };
 var collapsed = {};
 
 /* ================= 工具 ================= */
@@ -258,48 +280,61 @@ function toast(text, type) {
   setTimeout(function () { el.remove(); }, 2600);
 }
 function projectName(key) { var p = PROJECTS.filter(function (x) { return x.key === key; })[0]; return p ? p.name : key; }
-function periodTag(p) { return p === '月' ? '<span class="busy-tag busy-tag--warning is-plain">月</span>' : '<span class="busy-tag is-plain">周</span>'; }
+/* 项目筛选标签口径「项目名 · key」（全部项目汇总（_all）为固定首选项） */
+function keyOfLabel(l) {
+  if (l === '全部') return '';
+  if (l === '全部项目汇总（_all）') return '_all';
+  var m = l.split(' · ');
+  return m[1] || '';
+}
+function labelOfKey(key) {
+  if (key === '_all') return '全部项目汇总（_all）';
+  var p = PROJECTS.filter(function (x) { return x.key === key; })[0];
+  return p ? p.name + ' · ' + p.key : key;
+}
+function parseRange(v) {
+  var m = (v || '').match(/(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})/);
+  return m ? [m[1], m[2]] : null;
+}
 function rowOf(r, withProject) {
   if (r.missing) {
-    /* 未入库行：灰显 + 立即生成（devhubReportTrigger）/ 补传（devhubReportUpload），受按钮权限控制 */
+    /* 未入库行：灰显「未入库」+ 立即生成（devhubReportTrigger）/ 补传（devhubReportUpload），受按钮权限控制 */
     return '<tr class="tpl-row--missing">' +
-      '<td><span class="busy-tag">项目进度</span> <span class="u-muted">' + projectName(r.project) + ' 本周报告</span></td>' +
+      '<td><span class="u-muted">' + projectName(r.project) + ' 本周报告</span></td>' +
       (withProject ? '<td>' + projectName(r.project) + '</td>' : '') +
-      '<td>周</td><td class="u-mono">—</td><td><span class="busy-tag busy-tag--info is-plain">未入库</span></td><td class="u-mono">—</td><td class="u-mono">—</td><td class="u-mono">—</td>' +
+      '<td class="u-mono">—</td>' +
+      '<td><span class="busy-tag busy-tag--info is-plain">未入库</span></td>' +
+      '<td class="u-mono u-center">—</td>' +
       '<td><div class="tpl-row-actions">' +
       '<button class="busy-button is-link" data-perm="devhubReportTrigger" data-trigger="' + r.project + '"><span>立即生成</span></button>' +
       '<button class="busy-button is-link" data-perm="devhubReportUpload" data-upload="' + r.project + '"><span>补传</span></button>' +
       '</div></td></tr>';
   }
   return '<tr>' +
-    '<td><span class="busy-tag">项目进度</span> <a href="report-detail.html">' + r.title + '</a></td>' +
+    '<td>' + (withProject ? '' : '<span class="busy-tag busy-tag--info is-plain">项目进度</span> ') + '<a href="report-detail.html">' + r.title + '</a></td>' +
     (withProject ? '<td>' + (r.project === '_all' ? '<span class="busy-tag busy-tag--info is-plain">全部项目汇总</span>' : projectName(r.project)) + '</td>' : '') +
-    '<td>' + periodTag(r.period) + '</td>' +
     '<td class="u-mono">' + r.reportDate + '</td>' +
     '<td>' + r.source + '</td>' +
-    '<td class="u-mono">' + r.version + '</td>' +
-    '<td class="u-mono">' + r.size + '</td>' +
-    '<td class="u-mono">' + r.archivedAt + '</td>' +
+    '<td class="u-mono u-center">' + r.version + '</td>' +
     '<td><div class="tpl-row-actions">' +
     '<a href="report-detail.html"><button class="busy-button is-link"><span>查看</span></button></a>' +
     '<button class="busy-button is-link" data-download="' + r.id + '"><span>获取原件</span></button>' +
     '</div></td></tr>';
 }
 function filtered() {
+  var range = parseRange(state.range);
   return REPORTS.filter(function (r) {
-    if (state.project !== '全部') {
-      var key = state.project === '全部项目汇总' ? '_all' : (PROJECTS.filter(function (p) { return p.name === state.project; })[0] || {}).key;
-      if (r.project !== key) return false;
-    }
-    if (!r.missing && state.period !== '全部' && r.period !== state.period) return false;
-    if (state.keyword && !r.missing && r.title.indexOf(state.keyword) === -1) return false;
+    if (state.project && r.project !== state.project) return false;
+    if (!r.missing && state.keyword && r.title.indexOf(state.keyword) === -1) return false;
     if (state.keyword && r.missing) return false;
+    /* 发报日期区间为前端过滤 */
+    if (!r.missing && range && (r.reportDate < range[0] || r.reportDate > range[1])) return false;
     return true;
   });
 }
 function headHtml(withProject) {
   return '<thead><tr><th>报告标题</th>' + (withProject ? '<th>项目</th>' : '') +
-    '<th class="u-center">统计周期</th><th>发报日</th><th>来源</th><th class="u-center">版本</th><th class="u-right">文件大小</th><th>入库时间</th><th>操作</th></tr></thead>';
+    '<th>发报日</th><th>来源</th><th class="u-center">版本</th><th>操作</th></tr></thead>';
 }
 function groupHead(id, titleHtml, open) {
   return '<div class="tpl-section__head tpl-section__head--fold" data-fold="' + id + '">' +
@@ -312,6 +347,12 @@ function renderWeek() {
   WEEKS.forEach(function (w) {
     var rows = data.filter(function (r) { return r.week === w.id; });
     if (!rows.length) return;
+    /* 组内行序：_all 汇总行固定最前，其余按项目 key 字典序 */
+    rows.sort(function (a, b) {
+      if (a.project === '_all') return -1;
+      if (b.project === '_all') return 1;
+      return a.project < b.project ? -1 : 1;
+    });
     var stored = rows.filter(function (r) { return !r.missing; });
     /* 齐全度 = 已入库报告项 / 应入库报告项（去重项目），缺项标「待补」 */
     var got = {}; stored.forEach(function (r) { got[r.project] = 1; });
@@ -355,17 +396,19 @@ function renderAll() { renderWeek(); renderProject(); bindRowActions(); }
 function bindRowActions() {
   document.querySelectorAll('[data-download]').forEach(function (b) {
     b.onclick = function () {
-      /* 获取原件：按钮 loading → 浏览器下载原始 .md；失败 toast error + 按钮恢复 */
+      /* 获取原件：按钮 loading → 浏览器下载当前版本原始 .md；无内容 toast error + 按钮恢复 */
       b.classList.add('is-disabled'); b.innerHTML = '<span class="busy-button__loading"></span><span>获取中</span>';
       setTimeout(function () {
         var r = REPORTS.filter(function (x) { return x.id === b.getAttribute('data-download'); })[0];
+        b.classList.remove('is-disabled'); b.innerHTML = '<span>获取原件</span>';
+        if (r.noRaw) { toast('该报告无原始 Markdown 内容', 'error'); return; }
+        var fileName = 'progress_' + r.reportDate.replace(/-/g, '') + '_' + r.project + '.md';
         var md = '# ' + r.title + '\n\n> 统计区间：2026-08-31（周一）~ 2026-09-06（周日）\n\n（Mock 原始文件）\n';
         var a = document.createElement('a');
         a.href = URL.createObjectURL(new Blob([md], { type: 'text/markdown' }));
-        a.download = 'progress_' + r.reportDate.replace(/-/g, '') + '_' + r.project + '.md';
+        a.download = fileName;
         a.click(); URL.revokeObjectURL(a.href);
-        b.classList.remove('is-disabled'); b.innerHTML = '<span>获取原件</span>';
-        toast('已开始下载原始 .md 文件');
+        toast('已开始下载 ' + fileName);
       }, 600);
     };
   });
@@ -378,8 +421,8 @@ function bindRowActions() {
   });
   document.querySelectorAll('[data-upload]').forEach(function (b) {
     b.onclick = function () {
-      /* 缺失行补传：弹窗打开并预填项目与发报日 */
-      openUpload(projectName(b.getAttribute('data-upload')), '2026-09-06');
+      /* 缺失行补传：弹窗打开并预填该项目与当周周日为发报日 + 缺口带入提示 */
+      openUpload(b.getAttribute('data-upload'), '2026-09-06', true);
     };
   });
 }
@@ -400,7 +443,7 @@ document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (t) {
   });
 });
 
-/* ================= 手风琴组头展开/收起 ================= */
+/* ================= 手风琴组头展开/收起（默认全展开） ================= */
 document.body.addEventListener('click', function (e) {
   var head = e.target.closest('[data-fold]');
   if (!head) return;
@@ -412,8 +455,9 @@ document.body.addEventListener('click', function (e) {
 });
 
 /* ================= 查询 / 重置（表格 loading → 列表刷新，停留；失败 toast error + 按钮恢复） ================= */
-document.getElementById('btnQuery').addEventListener('click', function () {
+function doQuery() {
   state.keyword = document.getElementById('kwInput').value.trim();
+  state.range = document.getElementById('selRange').value.trim() || DEFAULT_RANGE;
   var loading = document.getElementById('tableLoading');
   document.getElementById('weekView').hidden = true; document.getElementById('projectView').hidden = true;
   loading.hidden = false;
@@ -423,25 +467,28 @@ document.getElementById('btnQuery').addEventListener('click', function () {
     document.getElementById('projectView').hidden = state.view !== 'project';
     toast('查询完成');
   }, 500);
+}
+document.getElementById('btnQuery').addEventListener('click', doQuery);
+/* 关键词回车即查 */
+document.getElementById('kwInput').addEventListener('keydown', function (e) {
+  if (e.key === 'Enter') doQuery();
 });
 document.getElementById('btnReset').addEventListener('click', function () {
-  state = { view: state.view, project: '全部', period: '全部', keyword: '' };
+  state = { view: state.view, project: '', range: DEFAULT_RANGE, keyword: '' };
   document.getElementById('selProject').value = '全部';
-  document.getElementById('selPeriod').value = '全部';
-  document.getElementById('selRange').value = '';
+  document.getElementById('selRange').value = DEFAULT_RANGE;
   document.getElementById('kwInput').value = '';
   renderAll();
   toast('筛选条件已重置', 'info');
 });
 
-/* ================= 下拉选择（BusySelect 静态演示：项目 / 统计周期 / 补传项目 / 补传发报日） ================= */
+/* ================= 下拉选择（BusySelect 静态演示：项目 / 补传项目 / 补传发报日） ================= */
 var SELECT_OPTS = {
-  project: ['全部', '全部项目汇总', '研发效能平台', '门店要货'],
-  period: ['全部', '周', '月'],
-  uploadProject: ['全部项目汇总', '研发效能平台', '门店要货'],
+  project: ['全部', '全部项目汇总（_all）', '研发效能平台 · devops', '门店要货 · store-yh'],
+  uploadProject: ['全部项目汇总（_all）', '研发效能平台 · devops', '门店要货 · store-yh'],
   uploadDate: ['2026-09-06', '2026-08-30', '2026-08-23']
 };
-var SELECT_TARGET = { project: 'selProject', period: 'selPeriod', uploadProject: 'upProject', uploadDate: 'upDate' };
+var SELECT_TARGET = { project: 'selProject', uploadProject: 'upProject', uploadDate: 'upDate' };
 document.querySelectorAll('.busy-select[data-select]').forEach(function (sel) {
   var key = sel.getAttribute('data-select');
   var dd = document.createElement('div');
@@ -454,8 +501,7 @@ document.querySelectorAll('.busy-select[data-select]').forEach(function (sel) {
     item.onclick = function (ev) {
       ev.stopPropagation();
       document.getElementById(SELECT_TARGET[key]).value = opt;
-      if (key === 'project') state.project = opt;
-      if (key === 'period') state.period = opt;
+      if (key === 'project') state.project = keyOfLabel(opt);
       dd.hidden = true;
     };
     dd.appendChild(item);
@@ -471,15 +517,29 @@ document.addEventListener('click', function () {
   document.querySelectorAll('.busy-select-dropdown').forEach(function (d) { d.hidden = true; });
 });
 
-/* ================= 手动补传弹窗（表单链路：初态预填 → 校验 → loading → 成功关弹窗刷新 / 失败保留） ================= */
+/* ================= 手动补传弹窗（表单链路：初态预填 → 校验 → loading → 成功关弹窗刷新 / 失败保留；脏数据关闭确认） ================= */
 var uploadBtn = document.getElementById('btnUpload');
-function openUpload(project, date) {
-  document.getElementById('upProject').value = project || '';
-  document.getElementById('upDate').value = date || '';
-  ['upProjectErr', 'upDateErr', 'upFileErr', 'recognizeOk', 'recognizeFail', 'fileItem'].forEach(function (id) { document.getElementById(id).hidden = true; });
-  document.getElementById('uploadDialog').hidden = false;
+var uploadSnapshot = '';
+function uploadFormState() {
+  return JSON.stringify({
+    p: document.getElementById('upProject').value,
+    d: document.getElementById('upDate').value,
+    f: !document.getElementById('fileItem').hidden
+  });
 }
-uploadBtn.addEventListener('click', function () { openUpload('', ''); });
+function openUpload(projectKey, date, fromGap) {
+  document.getElementById('upProject').value = projectKey ? labelOfKey(projectKey) : '';
+  document.getElementById('upDate').value = date || '';
+  ['upProjectErr', 'upDateErr', 'upFileErr', 'recognizeOk', 'recognizeFail', 'recognizeGap', 'fileItem'].forEach(function (id) { document.getElementById(id).hidden = true; });
+  document.getElementById('fileInput').value = '';
+  if (fromGap && projectKey) {
+    document.getElementById('recognizeGap').innerHTML = '已从缺口带入：项目 <b>' + projectName(projectKey) + '</b> · 发报日 <b class="u-mono">' + date + '</b>';
+    document.getElementById('recognizeGap').hidden = false;
+  }
+  document.getElementById('uploadDialog').hidden = false;
+  uploadSnapshot = uploadFormState();
+}
+uploadBtn.addEventListener('click', function () { openUpload('', '', false); });
 /* 模拟点选文件：合规文件名走识别成功；演示失败可改文件名（见注释） */
 document.getElementById('dropZone').addEventListener('click', function () { document.getElementById('fileInput').click(); });
 document.getElementById('fileInput').addEventListener('change', function (e) {
@@ -495,7 +555,7 @@ document.getElementById('fileInput').addEventListener('change', function (e) {
     document.getElementById('recogDate').textContent = date;
     document.getElementById('recognizeOk').hidden = false;
     document.getElementById('recognizeFail').hidden = true;
-    document.getElementById('upProject').value = projectName(key);
+    document.getElementById('upProject').value = labelOfKey(key);
     document.getElementById('upDate').value = date;
     document.getElementById('upFileErr').hidden = true;
   } else {
@@ -508,7 +568,16 @@ document.getElementById('fileRemove').addEventListener('click', function () {
   document.getElementById('fileItem').hidden = true;
   document.getElementById('fileInput').value = '';
 });
-document.getElementById('uploadSubmit').addEventListener('click', function () {
+/* 脏数据关闭守卫：已选择文件或已填写发报日时关闭 → 二次确认 */
+function tryCloseUpload() {
+  if (uploadFormState() !== uploadSnapshot) { document.getElementById('uploadDirty').hidden = false; return; }
+  document.getElementById('uploadDialog').hidden = true;
+}
+document.getElementById('uploadDirtyOk').addEventListener('click', function () {
+  document.getElementById('uploadDirty').hidden = true;
+  document.getElementById('uploadDialog').hidden = true;
+});
+document.getElementById('uploadSubmit').addEventListener('click', function (e) {
   var p = document.getElementById('upProject').value;
   var d = document.getElementById('upDate').value;
   var hasFile = !document.getElementById('fileItem').hidden;
@@ -517,37 +586,54 @@ document.getElementById('uploadSubmit').addEventListener('click', function () {
   document.getElementById('upFileErr').hidden = hasFile;
   if (!p || !d || d > '2026-09-06' || !hasFile) { toast('请完善补传信息（项目 / 发报日 / 文件）', 'error'); return; }
   var btn = this;
+  var dupDemo = e.shiftKey; /* 演示彩蛋：Shift+点击 → 重复内容提示 */
   btn.classList.add('is-disabled'); btn.innerHTML = '<span class="busy-button__loading"></span><span>提交中</span>';
   setTimeout(function () {
     btn.classList.remove('is-disabled'); btn.innerHTML = '<span>确认补传</span>';
     document.getElementById('uploadDialog').hidden = true;
+    if (dupDemo) { toast('内容重复，与现有版本一致，未产生新版本', 'warning'); return; }
     /* 成功去向：toast「补传成功，已生成 v{N}」→ 关弹窗并刷新列表 */
     toast('补传成功，已生成 v2');
     renderAll();
   }, 800);
 });
 
-/* ================= 立即生成确认（二次确认统计窗口 → loading → toast + 去向） ================= */
-document.getElementById('triggerOk').addEventListener('click', function () {
+/* ================= 立即生成确认（二次确认统计窗口 → loading → toast，停留本页不跳转） ================= */
+document.getElementById('triggerOk').addEventListener('click', function (e) {
   var btn = this;
+  var failDemo = e.shiftKey; /* 演示彩蛋：Shift+点击 → 无匹配联动触发配置失败（toast error + 按钮恢复，弹窗保留） */
   btn.classList.add('is-disabled'); btn.innerHTML = '<span class="busy-button__loading"></span><span>创建中</span>';
   setTimeout(function () {
     btn.classList.remove('is-disabled'); btn.innerHTML = '<span>确 定</span>';
+    if (failDemo) { toast('未找到联动触发配置，请先到「报告配置」页检查', 'error'); return; }
     document.getElementById('triggerDialog').hidden = true;
-    /* 成功去向：toast「已创建生成任务」→ 跳转「报告配置 › 报告触发配置 · 生成记录」（跨模块页面，原型以文案显式声明） */
-    toast('已创建生成任务，可前往 报告配置 › 报告触发配置 · 生成记录 查看进度');
+    /* 成功去向：toast 提示进度入口（报告配置 › 报告触发配置 · 生成记录），停留本页不跳转 */
+    toast('已创建生成任务，进度见「报告配置 › 报告触发配置 · 生成记录」');
   }, 800);
 });
 
-/* 遮罩点击空白 / Esc 关闭弹层 */
+/* 遮罩点击空白 / Esc 关闭弹层（补传弹窗走脏数据守卫） */
 document.querySelectorAll('.ds-mask').forEach(function (m) {
-  m.addEventListener('click', function (e) { if (e.target === m) m.hidden = true; });
+  m.addEventListener('click', function (e) {
+    if (e.target !== m) return;
+    if (m.id === 'uploadDialog') { tryCloseUpload(); return; }
+    m.hidden = true;
+  });
 });
 document.querySelectorAll('[data-close]').forEach(function (b) {
-  b.addEventListener('click', function () { document.getElementById(b.getAttribute('data-close')).hidden = true; });
+  b.addEventListener('click', function () {
+    var id = b.getAttribute('data-close');
+    if (id === 'uploadDialog') { tryCloseUpload(); return; }
+    document.getElementById(id).hidden = true;
+  });
 });
 document.addEventListener('keydown', function (e) {
-  if (e.key === 'Escape') document.querySelectorAll('.ds-mask').forEach(function (m) { m.hidden = true; });
+  if (e.key !== 'Escape') return;
+  var dirty = document.getElementById('uploadDirty');
+  if (!dirty.hidden) { dirty.hidden = true; return; }
+  var up = document.getElementById('uploadDialog');
+  if (!up.hidden) { tryCloseUpload(); return; }
+  document.querySelectorAll('.ds-mask').forEach(function (m) { m.hidden = true; });
 });
 renderAll();
 </script>
