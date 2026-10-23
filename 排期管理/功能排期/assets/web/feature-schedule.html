@@ -8,9 +8,11 @@
   功能排期 · 研发排期工作台（Web 原型 · Mock 演示数据，刷新即重置）
   页面描述真源：../../references/web-ui.md#研发排期工作台 ｜ 页面类型 order-list
   整页范例：busyming-skills-design/templates/web/order-list.html ｜ 状态机：../../references/state-machine.md
-  区块：指挥栏 A1–A9（池展开/时间导航/本月进度/搜索/视图切换/筛选/新建/更多）
-    → 待排期池 B1–B6（服务端分页 10/20/50、批量多选、空态）｜ 月视图 C / 周视图 D / 列表视图 E
-    → 浮层 G1–G12（筛选抽屉、日详情、年月选择、右键菜单、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示）
+  区块：指挥栏 A1–A9（池展开/时间导航/本月进度（单选快捷筛选，再点取消）/搜索/视图切换/筛选/新建/更多）
+    → 待排期池 B1–B6（编号位=创建时间+相对时间标签、超 7 天警示色；服务端分页 10/20/50、批量多选、空态）
+    → 月视图 C（卡片仅落在排期截止日所在格，区间卡不逐日铺开；+N 日详情弹层按排期区间覆盖当日取卡）
+    → 周视图 D（负责人=开发人→提交人→「未指定」，行按拼音排序，卡片落在本周内截止日所在列）→ 列表视图 E（当月已排期全部，无分页）
+    → 浮层 G1–G12（筛选抽屉、日详情、年月选择、右键菜单（含移入非需求改动）、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示）
   演示基准日 2026-10-21（周三）；当前登录人演示为「陈默」（PM，全权限）。
   演示约定：卡片 DOM 仅用 busy-*/.tpl-*/.u-* 类，JS 定位一律 data-* 属性；
     拖拽/右键/快捷键 (←/→/T/Esc) 均已实现；浮层按硬约束以文档流内 overlay 承载（busy-overlay-demo 遮罩视觉），
@@ -113,6 +115,7 @@
           <tbody id="listBody"></tbody>
         </table>
         <div class="busy-empty" id="listEmpty" hidden><div class="busy-empty__image">▦</div>本月暂无已排期的卡片</div>
+        <div class="tpl-table-foot"><span class="u-sub">范围为当前月份已排期的全部卡片（无分页）</span></div>
       </div>
       <div class="tpl-panel" id="zeroHit" hidden>
         <div class="busy-empty"><div class="busy-empty__image">▦</div>当前筛选/搜索条件下暂无任务
@@ -188,7 +191,8 @@ function matchSearch(card) {
 function matchFilter(card) {
   var f = S.filters;
   if (f.mine && !isMine(card)) return false;
-  var st = f.status.slice();
+  /* 抽屉状态选项为 待开发/开发中/已完成/延期（「延期」为前端派生）；「已完成」映射卡片徽标「开发完成」 */
+  var st = f.status.map(function (v) { return v === '已完成' ? '开发完成' : v; });
   var label = P.statusMeta(card).label;
   if (S.quickStatus === 'DELAYED') { if (label !== '延期') return false; }
   else if (S.quickStatus && label !== statusLabelOf(S.quickStatus)) return false;
@@ -230,7 +234,6 @@ function cardHtml(card, mode) {
   }
   var mergeTag = card.merged ? '<span class="busy-tag busy-tag--small is-plain">⊕ 合并 · ' + card.childCount + ' 项</span>' : '';
   var lockTag = card.status === 'DONE' ? '<span class="busy-tag busy-tag--small busy-tag--info">锁定</span>' : '';
-  var staleTag = card.stale ? '<span class="busy-tag busy-tag--small busy-tag--warning">超 7 天未排期</span>' : '';
   var dimCls = (S.search && !hit) ? ' u-muted' : '';
   var checkbox = (S.batch || S.mergeMode) ? '<label class="busy-checkbox' + (S.selected[card.no] ? ' is-checked' : '') + (S.mergeMode && !mergeable(card) ? ' is-disabled' : '') + '"><span class="busy-checkbox__inner"></span></label> ' : '';
   if (mode === 'compact') {
@@ -239,17 +242,20 @@ function cardHtml(card, mode) {
       '<span>' + (card.title.length > 10 ? card.title.slice(0, 10) + '…' : card.title) + '</span>' +
       '<span class="u-sub">' + card.submitter + '</span>' + mergeTag + lockTag + '</span></div>';
   }
-  var line3 = card.no + ' · ' + card.submitter + (card.developer ? ' → ' + card.developer : '');
-  if (mode === 'pool') line3 = card.created + ' · ' + card.ago + ' · ' + card.submitter;
+  var line3 = card.no + ' · ' + (card.submitter || '—') + (card.developer ? ' → ' + card.developer : '');
+  if (mode === 'pool') {
+    /* B2：池卡片不显示编号，编号位 = 创建时间 YYYY-MM-DD HH:mm · 相对时间标签（超过 7 天未排期为警示样式） */
+    line3 = card.created + ' · <span class="busy-tag busy-tag--small' + (card.stale ? ' busy-tag--warning' : ' is-plain') + '">' + card.ago + '</span> · ' + card.submitter;
+  }
   return '<div data-card="' + card.no + '"' + dragAttr(card) + '>' + checkbox +
-    '<div class="' + (dimCls ? 'u-muted' : '') + '"><b>' + title + '</b> ' + mergeTag + lockTag + staleTag + '</div>' +
+    '<div class="' + (dimCls ? 'u-muted' : '') + '"><b>' + title + '</b> ' + mergeTag + lockTag + '</div>' +
     '<div class="chip-group">' + P.statusCell(card) + P.projectTag(card.project, true) +
     '<span class="busy-tag busy-tag--small busy-tag--info is-plain">' + card.module + '</span></div>' +
     '<div class="u-sub u-mono">' + line3 + '</div></div>';
 }
+/* F6：锁定卡（开发完成/非需求改动/子卡）不可拖拽；原型保留 draggable，在 dragstart 统一拦截并 toast */
 function dragAttr(card) {
-  var locked = card.status === 'DONE' || card.status === 'NON_FEATURE' || card.child;
-  return locked ? '' : ' draggable="true"';
+  return card ? ' draggable="true"' : '';
 }
 function mergeable(card) { return card.status === 'PENDING' || card.status === 'IN_PROGRESS'; }
 
@@ -358,7 +364,12 @@ function monthGridDates() {
   for (var i = 0; i < rows * 7; i++) { dates.push(iso(d)); d.setDate(d.getDate() + 1); }
   return dates;
 }
-function cardsOn(dateStr) {
+/* C3：格内卡片仅显示在排期截止日所在日期格（区间卡不逐日铺开） */
+function cardsDueOn(dateStr) {
+  return visibleScheduled().filter(function (c) { return c.end === dateStr; });
+}
+/* G3：日详情弹层按排期区间覆盖当日取全量 */
+function cardsCovering(dateStr) {
   return visibleScheduled().filter(function (c) { return c.start <= dateStr && c.end >= dateStr; });
 }
 function renderMonth() {
@@ -371,8 +382,8 @@ function renderMonth() {
       var ds = dates[r * 7 + c];
       var inMonth = ds.slice(0, 7) === curPrefix;
       var isToday = ds === D.today;
-      var cells = inMonth ? cardsOn(ds).filter(matchSearch) : [];
-      var all = inMonth ? cardsOn(ds) : [];
+      var cells = inMonth ? cardsDueOn(ds).filter(matchSearch) : [];
+      var all = inMonth ? cardsDueOn(ds) : [];
       var shown = cells.slice(0, 3);
       h += '<td data-date="' + ds + '"' + (inMonth ? '' : ' data-out="1"') + '>';
       h += '<div class="chip-group">';
@@ -431,20 +442,23 @@ function renderWeek() {
     return '<th>' + '一二三四五六日'[dates.indexOf(ds)] + ' <span class="u-mono">' + P.mmdd(ds) + '</span>' +
       (ds === D.today ? ' <span class="busy-tag busy-tag--small">今天</span>' : '') + '</th>';
   }).join('') + '</tr>';
-  var cards = visibleScheduled().filter(function (c) { return c.end >= dates[0] && c.start <= dates[6] && matchSearch(c); });
+  /* D3：卡片落在本周内排期截止日所在列 */
+  var cards = visibleScheduled().filter(function (c) { return c.end >= dates[0] && c.end <= dates[6] && matchSearch(c); });
+  /* D2：负责人取开发人，无开发人时取提交人，均无归入「未指定」；行按负责人拼音排序 */
   var owners = [];
   cards.forEach(function (c) {
-    var o = c.developer || c.submitter;
+    var o = c.developer || c.submitter || '未指定';
     if (owners.indexOf(o) < 0) owners.push(o);
   });
+  owners.sort(function (a, b) { return String(a).localeCompare(String(b), 'zh-Hans-CN'); });
   var isCurWeek = dates.indexOf(D.today) >= 0;
   $('weekBody').innerHTML = owners.map(function (o) {
-    var mine = cards.filter(function (c) { return (c.developer || c.submitter) === o; });
+    var mine = cards.filter(function (c) { return (c.developer || c.submitter || '未指定') === o; });
     var delayN = isCurWeek ? mine.filter(function (c) { return P.statusMeta(c).label === '延期'; }).length : 0;
     var row = '<td><b>' + o + '</b> <span class="u-sub">本周 ' + mine.length + ' 张</span>' +
       (delayN ? ' <span class="busy-tag busy-tag--small busy-tag--warning">延 ' + delayN + '</span>' : '') + '</td>';
     dates.forEach(function (ds) {
-      row += '<td data-date="' + ds + '">' + mine.filter(function (c) { return c.start <= ds && c.end >= ds; })
+      row += '<td data-date="' + ds + '">' + mine.filter(function (c) { return c.end === ds; })
         .map(function (c) { return cardHtml(c, 'standard'); }).join('') + '</td>';
     });
     return '<tr>' + row + '</tr>';
@@ -480,7 +494,7 @@ function renderList() {
       '<td class="u-mono">' + c.no + '</td>' +
       '<td>' + P.projectTag(c.project, true) + '</td>' +
       '<td><span class="busy-tag busy-tag--small busy-tag--info is-plain">' + c.module + '</span></td>' +
-      '<td>' + c.submitter + '</td>' +
+      '<td>' + (c.submitter || '—') + '</td>' +
       '<td>' + (c.developer || '—') + '</td>' +
       '<td class="u-mono">' + c.start + '</td>' +
       '<td class="u-mono">' + c.end + '</td>' +
@@ -511,6 +525,13 @@ function bindCards(root) {
       location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
     });
     el.addEventListener('dragstart', function (e) {
+      var card = findCard(no);
+      if (card && (card.status === 'DONE' || card.status === 'NON_FEATURE' || card.child)) {
+        /* 拖拽锁定卡（开发完成/非需求改动/子卡）：拦截并提示 */
+        e.preventDefault();
+        P.toast('已完成的卡片不允许拖拽改期；如需改期请先回退状态', 'error');
+        return;
+      }
       e.dataTransfer.setData('text/plain', no);
       e.dataTransfer.effectAllowed = 'move';
     });
@@ -575,6 +596,8 @@ function openCtxMenu(no) {
   if (!card) return;
   var locked = card.status === 'DONE';
   var unscheduled = !card.start;
+  /* G5：移入非需求改动仅未排期、非子卡、非非需求改动且具编辑权限时可用，其余置灰 */
+  var canNonFeature = unscheduled && !card.child && card.status !== 'NON_FEATURE';
   function item(label, act, disabled) {
     return '<button class="busy-button is-text' + (disabled ? ' is-disabled' : '') + '" type="button" data-x="' + act + '"' + (disabled ? ' disabled' : '') + '><span>' + label + '</span></button>';
   }
@@ -587,6 +610,7 @@ function openCtxMenu(no) {
         item('改期到今天', 'today', locked || unscheduled) +
         item('改期到明天', 'tomorrow', locked || unscheduled) +
         item('移回待排期', 'pool', locked || unscheduled) +
+        item('移入非需求改动', 'nonfeature', !canNonFeature) +
       '</div></div>' +
     '</div>';
   P.openOverlay('ovCtx');
@@ -600,13 +624,32 @@ function openCtxMenu(no) {
       if (act === 'today') dropCardOn(no, D.today);
       if (act === 'tomorrow') { var t = parseD(D.today); t.setDate(t.getDate() + 1); dropCardOn(no, iso(t)); }
       if (act === 'pool') dropCardToPool(no);
+      if (act === 'nonfeature') moveToNonFeature(no);
     });
   });
 }
+/* G5 右键「移入非需求改动」：二次确认后清空排期、开发人与完成 commit */
+function moveToNonFeature(no) {
+  var card = findCard(no);
+  if (!card) return;
+  P.confirmBox({
+    title: '移入非需求改动',
+    message: '确认将 ' + card.no + '『' + card.title + '』移入非需求改动？移入后将清空排期、开发人与完成 commit。',
+    onOk: function () {
+      card.status = 'NON_FEATURE';
+      delete card.start; delete card.end; delete card.developer; delete card.takenAt; delete card.doneAt; card.commits = 0;
+      removeFromPool(no);
+      D.pool.total--; D.nonFeature.items.unshift(card); D.nonFeature.total++;
+      poolAfterRemove();
+      P.toast('已移入非需求改动', 'success');
+      renderAll();
+    }
+  });
+}
 
-/* ==================== G3 日详情弹层 ==================== */
+/* ==================== G3 日详情弹层（按排期区间覆盖当日取卡，标题「{日期} · N 张卡片」） ==================== */
 function openDay(ds) {
-  var cards = cardsOn(ds).filter(matchSearch);
+  var cards = cardsCovering(ds).filter(matchSearch);
   $('ovDay').innerHTML =
     '<div class="busy-dialog">' +
       '<div class="busy-dialog__header"><span class="busy-dialog__title">' + ds + ' · ' + cards.length + ' 张卡片</span>' +
@@ -676,7 +719,10 @@ function selectedTags() {
 function renderFilterDrawer() {
   var f = filterDraft;
   function group(title, key, opts, isProject) {
+    /* 各复选组首项「全部」= 清空该组（G2） */
+    var allItem = '<label class="busy-checkbox' + (f[key].length === 0 ? ' is-checked' : '') + '" data-g="' + key + '" data-v="__all__"><span class="busy-checkbox__inner"></span><span>全部</span></label>';
     return '<div class="tpl-section"><div class="tpl-section__head">' + title + '</div><div class="busy-checkbox-group">' +
+      allItem +
       opts.map(function (o) {
         var checked = f[key].indexOf(o) >= 0;
         var label = isProject && o !== '未归属项目'
@@ -690,14 +736,14 @@ function renderFilterDrawer() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">筛选</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<div class="tpl-toolbar"><div class="tpl-toolbar__left">只看自己</div>' +
+        '<div class="tpl-toolbar"><div class="tpl-toolbar__left">只看自己 <span class="u-sub">即时生效，不入抽屉草稿</span></div>' +
         '<button class="busy-switch' + (f.mine ? ' is-checked' : '') + '" type="button" id="mineSwitch"><span class="busy-switch__core"></span></button></div>' +
         '<div class="chip-group" id="filterTags">' +
           (selectedTags().map(function (t) {
             return '<span class="busy-tag busy-tag--small">' + t.v + ' <button class="busy-button is-text" type="button" data-g="' + t.g + '" data-v="' + t.v + '"><span>✕</span></button></span>';
           }).join('') || '<span class="u-sub">暂无条件</span>') +
         '</div>' +
-        group('状态', 'status', D.filterOptions.status) +
+        group('状态 <span class="u-sub">「延期」为前端派生</span>', 'status', D.filterOptions.status) +
         group('负责人', 'owners', D.filterOptions.owners) +
         group('skills 仓库', 'repos', D.filterOptions.repos) +
         group('项目', 'projects', D.filterOptions.projects, true) +
@@ -719,6 +765,7 @@ function renderFilterDrawer() {
   $('ovFilter').querySelectorAll('.busy-checkbox[data-g]').forEach(function (lb) {
     lb.addEventListener('click', function () {
       var g = lb.getAttribute('data-g'), v = lb.getAttribute('data-v');
+      if (v === '__all__') { filterDraft[g] = []; renderFilterDrawer(); return; } /* 「全部」= 清空该组 */
       var i = filterDraft[g].indexOf(v);
       if (i >= 0) filterDraft[g].splice(i, 1); else filterDraft[g].push(v);
       renderFilterDrawer();
@@ -773,8 +820,7 @@ function openProgress() {
   $('ovProgress').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovProgress'); };
   $('ovProgress').querySelectorAll('[data-stat]').forEach(function (it) {
     it.addEventListener('click', function () {
-      var k = it.getAttribute('data-stat');
-      S.quickStatus = S.quickStatus === k ? null : k;
+      applyQuickStatus(it.getAttribute('data-stat'));
       renderAll(); openProgress(); /* 点击后浮层不关闭（重新渲染选中态） */
     });
   });
@@ -935,9 +981,11 @@ function renderCreate() {
         '<div class="tpl-section" id="createCommits">' +
           (!createState.repo ? '<div class="u-sub">请先选择代码仓</div>' :
             commits.map(function (c) {
-              var note = c.card === 'DELETED' ? ' <span class="busy-tag busy-tag--small busy-tag--info">卡片已删除</span>'
+              var deleted = c.card === 'DELETED';
+              /* 已出卡的 commit 标注「已出卡 {编号}」Tag 且仍可选中；卡片已删除的标注「卡片已删除」且禁选 */
+              var note = deleted ? ' <span class="busy-tag busy-tag--small busy-tag--info">卡片已删除</span>'
                 : c.card ? ' <span class="busy-tag busy-tag--small">已出卡 ' + c.card + '</span>' : '';
-              return '<label class="busy-radio' + (createState.commit === c.hash ? ' is-checked' : '') + '" data-c="' + c.hash + '">' +
+              return '<label class="busy-radio' + (createState.commit === c.hash ? ' is-checked' : '') + (deleted ? ' is-disabled' : '') + '" data-c="' + c.hash + '"' + (deleted ? ' data-dis="1"' : '') + '>' +
                 '<span class="busy-radio__inner"></span><span class="u-mono">' + c.hash + '</span> <span>' + c.msg + '</span>' +
                 '<span class="u-sub">' + c.author + ' · ' + c.time + '</span>' + note + '</label>';
             }).join('')) +
@@ -962,6 +1010,7 @@ function renderCreate() {
   });
   $('ovCreate').querySelectorAll('[data-c]').forEach(function (lb) {
     lb.addEventListener('click', function () {
+      if (lb.getAttribute('data-dis')) return; /* 卡片已删除的 commit 禁选 */
       createState.commit = lb.getAttribute('data-c');
       $('ovCreate').querySelectorAll('[data-c]').forEach(function (x) { x.classList.remove('is-checked'); });
       lb.classList.add('is-checked');
@@ -1194,10 +1243,12 @@ function bindListActions() {
   $('listBody').querySelectorAll('[data-act]').forEach(function (b) {
     b.addEventListener('click', function () {
       var no = b.getAttribute('data-no'), act = b.getAttribute('data-act');
+      var target = findCard(no);
       var tips = {
         take: '确认领取开发？',
         done: '确认标记完成？完成 commit 可稍后在卡片详情页补录',
-        revert: '确认回退为开发中？将清空完成 commit，保留开发人'
+        /* E3：回退确认文案按卡片有无开发人区分 */
+        revert: target && target.developer ? '确认回退为开发中？将清空完成 commit，保留开发人' : '确认回退为待开发？将清空完成 commit，卡片无开发人'
       };
       var pop = document.createElement('span');
       pop.className = 'busy-popover is-light';
@@ -1251,10 +1302,17 @@ $('btnToday').onclick = function () {
   renderAll();
 };
 $('periodLabel').onclick = function () { if (S.view !== 'week') openYm(); };
+/* A3：本月进度快捷筛选为单选开关（再点取消）；与筛选抽屉的状态条件交集为空时，抽屉状态条件置空 */
+function applyQuickStatus(k) {
+  S.quickStatus = S.quickStatus === k ? null : k;
+  if (S.quickStatus && S.filters.status.length) {
+    var drawerLabel = { PENDING: '待开发', IN_PROGRESS: '开发中', DONE: '已完成', DELAYED: '延期' }[S.quickStatus];
+    if (S.filters.status.indexOf(drawerLabel) < 0) S.filters.status = [];
+  }
+}
 document.querySelectorAll('#statWrap [data-stat]').forEach(function (b) {
   b.addEventListener('click', function () {
-    var k = b.getAttribute('data-stat');
-    S.quickStatus = S.quickStatus === k ? null : k;
+    applyQuickStatus(b.getAttribute('data-stat'));
     renderAll();
   });
 });

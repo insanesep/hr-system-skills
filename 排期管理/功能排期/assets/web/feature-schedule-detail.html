@@ -9,8 +9,10 @@
   页面描述真源：../../references/web-ui.md#卡片详情页 ｜ 页面类型 order-detail
   整页范例：busyming-skills-design/templates/web/order-detail.html ｜ 状态机：../../references/state-machine.md
   区块：页头 J1（返回 / 编号标题 / 标签行 / 右上操作区 L1-L2）→ 业务提示 J2 → 开发进度 J3（busy-steps）
-    → 关键摘要 J4（tpl-kpi-grid ×4）→ 页级 Tab K1-K5（基本信息 / 子卡明细 / 完成 commit / 操作日志）
-    → 弹窗 M1 编辑 / M2 调整排期 / M3 标记完成·关联 commit / M4 回退 / M5 二次确认·气泡确认 / M6 全局提示
+    → 关键摘要 J4（固定三项：排期 / 开发人 / 完成 commit；合并卡追加第四项「子卡 N 张」，非合并卡无第四项）
+    → 任务内容 J5（独立面板，内容原文保留换行，空显示「暂无内容」）
+    → 页级 Tab K1-K5（基本信息 / 子卡明细 / 完成 commit / 操作日志）
+    → 弹窗 M1 编辑 / M2 调整排期（日期区间选择器，今天之前置灰）/ M3 标记完成·关联 commit / M4 回退 / M5 二次确认·气泡确认 / M6 全局提示
   直达规则：以卡片编号为路径参数（原型以 ?no= 模拟）；编号不存在或已删除 →「卡片不存在或已删除」。
   导航栏「原型页面」可切换页面、演示卡片（合并卡 / 延期卡 / 完成卡 / 子卡只读 / 非需求改动卡）与整页状态（正常 / 加载失败 / 不存在）。
   演示基准日 2026-10-21（周三）；当前登录人演示为「陈默」（PM，全权限）。
@@ -32,7 +34,7 @@
   <!-- J1 页头（含 L 操作区） -->
   <div class="tpl-page-head" id="pageHead"></div>
 
-  <!-- J2 业务提示 / J3 开发进度 / J4 关键摘要 / K 页级 Tab：均由脚本按演示卡片渲染 -->
+  <!-- J2 业务提示 / J3 开发进度 / J4 关键摘要 / J5 任务内容 / K 页级 Tab：均由脚本按演示卡片渲染 -->
   <div id="pageBody"></div>
 </section>
 
@@ -207,7 +209,7 @@ function renderHead() {
   };
 }
 
-/* ---------- J2 业务提示 + J3 开发进度 + J4 关键摘要 ---------- */
+/* ---------- J2 业务提示 + J3 开发进度 + J4 关键摘要 + J5 任务内容 ---------- */
 function renderBody() {
   var c = card();
   var h = '';
@@ -252,9 +254,7 @@ function renderBody() {
       (isDelayed(c) ? '<span class="tpl-kpi__foot-text u-warning">已延期 ' + delayDays(c) + ' 天</span>' : '');
   }
   var commitN = c.no === 'FS-20261009-002' ? D.doneCommits.length : (c.commits || 0);
-  var kpi4 = c.merged
-    ? { label: '子卡', val: c.childCount, unit: '张', foot: '模块 ' + c.module }
-    : { label: '所属项目', val: '', unit: '', foot: '按源仓解析', tag: P.projectTag(c.project, true) };
+  /* J4：固定三项（排期 / 开发人 / 完成 commit）；合并卡追加第四项「子卡 N 张」，非合并卡无第四项（所属项目在基本信息分组展示） */
   h += '<div class="tpl-kpi-grid">' +
     '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">排期</span></div>' +
       '<div class="tpl-kpi__number"><span class="tpl-kpi__value u-mono">' + scheduleVal + '</span></div><div class="tpl-kpi__foot">' + scheduleFoot + '</div></div>' +
@@ -264,10 +264,18 @@ function renderBody() {
     '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">完成 commit</span></div>' +
       '<div class="tpl-kpi__number"><span class="tpl-kpi__value">' + commitN + '</span><span class="tpl-kpi__unit">个</span></div>' +
       '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">' + (c.doneAt ? '完成于 ' + c.doneAt : '') + '</span></div></div>' +
-    '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">' + kpi4.label + '</span></div>' +
-      '<div class="tpl-kpi__number">' + (kpi4.tag || '<span class="tpl-kpi__value">' + kpi4.val + '</span><span class="tpl-kpi__unit">' + kpi4.unit + '</span>') + '</div>' +
-      '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">' + kpi4.foot + '</span></div></div>' +
+    (c.merged
+      ? '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">子卡</span></div>' +
+        '<div class="tpl-kpi__number"><span class="tpl-kpi__value">' + c.childCount + '</span><span class="tpl-kpi__unit">张</span></div>' +
+        '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text"></span></div></div>'
+      : '') +
     '</div>';
+
+  /* J5 任务内容（独立面板，位于关键摘要与页级 Tab 之间；内容原文保留换行，空显示「暂无内容」） */
+  h += '<div class="tpl-panel"><div class="tpl-section">' +
+    '<div class="tpl-section__head">任务内容</div>' +
+    (c.content ? '<div>' + c.content.replace(/\n/g, '<br>') + '</div>' : '<div class="u-sub">暂无内容</div>') +
+    '</div></div>';
 
   /* K 页级 Tab */
   h += '<div class="tpl-panel"><div id="tabHost"></div></div>';
@@ -324,8 +332,7 @@ function tabBase(c) {
       '<tr><th>所属项目</th><td>' + P.projectTag(c.project, true) + ' <span class="u-sub u-mono">按源仓 ' + (P.projectOf(c.project).harness || '—') + ' 解析</span></td>' +
       '<th>源代码仓</th><td class="u-mono">' + repo + '</td></tr>' +
       '<tr><th>源 commit</th><td class="u-mono">' + commit + '</td><th>创建时间</th><td class="u-mono">' + (c.created || '—') + '</td></tr>' +
-      (c.content ? '<tr><th>内容</th><td colspan="3">' + c.content.replace(/\n/g, '<br>') + '</td></tr>' : '') +
-    '</table></div>';
+    '</table></div>'; /* K1：内容不在本分组，由「任务内容」面板（J5）承担 */
   if (c.status === 'NON_FEATURE') return h;
 
   var lockNote = c.status === 'DONE'
@@ -567,7 +574,7 @@ function renderEdit() {
   };
 }
 
-/* ==================== M2 调整排期弹窗（月历面板；今天之前置灰） ==================== */
+/* ==================== M2 调整排期弹窗（日期区间选择器：今天之前置灰，单日排期起止选同一天） ==================== */
 var schedSel = { start: '', end: '' };
 function openSchedule() {
   var c = card();
@@ -602,7 +609,8 @@ function renderSchedule() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">调整排期</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<div class="u-sub">当前排期：' + (c.start ? c.start + ' ~ ' + c.end : '未排期') + '（仅演示 2026-10 月历面板，生产可切月）</div>' +
+        '<div class="u-sub">' + (c.start ? '当前排期：' + c.start + ' ~ ' + c.end + (isDelayed(c) ? '（已延期）' : '') : '当前未排期，卡片在待排期池') + '</div>' +
+        '<div class="u-sub">开始日期不早于今天；单日排期起止选同一天（原型仅演示 2026-10 月历面板，生产可切月）</div>' +
         '<table class="busy-table busy-table--border"><thead><tr><th class="u-center">一</th><th class="u-center">二</th><th class="u-center">三</th><th class="u-center">四</th><th class="u-center">五</th><th class="u-center">六</th><th class="u-center">日</th></tr></thead>' +
         '<tbody>' + cells + '</tbody></table>' +
         '<div>已选区间：<b class="u-mono">' + rangeText + '</b></div>' +

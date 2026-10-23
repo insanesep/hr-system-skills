@@ -56,7 +56,8 @@ window.FS_DATA = {
     ]
   },
 
-  /* 本月已排期卡片（status: PENDING/IN_PROGRESS/DONE；延期由 today 与截止日计算，不落库） */
+  /* 本月已排期卡片（status: PENDING/IN_PROGRESS/DONE；延期由 today 与截止日计算，不落库；
+     月/周视图卡片仅落在排期截止日所在格/列，区间卡不逐日铺开） */
   scheduled: [
     { no: 'FS-20261009-002', title: '要货单导出性能优化', module: 'STORE',  project: 'main',   start: '2026-10-12', end: '2026-10-14', status: 'DONE',        developer: '刘洋', takenAt: '2026-10-12 09:20', doneAt: '2026-10-14 17:20', commits: 2, submitter: '王倩', nature: '技术支持' },
     { no: 'FS-20261013-002', title: '门店要货截止时间校验', module: 'STORE', project: 'main',  start: '2026-10-19', end: '2026-10-23', status: 'IN_PROGRESS', developer: '陈刚', takenAt: '2026-10-19 09:40', submitter: '王倩', nature: '业务功能', bizContact: '', linkedReq: 'REQ-20261012-018', reqSubmitter: '王倩' },
@@ -73,7 +74,9 @@ window.FS_DATA = {
     { no: 'FS-20261020-003', title: '要货模板按组织隔离', module: 'STORE',  project: 'main',   start: '2026-10-26', end: '2026-10-26', status: 'PENDING',    submitter: '陈默', nature: '业务功能', bizContact: '' },
     { no: 'FS-20261020-004', title: '会员等级权益配置', module: 'MEMBER',   project: 'member', start: '2026-10-27', end: '2026-10-29', status: 'PENDING',    submitter: '张敏', nature: '业务功能', bizContact: '张敏' },
     { no: 'FS-20261020-005', title: '采购退货单状态机重构', module: 'ORDER', project: 'supply', start: '2026-10-28', end: '2026-10-28', status: 'PENDING',   submitter: '周洁', nature: '业务功能', bizContact: '周洁' },
-    { no: 'FS-20261021-001', title: '门店要货看板刷新优化', module: 'STORE', project: 'main',  start: '2026-10-30', end: '2026-10-30', status: 'PENDING',   submitter: '王倩', nature: '技术支持', bizContact: '' }
+    { no: 'FS-20261021-001', title: '门店要货看板刷新优化', module: 'STORE', project: 'main',  start: '2026-10-30', end: '2026-10-30', status: 'PENDING',   submitter: '王倩', nature: '技术支持', bizContact: '' },
+    /* 周视图「未指定」负责人行演示：无开发人且无提交人（编号避开合并/新建演示生成的 -002/-003） */
+    { no: 'FS-20261021-010', title: '要货单导入模板示例更新', module: 'STORE', project: 'none', start: '2026-10-24', end: '2026-10-24', status: 'PENDING', submitter: '', nature: '业务功能', bizContact: '' }
   ],
 
   /* 非需求改动列表（服务端分页，total 取全量；不参与搜索与只看自己） */
@@ -140,9 +143,9 @@ window.FS_DATA = {
   /* 发版日标记（仅视觉标记，不参与状态与延期判定） */
   releaseDays: ['2026-10-30'],
 
-  /* 筛选项全集 */
+  /* 筛选项全集（status 为筛选抽屉选项口径：「已完成」对应卡片徽标「开发完成」；「延期」为前端派生） */
   filterOptions: {
-    status: ['待开发', '开发中', '开发完成', '延期'],
+    status: ['待开发', '开发中', '已完成', '延期'],
     owners: ['陈默', '王倩', '李强', '张敏', '陈刚', '刘洋', '周洁', '孙浩', '赵敏', '吴迪'],
     repos: ['harness-main', 'harness-supply', 'harness-pos', 'harness-member'],
     projects: ['鸣鸣很忙主站', '供应链中台', '门店 POS', '会员中心', '未归属项目'],
