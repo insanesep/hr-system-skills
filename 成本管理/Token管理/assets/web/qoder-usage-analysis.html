@@ -8,7 +8,11 @@
   Token管理 · Qoder 用量分析（Web 端 · 页面类型 report · 静态原型，Mock）
   路由 /subapp/devhub/rnd/qoder-usage · 权限编码 devhubQoderUsage
   来源页：管理后台侧边菜单「研发管理 → Qoder 用量分析」；面包屑：首页 / 研发管理 / Qoder 用量分析（由后台统一布局渲染，页面内不出现）
-  业务规则真源：references/business-rule.md（筛选约束 §1、KPI 口径 §2、透视表 §3/§4、堆叠图 §6、三态 §7）
+  页面描述真源：../../references/web-ui.md ｜ 业务规则真源：references/business-rule.md（筛选约束 §1、KPI 口径 §2、透视表 §3/§4、堆叠图 §6、三态 §7）
+  区块：公共筛选区（日期范围 / 部门 / 统计范围 / 成员多选 / 查询·重置；筛选变更仅点「查询」生效，部门与统计范围切换即时生效并清空已选成员）
+    → KPI 卡片行 ×5（周环比公式见各卡「?」hint）→ 日 Credits 消耗堆叠柱形图（合计降序前 6 个模型等级分段 + 其他（灰）+ 未标注）
+    → Credits 用量透视表（成员 × 日期）→ 模型用量透视表（成员 × 模型等级；两表服务端分页，默认 20 条/页，共用一次查询与同一分页）
+    → 空态：筛选范围内无事件或上游未配置/未开通均按空数据展示（KPI 归零、图表空态），不报错
   图表能力：设计仓静态原型登记的图表形态为 templates/web 的 .tpl-chart 占位（registry/prototype.json 未登记 Chart 组件，生产落地使用 ECharts 封装）
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
@@ -45,12 +49,11 @@
   <div class="tpl-panel">
     <div class="tpl-filter">
       <div class="busy-form-item tpl-filter__item--wide">
-        <div class="busy-form-item__label">日期范围</div>
+        <div class="busy-form-item__label">日期范围 <span class="tpl-kpi__hint" title="默认前 7 天（T-7 ~ T-1，不含今天）· 起止跨度不超过 31 天，超出前端拦截并提示「日期范围不能超过 31 天」">?</span></div>
         <div class="busy-form-item__content">
           <div class="tpl-filter__row">
             <div class="busy-date-editor busy-range-editor busy-input"><input readonly value="2026-10-14 ~ 2026-10-20"></div>
           </div>
-          <div class="u-sub">默认前 7 天（T-7 ~ T-1，不含今天）· 起止跨度不超过 31 天，超出前端拦截并提示「日期范围不能超过 31 天」</div>
         </div>
       </div>
       <div class="busy-form-item">
@@ -73,7 +76,7 @@
         </div>
       </div>
       <div class="busy-form-item tpl-filter__item--wide">
-        <div class="busy-form-item__label">成员（多选）</div>
+        <div class="busy-form-item__label">成员（多选） <span class="tpl-kpi__hint" title="不选 = 当前部门 ∩ 统计范围交集内全部成员 · 切换部门或统计范围将清空已选成员并重查">?</span></div>
         <div class="busy-form-item__content">
           <div class="busy-select" id="memberSelect">
             <div class="busy-input">
@@ -83,12 +86,13 @@
             </div>
             <span class="busy-select__caret">▾</span>
           </div>
-          <div class="u-sub">不选 = 当前部门 ∩ 统计范围交集内全部成员（当前默认全部 12 人）· 切换部门或统计范围将清空已选成员并重查</div>
+          <div class="u-sub">支持搜索 · 收起标签最多展示 3 个 · placeholder 随统计范围变化（研发团队 =「名单内全部成员」/ 全部成员 =「全部成员」）· 多组织成员标注组织名 · 当前默认交集内全部 12 人</div>
         </div>
       </div>
       <div class="tpl-filter__actions">
         <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查 询</span></button>
         <button class="busy-button" type="button" id="btnReset"><span>重 置</span></button>
+        <span class="u-sub">筛选变更仅点「查询」生效；部门与统计范围切换即时生效并清空已选成员</span>
       </div>
     </div>
     <!-- 研发团队范围下名单为空或名单内无 Qoder 成员时展示（business-rule.md §1） -->
@@ -103,22 +107,22 @@
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">周环比</span><span class="tpl-kpi__delta is-up">+12.4%</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">总请求数</span><span class="tpl-kpi__hint" title="筛选范围内用量事件条数，整数展示">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">总请求数</span><span class="tpl-kpi__hint" title="筛选范围内用量事件条数，整数展示；周环比 =（本期 − 上周同期）÷ |上周同期|，上周同期 = 本期起止日期各前移 7 天，上周同期为 0 时记 0%">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value">1,206</span><span class="tpl-kpi__unit">次</span></div>
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">周环比</span><span class="tpl-kpi__delta is-up">+8.1%</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">次均消耗</span><span class="tpl-kpi__hint" title="总用量 ÷ 总请求数，保留 1 位小数">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">次均消耗</span><span class="tpl-kpi__hint" title="总用量 ÷ 总请求数，保留 1 位小数；周环比 =（本期 − 上周同期）÷ |上周同期|，上周同期 = 本期起止日期各前移 7 天，上周同期为 0 时记 0%">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value">2.9</span><span class="tpl-kpi__unit">Credits/次</span></div>
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">周环比</span><span class="tpl-kpi__delta is-up">+3.6%</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">人均用量</span><span class="tpl-kpi__hint" title="总用量 ÷ 活跃成员数，整数展示">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">人均用量</span><span class="tpl-kpi__hint" title="总用量 ÷ 活跃成员数，整数展示；周环比 =（本期 − 上周同期）÷ |上周同期|，上周同期 = 本期起止日期各前移 7 天，上周同期为 0 时记 0%">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value">318</span><span class="tpl-kpi__unit">Credits</span></div>
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">周环比</span><span class="tpl-kpi__delta is-up">+22.6%</span></div>
     </div>
     <div class="tpl-kpi">
-      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">活跃成员</span><span class="tpl-kpi__hint" title="筛选范围内 Credits 大于 0 的去重成员数，整数展示">?</span></div>
+      <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-danger"></span><span class="tpl-kpi__label">活跃成员</span><span class="tpl-kpi__hint" title="筛选范围内 Credits 大于 0 的去重成员数，整数展示；周环比 =（本期 − 上周同期）÷ |上周同期|，上周同期 = 本期起止日期各前移 7 天，上周同期为 0 时记 0%">?</span></div>
       <div class="tpl-kpi__number"><span class="tpl-kpi__value">11</span><span class="tpl-kpi__unit">人</span></div>
       <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">周环比</span><span class="tpl-kpi__delta is-down">-8.3%</span></div>
     </div>
@@ -132,10 +136,13 @@
         <span class="busy-tag">旗舰 MAX</span>
         <span class="busy-tag busy-tag--success">高级</span>
         <span class="busy-tag busy-tag--warning">基础</span>
+        <span class="busy-tag busy-tag--danger">轻量</span>
+        <span class="busy-tag is-plain">极速</span>
+        <span class="busy-tag busy-tag--info is-plain">未标注</span>
         <span class="busy-tag busy-tag--info">其他</span>
       </div>
     </div>
-    <div class="tpl-chart" data-view="data">日 Credits 消耗堆叠柱形图 · 每日一根堆叠柱、按模型分类分段堆叠（未识别归入「其他」并置最顶层，固定灰色）· Y 轴刻度 0–1000 · X 轴为筛选期内每日日期（2026-10-14 ~ 2026-10-20）· 静态原型不引图表库，生产落地使用 ECharts 封装</div>
+    <div class="tpl-chart" data-view="data">日 Credits 消耗堆叠柱形图 · 每日一根堆叠柱、按模型等级分段堆叠（合计降序前 6 个模型等级分段（固定配色）、其余归并「其他」（灰色，堆叠于顶层）、空等级归「未标注」）· 悬浮提示仅展示非 0 分段、数值千分位 · X 轴为筛选期内每日日期（2026-10-14 ~ 2026-10-20）· 静态原型不引图表库，生产落地使用 ECharts 封装</div>
     <div class="busy-empty" data-view="empty" hidden>
       <div class="busy-empty__image">☁</div>
       <div>暂无用量数据</div>
@@ -173,6 +180,7 @@
         <tr><td><span class="u-strong">合计</span></td><td class="u-right u-mono u-strong">506</td><td class="u-right u-mono u-strong">508</td><td class="u-right u-mono u-strong">509</td><td class="u-right u-mono u-strong">500</td><td class="u-right u-mono u-strong">473</td><td class="u-right u-mono u-strong">500</td><td class="u-right u-mono u-strong">505</td><td class="u-right u-mono u-strong">3,501</td></tr>
       </tfoot>
     </table>
+    <div class="tpl-table-foot"><span class="u-sub">服务端分页 · 默认 20 条/页 · 两张透视表共用一次查询与同一分页 · 合计行与合计列为全部匹配成员口径，不受当前页影响</span></div>
     <div class="busy-empty" data-view="empty" hidden>
       <div class="busy-empty__image">☁</div>
       <div>暂无用量数据</div>
@@ -182,11 +190,11 @@
       <button class="busy-button demo-retry" type="button"><span>重 试</span></button>
     </div>
   </div>
-  <!-- 模型用量透视表：成员 × 模型等级（规则 business-rule.md §4，列按合计降序取前 5、其余含「未标注」归入「其他模型」列最后，数值两位小数，合计行带列占比） -->
+  <!-- 模型用量透视表：成员 × 模型等级（规则 business-rule.md §4，模型等级列排序与空值规则见该节；数值两位小数千分位；合计行不带占比、为全部匹配成员口径，不受分页影响） -->
   <div class="tpl-panel">
     <div class="tpl-toolbar">
       <span class="tpl-toolbar__title">模型用量透视表</span>
-      <div class="tpl-toolbar__right"><span class="u-sub">成员 × 模型等级（前 5 + 其他模型） · 单位 Credits（保留两位小数，合计行含列占比） · 复用顶部公共筛选</span></div>
+      <div class="tpl-toolbar__right"><span class="u-sub">成员 × 模型等级 · 单位 Credits（保留两位小数） · 复用顶部公共筛选</span></div>
     </div>
     <table class="busy-table" data-view="data">
       <thead>
@@ -207,9 +215,10 @@
         <tr><td>冯书瑶</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono">0.00</td><td class="u-right u-mono u-strong">0.00</td></tr>
       </tbody>
       <tfoot>
-        <tr><td><span class="u-strong">合计</span></td><td class="u-right u-mono u-strong">1,366.30(39%)</td><td class="u-right u-mono u-strong">1,013.90(29%)</td><td class="u-right u-mono u-strong">557.70(16%)</td><td class="u-right u-mono u-strong">263.50(8%)</td><td class="u-right u-mono u-strong">184.00(5%)</td><td class="u-right u-mono u-strong">115.60(3%)</td><td class="u-right u-mono u-strong">3,501.00(100%)</td></tr>
+        <tr><td><span class="u-strong">合计</span></td><td class="u-right u-mono u-strong">1,366.30</td><td class="u-right u-mono u-strong">1,013.90</td><td class="u-right u-mono u-strong">557.70</td><td class="u-right u-mono u-strong">263.50</td><td class="u-right u-mono u-strong">184.00</td><td class="u-right u-mono u-strong">115.60</td><td class="u-right u-mono u-strong">3,501.00</td></tr>
       </tfoot>
     </table>
+    <div class="tpl-table-foot"><span class="u-sub">服务端分页 · 默认 20 条/页 · 两张透视表共用一次查询与同一分页 · 合计行与合计列为全部匹配成员口径，不受当前页影响</span></div>
     <div class="busy-empty" data-view="empty" hidden>
       <div class="busy-empty__image">☁</div>
       <div>暂无用量数据</div>
@@ -220,7 +229,7 @@
     </div>
   </div>
 
-  <div class="u-sub">静态原型 · Mock 演示数据（2026-10-14 ~ 2026-10-20，前 7 天不含今天）· 加载态生产实现为各面板骨架屏，本原型以按钮 loading 演示查询链路 · 聚合口径 / 排序 / 精度 / 空值规则唯一真源为 references/business-rule.md</div>
+  <div class="u-sub">静态原型 · Mock 演示数据（2026-10-14 ~ 2026-10-20，前 7 天不含今天）· 加载态生产实现为各面板骨架屏，本原型以按钮 loading 演示查询链路 · 上游未配置或未开通时同样按空数据展示（KPI 归零、图表空态），不报错 · 聚合口径 / 排序 / 精度 / 空值规则唯一真源为 references/business-rule.md</div>
 </section>
 
 <script>
@@ -245,12 +254,42 @@ function fakeLoading(btn) {
   }, 600);
 }
 var stateByIndex = ['data', 'roster', 'empty', 'error'];
+/* 空态补一条：上游未配置/未开通时按空数据展示（KPI 归零、图表空态），不报错 */
+var kpiCache = null;
+function zeroKpi(zero) {
+  var vals = document.querySelectorAll('.tpl-kpi__value');
+  var deltas = document.querySelectorAll('.tpl-kpi__delta');
+  if (!kpiCache) {
+    kpiCache = { vals: [], deltas: [] };
+    vals.forEach(function (v) { kpiCache.vals.push(v.textContent); });
+    deltas.forEach(function (d) { kpiCache.deltas.push({ t: d.textContent, c: d.className }); });
+  }
+  vals.forEach(function (v, i) { v.textContent = zero ? '0' : kpiCache.vals[i]; });
+  deltas.forEach(function (d, i) {
+    d.textContent = zero ? '0%' : kpiCache.deltas[i].t;
+    d.className = zero ? 'tpl-kpi__delta' : kpiCache.deltas[i].c;
+  });
+}
 function setState(s) {
   var view = (s === 'roster') ? 'empty' : s;
   document.getElementById('rosterHint').hidden = (s !== 'roster');
   document.querySelectorAll('[data-view]').forEach(function (el) {
     el.hidden = (el.getAttribute('data-view') !== view);
   });
+  zeroKpi(view === 'empty');
+}
+/* 全局提示（AcMessage.success 演示） */
+function showToast(msg) {
+  var host = document.getElementById('toastHost');
+  if (!host) {
+    host = document.createElement('div');
+    host.id = 'toastHost';
+    host.className = 'tpl-toolbar';
+    document.body.insertBefore(host, document.body.firstChild);
+  }
+  host.innerHTML = '<span class="busy-message busy-message--success">' + msg + '</span>';
+  clearTimeout(host._t);
+  host._t = setTimeout(function () { host.innerHTML = ''; }, 2600);
 }
 function resetStateSwitch() {
   var g = document.getElementById('stateSwitch');
@@ -269,6 +308,7 @@ document.getElementById('btnReset').addEventListener('click', function () {
   resetStateSwitch();
   setState('data');
   fakeLoading(document.getElementById('btnQuery'));
+  showToast('已恢复默认筛选');
 });
 /* 错误态重试：loading 后回到数据态（演示 失败反馈 + 重试 闭环） */
 document.querySelectorAll('.demo-retry').forEach(function (btn) {
