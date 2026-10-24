@@ -1,6 +1,6 @@
 # 研发报告 数据源与推送契约（共享）
 
-> 本文件为三类生成式报告（研发周报 / 文档一致性校验 / 项目进度报告）的共享契约真源：功能排期卡片 MCP 调用口径、容错口径、报告推送旁路契约。周报专属的用量类数据源见 [`../人员产出报告/references/api-endpoints.md`](../../人员产出报告/references/api-endpoints.md)。
+> 本文件为生成式报告的共享契约真源：功能排期卡片 MCP 调用口径、容错口径、报告推送旁路契约。周报专属的用量类数据源见 [`../人员产出报告/references/api-endpoints.md`](../../人员产出报告/references/api-endpoints.md)。
 >
 > 配置来源按会话类型区分：
 >
@@ -40,6 +40,7 @@
 - 服务端按文件名解析报告类型、项目与日期，**文件名必须严格遵循**：
   - 周报：`weekly_dev_yyyyMMdd.md`（yyyyMMdd = 生成当天）
   - 一致性检查：`consistency_yyyyMMdd_<项目key>.md`
+  - 产品文档健康度：`doc_health_yyyyMMdd_<项目key>.md`
   - 项目进度报告：`progress_yyyyMMdd_<项目key>.md`
   - 项目 key 必须与「报告项目配置」生效数据一致（见 [business-rule.md §3](business-rule.md#3-报告项目配置)），未命中按无法识别处理
 - 幂等：同报告项（类型 + 项目）+ 同发报日 + 同内容 hash 不产新版本，响应 `duplicated=true`
