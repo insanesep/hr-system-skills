@@ -319,6 +319,7 @@ var TOKENS = [
   { id: 't004', name: 'Cursor 联调', prefix: 'mcp_Wd4n', holder: '张研发', domains: ['业务系统', '数据库'], status: '生效中', expireAt: '2026-11-30 09:05', lastUsedAt: '2026-10-20 11:32', createdAt: '2026-10-01 09:05' },
   { id: 't005', name: '旧版周报脚本', prefix: 'mcp_9fTx', holder: '张研发', domains: ['业务系统'], status: '已过期', expireAt: '2026-09-30 08:00', lastUsedAt: '2026-09-29 22:10', createdAt: '2026-09-23 08:00' },
   { id: 't006', name: '临时调试', prefix: 'mcp_Ae1c', holder: '张研发', domains: ['研发工具', '数据库'], status: '已吊销', expireAt: '2026-11-10 15:40', lastUsedAt: '2026-10-08 17:26', createdAt: '2026-10-11 15:40' },
+  { id: 't007', name: '待配置令牌', prefix: 'mcp_Empty', holder: '张研发', domains: [], status: '生效中', expireAt: '2027-01-20 10:12', lastUsedAt: '', createdAt: '2026-10-22 10:12' },
   { id: 't101', name: 'ARMS 告警分析', prefix: 'mcp_Lm6v', holder: '李产品', domains: ['研发工具'], status: '生效中', expireAt: '2026-12-02 13:00', lastUsedAt: '2026-10-22 08:57', createdAt: '2026-09-03 13:00' },
   { id: 't102', name: '门店数据核对', prefix: 'mcp_Qs2e', holder: '王实施', domains: ['业务系统', '数据库'], status: '生效中', expireAt: '2026-10-25 20:00', lastUsedAt: '2026-10-21 19:44', createdAt: '2026-09-25 20:00' }
 ];
@@ -446,9 +447,12 @@ function rowHtml(t) {
   var expire = soon
     ? '<span class="chip-group"><span class="u-warning u-mono">' + esc(t.expireAt) + '</span><span class="busy-tag busy-tag--warning busy-tag--small">即将到期</span></span>'
     : '<span class="u-mono">' + esc(t.expireAt) + '</span>';
-  var domains = '<span class="chip-group">' + t.domains.map(function (d) { return '<span class="busy-tag busy-tag--small">' + esc(d) + '</span>'; }).join('') + '</span>';
+  var domains = t.domains.length
+    ? '<span class="chip-group">' + t.domains.map(function (d) { return '<span class="busy-tag busy-tag--small">' + esc(d) + '</span>'; }).join('') + '</span>'
+    : '<span class="u-muted">未配置</span>';
   var own = t.holder === CURRENT_USER;
-  var acts = '<a class="busy-button is-link" href="token-detail.html?id=' + t.id + '"><span>详情</span></a>';
+  var detailUrl = 'token-detail.html?id=' + t.id + (t.domains.length ? '' : '&scope=empty');
+  var acts = '<a class="busy-button is-link" href="' + detailUrl + '"><span>详情</span></a>';
   if (t.status === '生效中' && own) {
     acts += '<button class="busy-button is-link" type="button" data-act="renew" data-id="' + t.id + '"><span>续期</span></button>';
   }
@@ -456,7 +460,7 @@ function rowHtml(t) {
     acts += '<button class="busy-button busy-button--danger is-link" type="button" data-act="revoke" data-id="' + t.id + '"><span>吊销</span></button>';
   }
   return '<tr data-id="' + t.id + '">' +
-    '<td><a href="token-detail.html?id=' + t.id + '">' + esc(t.name) + '</a></td>' +
+    '<td><a href="' + detailUrl + '">' + esc(t.name) + '</a></td>' +
     '<td class="u-mono">' + esc(t.prefix) + '…</td>' +
     (showHolder ? '<td>' + esc(t.holder) + '</td>' : '') +
     '<td>' + domains + '</td>' +

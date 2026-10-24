@@ -112,6 +112,10 @@
         <div class="busy-tabs__item" data-tab="研发工具">研发工具</div>
         <div class="busy-tabs__item" data-tab="数据库">数据库</div>
       </div>
+      <div class="busy-empty" id="scopeEmpty" hidden>
+        <div class="busy-empty__image">∅</div>
+        <div class="busy-empty__description">未配置授权范围，当前不能调用任何工具</div>
+      </div>
       <div data-scope-panel="业务系统">
         <table class="busy-table">
           <thead><tr><th>服务</th><th>工具名称</th><th>操作类型</th><th>状态</th></tr></thead>
@@ -162,7 +166,7 @@
       <div class="page-cfg-actions">
         <button class="busy-button busy-button--primary" type="button" id="btnCopyCfg"><span>复制配置</span></button>
         <button class="busy-button" type="button" id="btnDownloadCfg"><span>下载配置文件</span></button>
-        <span class="u-sub">仅包含已授权的领域；令牌明文仅在生成时展示</span>
+        <span class="u-sub" id="configHint">仅包含已授权的领域；令牌明文仅在生成时展示</span>
       </div>
     </div>
   </div>
@@ -303,7 +307,8 @@
 <script>
 /* ================= Mock 数据（刷新即重置） ================= */
 var MOCK_NOW = new Date(2026, 9, 21, 10, 30, 0);
-var MOCK_TOKEN = { name: 'SLS 排障', prefix: 'mmp_7Hq2…', createdAt: '2026-08-20 10:12' };
+var EMPTY_SCOPE = /[?&]scope=empty(&|$)/.test(location.search);
+var MOCK_TOKEN = { name: EMPTY_SCOPE ? '待配置令牌' : 'SLS 排障', prefix: 'mmp_7Hq2…', createdAt: '2026-08-20 10:12' };
 var MOCK_HOLDER = { self: '张研发', admin: '李产品' };
 var MOCK_VIEWER_NAME = '张研发';
 var MOCK_STATES = {
@@ -363,6 +368,12 @@ var MOCK_RECORDS = [
   { time: '2026-10-15 14:12:51.006', domain: '业务系统', service: '商品中心', tool: 'goods.query_sku', target: '', result: '成功', reason: '', cost: 586 },
   { time: '2026-10-12 10:08:33.770', domain: '业务系统', service: '门店服务', tool: 'store.query_store', target: '', result: '拒绝', reason: '超出分配范围', cost: 4 }
 ];
+if (EMPTY_SCOPE) {
+  MOCK_SCOPE_BIZ.length = 0;
+  MOCK_SCOPE_DEV.length = 0;
+  MOCK_SCOPE_DB.length = 0;
+  MOCK_RECORDS.length = 0;
+}
 var TOKEN_PLACEHOLDER = '<请填入令牌>';
 var MCP_GATEWAY = 'https://devhub.busyming.com/mcp/';
 
@@ -756,6 +767,12 @@ renderBase();
 renderToolScope(MOCK_SCOPE_BIZ, 'scopeBizBody');
 renderDevScope();
 renderDbScope();
+if (EMPTY_SCOPE) {
+  document.getElementById('scopeTabs').hidden = true;
+  document.querySelectorAll('[data-scope-panel]').forEach(function (p) { p.hidden = true; });
+  document.getElementById('scopeEmpty').hidden = false;
+  document.getElementById('configHint').textContent = '当前配置不包含服务条目；获得权限后需编辑授权范围';
+}
 renderConfig();
 renderRecords(filterRecords());
 </script>

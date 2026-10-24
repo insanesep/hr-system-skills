@@ -37,7 +37,6 @@
   .page-dev-group { display: flex; flex-direction: column; gap: 4px; }
   .page-dev-group__head { padding: 0 8px; }
   .page-node-check-placeholder { display: inline-block; width: 14px; }
-  .page-noperm .busy-result { padding: 48px 24px; }
   .page-dialog-result .busy-result { padding: 8px 0 16px; }
   .page-dialog-result .busy-dialog__body { display: flex; flex-direction: column; gap: 12px; }
   .page-dialog-result .busy-form-item { margin-bottom: 0; }
@@ -73,14 +72,6 @@
       <a class="tpl-page-head__back" href="token-list.html" id="backLink">‹ 返回我的令牌</a>
       <h1 class="tpl-page-title" id="pageTitle">生成令牌</h1>
       <div class="tpl-page-subtitle" id="pageSubtitle">带 <b class="u-danger">*</b> 为必填项；Mock 数据，刷新即重置 · 演示：<a href="token-form.html?mode=edit" id="modeLink">编辑模式（?mode=edit）</a> · ?empty=devtools 某领域未分配 · <a href="token-form.html?noperm=1">?noperm=1 未被分配权限</a> · ?fail=1 提交失败</div>
-    </div>
-  </div>
-
-  <!-- 三个领域均无分配：整页 Result -->
-  <div class="tpl-panel page-noperm" id="noPermPanel" hidden>
-    <div class="busy-result">
-      <div class="busy-result__icon is-warning">!</div>
-      <div class="busy-result__title">你还没有被分配 MCP 权限，请联系权限管理员分配</div>
     </div>
   </div>
 
@@ -122,6 +113,7 @@
   <div class="tpl-panel" data-form-panel>
     <div class="tpl-section" id="scopeSection">
       <div class="tpl-section__head">授权范围</div>
+      <div class="tpl-panel__subtitle">ⓘ 授权范围可不选，未配置时令牌不能调用任何工具；获得权限后可编辑授权范围</div>
       <div class="busy-tabs" id="domainTabs" role="tablist">
         <div class="busy-tabs__item is-active" role="tab" data-domain="business">业务系统（<span data-count="business">0</span>）</div>
         <div class="busy-tabs__item" role="tab" data-domain="devtools">研发工具（<span data-count="devtools">0</span>）</div>
@@ -140,7 +132,6 @@
         <div class="tpl-panel__subtitle">ⓘ 可选范围来自权限管理员为你分配的权限</div>
         <div class="busy-tree page-tree" id="tree-database"></div>
       </div>
-      <div class="busy-form-item__error" id="scopeError" hidden>请至少选择一项授权范围</div>
     </div>
   </div>
 
@@ -150,9 +141,9 @@
       <div class="tpl-section__head">已选汇总</div>
       <table class="busy-descriptions is-border page-summary">
         <tbody>
-          <tr><th>业务系统</th><td id="sumBusiness">未选择</td></tr>
-          <tr><th>研发工具</th><td id="sumDevtools">未选择</td></tr>
-          <tr><th>数据库</th><td id="sumDatabase">未选择</td></tr>
+          <tr><th>业务系统</th><td id="sumBusiness">未配置</td></tr>
+          <tr><th>研发工具</th><td id="sumDevtools">未配置</td></tr>
+          <tr><th>数据库</th><td id="sumDatabase">未配置</td></tr>
         </tbody>
       </table>
     </div>
@@ -188,6 +179,7 @@
         </div>
       </div>
       <div class="u-danger u-strong">⚠ 令牌仅展示这一次，关闭后无法再次查看，请立即复制保存</div>
+      <div class="tpl-panel__subtitle" id="emptyScopeResult" hidden>当前未配置授权范围，不能调用任何工具；获得权限后可编辑授权范围</div>
       <div class="tpl-section">
         <div class="tpl-section__head">MCP 配置</div>
         <div class="busy-radio-group page-radio-buttons" id="clientGroup">
@@ -236,7 +228,7 @@ var IS_EDIT = /[?&]mode=edit(&|$)/.test(QS);
 var MOCK_FAIL = /[?&]fail=1(&|$)/.test(QS);
 var EMPTY_MATCH = QS.match(/[?&]empty=(business|devtools|database)(&|$)/);
 var EMPTY_DOMAIN = EMPTY_MATCH ? EMPTY_MATCH[1] : '';
-/* 未被分配任何 MCP 权限：仅生成模式演示整页 Result */
+/* 未被分配任何 MCP 权限：仍可生成空权限令牌 */
 var NO_PERM = !IS_EDIT && /[?&]noperm=1(&|$)/.test(QS);
 
 /* 本人未吊销令牌名称（唯一性校验用） */
@@ -483,7 +475,7 @@ function selectedDomains() { return DOMAIN_ORDER.filter(function (d) { return do
 
 function renderSummary() {
   var b = bizStats(), d = devStats(), db = dbStats();
-  $('sumBusiness').textContent = b.tools ? (b.services + ' 个服务 · ' + b.tools + ' 个工具' + (b.writes ? '（含写入类 ' + b.writes + ' 个）' : '')) : '未选择';
+  $('sumBusiness').textContent = b.tools ? (b.services + ' 个服务 · ' + b.tools + ' 个工具' + (b.writes ? '（含写入类 ' + b.writes + ' 个）' : '')) : '未配置';
   var devParts = [];
   DEV_GROUPS.forEach(function (g) {
     var gs = d[g.key];
@@ -492,10 +484,9 @@ function renderSummary() {
     if (gs.resources) seg.push(gs.resources + ' 个' + g.unit);
     if (seg.length) devParts.push(g.label + '：' + seg.join('、'));
   });
-  $('sumDevtools').textContent = devParts.length ? devParts.join(' · ') : '未选择';
-  $('sumDatabase').textContent = db.tables ? (db.instances + ' 个实例 · ' + db.dbs + ' 个库 · ' + db.tables + ' 张表' + (db.autoNew ? '（' + db.autoNew + ' 个实例 / 库含后续开放表）' : '')) : '未选择';
+  $('sumDevtools').textContent = devParts.length ? devParts.join(' · ') : '未配置';
+  $('sumDatabase').textContent = db.tables ? (db.instances + ' 个实例 · ' + db.dbs + ' 个库 · ' + db.tables + ' 张表' + (db.autoNew ? '（' + db.autoNew + ' 个实例 / 库含后续开放表）' : '')) : '未配置';
   DOMAIN_ORDER.forEach(function (k) { document.querySelector('[data-count="' + k + '"]').textContent = domainCount(k); });
-  if (selectedDomains().length) $('scopeError').hidden = true;
 }
 
 /* ===================== 树渲染 ===================== */
@@ -830,7 +821,6 @@ function validateAll() {
   showNameError(nErr);
   if (nErr) first = first || $('nameItem');
   if (!IS_EDIT && [7, 30, 90, 180].indexOf(state.validity) < 0) { $('validityError').hidden = false; first = first || $('validityItem'); }
-  if (!selectedDomains().length) { $('scopeError').hidden = false; first = first || $('scopeSection'); }
   if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
   return !first;
 }
@@ -847,7 +837,7 @@ function editHadDomain(d) {
 }
 
 $('btnSubmit').addEventListener('click', function () {
-  if (submitting || NO_PERM) return;
+  if (submitting) return;
   if (!validateAll()) return;
   if (IS_EDIT) {
     var removed = DOMAIN_ORDER.filter(function (d) { return editHadDomain(d) && domainCount(d) === 0; });
@@ -933,6 +923,7 @@ function openResult() {
   document.querySelectorAll('#clientGroup .busy-radio-button').forEach(function (b) { b.classList.toggle('is-checked', b.getAttribute('data-value') === client); });
   $('resultTitle').textContent = '令牌「' + $('nameInput').value.trim() + '」已生成';
   $('tokenPlain').value = tokenPlain;
+  $('emptyScopeResult').hidden = selectedDomains().length > 0;
   renderConfig();
   $('resultOverlay').hidden = false;
 }
@@ -1027,14 +1018,6 @@ if (IS_EDIT) {
   $('btnSubmit').innerHTML = '<span>保存授权范围</span>';
   $('modeLink').textContent = '生成模式';
   $('modeLink').setAttribute('href', 'token-form.html');
-}
-/* 三个领域均无分配：整页 Result 提示，生成按钮置灰 */
-if (NO_PERM || (!IS_EDIT && !visibleServices().length && !devHasAny() && !DB_INSTANCES.length)) {
-  NO_PERM = true;
-  $('noPermPanel').hidden = false;
-  document.querySelectorAll('[data-form-panel]').forEach(function (p) { p.hidden = true; });
-  $('btnSubmit').disabled = true;
-  $('btnSubmit').classList.add('is-disabled');
 }
 $('nameInput').value = state.name;
 updatePreview();
