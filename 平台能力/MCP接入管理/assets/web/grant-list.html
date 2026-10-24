@@ -7,9 +7,9 @@
 <!--
   MCP接入管理 · 权限分配（archive-list · 静态原型，Mock 数据，刷新即重置）
   需求真源：references/web-ui.md「权限分配」；规则：references/permission-rules.md §2、references/audit-rules.md §6、references/devtool-rules.md §2.1
-  权限：路由与按钮 devhubMcpGrant（分配权限、批量分配、变更记录）；当前用户「李管理」为权限管理员
-  布局流：页头（标题 + 批量分配）→ 筛选卡 → 表格卡（批量条 → busy-table → 分页）
-  浮层：变更记录抽屉（tpl-timeline）、Message 轻提示
+  权限：路由与按钮 devhubMcpGrant（新建分配、分配权限、批量分配、变更记录）；当前用户「李管理」为权限管理员
+  布局流：页头（标题 + 新建分配 + 批量分配）→ 筛选卡 → 表格卡（批量条 → busy-table → 分页）
+  浮层：新建分配人员选择弹窗、变更记录抽屉（tpl-timeline）、Message 轻提示
   DOM 骨架依据：busyming-skills-design/templates/web/archive-list.html
   URL 约定（Mock）：?resource=<资源名称> 由研发工具资源页「已分配人数」带入分配对象筛选；?fail=1 演示查询 / 变更记录加载失败
 -->
@@ -31,6 +31,7 @@
   .page-drawer .busy-loading-mask { z-index: 10; }
   .page-drawer-head { display: flex; align-items: baseline; gap: 12px; }
   .page-drawer-head .busy-drawer__title { flex: none; }
+  .page-dialog--create { width: 480px; margin-top: 14vh; }
   .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
   .page-message-host .busy-message { position: static; white-space: nowrap; max-width: none; }
   .page-dropdown { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; }
@@ -81,8 +82,9 @@
       <div class="tpl-page-subtitle">Mock 数据，刷新即重置</div>
     </div>
     <div class="tpl-page-head__actions">
+      <button class="busy-button busy-button--primary" type="button" id="btnNewGrant"><span>新建分配</span></button>
       <span class="page-tip-host has-tip" id="batchHeadHost">
-        <button class="busy-button busy-button--primary is-disabled" type="button" id="btnBatchHead" disabled><span>批量分配</span></button>
+        <button class="busy-button is-disabled" type="button" id="btnBatchHead" disabled><span>批量分配</span></button>
         <span class="busy-tooltip page-tip page-tip--end" role="tooltip" id="batchHeadTip">请先勾选人员</span>
       </span>
     </div>
@@ -213,6 +215,33 @@
     </div>
   </div>
 </section>
+
+<!-- 新建分配：选择人员后进入单人分配表单 -->
+<div class="page-overlay busy-overlay-demo" id="createOverlay" hidden>
+  <div class="busy-dialog page-dialog--create" role="dialog" aria-modal="true" aria-labelledby="createTitle">
+    <div class="busy-dialog__header">
+      <span class="busy-dialog__title" id="createTitle">新建权限分配</span>
+      <button class="busy-dialog__close" type="button" id="createClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="busy-dialog__body">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">被分配人</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="createUser" data-value="">
+            <div class="busy-input"><input readonly placeholder="请选择人员" aria-label="被分配人"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" id="createUserList" hidden></div>
+          </div>
+          <div class="busy-form-item__error" id="createUserError" hidden>请选择被分配人</div>
+        </div>
+      </div>
+      <div class="tpl-panel__subtitle">进入分配表单后可新增或收回该人员的权限；不能为自己分配权限</div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" id="createCancel"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="createNext"><span>下一步</span></button>
+    </div>
+  </div>
+</div>
 
 <!-- 变更记录抽屉 -->
 <div class="page-overlay page-overlay--drawer busy-overlay-demo" id="logOverlay" hidden>
@@ -740,7 +769,31 @@ $('fUserList').innerHTML = '<div class="busy-select-dropdown__item" data-value="
 $('fBizDomainList').innerHTML = '<div class="busy-select-dropdown__item is-selected" data-value="">全部</div>' + BIZ_DOMAINS.map(function (d) {
   return '<div class="busy-select-dropdown__item" data-value="' + d + '">' + d + '</div>';
 }).join('');
-['fUser', 'fDept', 'fArea', 'fBizDomain', 'fStatus'].forEach(function (id) { bindSelect($(id)); });
+$('createUserList').innerHTML = PEOPLE.filter(function (p) { return p.id !== SELF_ID; }).map(function (p) {
+  return '<div class="busy-select-dropdown__item" data-value="' + p.id + '" data-label="' + esc(p.name) + '">' + esc(p.name) +
+    '<span class="u-sub page-user-meta">' + p.id + ' · ' + esc(p.dept) + '</span></div>';
+}).join('');
+['fUser', 'fDept', 'fArea', 'fBizDomain', 'fStatus', 'createUser'].forEach(function (id) { bindSelect($(id)); });
+
+/* ===================== 新建分配 ===================== */
+function closeCreate() {
+  closeAllDropdowns();
+  $('createOverlay').hidden = true;
+}
+$('btnNewGrant').addEventListener('click', function () {
+  setSelectValue($('createUser'), '');
+  $('createUserError').hidden = true;
+  $('createOverlay').hidden = false;
+});
+$('createUserList').addEventListener('click', function () { $('createUserError').hidden = true; });
+$('createNext').addEventListener('click', function () {
+  var userId = $('createUser').getAttribute('data-value');
+  if (!userId) { $('createUserError').hidden = false; return; }
+  location.href = 'grant-form.html?user=' + userId;
+});
+$('createClose').addEventListener('click', closeCreate);
+$('createCancel').addEventListener('click', closeCreate);
+$('createOverlay').addEventListener('click', function (e) { if (e.target === $('createOverlay')) closeCreate(); });
 
 /* ===================== 查询 / 重置 ===================== */
 function readFilter() {
@@ -812,7 +865,11 @@ function openLog(id) {
 function closeLog() { clearTimeout(logTimer); $('logOverlay').hidden = true; }
 $('logClose').addEventListener('click', closeLog);
 $('logOverlay').addEventListener('click', function (e) { if (e.target === $('logOverlay')) closeLog(); });
-document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('logOverlay').hidden) closeLog(); });
+document.addEventListener('keydown', function (e) {
+  if (e.key !== 'Escape') return;
+  if (!$('logOverlay').hidden) closeLog();
+  if (!$('createOverlay').hidden) closeCreate();
+});
 
 /* ===================== 初始化 ===================== */
 (function init() {

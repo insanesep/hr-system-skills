@@ -50,7 +50,7 @@ DevHub 统一的 MCP 接入入口：权限管理员按人分配业务系统、�
 | 我的令牌 | 本人令牌列表、续期、吊销、查看我的权限与变更；管理员切换全部令牌并吊销他人令牌 | `assets/web/token-list.html` |
 | 生成令牌 | 可生成空权限令牌；在本人已分配权限内按三个领域自主勾选授权范围；生成后一次性展示令牌明文与 MCP 配置；复用为编辑授权范围 | `assets/web/token-form.html` |
 | 令牌详情 | 基本信息、授权范围及其可用性、MCP 接入配置复制与下载、本令牌近 30 天调用记录 | `assets/web/token-detail.html` |
-| 权限分配 | 按人员查看已分配权限概览、到期情况，进入单人或批量分配，查看授权变更记录 | `assets/web/grant-list.html` |
+| 权限分配 | 按人员查看已分配权限概览、到期情况，可直接新建单人分配或批量分配，查看授权变更记录 | `assets/web/grant-list.html` |
 | 分配权限 | 为单人增删或为多人追加业务系统、研发工具（按业务域 / 资源）、数据库权限，设置有效期与高风险理由 | `assets/web/grant-form.html` |
 | MCP 服务目录 | 登记业务系统 / 研发工具 MCP 服务、同步工具清单、标注写入类工具、服务与工具启停 | `assets/web/service-list.html` |
 | 研发工具资源 | 同步 SLS 日志库与 ARMS 应用，按归属规则或手工划分业务域与环境，控制开放 | `assets/web/devtool-resources.html` |
