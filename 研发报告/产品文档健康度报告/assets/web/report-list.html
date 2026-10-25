@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报告列表 · 产品文档健康度报告 · Web 原型</title>
+<!--
+  产品文档健康度报告 · 报告列表（Web 管理端 · 静态原型，数据为 Mock）
+  页面描述真源：../../references/web-ui.md#报告列表 ｜ 路由 /subapp/devhub/report/doc-health
+  页面类型：列表页（按周索引 / 报告明细）｜ 骨架依据：busyming-skills-design/templates/web/archive-list.html
+  权限：路由 devhubDocHealthReport；立即生成 devhubReportTrigger；不提供手动补传
+  Mock 基准日：2026-10-18（周日）；启用项目 product / devops，不设置 _all 汇总项
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+.health-kpi-grid { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 12px; }
+.health-kpi-grid .tpl-kpi__value { font-size: 26px; }
+.health-kpi-grid .tpl-kpi__value--date { font-size: 20px; }
+.tpl-acc-head { cursor: pointer; user-select: none; }
+.tpl-acc-meta { margin-left: auto; }
+.health-row--missing { background: var(--busy-bg-subtle); color: var(--busy-text-quaternary); }
+.health-score { font-weight: var(--busy-font-weight-medium); }
+.health-score--good { color: var(--busy-color-success); }
+.health-score--warn { color: var(--busy-color-warning); }
+.health-fail { color: var(--busy-color-danger); }
+.tpl-mask { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .35); }
+.tpl-dialog--400 { width: 400px; }
+.tpl-pop-anchor { position: relative; }
+.tpl-select-pop { position: absolute; z-index: 300; top: 40px; left: 0; right: 0; background: var(--busy-bg-color-overlay); border: 1px solid var(--busy-border-color-lighter); border-radius: var(--busy-border-radius-base); box-shadow: var(--busy-popper-shadow-light); }
+.tpl-select-pop__item { padding: 8px 12px; cursor: pointer; }
+.tpl-confirm-body { display: flex; gap: 10px; align-items: flex-start; }
+.tpl-confirm-icon { color: var(--busy-color-warning); flex-shrink: 0; }
+.tpl-toast-host { position: fixed; top: 64px; left: 0; right: 0; z-index: 400; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+.tpl-loading { padding: 32px; text-align: center; color: var(--busy-text-tertiary); }
+@media (max-width: 1200px) { .health-kpi-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / <b>产品文档健康度报告</b></span>
+  <span class="tpl-nav__spacer"></span><span class="tpl-nav__crumb">管理员</span>
+</nav>
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">产品文档健康度报告</h1>
+      <div class="tpl-page-subtitle">每周全量只读评估 · 客观评分用于环比，AI 辅助诊断不计分 · Mock 数据</div>
+    </div>
+  </div>
+
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="busy-form-item"><div class="busy-form-item__label">项目</div><div class="busy-form-item__content">
+        <div class="busy-select tpl-pop-anchor" data-select="project"><div class="busy-input"><input readonly value="全部" id="projectInput"></div><span class="busy-select__caret">▾</span></div>
+      </div></div>
+      <div class="busy-form-item tpl-filter__item--wide"><div class="busy-form-item__label">发报日期</div><div class="busy-form-item__content">
+        <div class="busy-date-editor busy-range-editor busy-input"><input readonly id="dateInput" value="2026-07-20 ~ 2026-10-18"></div>
+      </div></div>
+      <div class="busy-form-item"><div class="busy-form-item__label">关键词</div><div class="busy-form-item__content">
+        <div class="busy-input"><input placeholder="报告标题模糊搜索" id="keywordInput"></div>
+      </div></div>
+      <div class="tpl-filter__actions"><button class="busy-button busy-button--primary" id="btnQuery"><span>查 询</span></button><button class="busy-button" id="btnReset"><span>重 置</span></button></div>
+    </div>
+  </div>
+
+  <div class="tpl-panel">
+    <div class="health-kpi-grid">
+      <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">本周已入库</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">1/2</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">第 42 周 · 1 项待补</span></div></div>
+      <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">最近发报日</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value health-kpi-grid__date tpl-kpi__value--date u-mono">2026-10-18</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">服务端每周日生成</span></div></div>
+      <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">仓库平均综合分</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">84.3</span><span class="tpl-kpi__unit">分</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">最近一期各项目最新报告</span></div></div>
+      <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">模块 FAIL</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value health-fail">3</span><span class="tpl-kpi__unit">个</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">原始分保留，门禁独立判定</span></div></div>
+      <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">全量自校未通过</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">1</span><span class="tpl-kpi__unit">份</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">缺口在详情页置顶提示</span></div></div>
+    </div>
+    <hr class="tpl-divider">
+    <div class="busy-tabs" id="viewTabs"><div class="busy-tabs__item is-active" data-view="week">按周索引</div><div class="busy-tabs__item" data-view="flat">报告明细</div></div>
+    <div class="tpl-loading" id="tableLoading" hidden>正在加载报告…</div>
+    <div id="weekPanel"><div class="tpl-section" id="weekGroups"></div></div>
+    <div id="flatPanel" hidden><table class="busy-table"><thead><tr><th>发报日</th><th>所属周</th><th>项目</th><th>报告标题</th><th>仓库平均分</th><th>模块 FAIL</th><th>全量自校</th><th>来源</th><th>版本</th><th>操作</th></tr></thead><tbody id="flatRows"></tbody></table></div>
+    <div class="busy-empty" id="emptyState" hidden><div>该条件下暂无报告</div></div>
+  </div>
+</section>
+
+<div class="tpl-mask" id="triggerDialog" hidden>
+  <div class="busy-dialog tpl-dialog--400" role="dialog" aria-modal="true" aria-label="立即生成">
+    <div class="busy-dialog__header"><span class="busy-dialog__title">立即生成</span><button class="busy-dialog__close" data-close="triggerDialog">✕</button></div>
+    <div class="busy-dialog__body tpl-confirm-body"><span class="tpl-confirm-icon">!</span><span id="triggerText"></span></div>
+    <div class="busy-dialog__footer"><button class="busy-button" data-close="triggerDialog"><span>取 消</span></button><button class="busy-button busy-button--primary" id="triggerOk"><span>确 定</span></button></div>
+  </div>
+</div>
+<div class="tpl-toast-host" id="toastHost"></div>
+<script>
+var PROJECTS = [{ key: 'product', name: '商品中心' }, { key: 'devops', name: '产研平台' }];
+var WEEKS = [
+  { id: 'w42', label: '2026 年第 42 周（10-12 ~ 10-18）' },
+  { id: 'w41', label: '2026 年第 41 周（10-05 ~ 10-11）' },
+  { id: 'w40', label: '2026 年第 40 周（09-28 ~ 10-04）' }
+];
+var REPORTS = [
+  { id: 'h42p', week: 'w42', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-18', date: '2026-10-18', score: 86.4, fail: 1, audit: '通过', source: '服务端生成', version: 'v2' },
+  { id: 'h42d', week: 'w42', project: 'devops', missing: true },
+  { id: 'h41p', week: 'w41', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-11', date: '2026-10-11', score: 81.2, fail: 2, audit: '通过', source: '服务端生成', version: 'v1' },
+  { id: 'h41d', week: 'w41', project: 'devops', title: '产品文档健康度报告（产研平台） - 2026-10-11', date: '2026-10-11', score: 82.1, fail: 1, audit: '未通过', source: '推送上报', version: 'v1' },
+  { id: 'h40p', week: 'w40', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-04', date: '2026-10-04', score: 79.8, fail: 2, audit: '通过', source: '服务端生成', version: 'v1' },
+  { id: 'h40d', week: 'w40', project: 'devops', title: '产品文档健康度报告（产研平台） - 2026-10-04', date: '2026-10-04', score: 84.7, fail: 0, audit: '通过', source: '服务端生成', version: 'v1' }
+];
+var state = { view: 'week', project: '', keyword: '', range: '2026-07-20 ~ 2026-10-18' };
+var collapsed = {};
+function projectName(key) { var p = PROJECTS.find(function (x) { return x.key === key; }); return p ? p.name : key; }
+function toast(text, type) { var el = document.createElement('div'); el.className = 'busy-message busy-message--' + (type || 'success'); el.textContent = text; document.getElementById('toastHost').appendChild(el); setTimeout(function () { el.remove(); }, 2600); }
+function scoreHtml(score) { return '<span class="health-score ' + (score >= 85 ? 'health-score--good' : 'health-score--warn') + ' u-mono">' + score.toFixed(1) + '</span>'; }
+function filtered() {
+  var range = state.range.match(/(\d{4}-\d{2}-\d{2})\s*~\s*(\d{4}-\d{2}-\d{2})/);
+  return REPORTS.filter(function (r) {
+    if (state.project && r.project !== state.project) return false;
+    if (state.keyword && (r.missing || r.title.indexOf(state.keyword) < 0)) return false;
+    if (!r.missing && range && (r.date < range[1] || r.date > range[2])) return false;
+    return true;
+  });
+}
+function actions(r) { return '<div class="tpl-row-actions"><a href="report-detail.html"><button class="busy-button is-link"><span>查看</span></button></a><button class="busy-button is-link" data-download="' + r.id + '"><span>获取原件</span></button></div>'; }
+function weekRow(r) {
+  if (r.missing) return '<tr class="health-row--missing"><td>本周报告未入库</td><td>' + projectName(r.project) + '</td><td>—</td><td>—</td><td>—</td><td>—</td><td>—</td><td><div class="tpl-row-actions"><button class="busy-button is-link" data-trigger="' + r.project + '" data-perm="devhubReportTrigger"><span>立即生成</span></button></div></td></tr>';
+  return '<tr><td><a href="report-detail.html">' + r.title + '</a></td><td>' + projectName(r.project) + '</td><td class="u-mono">' + r.date + '</td><td>' + scoreHtml(r.score) + '</td><td class="u-mono ' + (r.fail ? 'health-fail' : '') + '">' + r.fail + '</td><td>' + r.source + '</td><td class="u-mono">' + r.version + '</td><td>' + actions(r) + '</td></tr>';
+}
+function renderWeek(data) {
+  var html = '';
+  WEEKS.forEach(function (w) {
+    var rows = data.filter(function (r) { return r.week === w.id; });
+    if (!rows.length) return;
+    var got = rows.filter(function (r) { return !r.missing; }).length;
+    var open = !collapsed[w.id];
+    html += '<div class="tpl-section"><div class="tpl-section__head tpl-acc-head" data-fold="' + w.id + '"><span class="u-muted">' + (open ? '▾' : '▸') + '</span><span>' + w.label + '</span><span class="busy-tag busy-tag--' + (got === 2 ? 'success' : 'warning') + ' is-plain">' + got + '/2' + (got === 2 ? '' : ' 待补') + '</span><span class="u-sub tpl-acc-meta">启用项目 2 个</span></div><div data-fold-body="' + w.id + '"' + (open ? '' : ' hidden') + '><table class="busy-table"><thead><tr><th>报告标题</th><th>项目</th><th>发报日</th><th>仓库平均分</th><th>模块 FAIL</th><th>来源</th><th>版本</th><th>操作</th></tr></thead><tbody>' + rows.map(weekRow).join('') + '</tbody></table></div></div>';
+  });
+  document.getElementById('weekGroups').innerHTML = html;
+}
+function renderFlat(data) {
+  document.getElementById('flatRows').innerHTML = data.filter(function (r) { return !r.missing; }).map(function (r) {
+    var week = WEEKS.find(function (w) { return w.id === r.week; }).label.split('（')[0];
+    return '<tr><td class="u-mono">' + r.date + '</td><td>' + week + '</td><td>' + projectName(r.project) + '</td><td><a href="report-detail.html">' + r.title + '</a></td><td>' + scoreHtml(r.score) + '</td><td class="u-mono">' + r.fail + '</td><td><span class="busy-tag busy-tag--' + (r.audit === '通过' ? 'success' : 'danger') + ' is-plain">' + r.audit + '</span></td><td>' + r.source + '</td><td class="u-mono">' + r.version + '</td><td>' + actions(r) + '</td></tr>';
+  }).join('');
+}
+function bindRows() {
+  document.querySelectorAll('[data-download]').forEach(function (b) { b.onclick = function () { var r = REPORTS.find(function (x) { return x.id === b.getAttribute('data-download'); }); var name = 'doc_health_' + r.date.replace(/-/g, '') + '_' + r.project + '.md'; var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['# ' + r.title + '\n\n（Mock 原始文件）\n'], { type: 'text/markdown' })); a.download = name; a.click(); URL.revokeObjectURL(a.href); toast('已开始下载 ' + name); }; });
+  document.querySelectorAll('[data-trigger]').forEach(function (b) { b.onclick = function () { document.getElementById('triggerText').textContent = '将为项目「' + projectName(b.getAttribute('data-trigger')) + '」创建每周全量只读评估任务，计划发报日 2026-10-18。'; document.getElementById('triggerDialog').hidden = false; }; });
+  document.querySelectorAll('[data-fold]').forEach(function (h) { h.onclick = function () { var id = h.getAttribute('data-fold'); collapsed[id] = !collapsed[id]; render(); }; });
+}
+function render() { var data = filtered(); renderWeek(data); renderFlat(data); document.getElementById('emptyState').hidden = data.length > 0; bindRows(); }
+function withLoading(fn) { document.getElementById('weekPanel').hidden = true; document.getElementById('flatPanel').hidden = true; document.getElementById('tableLoading').hidden = false; setTimeout(function () { fn(); document.getElementById('tableLoading').hidden = true; document.getElementById('weekPanel').hidden = state.view !== 'week'; document.getElementById('flatPanel').hidden = state.view !== 'flat'; }, 350); }
+document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (t) { t.onclick = function () { document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (x) { x.classList.remove('is-active'); }); t.classList.add('is-active'); state.view = t.getAttribute('data-view'); withLoading(function () {}); }; });
+function query() { state.project = document.getElementById('projectInput').value === '全部' ? '' : document.getElementById('projectInput').value.split(' · ')[1]; state.keyword = document.getElementById('keywordInput').value.trim(); state.range = document.getElementById('dateInput').value; withLoading(function () { render(); toast('查询完成'); }); }
+document.getElementById('btnQuery').onclick = query;
+document.getElementById('keywordInput').onkeydown = function (e) { if (e.key === 'Enter') query(); };
+document.getElementById('btnReset').onclick = function () { document.getElementById('projectInput').value = '全部'; document.getElementById('keywordInput').value = ''; document.getElementById('dateInput').value = '2026-07-20 ~ 2026-10-18'; state.project = ''; state.keyword = ''; state.range = '2026-07-20 ~ 2026-10-18'; render(); toast('筛选条件已重置', 'info'); };
+var SELECTS = { project: { input: 'projectInput', opts: ['全部', '商品中心 · product', '产研平台 · devops'] } };
+document.querySelectorAll('[data-select]').forEach(function (sel) {
+  var config = SELECTS[sel.getAttribute('data-select')]; var dd = document.createElement('div'); dd.className = 'tpl-select-pop'; dd.hidden = true;
+  config.opts.forEach(function (opt) { var item = document.createElement('div'); item.className = 'tpl-select-pop__item'; item.textContent = opt; item.onclick = function (e) { e.stopPropagation(); document.getElementById(config.input).value = opt; dd.hidden = true; }; dd.appendChild(item); });
+  sel.appendChild(dd); sel.querySelector('.busy-input').onclick = function (e) { e.stopPropagation(); document.querySelectorAll('.tpl-select-pop').forEach(function (x) { if (x !== dd) x.hidden = true; }); dd.hidden = !dd.hidden; };
+});
+document.addEventListener('click', function () { document.querySelectorAll('.tpl-select-pop').forEach(function (x) { x.hidden = true; }); });
+document.getElementById('triggerOk').onclick = function () { document.getElementById('triggerDialog').hidden = true; toast('已创建生成任务，进度见报告触发配置的生成记录'); };
+document.querySelectorAll('[data-close]').forEach(function (b) { b.onclick = function () { document.getElementById(b.getAttribute('data-close')).hidden = true; }; });
+document.querySelectorAll('.tpl-mask').forEach(function (m) { m.onclick = function (e) { if (e.target === m) m.hidden = true; }; });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape') document.querySelectorAll('.tpl-mask').forEach(function (m) { m.hidden = true; }); });
+render();
+</script>
+</body>
+</html>

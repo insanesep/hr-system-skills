@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>报告详情 · 产品文档健康度报告 · Web 原型</title>
+<!--
+  产品文档健康度报告 · 报告详情（Web 管理端 · 静态原型，数据为 Mock）
+  页面描述真源：../../references/web-ui.md#报告详情 ｜ 路由 /subapp/devhub/report/doc-health/detail/:id
+  页面类型：评分与阅读结合｜骨架依据：busyming-skills-design/templates/web/archive-detail.html
+  客观评分、硬门禁与 AI 诊断分区展示；AI 固定不计分；修复建议只读，不提供自动修复入口
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+.tpl-page-title__tag { vertical-align: middle; }
+.health-meta th { width: 112px; }
+.health-version { width: 250px; position: relative; }
+.tpl-select-pop { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; background: var(--busy-bg-color-overlay); }
+.health-summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; margin-bottom: 16px; }
+.health-summary .tpl-kpi__value { font-size: 26px; }
+.health-dual { display: grid; grid-template-columns: minmax(0, 1fr) 220px; gap: 16px; align-items: start; }
+.health-reading { min-width: 0; }
+.health-outline { position: sticky; top: 16px; display: flex; flex-direction: column; gap: 2px; }
+.health-outline__link { padding: 7px 9px; border-radius: var(--busy-border-radius-base); color: var(--busy-text-secondary); font-size: var(--busy-font-size-small); cursor: pointer; }
+.health-outline__link.is-active { color: var(--busy-color-primary); background: var(--busy-color-primary-bg); }
+.health-section { scroll-margin-top: 20px; }
+.health-section h2 { margin-top: 0; }
+.health-section h3 { margin-top: 20px; }
+.health-toolbar { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; margin: 12px 0; }
+.health-toolbar__label { color: var(--busy-text-secondary); font-size: var(--busy-font-size-small); }
+.health-select { height: 32px; min-width: 130px; padding: 0 28px 0 10px; }
+.health-score { font-weight: var(--busy-font-weight-medium); font-size: 16px; }
+.health-score--up, .health-up { color: var(--busy-color-success); }
+.health-score--down, .health-down { color: var(--busy-color-danger); }
+.health-flat { color: var(--busy-text-tertiary); }
+.health-fail { color: var(--busy-color-danger); font-weight: var(--busy-font-weight-medium); }
+.health-evidence { max-width: 390px; white-space: normal; line-height: 1.65; }
+.health-table-wrap { overflow-x: auto; }
+.health-table-wrap .busy-table { min-width: 900px; }
+.health-module-name { min-width: 210px; }
+.health-dimension-row td { background: var(--busy-bg-subtle); padding: 0; }
+.health-dimensions { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 8px; padding: 12px; }
+.health-dimension { padding: 10px; background: var(--busy-bg-color-overlay); border: 1px solid var(--busy-border-color-lighter); border-radius: var(--busy-border-radius-base); }
+.health-dimension__name { color: var(--busy-text-secondary); font-size: var(--busy-font-size-extra-small); }
+.health-dimension__value { margin-top: 4px; font-family: var(--busy-font-family-mono); }
+.health-ai-head { display: flex; align-items: center; gap: 8px; }
+.health-no-score { flex-shrink: 0; }
+.health-fix-list { display: flex; flex-direction: column; gap: 12px; }
+.health-fix { border: 1px solid var(--busy-border-color-lighter); border-radius: var(--busy-border-radius-base); padding: 14px; }
+.health-fix__head { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+.health-fix__id { margin-left: auto; color: var(--busy-text-tertiary); }
+.health-fix__grid { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 7px 12px; color: var(--busy-text-secondary); line-height: 1.65; }
+.health-fix__label { color: var(--busy-text-tertiary); }
+.health-quote { padding: 10px 14px; border-left: 3px solid var(--busy-border-strong); background: var(--busy-bg-subtle); color: var(--busy-text-secondary); }
+.health-loading { position: absolute; inset: 0; z-index: 10; display: flex; align-items: center; justify-content: center; background: var(--busy-bg-color-overlay); color: var(--busy-text-tertiary); }
+.health-reading-panel { position: relative; }
+.tpl-toast-host { position: fixed; top: 64px; left: 0; right: 0; z-index: 400; display: flex; flex-direction: column; align-items: center; gap: 8px; pointer-events: none; }
+#article { padding-bottom: 45vh; }
+@media (max-width: 1100px) { .health-dual { grid-template-columns: 1fr; } .health-outline-panel { display: none; } .health-summary { grid-template-columns: repeat(2, 1fr); } }
+</style>
+</head>
+<body>
+<nav class="tpl-nav"><span class="tpl-nav__logo">鸣鸣很忙</span><span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / 产品文档健康度报告 / <b>报告详情</b></span><span class="tpl-nav__spacer"></span><span class="tpl-nav__crumb">管理员</span></nav>
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main"><a class="tpl-page-head__back" href="report-list.html">‹ 返回报告列表</a><h1 class="tpl-page-title">产品文档健康度报告（商品中心） - 2026-10-18 <span class="busy-tag tpl-page-title__tag">文档健康度</span> <span class="busy-tag busy-tag--info is-plain tpl-page-title__tag">商品中心</span></h1><div class="tpl-page-subtitle">每周全量只读评估 · 固定只读快照 · 客观评分与 AI 诊断分离</div></div>
+    <div class="tpl-page-head__actions"><button class="busy-button" id="btnDownload"><span>获取原件</span></button><a href="report-list.html"><button class="busy-button"><span>返回列表</span></button></a></div>
+  </div>
+  <div class="busy-message busy-message--warning" id="historyAlert" hidden>当前查看历史版本 v1（只读），最新版本为 v2；切换版本不重跑评估，也不改变归档。</div>
+  <div class="tpl-panel">
+    <table class="busy-descriptions is-border health-meta">
+      <tr><th>项目</th><td>商品中心（<span class="u-mono">product</span>）</td><th>发报日</th><td class="u-mono">2026-10-18</td><th>所属周</th><td>2026 年第 42 周</td></tr>
+      <tr><th>规则版本</th><td class="u-mono">doc-health-rules/v1.0.0</td><th>上期基线</th><td>2026-10-11 · v1</td><th>可比性</th><td><span class="busy-tag busy-tag--success is-plain">可比</span></td></tr>
+      <tr><th>各仓 commit</th><td colspan="3" class="u-mono">product 8fa21c7 · common 41d90b2 · design c772e10</td><th>来源</th><td>服务端生成</td></tr>
+      <tr><th>当前版本</th><td colspan="3"><div class="busy-select health-version" id="versionSelect"><div class="busy-input busy-input--small"><input readonly id="versionInput" value="v2 · 共 2 版"></div><span class="busy-select__caret">▾</span><div class="busy-select-dropdown tpl-select-pop" id="versionDropdown" hidden><div class="busy-select-dropdown__item is-selected" data-version="2">v2（当前 · 10-18 09:12 入库）</div><div class="busy-select-dropdown__item" data-version="1">v1（10-18 07:36 入库）</div></div></div><div class="u-sub">同发报日版本仅修正当次报告，不构成新评估批次</div></td><th>入库时间</th><td class="u-mono" id="archiveTime">2026-10-18 09:12</td></tr>
+      <tr><th>文件名</th><td colspan="5" class="u-mono">doc_health_20261018_product.md</td></tr>
+    </table>
+  </div>
+
+  <div class="health-summary">
+    <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">文件覆盖率</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">99.2</span><span class="tpl-kpi__unit">%</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">已完成 1,232 / 应检查 1,242</span></div></div>
+    <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">未判定 / 检查失败</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">10 / 0</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">未知项不静默遗漏，也不直接扣分</span></div></div>
+    <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">仓库平均综合分</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">86.4</span><span class="tpl-kpi__unit health-up">+5.2</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">当前全量结果 · 3 个需求仓</span></div></div>
+    <div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">全量自校</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value health-up">通过</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">文件与模块分类合计均已打平</span></div></div>
+  </div>
+
+  <div class="health-dual">
+    <div class="tpl-panel health-reading health-reading-panel" id="readingPanel">
+      <div class="health-loading" id="readingLoading" hidden>正在加载所选版本内容…</div>
+      <article id="article">
+        <blockquote class="health-quote">规则版本：doc-health-rules/v1.0.0｜评估方式：每周全量只读评估｜上期基线：2026-10-11 v1<br>可比性：可比｜说明：模块身份按仓库名 + 模块相对目录匹配</blockquote>
+
+        <section class="health-section" id="h-1"><h2>扫描覆盖完整性</h2><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>仓库</th><th>commit</th><th>profile</th><th>文件总数</th><th>应检查数</th><th>覆盖率</th><th>未判定</th><th>检查失败</th><th>自校结果</th></tr></thead><tbody>
+          <tr><td>busyming-skills-product</td><td class="u-mono">8fa21c7</td><td>BUSINESS</td><td class="u-mono">816</td><td class="u-mono">802</td><td class="u-mono">98.8%</td><td class="u-mono">10</td><td class="u-mono">0</td><td><span class="busy-tag busy-tag--success is-plain">通过</span></td></tr>
+          <tr><td>busyming-skills-common</td><td class="u-mono">41d90b2</td><td>COMMON</td><td class="u-mono">274</td><td class="u-mono">274</td><td class="u-mono">100%</td><td class="u-mono">0</td><td class="u-mono">0</td><td><span class="busy-tag busy-tag--success is-plain">通过</span></td></tr>
+          <tr><td>busyming-skills-design</td><td class="u-mono">c772e10</td><td>DESIGN</td><td class="u-mono">166</td><td class="u-mono">166</td><td class="u-mono">100%</td><td class="u-mono">0</td><td class="u-mono">0</td><td><span class="busy-tag busy-tag--success is-plain">通过</span></td></tr>
+        </tbody></table></div><p class="u-sub">文件分类：正常 1,168 + 例外 52 + 违规 12 + 排除 14 + 疑似 10 + 失败 0 + 特殊 0 = 文件总数 1,256。</p></section>
+
+        <section class="health-section" id="h-2"><h2>仓库综合评分与环比</h2><div class="health-toolbar"><span class="health-toolbar__label">变化筛选</span><select class="busy-input health-select" id="repoFilter"><option value="all">全部仓库</option><option value="down">仅下降</option><option value="block">新增阻断</option><option value="failed">检查失败</option></select></div><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>仓库</th><th>模块子分 M</th><th>治理子分 G</th><th>综合分 R</th><th>模块 FAIL</th><th>治理状态</th><th>上期综合分</th><th>差值</th></tr></thead><tbody id="repoRows">
+          <tr data-repo-state="up"><td>busyming-skills-product</td><td class="u-mono">86.0</td><td class="u-mono">76.0</td><td><span class="health-score u-mono">84.0</span></td><td class="health-fail u-mono">1</td><td><span class="busy-tag busy-tag--warning is-plain">存在问题</span></td><td class="u-mono">79.6</td><td class="health-up u-mono">+4.4</td></tr>
+          <tr data-repo-state="up"><td>busyming-skills-common</td><td class="u-mono">92.0</td><td class="u-mono">90.0</td><td><span class="health-score health-score--up u-mono">91.6</span></td><td class="u-mono">0</td><td><span class="busy-tag busy-tag--success is-plain">通过</span></td><td class="u-mono">86.2</td><td class="health-up u-mono">+5.4</td></tr>
+          <tr data-repo-state="block down"><td>busyming-skills-design</td><td class="u-mono">84.0</td><td class="u-mono">81.0</td><td><span class="health-score health-score--down u-mono">83.4</span></td><td class="health-fail u-mono">1</td><td><span class="busy-tag busy-tag--danger is-plain">阻断</span></td><td class="u-mono">89.0</td><td class="health-down u-mono">-5.6</td></tr>
+        </tbody></table></div><h3>仓库变化摘要</h3><ul><li>当前全量结果：3 个仓库平均综合分 86.4，模块 FAIL 2 个。</li><li>可比模块结果：两期同模块 18 个，提升 7 个、下降 3 个、持平 8 个。</li><li>治理能力变化：公共真源复述减少 4 项，新增 1 项断链阻断。</li></ul></section>
+
+        <section class="health-section" id="h-3"><h2>模块客观评分明细</h2><div class="health-toolbar"><span class="health-toolbar__label">仓库</span><select class="busy-input health-select" id="moduleRepo"><option value="all">全部</option><option value="product">product</option><option value="common">common</option><option value="design">design</option></select><span class="health-toolbar__label">变化</span><select class="busy-input health-select" id="moduleChange"><option value="all">全部</option><option value="up">提升</option><option value="down">下降</option><option value="flat">持平</option><option value="fail">新增 FAIL</option></select><div class="busy-input"><input id="moduleKeyword" placeholder="模块目录搜索"></div></div><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>模块</th><th>本次分</th><th>上次分</th><th>差值</th><th>变化状态</th><th>硬门禁</th><th>新增</th><th>持续</th><th>已消除</th><th>维度</th></tr></thead><tbody id="moduleRows">
+          <tr data-repo="product" data-change="up" data-name="商品中心/商品价格"><td class="health-module-name"><span class="u-sub">product</span><br>商品价格</td><td class="u-mono">91.0</td><td class="u-mono">83.0</td><td class="health-up u-mono">+8.0</td><td><span class="busy-tag busy-tag--success is-plain">提升</span></td><td>—</td><td class="u-mono">0</td><td class="u-mono">2</td><td class="u-mono">3</td><td><button class="busy-button is-link" data-dimensions="d1"><span>展开</span></button></td></tr>
+          <tr class="health-dimension-row" id="d1" hidden><td colspan="10"><div class="health-dimensions"><div class="health-dimension"><div class="health-dimension__name">D1 结构</div><div class="health-dimension__value">15 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D2 内容</div><div class="health-dimension__value">22 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D3 规则</div><div class="health-dimension__value">23 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D4 引用</div><div class="health-dimension__value">14 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D5 原型</div><div class="health-dimension__value">9 / 10</div></div><div class="health-dimension"><div class="health-dimension__name">D6 一致性</div><div class="health-dimension__value">8 / 10</div></div></div></td></tr>
+          <tr data-repo="product" data-change="down fail" data-name="商品中心/商品建档"><td class="health-module-name"><span class="u-sub">product</span><br>商品建档</td><td class="u-mono">78.0</td><td class="u-mono">86.0</td><td class="health-down u-mono">-8.0</td><td><span class="busy-tag busy-tag--danger is-plain">下降</span></td><td><span class="health-fail">G8</span></td><td class="u-mono">2</td><td class="u-mono">1</td><td class="u-mono">0</td><td><button class="busy-button is-link" data-dimensions="d2"><span>展开</span></button></td></tr>
+          <tr class="health-dimension-row" id="d2" hidden><td colspan="10"><div class="health-dimensions"><div class="health-dimension"><div class="health-dimension__name">D1 结构</div><div class="health-dimension__value">14 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D2 内容</div><div class="health-dimension__value">15 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D3 规则</div><div class="health-dimension__value">21 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D4 引用</div><div class="health-dimension__value">13 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D5 原型</div><div class="health-dimension__value">8 / 10</div></div><div class="health-dimension"><div class="health-dimension__name">D6 一致性</div><div class="health-dimension__value">7 / 10</div></div></div></td></tr>
+          <tr data-repo="common" data-change="up" data-name="公共能力/导出接入"><td class="health-module-name"><span class="u-sub">common</span><br>公共功能/导出接入</td><td class="u-mono">94.0</td><td class="u-mono">88.0</td><td class="health-up u-mono">+6.0</td><td><span class="busy-tag busy-tag--success is-plain">提升</span></td><td>—</td><td class="u-mono">0</td><td class="u-mono">1</td><td class="u-mono">2</td><td><button class="busy-button is-link" data-dimensions="d3"><span>展开</span></button></td></tr>
+          <tr class="health-dimension-row" id="d3" hidden><td colspan="10"><div class="health-dimensions"><div class="health-dimension"><div class="health-dimension__name">D1 结构</div><div class="health-dimension__value">15 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D2 内容</div><div class="health-dimension__value">24 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D3 规则</div><div class="health-dimension__value">24 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D4 引用</div><div class="health-dimension__value">14 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D5 原型</div><div class="health-dimension__value">9 / 10</div></div><div class="health-dimension"><div class="health-dimension__name">D6 一致性</div><div class="health-dimension__value">8 / 10</div></div></div></td></tr>
+          <tr data-repo="design" data-change="down fail" data-name="设计系统/Web 组件"><td class="health-module-name"><span class="u-sub">design</span><br>Web 组件</td><td class="u-mono">82.0</td><td class="u-mono">90.0</td><td class="health-down u-mono">-8.0</td><td><span class="busy-tag busy-tag--danger is-plain">下降</span></td><td><span class="health-fail">G4</span></td><td class="u-mono">1</td><td class="u-mono">2</td><td class="u-mono">0</td><td><button class="busy-button is-link" data-dimensions="d4"><span>展开</span></button></td></tr>
+          <tr class="health-dimension-row" id="d4" hidden><td colspan="10"><div class="health-dimensions"><div class="health-dimension"><div class="health-dimension__name">D1 结构</div><div class="health-dimension__value">14 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D2 内容</div><div class="health-dimension__value">20 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D3 规则</div><div class="health-dimension__value">21 / 25</div></div><div class="health-dimension"><div class="health-dimension__name">D4 引用</div><div class="health-dimension__value">10 / 15</div></div><div class="health-dimension"><div class="health-dimension__name">D5 原型</div><div class="health-dimension__value">9 / 10</div></div><div class="health-dimension"><div class="health-dimension__name">D6 一致性</div><div class="health-dimension__value">8 / 10</div></div></div></td></tr>
+          <tr data-repo="product" data-change="flat" data-name="商品中心/商品资料"><td class="health-module-name"><span class="u-sub">product</span><br>商品资料</td><td class="u-mono">88.0</td><td class="u-mono">86.0</td><td class="health-flat u-mono">+2.0</td><td><span class="busy-tag busy-tag--info is-plain">持平</span></td><td>—</td><td class="u-mono">1</td><td class="u-mono">2</td><td class="u-mono">1</td><td><span class="u-sub">已折叠</span></td></tr>
+        </tbody></table></div><div class="busy-empty" id="moduleEmpty" hidden><div>该条件下暂无模块</div></div></section>
+
+        <section class="health-section" id="h-4"><h2>仓库级治理问题与结构外文件</h2><p class="u-sub">客观扣分依据与 AI 内容角色标注分开展示；角色标注本身不改变分数。</p><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>仓库 / 文件路径</th><th>客观依据</th><th>内容角色（辅助）</th><th>严重程度</th><th>计分位置</th><th>变化状态</th></tr></thead><tbody>
+          <tr><td class="u-mono">product<br>需求索引-旧版.md</td><td class="health-evidence">根目录结构外 Markdown；未被 AGENTS / SKILL 引用；21 条导航中 18 条与根 AGENTS 重复。</td><td>历史映射</td><td><span class="busy-tag busy-tag--warning is-plain">B</span></td><td>仓库治理</td><td>持续</td></tr>
+          <tr><td class="u-mono">product<br>商品中心/商品建档/references/business-rule.md</td><td class="health-evidence">正文「一期先支持单规格，二期再支持多规格」明确描述分期实现规划，命中 G8。</td><td>需求正文</td><td><span class="busy-tag busy-tag--danger is-plain">A</span></td><td>模块 D2 + FAIL</td><td>新增</td></tr>
+          <tr><td class="u-mono">design<br>components/web/tokens/README.md</td><td class="health-evidence">相对链接指向已不存在的 registry 文件；HTTP 链接不参与本地断链判定。</td><td>组件导航</td><td><span class="busy-tag busy-tag--danger is-plain">A</span></td><td>模块 D4 + FAIL</td><td>新增</td></tr>
+          <tr><td class="u-mono">common<br>workflow/PM/references/scoring-rubric.md</td><td class="health-evidence">上期 2 处跨文档权重不一致已统一为 D1～D6 固定权重。</td><td>评分规则</td><td><span class="busy-tag busy-tag--info is-plain">C</span></td><td>模块 D6</td><td>已消除</td></tr>
+        </tbody></table></div></section>
+
+        <section class="health-section" id="h-5"><div class="health-ai-head"><h2>AI 辅助诊断</h2><span class="busy-tag busy-tag--warning health-no-score">不计分</span></div><p>仅提供有原文锚点的语义观察，不参与模块分数、仓库综合分、等级或硬门禁。无法核验项单独声明，不猜测业务事实。</p><div class="health-toolbar"><span class="health-toolbar__label">诊断域</span><select class="busy-input health-select" id="aiDomain"><option value="all">全部</option><option value="closure">需求闭环</option><option value="consistency">跨文档一致性</option></select><span class="health-toolbar__label">问题类型</span><select class="busy-input health-select" id="aiType"><option value="all">全部</option><option value="明确冲突">明确冲突</option><option value="覆盖缺失">覆盖缺失</option><option value="表述歧义">表述歧义</option><option value="无法核验">无法核验</option></select><span class="health-toolbar__label">严重程度</span><select class="busy-input health-select" id="aiLevel"><option value="all">全部</option><option value="A">A</option><option value="B">B</option><option value="C">C</option></select></div>
+          <h3>需求逻辑闭环诊断</h3><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>模块 / 诊断主题</th><th>问题类型</th><th>级别</th><th>真源证据</th><th>相关证据</th></tr></thead><tbody class="ai-rows" data-domain="closure">
+            <tr data-type="明确冲突" data-level="A"><td>商品建档<br><span class="u-sub">逆向流程</span></td><td>明确冲突</td><td><span class="busy-tag busy-tag--danger is-plain">A</span></td><td class="health-evidence">business-rule.md §5：审核驳回后回到「草稿」。</td><td class="health-evidence">state-machine.md §2：驳回后进入「已停用」。</td></tr>
+            <tr data-type="覆盖缺失" data-level="B"><td>商品价格<br><span class="u-sub">验收与异常</span></td><td>覆盖缺失</td><td><span class="busy-tag busy-tag--warning is-plain">B</span></td><td class="health-evidence">business-rule.md §7：价格服务不可用时有失败反馈。</td><td class="health-evidence">web-ui.md 操作反馈表未登记失败后的重试入口。</td></tr>
+          </tbody></table></div>
+          <h3>跨文档一致性诊断</h3><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>模块 / 诊断主题</th><th>问题类型</th><th>级别</th><th>真源证据</th><th>相关证据</th></tr></thead><tbody class="ai-rows" data-domain="consistency">
+            <tr data-type="表述歧义" data-level="B"><td>商品资料<br><span class="u-sub">数值口径</span></td><td>表述歧义</td><td><span class="busy-tag busy-tag--warning is-plain">B</span></td><td class="health-evidence">data.md：重量保留 2 位小数。</td><td class="health-evidence">web-ui.md：列表显示「约 1 kg」，未说明取整与舍入口径。</td></tr>
+            <tr data-type="无法核验" data-level="C"><td>商品建档<br><span class="u-sub">权限一致性</span></td><td>无法核验</td><td><span class="busy-tag busy-tag--info is-plain">C</span></td><td class="health-evidence">web-ui.md：按钮权限 productItemCreate。</td><td class="health-evidence">权限矩阵未包含该权限点，缺少可核对的授权真源。</td></tr>
+          </tbody></table></div><div class="busy-empty" id="aiEmpty" hidden><div>该条件下暂无诊断</div></div></section>
+
+        <section class="health-section" id="h-6"><h2>新增、移除、未评估及检查失败模块</h2><div class="health-table-wrap"><table class="busy-table busy-table--border"><thead><tr><th>模块身份</th><th>状态</th><th>原因</th></tr></thead><tbody><tr><td class="u-mono">product + 商品中心/组合商品</td><td><span class="busy-tag busy-tag--info is-plain">新增</span></td><td>本期新增纳入评估，不参与两期同模块可比分。</td></tr><tr><td class="u-mono">product + 商品中心/旧商品导入</td><td><span class="busy-tag busy-tag--warning is-plain">移除</span></td><td>git 记录确认目录删除，上期分数保留但不计入当前全量分。</td></tr><tr><td class="u-mono">product + 商品中心/商品价格</td><td>未评估文件</td><td>2 个动态引用目标证据不足，登记为疑似待判定，不扣分。</td></tr></tbody></table></div></section>
+
+        <section class="health-section" id="h-7"><h2>问题修复建议与优先级</h2><div class="health-toolbar"><span class="health-toolbar__label">优先级</span><select class="busy-input health-select" id="fixLevel"><option value="all">全部</option><option value="A">A · 优先处理</option><option value="B">B · 随后处理</option><option value="C">C · 常规优化</option></select><span class="u-sub">建议只读，由责任人在业务仓确认真源后实施</span></div><div class="health-fix-list" id="fixList">
+          <div class="health-fix" data-level="A"><div class="health-fix__head"><span class="busy-tag busy-tag--danger">A</span><strong>移除商品建档的分期实现表述</strong><span class="health-fix__id u-mono">OBJ-G8-017</span></div><div class="health-fix__grid"><span class="health-fix__label">问题与证据</span><span>business-rule.md §7 含「一期 / 二期」实现安排。</span><span class="health-fix__label">影响</span><span>研发可能把未来规划误当成当前必须实现范围，触发 G8 并扣减 D2。</span><span class="health-fix__label">修复对象</span><span>商品建档/references/business-rule.md「当前目标态」章节。</span><span class="health-fix__label">修复动作</span><span>只保留本次需要实现的最新目标规则；历史方案移至仓外决策记录，不在需求正文保留分期路线。</span><span class="health-fix__label">复核点</span><span>需求正文无分期实现措辞；页面、数据与验收均描述同一当前目标态；G8 消除。</span></div></div>
+          <div class="health-fix" data-level="A"><div class="health-fix__head"><span class="busy-tag busy-tag--danger">A</span><strong>恢复组件 registry 的有效引用</strong><span class="health-fix__id u-mono">OBJ-G4-003</span></div><div class="health-fix__grid"><span class="health-fix__label">问题与证据</span><span>tokens/README.md 的相对链接目标不存在。</span><span class="health-fix__label">影响</span><span>组件 Token 到 registry 的导航中断，触发 G4。</span><span class="health-fix__label">修复对象</span><span>design/components/web/tokens/README.md。</span><span class="health-fix__label">修复动作</span><span>确认 registry 当前真源路径并更新相对链接；若文件已归并，则改链归并后的真源而非新建重复副本。</span><span class="health-fix__label">复核点</span><span>从 design 仓目录解析链接可达；全工作区 Markdown 链接检查通过。</span></div></div>
+          <div class="health-fix" data-level="B"><div class="health-fix__head"><span class="busy-tag busy-tag--warning">B</span><strong>归并根目录历史导航残留</strong><span class="health-fix__id u-mono">GOV-IDX-008</span></div><div class="health-fix__grid"><span class="health-fix__label">问题与证据</span><span>结构外文件未被任何真源引用，18/21 条导航与根 AGENTS 重复。</span><span class="health-fix__label">影响</span><span>形成平行入口，后续模块变更可能出现两套导航不一致。</span><span class="health-fix__label">修复对象</span><span>product 根 AGENTS 与结构外历史导航文件。</span><span class="health-fix__label">修复动作</span><span>由仓库负责人确认无独立事实后在业务仓另行清理；本报告不执行删除。</span><span class="health-fix__label">复核点</span><span>根目录仅保留规定入口；所有模块从 AGENTS 可达；无平行导航重复。</span></div></div>
+          <div class="health-fix" data-level="B"><div class="health-fix__head"><span class="busy-tag busy-tag--warning">B</span><strong>统一审核驳回状态定义</strong><span class="health-fix__id u-mono">AI-STATE-011 · 不计分</span></div><div class="health-fix__grid"><span class="health-fix__label">问题与证据</span><span>业务规则写「草稿」，状态机写「已停用」，两处原文冲突。</span><span class="health-fix__label">影响</span><span>逆向流程、页面按钮和验收预期可能不一致。</span><span class="health-fix__label">修复对象</span><span>由产品经理确认 state-machine.md 为状态真源，并同步 business-rule.md 与 web-ui.md。</span><span class="health-fix__label">修复动作</span><span>确认唯一目标状态、可执行动作和权限后统一三处描述，不由评估系统代替业务决策。</span><span class="health-fix__label">复核点</span><span>状态机、业务规则与页面操作表对驳回后的状态和按钮描述一致。</span></div></div>
+        </div><div class="busy-empty" id="fixEmpty" hidden><div>该优先级暂无修复建议</div></div></section>
+
+        <section class="health-section" id="h-8"><h2>指标口径与附录</h2><ul><li>模块评分：D1～D6 客观子项折算为 100 分；硬门禁独立判定 FAIL，原始分仍用于趋势观察。</li><li>仓库评分：R = 模块质量子分 M × 80% + 仓库治理子分 G × 20%。</li><li>环比：读取上一发报日最新归档版本；差值 ≥ +5 为提升、≤ -5 为下降；新增硬门禁直接判下降。</li><li>全文件覆盖：每个文件只归入一个处置分类；未判定和检查失败不静默遗漏，也不直接扣分。</li><li>AI 诊断：只读语义观察，不参与任何评分或门禁；无原文锚点不输出结论。</li><li>本报告只提供检查与修复建议，不对业务仓执行修改、提交或推送。</li></ul><p class="u-muted u-mono">报告生成时间：2026-10-18 07:32:18（东八区）</p></section>
+      </article>
+    </div>
+    <div class="tpl-panel health-outline-panel"><div class="tpl-section__head">大纲</div><nav class="health-outline" id="outline" aria-label="报告大纲"></nav></div>
+  </div>
+</section>
+<div class="tpl-toast-host" id="toastHost"></div>
+<script>
+function toast(text, type) { var el = document.createElement('div'); el.className = 'busy-message busy-message--' + (type || 'success'); el.textContent = text; document.getElementById('toastHost').appendChild(el); setTimeout(function () { el.remove(); }, 2600); }
+var sections = Array.prototype.slice.call(document.querySelectorAll('.health-section'));
+var outline = document.getElementById('outline');
+outline.innerHTML = sections.map(function (s, i) { return '<a class="health-outline__link' + (i === 0 ? ' is-active' : '') + '" data-anchor="' + s.id + '">' + s.querySelector('h2').textContent + '</a>'; }).join('');
+outline.querySelectorAll('a').forEach(function (a) { a.onclick = function () { document.getElementById(a.getAttribute('data-anchor')).scrollIntoView({ behavior: 'smooth', block: 'start' }); }; });
+window.addEventListener('scroll', function () { var current = sections[0].id; sections.forEach(function (s) { if (s.getBoundingClientRect().top <= 110) current = s.id; }); outline.querySelectorAll('a').forEach(function (a) { a.classList.toggle('is-active', a.getAttribute('data-anchor') === current); }); });
+document.getElementById('repoFilter').onchange = function () { var value = this.value; document.querySelectorAll('#repoRows tr').forEach(function (r) { r.hidden = value !== 'all' && r.getAttribute('data-repo-state').split(' ').indexOf(value) < 0; }); };
+function filterModules() { var repo = document.getElementById('moduleRepo').value; var change = document.getElementById('moduleChange').value; var keyword = document.getElementById('moduleKeyword').value.trim(); var visible = 0; document.querySelectorAll('#moduleRows tr:not(.health-dimension-row)').forEach(function (r) { var show = (repo === 'all' || r.getAttribute('data-repo') === repo) && (change === 'all' || r.getAttribute('data-change').split(' ').indexOf(change) >= 0) && (!keyword || r.getAttribute('data-name').indexOf(keyword) >= 0); r.hidden = !show; if (show) visible++; var dim = document.getElementById(r.querySelector('[data-dimensions]') ? r.querySelector('[data-dimensions]').getAttribute('data-dimensions') : ''); if (dim && !show) dim.hidden = true; }); document.getElementById('moduleEmpty').hidden = visible > 0; }
+['moduleRepo', 'moduleChange'].forEach(function (id) { document.getElementById(id).onchange = filterModules; }); document.getElementById('moduleKeyword').oninput = filterModules;
+document.querySelectorAll('[data-dimensions]').forEach(function (b) { b.onclick = function () { var row = document.getElementById(b.getAttribute('data-dimensions')); row.hidden = !row.hidden; b.querySelector('span').textContent = row.hidden ? '展开' : '收起'; }; });
+function filterAi() { var domain = document.getElementById('aiDomain').value; var type = document.getElementById('aiType').value; var level = document.getElementById('aiLevel').value; var visible = 0; document.querySelectorAll('.ai-rows').forEach(function (tbody) { var domainShow = domain === 'all' || tbody.getAttribute('data-domain') === domain; tbody.closest('.health-table-wrap').hidden = !domainShow; var h3 = tbody.closest('.health-table-wrap').previousElementSibling; if (h3 && h3.tagName === 'H3') h3.hidden = !domainShow; tbody.querySelectorAll('tr').forEach(function (r) { var show = domainShow && (type === 'all' || r.getAttribute('data-type') === type) && (level === 'all' || r.getAttribute('data-level') === level); r.hidden = !show; if (show) visible++; }); }); document.getElementById('aiEmpty').hidden = visible > 0; }
+['aiDomain', 'aiType', 'aiLevel'].forEach(function (id) { document.getElementById(id).onchange = filterAi; });
+document.getElementById('fixLevel').onchange = function () { var value = this.value; var visible = 0; document.querySelectorAll('.health-fix').forEach(function (x) { x.hidden = value !== 'all' && x.getAttribute('data-level') !== value; if (!x.hidden) visible++; }); document.getElementById('fixEmpty').hidden = visible > 0; };
+var versionSelect = document.getElementById('versionSelect'); var versionDropdown = document.getElementById('versionDropdown');
+versionSelect.querySelector('.busy-input').onclick = function (e) { e.stopPropagation(); versionDropdown.hidden = !versionDropdown.hidden; }; document.addEventListener('click', function () { versionDropdown.hidden = true; });
+versionDropdown.querySelectorAll('[data-version]').forEach(function (item) { item.onclick = function (e) { e.stopPropagation(); var version = item.getAttribute('data-version'); versionDropdown.hidden = true; if (item.classList.contains('is-selected')) return; document.getElementById('readingLoading').hidden = false; setTimeout(function () { document.getElementById('readingLoading').hidden = true; versionDropdown.querySelectorAll('[data-version]').forEach(function (x) { x.classList.remove('is-selected'); }); item.classList.add('is-selected'); document.getElementById('versionInput').value = 'v' + version + ' · 共 2 版'; document.getElementById('archiveTime').textContent = version === '1' ? '2026-10-18 07:36' : '2026-10-18 09:12'; document.getElementById('historyAlert').hidden = version !== '1'; toast(version === '1' ? '已切换到历史版本 v1（只读）' : '已切换到当前版本 v2'); }, 550); }; });
+document.getElementById('btnDownload').onclick = function () { var a = document.createElement('a'); a.href = URL.createObjectURL(new Blob(['# 产品文档健康度报告（商品中心） - 2026-10-18\n\n（Mock 原始文件）\n'], { type: 'text/markdown' })); a.download = 'doc_health_20261018_product.md'; a.click(); URL.revokeObjectURL(a.href); toast('已开始下载 doc_health_20261018_product.md'); };
+</script>
+</body>
+</html>

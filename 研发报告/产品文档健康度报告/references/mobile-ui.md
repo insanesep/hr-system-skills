@@ -1,6 +1,6 @@
 # App 端 UI 描述 · 产品文档健康度报告
 
-> App 为只读查阅端，不提供配置、补传或自动修复。归档、版本与渲染规则以 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md) 为准。
+> App 为只读查阅端，不提供配置或自动修复。归档、版本与渲染规则以 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md) 为准。
 
 ## 页面清单
 
@@ -10,6 +10,7 @@
 - **权限编码**：菜单 `devhubAppDocHealthReport`
 - **导航方式**：Push（工作台入口进入）
 - **页面类型**：列表页（周分组卡片流）
+- **布局引用**：`参见原型 assets/app/report-list.html`
 - **区块职责**：
   - 顶部导航栏：标题「产品文档健康度报告」，右侧搜索图标按报告标题匹配
   - 项目筛选：全部 + 启用项目 chip 单选，切换即刷新
@@ -24,6 +25,7 @@
 - **权限编码**：菜单 `devhubAppDocHealthReport`
 - **导航方式**：Push
 - **页面类型**：详情页（阅读型）
+- **布局引用**：`参见原型 assets/app/report-detail.html`
 - **区块职责**：
   - 顶部导航栏：标题 + 大纲图标，点击从底部弹出章节目录
   - 元信息折叠卡：项目、发报日、规则版本、可比性、来源、版本；多版本通过 ActionSheet 切换历史版本，只读
