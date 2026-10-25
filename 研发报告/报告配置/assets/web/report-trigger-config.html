@@ -576,12 +576,12 @@ function bindConfigEvents() {
       if (!r.enabled) { toast('error', '配置已停用，无法立即生成'); return; }
       if (!r.manual) { toast('error', '该报告项未开启手动触发'); return; }
       if (r.last && r.last.status === 'RUNNING') { toast('error', '该报告项存在进行中任务，请等待完成'); return; }
-      /* ② 二次确认（确认报告项与统计窗口预览：日报=前一自然日 00:00~24:00；项目进度月报=上一自然月；其余=上一自然周周一~周日）
+      /* ② 二次确认（确认报告项与统计窗口预览：日报=前一自然日 00:00~24:00；项目进度月报=上一自然月；其余=最近一个以周日收尾的自然周周一~周日）
            → ③ 创建中按钮禁用并提示「正在创建生成任务」→ ④ toast → ⑤ 自动打开生成记录抽屉 */
       var win;
       if (r.type === 'DAILY_DEV') win = '2026-10-19 00:00 ~ 24:00（前一自然日）';
       else if (r.type === 'PROJECT_PROGRESS' && r.param === 'month') win = '2026-09-01 ~ 2026-09-30（上一自然月）';
-      else win = '2026-10-12（周一）~ 2026-10-18（周日）（上一自然周）';
+      else win = '2026-10-12（周一）~ 2026-10-18（周日）（最近一个以周日收尾的自然周）';
       confirmAction('立即生成', '确认为「' + itemName(r) + '」创建生成任务？统计窗口：' + win + '。', function () {
         var okBtn = document.getElementById('confirmOk');
         okBtn.classList.add('is-disabled');
