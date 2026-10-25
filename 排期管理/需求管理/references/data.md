@@ -206,4 +206,4 @@
 | 上传来源端 | Web / App / H5 |
 | AI 方案状态 | 生成中 `GENERATING` / 待确认 `READY` / 已确认 `CONFIRMED` / 已作废 `OBSOLETED` / 生成失败 `FAILED` |
 | AI 触发方式 | 自动 / 手动 |
-| 排期卡片开发状态 | 待开发 `PENDING` / 开发中 `IN_PROGRESS` / 开发完成 `DONE`，以功能排期为准 |
+| 排期卡片开发状态 | 待开发 `PENDING` / 开发中 `IN_PROGRESS` / 开发完成 `DONE` / 待澄清 `CLARIFYING`，以功能排期为准 |

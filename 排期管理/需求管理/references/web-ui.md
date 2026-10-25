@@ -25,7 +25,7 @@
 - 产品线 Tag：鸣鸣很忙 红 / 有点推荐 紫；有点推荐行的业务线位置展示 `—`
 - 提交来源：内部不展示标签；外部展示黄「外部提交」Tag，全模块统一
 - 外链状态：待使用 processing / 已提交 success / 已过期 default / 已撤销 danger
-- 排期开发状态：待开发 default / 开发中 processing / 开发完成 success
+- 排期开发状态：待开发 default / 开发中 processing / 开发完成 success / 待澄清 warning
 - 枚举取值以 [data.md §12](data.md#12-枚举) 为准；有点推荐的业务线占位值不进入任何下拉选项与展示
 
 ### 附件展示

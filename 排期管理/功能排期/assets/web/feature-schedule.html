@@ -7,19 +7,22 @@
 <!--
   功能排期 · 研发排期工作台（Web 原型 · Mock 演示数据，刷新即重置）
   页面描述真源：../../references/web-ui.md#研发排期工作台 ｜ 页面类型 order-list
-  整页范例：busyming-skills-design/templates/web/order-list.html ｜ 状态机：../../references/state-machine.md
-  区块：指挥栏 A1–A9（池展开/时间导航/本月进度（单选快捷筛选，再点取消）/搜索/视图切换/筛选/新建/更多）
-    → 待排期池 B1–B6（编号位=创建时间+相对时间标签、超 7 天警示色；服务端分页 10/20/50、批量多选、空态）
+  整页范例：busyming-skills-design/templates/web/order-list.html ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
+  区块：指挥栏 A1–A10（池展开/时间导航/本月进度（单选快捷筛选，再点取消）/搜索/视图切换/待澄清 N（视图切换与筛选之间，N>0 警示样式）/筛选/新建/更多）
+    → 待排期池 B1–B6（编号位=创建时间+相对时间标签、超 7 天警示色；服务端分页 10/20/50（总数与每页一行、页码一行，不横向溢出）、批量多选、空态）
     → 月视图 C（卡片仅落在排期截止日所在格，区间卡不逐日铺开；+N 日详情弹层按排期区间覆盖当日取卡）
-    → 周视图 D（负责人=开发人→提交人→「未指定」，行按拼音排序，卡片落在本周内截止日所在列）→ 列表视图 E（当月已排期全部，无分页）
-    → 浮层 G1–G12（筛选抽屉、日详情、年月选择、右键菜单（含移入非需求改动）、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示）
-  演示基准日 2026-10-21（周三）；当前登录人演示为「陈默」（PM，全权限）。
+    → 周视图 D（负责人=开发人→提交人→「未指定」，行按拼音排序，卡片落在本周内截止日所在列）→ 列表视图 E（当月已排期全部，无分页；行内 领取/完成/回退 + 待开发·开发中「澄清」）
+    → 浮层 G1–G14（筛选抽屉、日详情、年月选择、右键菜单（含移入非需求改动、转待澄清）、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示、
+      待澄清列表 G13（全部/我负责的/我发起的，发起时间正序，等待超 2 天警示，完成澄清/撤回，10/20/50 分页）、澄清弹窗 G14（转待澄清/完成澄清/撤回澄清，与详情页 M7–M9 同一实现）
+  演示基准日 2026-10-21（周三，演示当前时间 10:30）；当前登录人演示为「陈默」（PM，全权限）。
+  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → templates/web/templates.css（不加载 native.js / interactions.js）。
   演示约定：卡片 DOM 仅用 busy-*/.tpl-*/.u-* 类，JS 定位一律 data-* 属性；
-    拖拽/右键/快捷键 (←/→/T/Esc) 均已实现；浮层按硬约束以文档流内 overlay 承载（busy-overlay-demo 遮罩视觉），
-    定位、600/640 弹层尺寸等生产细节由组件库默认承载，不在原型写私有 CSS。
+    拖拽/右键/快捷键 (←/→/T/Esc) 均已实现；浮层以 busy-overlay-demo host 承载并叠加 runtime.css 的 busy-overlay（fixed 全屏遮罩，内容可滚动），
+    打开时 host 移到 body 末尾保证后开的在上层；Esc 按打开顺序逐层关闭，无浮层时退出多选态。
+    待澄清列表固定 720×640（不足视口时收缩），原生布局效果保持 header/footer 与列表内部滚动；不写 style 属性或私有样式表，问题摘要以 JS 截断为 2 行。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
 </head>
@@ -37,14 +40,14 @@
     <div class="tpl-toolbar">
       <div class="tpl-toolbar__left">
         <span id="poolOpenEntry" hidden>
-          <button class="busy-button busy-button--small" type="button" id="btnPoolOpen"><span>待排期 23 ▶</span></button>
+          <button class="busy-button busy-button--small" type="button" id="btnPoolOpen"><span>待排期 24 ▶</span></button>
         </span>
         <button class="busy-button busy-button--small" type="button" id="btnPrev"><span>‹</span></button>
         <button class="busy-button is-text" type="button" id="periodLabel"><span>2026 年 10 月 ▾</span></button>
         <button class="busy-button busy-button--small" type="button" id="btnNext"><span>›</span></button>
         <button class="busy-button busy-button--small" type="button" id="btnToday"><span>今天</span></button>
         <span class="u-sub" id="statWrap">
-          本月进度：待排期 <b class="u-strong">23</b>
+          本月进度：待排期 <b class="u-strong">24</b>
           <button class="busy-button busy-button--small busy-button--primary is-plain" type="button" data-stat="PENDING"><span>待开发 8</span></button>
           <button class="busy-button busy-button--small busy-button--primary is-plain" type="button" data-stat="IN_PROGRESS"><span>开发中 4</span></button>
           <button class="busy-button busy-button--small busy-button--primary is-plain" type="button" data-stat="DONE"><span>已完成 2</span></button>
@@ -54,11 +57,14 @@
       </div>
       <div class="tpl-toolbar__right">
         <div class="busy-input tpl-toolbar__search"><input id="searchInput" placeholder="搜索任务：标题 / 编号 / 提交人"></div>
-        <div class="busy-radio-group" id="viewSwitch">
-          <label class="busy-radio-button is-checked" data-view="month"><span class="busy-radio-button__inner">月视图</span></label>
-          <label class="busy-radio-button" data-view="week"><span class="busy-radio-button__inner">周视图</span></label>
-          <label class="busy-radio-button" data-view="list"><span class="busy-radio-button__inner">列表</span></label>
+        <!-- A6 视图切换：按钮组（选中项为主色） -->
+        <div class="busy-button-group" id="viewSwitch" role="tablist" aria-label="视图切换">
+          <button class="busy-button busy-button--primary" type="button" data-view="month"><span>月视图</span></button>
+          <button class="busy-button" type="button" data-view="week"><span>周视图</span></button>
+          <button class="busy-button" type="button" data-view="list"><span>列表</span></button>
         </div>
+        <!-- A10 待澄清入口：N 为全量待澄清卡数（business-rule §4），N>0 为警示样式；点击打开待澄清列表弹层 G13 -->
+        <button class="busy-button busy-button--warning is-plain" type="button" id="btnClarify"><span>待澄清 5</span></button>
         <span class="busy-badge" id="filterBadge">
           <button class="busy-button" type="button" id="btnFilter"><span>筛选</span></button>
           <span class="busy-badge__content" id="filterCount" hidden>0</span>
@@ -74,7 +80,7 @@
     <!-- B. 待排期池 -->
     <div class="tpl-panel" id="poolPanel">
       <div class="tpl-toolbar">
-        <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">待排期</span><span class="u-sub">共 <b id="poolTotal">23</b> 张</span></div>
+        <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">待排期</span><span class="u-sub">共 <b id="poolTotal">24</b> 张</span></div>
         <div class="tpl-toolbar__right">
           <button class="busy-button busy-button--small" type="button" id="btnBatch"><span>批量</span></button>
           <button class="busy-button busy-button--small" type="button" id="btnPoolCollapse"><span>收起</span></button>
@@ -102,6 +108,8 @@
         </table>
       </div>
       <div class="tpl-panel" id="viewList" hidden>
+        <!-- 列宽放不下时在表格区内横向滚动（tpl-table-wrap：表头不换行），不撑出整页 -->
+        <div class="tpl-table-wrap">
         <table class="busy-table" id="listTable">
           <thead>
             <tr>
@@ -114,6 +122,7 @@
           </thead>
           <tbody id="listBody"></tbody>
         </table>
+        </div>
         <div class="busy-empty" id="listEmpty" hidden><div class="busy-empty__image">▦</div>本月暂无已排期的卡片</div>
         <div class="tpl-table-foot"><span class="u-sub">范围为当前月份已排期的全部卡片（无分页）</span></div>
       </div>
@@ -145,17 +154,20 @@
   </div>
 </section>
 
-<!-- ========== G. 浮层（overlay host：文档流内承载，Esc 分层关闭） ========== -->
-<div class="busy-overlay-demo" id="ovFilter" hidden></div>
-<div class="busy-overlay-demo" id="ovDay" hidden></div>
-<div class="busy-overlay-demo" id="ovYm" hidden></div>
-<div class="busy-overlay-demo" id="ovCtx" hidden></div>
-<div class="busy-overlay-demo" id="ovMerge" hidden></div>
-<div class="busy-overlay-demo" id="ovCreate" hidden></div>
-<div class="busy-overlay-demo" id="ovNonFeature" hidden></div>
-<div class="busy-overlay-demo" id="ovProject" hidden></div>
-<div class="busy-overlay-demo" id="ovProgress" hidden></div>
-<div class="busy-overlay-demo" id="ovMore" hidden></div>
+<!-- ========== G. 浮层（overlay host：busy-overlay-demo + busy-overlay 遮罩层，打开时移至 body 末尾，Esc 分层关闭） ========== -->
+<div class="busy-overlay-demo busy-overlay is-drawer" id="ovFilter" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovDay" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovYm" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovCtx" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovMerge" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovCreate" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovNonFeature" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovProject" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovProgress" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovMore" hidden></div>
+<!-- G13 待澄清列表弹层 / G14 澄清弹窗（转待澄清 / 完成澄清 / 撤回澄清；在列表之上打开时，关闭后回到列表） -->
+<div class="busy-overlay-demo busy-overlay" id="ovClarifyList" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovClarify" hidden></div>
 
 <script src="./feature-schedule-data.js"></script>
 <script>
@@ -285,6 +297,14 @@ function renderStats() {
   var fc = $('filterCount'), n = filterCount();
   fc.hidden = n === 0; fc.textContent = n;
   $('btnPoolOpen').querySelector('span').textContent = '待排期 ' + visiblePoolTotal() + ' ▶';
+  renderClarifyEntry();
+}
+/* A10：待澄清全量计数（business-rule §4：不含子卡，不随视图月份、筛选、搜索与只看自己变化）；N>0 为警示样式 */
+function renderClarifyEntry() {
+  var b = $('btnClarify'), n = D.clarifying.total;
+  b.querySelector('span').textContent = '待澄清 ' + n;
+  b.classList.toggle('busy-button--warning', n > 0);
+  b.classList.toggle('is-plain', n > 0);
 }
 function statPoolTotal() {
   var all = D.pool.items.concat(D.pool.page2, D.pool.page3);
@@ -332,14 +352,19 @@ function renderPool() {
 function renderPoolPager(pageLen) {
   var total = visiblePoolTotal();
   var pages = Math.max(1, Math.ceil(total / S.poolSize));
-  var h = '<div class="busy-pagination"><span class="u-muted">共 ' + total + ' 张</span>';
-  h += '<button data-pg="prev"' + (S.poolPage <= 1 ? ' disabled' : '') + '>‹</button>';
-  for (var i = 1; i <= pages; i++) h += '<button data-pg="' + i + '"' + (i === S.poolPage ? ' class="is-active"' : '') + '>' + i + '</button>';
-  h += '<button data-pg="next"' + (S.poolPage >= pages ? ' disabled' : '') + '>›</button>';
-  h += '<span class="u-muted">每页</span>';
+  /* B3：池宽不足时分页条换行——第 1 行总数与每页条数，第 2 行上一页 / 页码 / 下一页（页码多时折叠省略号）；只有 1 页时只保留第 1 行 */
+  var h = '<div class="tpl-section"><div class="busy-pagination"><span class="u-muted">共 ' + total + ' 张</span><span class="u-muted">每页</span>';
   [10, 20, 50].forEach(function (n) {
-    h += '<button data-size="' + n + '"' + (n === S.poolSize ? ' class="is-active"' : '') + '>' + n + '</button>';
+    h += '<button type="button" data-size="' + n + '"' + (n === S.poolSize ? ' class="is-active"' : '') + '>' + n + '</button>';
   });
+  h += '</div>';
+  if (pages > 1) {
+    h += '<div class="busy-pagination"><button type="button" data-pg="prev"' + (S.poolPage <= 1 ? ' disabled' : '') + '>‹</button>';
+    pageList(S.poolPage, pages).forEach(function (p) {
+      h += p === '…' ? '<span class="u-muted">…</span>' : '<button type="button" data-pg="' + p + '"' + (p === S.poolPage ? ' class="is-active"' : '') + '>' + p + '</button>';
+    });
+    h += '<button type="button" data-pg="next"' + (S.poolPage >= pages ? ' disabled' : '') + '>›</button></div>';
+  }
   h += '</div>';
   $('poolPager').innerHTML = h;
   $('poolPager').querySelectorAll('button').forEach(function (b) {
@@ -351,6 +376,16 @@ function renderPoolPager(pageLen) {
       renderPool(); /* 切换页码保留勾选（business-rule §7 跨页多选） */
     });
   });
+}
+/* 页码折叠：总页数 ≤5 全部展示，否则保留首尾与当前页前后各 1 页，其余折叠为「…」 */
+function pageList(cur, pages) {
+  if (pages <= 5) return Array.from({ length: pages }, function (_, i) { return i + 1; });
+  var out = [1];
+  if (cur > 3) out.push('…');
+  for (var p = Math.max(2, cur - 1); p <= Math.min(pages - 1, cur + 1); p++) out.push(p);
+  if (cur < pages - 2) out.push('…');
+  out.push(pages);
+  return out;
 }
 
 /* ==================== 渲染：月视图 C ==================== */
@@ -509,8 +544,10 @@ function rowAction(c) {
   var m = P.statusMeta(c).label;
   if (m === '延期' && c.status === 'PENDING') m = '待开发';
   if (m === '延期' && c.status === 'IN_PROGRESS') m = '开发中';
-  if (m === '待开发') return '<button class="busy-button is-link" type="button" data-act="take" data-no="' + c.no + '"><span>领取</span></button>';
-  if (m === '开发中') return '<button class="busy-button is-link" type="button" data-act="done" data-no="' + c.no + '"><span>完成</span></button>';
+  /* E3：待开发「领取」「澄清」、开发中「完成」「澄清」、开发完成「回退」；「澄清」打开转待澄清弹窗（G14），子卡不提供 */
+  var clarify = c.child ? '' : '<button class="busy-button is-link busy-button--warning" type="button" data-act="clarify" data-no="' + c.no + '"><span>澄清</span></button>';
+  if (m === '待开发') return '<button class="busy-button is-link" type="button" data-act="take" data-no="' + c.no + '"><span>领取</span></button>' + clarify;
+  if (m === '开发中') return '<button class="busy-button is-link" type="button" data-act="done" data-no="' + c.no + '"><span>完成</span></button>' + clarify;
   if (c.status === 'DONE') return '<button class="busy-button is-link" type="button" data-act="revert" data-no="' + c.no + '"><span>回退</span></button>';
   return '';
 }
@@ -522,7 +559,7 @@ function bindCards(root) {
     el.addEventListener('click', function (e) {
       if (e.target.closest('button') || e.target.closest('a')) return;
       if (S.batch || S.mergeMode) { toggleSelect(no); return; }
-      location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
+      P.openDetail(findCard(no));
     });
     el.addEventListener('dragstart', function (e) {
       var card = findCard(no);
@@ -542,7 +579,7 @@ function bindCards(root) {
   });
 }
 function findCard(no) {
-  var all = D.scheduled.concat(D.pool.items, D.pool.page2, D.pool.page3, D.nonFeature.items);
+  var all = D.scheduled.concat(D.pool.items, D.pool.page2, D.pool.page3, D.nonFeature.items, D.clarifying.items);
   return all.filter(function (c) { return c.no === no; })[0];
 }
 
@@ -594,10 +631,12 @@ function dropCardToPool(no) {
 function openCtxMenu(no) {
   var card = findCard(no);
   if (!card) return;
-  var locked = card.status === 'DONE';
+  var locked = card.status === 'DONE' || card.status === 'CLARIFYING' || card.child;
   var unscheduled = !card.start;
   /* G5：移入非需求改动仅未排期、非子卡、非非需求改动且具编辑权限时可用，其余置灰 */
-  var canNonFeature = unscheduled && !card.child && card.status !== 'NON_FEATURE';
+  var canNonFeature = unscheduled && !card.child && card.status !== 'NON_FEATURE' && card.status !== 'CLARIFYING';
+  /* G5：转待澄清——不具标记完成权限时不展示（演示账号全权限）；卡片非待开发或开发中、或为子卡时置灰 */
+  var canClarify = canRaise(card);
   function item(label, act, disabled) {
     return '<button class="busy-button is-text' + (disabled ? ' is-disabled' : '') + '" type="button" data-x="' + act + '"' + (disabled ? ' disabled' : '') + '><span>' + label + '</span></button>';
   }
@@ -611,6 +650,7 @@ function openCtxMenu(no) {
         item('改期到明天', 'tomorrow', locked || unscheduled) +
         item('移回待排期', 'pool', locked || unscheduled) +
         item('移入非需求改动', 'nonfeature', !canNonFeature) +
+        (PERM.markDone ? item('转待澄清', 'clarify', !canClarify) : '') +
       '</div></div>' +
     '</div>';
   P.openOverlay('ovCtx');
@@ -620,11 +660,12 @@ function openCtxMenu(no) {
     b.addEventListener('click', function () {
       var act = b.getAttribute('data-x');
       P.closeOverlay('ovCtx');
-      if (act === 'view') location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(no);
+      if (act === 'view') P.openDetail(findCard(no));
       if (act === 'today') dropCardOn(no, D.today);
       if (act === 'tomorrow') { var t = parseD(D.today); t.setDate(t.getDate() + 1); dropCardOn(no, iso(t)); }
       if (act === 'pool') dropCardToPool(no);
       if (act === 'nonfeature') moveToNonFeature(no);
+      if (act === 'clarify') openRaiseFor(no);
     });
   });
 }
@@ -644,6 +685,259 @@ function moveToNonFeature(no) {
       P.toast('已移入非需求改动', 'success');
       renderAll();
     }
+  });
+}
+
+/* ==================== 需求澄清（A10 入口 / G5 右键 / E3 行内「澄清」/ G13 待澄清列表 / G14 澄清弹窗；规则见 business-rule §11） ==================== */
+var PERM = { edit: true, del: true, markDone: true, releaseDay: true }; /* 演示账号陈默持有全部按钮权限（permission-rules §1） */
+function canRaise(card) {
+  var st = card.status || 'PENDING'; /* 池卡片未带 status 时即待开发 */
+  return (st === 'PENDING' || st === 'IN_PROGRESS') && !card.child;
+}
+function openRaiseFor(no) {
+  var card = findCard(no);
+  if (!card) return;
+  if (!canRaise(card)) { P.toast('仅待开发或开发中的非子卡可转待澄清', 'error'); return; }
+  P.clarify.openRaise('ovClarify', card, { onSuccess: function (q) { doRaise(card, q); } });
+}
+/* 按对象移出月历 / 待排期池，返回来源 */
+function removeCardObj(card) {
+  var i = D.scheduled.indexOf(card);
+  if (i >= 0) { D.scheduled.splice(i, 1); return 'scheduled'; }
+  var segs = ['items', 'page2', 'page3'];
+  for (var s = 0; s < segs.length; s++) {
+    var j = D.pool[segs[s]].indexOf(card);
+    if (j >= 0) { D.pool[segs[s]].splice(j, 1); return 'pool'; }
+  }
+  return '';
+}
+/* 回到待排期池：按池排序（创建时间倒序，同刻按编号倒序）插入 */
+function insertPoolSorted(card) {
+  var segs = [D.pool.items, D.pool.page2, D.pool.page3];
+  for (var s = 0; s < segs.length; s++) {
+    for (var i = 0; i < segs[s].length; i++) {
+      var x = segs[s][i];
+      if (x.created < card.created || (x.created === card.created && x.no < card.no)) { segs[s].splice(i, 0, card); return; }
+    }
+  }
+  D.pool.page3.push(card);
+}
+function removeClarifyItem(no) {
+  var i = D.clarifying.items.findIndex(function (x) { return x.no === no; });
+  if (i >= 0) D.clarifying.items.splice(i, 1);
+  D.clarifying.total = D.clarifying.items.length;
+  D.stats.clarifying = D.clarifying.total;
+}
+/* 转待澄清成功：卡片移出月历与待排期池，排期清空、开发人保留；生成澄清记录（澄清前状态与原排期）；待澄清计数 +1 */
+function doRaise(card, question) {
+  var from = removeCardObj(card);
+  if (from === 'pool') { D.pool.total--; poolAfterRemove(); }
+  D.clarifying.items.push({
+    no: card.no, title: card.title, module: card.module, project: card.project, submitter: card.submitter || '',
+    developer: card.developer, takenAt: card.takenAt, nature: card.nature, bizContact: card.bizContact,
+    created: card.created || '', merged: card.merged, childCount: card.childCount, srcHash: card.srcHash,
+    status: 'CLARIFYING', round: (card.clarifyRounds || 0) + 1, raiser: D.user, raisedAt: D.now, channel: 'PC',
+    preStatus: card.status || 'PENDING', preStart: card.start || '', preEnd: card.end || '', question: question,
+    content: card.content, children: card.children, childRepos: card.childRepos, sourceCommits: card.sourceCommits
+  });
+  P.saveClarification(card.no, D.clarifying.items[D.clarifying.items.length - 1], 'OPEN');
+  D.clarifying.total = D.clarifying.items.length;
+  D.stats.clarifying = D.clarifying.total;
+  var owner = card.submitter || '';
+  /* 负责人为本人或未匹配系统用户时不发送通知（business-rule §11.5） */
+  P.toast(!owner || owner === D.user || card.ownerUnmatched ? '已转为待澄清' : '已转为待澄清，已通知 ' + owner, 'success');
+  renderAll();
+  if (!$('ovClarifyList').hidden) renderClarifyList(false);
+}
+/* 完成澄清成功：原卡与修订卡自动合并为新合并卡（标题/负责人/性质/对接人取原卡），恢复澄清前状态并回到待排期池；编号变为新合并卡 */
+function doResolve(it, picks) {
+  var isUsed = function (no) {
+    return !!findCard(no) || D.clarifying.items.some(function (x) { return x.no === no; }) || D.revisionCommits.some(function (c) { return c.card === no; });
+  };
+  var revNos = picks.map(function (c) { return c.card || P.nextCardNo(isUsed); }); /* 未出卡的修订 commit 当场出卡 */
+  var newNo = P.nextCardNo(isUsed);
+  P.saveClarification(it.no, it, 'RESOLVED', {
+    mergedInto: newNo, revisions: picks.map(function (c, i) { return { hash: c.hash, msg: c.msg, author: c.author, time: c.time, card: revNos[i] }; })
+  });
+  removeClarifyItem(it.no);
+  revNos.forEach(function (no) { /* 修订卡成为子卡：离开待排期池 / 月历 */
+    var rc = findCard(no);
+    if (rc && removeCardObj(rc) === 'pool') D.pool.total--;
+  });
+  picks.forEach(function (c, i) { if (!c.card) c.card = revNos[i]; });
+  var restored = it.preStatus || 'PENDING';
+  var mc = {
+    no: newNo, title: it.title, module: it.module, project: it.project, submitter: it.submitter,
+    created: D.now, ago: '刚刚', merged: true, childCount: (it.merged ? it.childCount : 1) + picks.length,
+    status: restored, nature: it.nature, bizContact: it.bizContact, clarifiedFrom: it.no
+  };
+  if (restored === 'IN_PROGRESS') { mc.developer = it.developer; mc.takenAt = it.takenAt; }
+  var originals = it.merged ? (it.children || D.children).slice() : [{
+    no: it.no, title: it.title, module: it.module, submitter: it.submitter, srcHash: it.srcHash,
+    preStatus: P.statusLabel(restored), preDate: '—', mergedAt: D.now, created: it.created, clarifyOrigin: true
+  }];
+  mc.children = picks.map(function (c, i) { return {
+    no: revNos[i], title: c.msg.replace(/^[a-z]+(\([^)]*\))?:\s*/, '').slice(0, 30),
+    module: it.module, submitter: c.author, srcHash: c.hash, repo: c.repo, created: c.time,
+    preStatus: '待开发', preDate: '—', mergedAt: D.now
+  }; }).concat(originals);
+  mc.childCount = mc.children.length;
+  mc.content = '合并自 ' + mc.childCount + ' 张子卡：\n' + mc.children.map(function (c) { return '- ' + c.no + ' ' + c.title; }).join('\n');
+  mc.sourceCommits = mc.children.map(function (c) { return { repo: c.repo || P.harnessOf(it), hash: c.srcHash, no: c.no, title: c.title, author: c.submitter, time: c.created }; });
+  mc.logs = [{ time: D.now, type: '创建卡片', op: D.user, desc: '澄清完成，合并自 ' + mc.childCount + ' 张：' + mc.children.map(function (c) { return c.no; }).join(', ') }];
+  insertPoolSorted(mc); D.pool.total++;
+  S.poolPage = 1; /* 待排期池回到第 1 页 */
+  P.toast('澄清完成，已并入合并卡 ' + newNo + '，回到待排期池', 'success');
+  renderAll();
+  refreshClarifyList();
+}
+/* 撤回澄清成功：恢复澄清前状态，排期为空回到待排期池，开发人信息不变；不合并任何卡片 */
+function doWithdraw(it, reason) {
+  P.saveClarification(it.no, it, 'WITHDRAWN', { reason: reason });
+  removeClarifyItem(it.no);
+  var restored = it.preStatus || 'PENDING';
+  var ago = P.agoInfo(it.created || D.now);
+  var card = {
+    no: it.no, title: it.title, module: it.module, project: it.project, submitter: it.submitter,
+    created: it.created || D.now, ago: ago.text, stale: ago.stale, status: restored, nature: it.nature, bizContact: it.bizContact,
+    merged: it.merged, childCount: it.childCount, srcHash: it.srcHash, clarifyRounds: it.round,
+    content: it.content, children: it.children, sourceCommits: it.sourceCommits
+  };
+  if (it.developer) { card.developer = it.developer; card.takenAt = it.takenAt; }
+  insertPoolSorted(card); D.pool.total++;
+  S.poolPage = 1;
+  P.toast('已撤回澄清，卡片恢复为「' + P.statusLabel(restored) + '」回到待排期池', 'success');
+  renderAll();
+  refreshClarifyList();
+}
+
+/* ---------- G13 待澄清列表弹层：分栏 全部 / 我负责的 / 我发起的；发起时间正序（同刻编号倒序）；10 / 20 / 50 分页 ---------- */
+var CL = { tab: 'all', page: 1, size: 10, previous: null };
+function changeClarifyList(tab, page, size) {
+  CL.previous = { tab: CL.tab, page: CL.page, size: CL.size };
+  CL.tab = tab; CL.page = page; CL.size = size;
+  renderClarifyList(true);
+}
+function clarifyTabItems(tab) {
+  var all = D.clarifying.items.slice().sort(function (a, b) {
+    if (a.raisedAt !== b.raisedAt) return a.raisedAt < b.raisedAt ? -1 : 1;
+    return a.no < b.no ? 1 : a.no > b.no ? -1 : 0;
+  });
+  if (tab === 'mine') return all.filter(function (i) { return i.submitter === D.user; });   /* 负责人是当前用户 */
+  if (tab === 'raised') return all.filter(function (i) { return i.raiser === D.user; });   /* 当前澄清的发起人是当前用户 */
+  return all;
+}
+function openClarifyList() {
+  CL.tab = 'all'; CL.page = 1; CL.previous = null; /* 每次打开回到「全部」第 1 页 */
+  renderClarifyList(true);
+  P.openOverlay('ovClarifyList');
+}
+/* 完成 / 撤回后刷新当前页，当前页为空且不是第 1 页时回退上一页 */
+function refreshClarifyList() {
+  if ($('ovClarifyList').hidden) return;
+  var pages = Math.max(1, Math.ceil(clarifyTabItems(CL.tab).length / CL.size));
+  if (CL.page > pages) CL.page = pages;
+  renderClarifyList(true);
+}
+function clarifyRow(it) {
+  var w = P.waitInfo(it.raisedAt);
+  var canWithdraw = it.raiser === D.user ? PERM.markDone : PERM.edit;
+  return '<tr data-clar="' + it.no + '">' +
+    '<td><div class="chip-group"><b>' + P.esc(it.title) + '</b><span class="busy-tag busy-tag--small busy-tag--warning">待澄清</span>' + P.projectTag(it.project, true) +
+      (it.merged ? '<span class="busy-tag busy-tag--small is-plain">⊕ 合并 · ' + it.childCount + ' 项</span>' : '') + '</div>' +
+      '<div class="u-sub u-mono">' + it.no + ' · 负责人 ' + (it.submitter || '—') + ' · 发起人 ' + it.raiser + '（' + it.channel + '）</div>' +
+      '<div class="chip-group"><span class="u-sub u-mono">发起于 ' + it.raisedAt + '</span>' +
+        '<span class="busy-tag busy-tag--small ' + (w.over2d ? 'busy-tag--warning' : 'busy-tag--info is-plain') + '" data-wait="' + (w.over2d ? 'over' : 'ok') + '">已等待 ' + w.short + '</span></div>' +
+      '<div class="u-sub" data-clamp="2">' + P.esc(P.summary(it.question)) + '</div></td>' +
+    '<td><span class="tpl-row-actions">' +
+      (PERM.edit ? '<button class="busy-button is-link" type="button" data-cact="resolve" data-no="' + it.no + '"><span>完成澄清</span></button>' : '') +
+      (canWithdraw ? '<button class="busy-button is-link" type="button" data-cact="withdraw" data-no="' + it.no + '"><span>撤回</span></button>' : '') +
+    '</span></td></tr>';
+}
+function renderClarifyList(loading) {
+  var items = clarifyTabItems(CL.tab);
+  var total = items.length;
+  var pages = Math.max(1, Math.ceil(total / CL.size));
+  if (CL.page > pages) CL.page = pages;
+  var pageItems = items.slice((CL.page - 1) * CL.size, CL.page * CL.size);
+  var body = loading
+    ? '<div class="busy-empty"><span class="chip-group"><span class="busy-button__loading"></span><span>加载中…</span></span></div>'
+    : pageItems.length ? '<table class="busy-table"><tbody>' + pageItems.map(clarifyRow).join('') + '</tbody></table>'
+    : '<div class="busy-empty"><div class="busy-empty__image">▦</div>暂无待澄清卡片</div>';
+  var pager = '<div class="busy-pagination"><span class="u-muted">共 ' + total + ' 条</span>' +
+    '<button type="button" data-cpg="prev"' + (CL.page <= 1 ? ' disabled' : '') + '>‹</button>' +
+    pageList(CL.page, pages).map(function (p) {
+      return p === '…' ? '<span class="u-muted">…</span>' : '<button type="button" data-cpg="' + p + '"' + (p === CL.page ? ' class="is-active"' : '') + '>' + p + '</button>';
+    }).join('') +
+    '<button type="button" data-cpg="next"' + (CL.page >= pages ? ' disabled' : '') + '>›</button>' +
+    '<span class="u-muted">每页</span>' +
+    [10, 20, 50].map(function (n) { return '<button type="button" data-csize="' + n + '"' + (n === CL.size ? ' class="is-active"' : '') + '>' + n + '</button>'; }).join('') +
+    '</div>';
+  var tabs = [['all', '全部'], ['mine', '我负责的'], ['raised', '我发起的']];
+  var host = $('ovClarifyList');
+  host.innerHTML =
+    '<div class="busy-dialog" role="dialog" aria-label="待澄清">' +
+      '<div class="busy-dialog__header"><span class="busy-dialog__title">待澄清 · 共 ' + D.clarifying.total + ' 张</span>' +
+      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
+      '<div class="busy-dialog__body"><div class="tpl-section">' +
+        '<div class="busy-tabs" role="tablist">' + tabs.map(function (t) {
+          return '<span class="busy-tabs__item' + (t[0] === CL.tab ? ' is-active' : '') + '" data-ctab="' + t[0] + '" role="tab" tabindex="0">' + t[1] + '</span>';
+        }).join('') + '</div>' +
+        '<div class="u-sub">按发起时间正序，等待最久的在前；不受工作台筛选、搜索与只看自己影响</div>' +
+        '<div id="clarifyListBody"' + (loading ? ' aria-busy="true"' : '') + '>' + body + '</div>' +
+      '</div></div>' +
+      '<div class="busy-dialog__footer">' + pager + '</div>' +
+    '</div>';
+  host.querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovClarifyList'); };
+  host.querySelectorAll('[data-ctab]').forEach(function (t) {
+    t.onclick = function () { changeClarifyList(t.getAttribute('data-ctab'), 1, CL.size); }; /* 切换分栏回到第 1 页 */
+    t.onkeydown = function (e) { if (e.key === 'Enter') t.click(); };
+  });
+  host.querySelectorAll('[data-cpg]').forEach(function (b) {
+    b.onclick = function () {
+      var v = b.getAttribute('data-cpg');
+      changeClarifyList(CL.tab, v === 'prev' ? CL.page - 1 : v === 'next' ? CL.page + 1 : +v, CL.size);
+    };
+  });
+  host.querySelectorAll('[data-csize]').forEach(function (b) {
+    b.onclick = function () { changeClarifyList(CL.tab, 1, +b.getAttribute('data-csize')); };
+  });
+  P.layoutOverlay('ovClarifyList', 720, 640);
+  if (loading) {
+    setTimeout(function () {
+      if (host.hidden || !host.querySelector('[aria-busy]')) return;
+      if (D.clarifying.failNext) { /* 可在 Mock 中置 true 演示加载失败，不产生网络或 console error */
+        D.clarifying.failNext = false;
+        if (CL.previous) {
+          CL.tab = CL.previous.tab; CL.page = CL.previous.page; CL.size = CL.previous.size; CL.previous = null;
+          renderClarifyList(false); P.toast('待澄清列表加载失败', 'error');
+        } else {
+          var body = $('clarifyListBody');
+          body.removeAttribute('aria-busy');
+          body.innerHTML = '<div class="busy-empty">待澄清列表加载失败<div><button class="busy-button" type="button" data-retry="clarify"><span>重新加载</span></button></div></div>';
+          body.querySelector('[data-retry]').onclick = function () { renderClarifyList(true); };
+        }
+      } else { CL.previous = null; renderClarifyList(false); }
+    }, 350);
+    return;
+  }
+  host.querySelectorAll('[data-clamp]').forEach(function (el) { P.clampLines(el, 2); }); /* 问题摘要最多 2 行 */
+  host.querySelectorAll('tr[data-clar]').forEach(function (tr) {
+    tr.addEventListener('click', function (e) {
+      if (e.target.closest('button')) return;
+      P.openDetail(findCard(tr.getAttribute('data-clar')));
+    });
+  });
+  host.querySelectorAll('[data-cact]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var it = D.clarifying.items.filter(function (x) { return x.no === b.getAttribute('data-no'); })[0];
+      if (!it) return;
+      if (b.getAttribute('data-cact') === 'resolve') {
+        P.clarify.openResolve('ovClarify', it, { onSuccess: function (picks) { doResolve(it, picks); } });
+      } else {
+        P.clarify.openWithdraw('ovClarify', it, { onSuccess: function (reason) { doWithdraw(it, reason); } });
+      }
+    });
   });
 }
 
@@ -732,12 +1026,13 @@ function renderFilterDrawer() {
       }).join('') + '</div></div>';
   }
   $('ovFilter').innerHTML =
-    '<div class="busy-drawer">' +
+    '<div class="busy-drawer rtl" role="dialog" aria-label="筛选">' +
       '<div class="busy-dialog__header"><span class="busy-dialog__title">筛选</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
-      '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<div class="tpl-toolbar"><div class="tpl-toolbar__left">只看自己 <span class="u-sub">即时生效，不入抽屉草稿</span></div>' +
-        '<button class="busy-switch' + (f.mine ? ' is-checked' : '') + '" type="button" id="mineSwitch"><span class="busy-switch__core"></span></button></div>' +
+      '<div class="busy-dialog__body busy-drawer__body"><div class="tpl-section">' +
+        '<div class="tpl-toolbar"><div class="tpl-toolbar__left">' +
+        '<label class="busy-checkbox' + (f.mine ? ' is-checked' : '') + '" id="mineSwitch" role="switch" aria-checked="' + f.mine + '"><span class="busy-checkbox__inner"></span><span>只看自己</span></label>' +
+        '<span class="u-sub">即时生效，不入抽屉草稿</span></div></div>' +
         '<div class="chip-group" id="filterTags">' +
           (selectedTags().map(function (t) {
             return '<span class="busy-tag busy-tag--small">' + t.v + ' <button class="busy-button is-text" type="button" data-g="' + t.g + '" data-v="' + t.v + '"><span>✕</span></button></span>';
@@ -969,7 +1264,7 @@ function renderCreate() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">新建卡片</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<div class="busy-message busy-message--error" id="createErr" hidden></div>' +
+        P.alertHtml('error', '', '', 'createErr', true) +
         '<div class="busy-form-item"><div class="busy-form-item__label is-required">代码仓</div>' +
         '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input readonly id="createRepo" placeholder="请选择代码仓" value="' + createState.repo + '"></div><span class="busy-select__caret">▾</span></div>' +
         '<div class="busy-select-dropdown" id="createRepoDd" hidden>' +
@@ -990,7 +1285,7 @@ function renderCreate() {
                 '<span class="u-sub">' + c.author + ' · ' + c.time + '</span>' + note + '</label>';
             }).join('')) +
         '</div>' +
-        '<div class="busy-form-item__error" id="createCommitErr" hidden>请选择一条 commit</div>' +
+        '<div class="u-sub u-danger" id="createCommitErr" hidden>请选择一条 commit</div>' +
       '</div></div>' +
       '<div class="busy-dialog__footer">' +
         '<button class="busy-button" type="button" data-x="cancel"><span>取 消</span></button>' +
@@ -1126,7 +1421,7 @@ function renderProjectForm() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">' + (f.mode === 'new' ? '新建项目' : '编辑项目') + '</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<div class="busy-message busy-message--error" id="projErr" hidden></div>' +
+        P.alertHtml('error', '', '', 'projErr', true) +
         '<div class="busy-form-item"><div class="busy-form-item__label is-required">项目名称</div>' +
         '<div class="busy-form-item__content"><div class="busy-input"><input id="projName" maxlength="12" value="' + f.name + '" placeholder="1-12 字，启用中项目之间唯一"></div>' +
         '<div class="busy-form-item__error" id="projNameErr" hidden></div></div></div>' +
@@ -1237,13 +1532,15 @@ function bindListActions() {
   $('listBody').querySelectorAll('tr[data-card]').forEach(function (tr) {
     tr.addEventListener('click', function (e) {
       if (e.target.closest('button') || e.target.closest('.busy-popover')) return;
-      location.href = 'feature-schedule-detail.html?no=' + encodeURIComponent(tr.getAttribute('data-card'));
+      P.openDetail(findCard(tr.getAttribute('data-card')));
     });
   });
   $('listBody').querySelectorAll('[data-act]').forEach(function (b) {
     b.addEventListener('click', function () {
       var no = b.getAttribute('data-no'), act = b.getAttribute('data-act');
       var target = findCard(no);
+      /* E3「澄清」：直接打开转待澄清弹窗（G14），不使用气泡确认 */
+      if (act === 'clarify') { openRaiseFor(no); return; }
       var tips = {
         take: '确认领取开发？',
         done: '确认标记完成？完成 commit 可稍后在卡片详情页补录',
@@ -1256,7 +1553,7 @@ function bindListActions() {
         '<button class="busy-button busy-button--small" type="button" data-x="no"><span>取消</span></button>' +
         '<button class="busy-button busy-button--small busy-button--primary" type="button" data-x="yes"><span>确定</span></button></div>';
       b.parentNode.appendChild(pop);
-      P.onEsc(function () { pop.remove(); });
+      P.onEsc(function () { pop.remove(); }, pop);
       pop.querySelector('[data-x="no"]').onclick = function () { pop.remove(); };
       pop.querySelector('[data-x="yes"]').onclick = function () {
         var card = findCard(no);
@@ -1326,15 +1623,14 @@ $('searchInput').addEventListener('input', function () {
 $('searchInput').addEventListener('keydown', function (e) {
   if (e.key === 'Escape') { this.value = ''; S.search = ''; S.poolPage = 1; renderAll(); }
 });
-document.querySelectorAll('#viewSwitch .busy-radio-button').forEach(function (lb) {
+document.querySelectorAll('#viewSwitch [data-view]').forEach(function (lb) {
   lb.addEventListener('click', function () {
-    document.querySelectorAll('#viewSwitch .busy-radio-button').forEach(function (x) { x.classList.remove('is-checked'); });
-    lb.classList.add('is-checked');
     S.view = lb.getAttribute('data-view');
     localStorage.setItem('fs_view', S.view);
     renderAll();
   });
 });
+$('btnClarify').onclick = openClarifyList;
 $('btnFilter').onclick = openFilter;
 $('btnCreate').onclick = openCreate;
 $('btnMore').onclick = openMore;
@@ -1373,15 +1669,50 @@ $('poolPanel').addEventListener('drop', function (e) {
   if (no) dropCardToPool(no);
 });
 
-/* ==================== 键盘 H：←/→ 切换期，T 回到今天；输入框聚焦与弹层打开时不响应 ==================== */
+/* ==================== 键盘 H：←/→ 切换期，T 回到今天；输入框聚焦、弹层打开与后台页签时不响应 ==================== */
 document.addEventListener('keydown', function (e) {
   if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  var overlayOpen = ['ovFilter', 'ovDay', 'ovYm', 'ovCtx', 'ovMerge', 'ovCreate', 'ovNonFeature', 'ovProject', 'ovProgress', 'ovMore']
-    .some(function (id) { return !$(id).hidden && $(id).innerHTML; });
-  if (overlayOpen) return;
+  if (document.hidden || P.isOverlayOpen()) return;
   if (e.key === 'ArrowLeft') shiftPeriod(-1);
   if (e.key === 'ArrowRight') shiftPeriod(1);
   if (e.key === 't' || e.key === 'T') $('btnToday').click();
+});
+/* Esc 分层关闭（右键菜单 → 气泡确认 → 二次确认 → 澄清弹窗 → 弹层 → … 由 FS_PROTO 按打开顺序处理）；无浮层时退出多选态 */
+P.setEscFallback(function () {
+  if (S.batch || S.mergeMode) { S.batch = false; S.mergeMode = false; S.selected = {}; renderBars(); renderAll(); }
+});
+
+/* 单行指挥栏：放不下完整本月进度时收进「进度」浮层，不挤压搜索 / 视图 / 待澄清 / 筛选等核心操作。 */
+function renderCommandLayout() {
+  var toolbar = $('commandBar').querySelector('.tpl-toolbar');
+  toolbar.querySelectorAll('.tpl-toolbar__right button').forEach(function (b) { b.classList.add('busy-button--small'); });
+  ['btnPrev', 'btnNext'].forEach(function (id) { $(id).classList.add('busy-button--circle'); });
+  var search = $('searchInput').parentNode;
+  if (search._geometry) search._geometry.cancel();
+  var width = innerWidth < 1280 ? 120 : 220;
+  search._geometry = search.animate([{ width: width + 'px' }, { width: width + 'px' }], { duration: 1, fill: 'forwards' });
+  $('statWrap').hidden = false; $('btnProgressFloat').hidden = true;
+  var left = toolbar.querySelector('.tpl-toolbar__left'), right = toolbar.querySelector('.tpl-toolbar__right');
+  var collapsed = left.getBoundingClientRect().width + right.getBoundingClientRect().width + 12 > toolbar.clientWidth;
+  $('statWrap').hidden = collapsed; $('btnProgressFloat').hidden = !collapsed;
+  /* 桌面场景：页面本身不滚动，视图区与池各自滚动；窄屏沿用模板纵向堆叠保底。 */
+  function geometry(el, props) {
+    if (el._paneGeometry) el._paneGeometry.cancel();
+    if (innerWidth <= 1024) return;
+    el._paneGeometry = el.animate([props, props], { duration: 1, fill: 'forwards' });
+  }
+  var page = document.querySelector('section.tpl-page'), dual = page.querySelector('.tpl-dual');
+  geometry(page, { height: Math.max(0, innerHeight - 48) + 'px', minHeight: '0px', overflow: 'hidden' });
+  geometry(dual, { flex: '1 1 auto', minHeight: '0px', alignItems: 'stretch', overflow: 'hidden', gridTemplateColumns: S.poolCollapsed ? '0px minmax(0px, 1fr)' : '280px minmax(0px, 1fr)' });
+  geometry(dual.querySelector('.tpl-dual__main'), { minHeight: '0px', overflowY: 'auto' });
+  geometry($('poolPanel'), { minHeight: '0px', height: '100%', overflow: 'hidden' });
+  geometry($('poolBody'), { flex: '1 1 auto', minHeight: '0px', overflowY: 'auto' });
+  $('poolPanel').hidden = S.poolCollapsed;
+}
+window.addEventListener('resize', function () {
+  renderCommandLayout();
+  if (!$('ovClarifyList').hidden) { P.layoutOverlay('ovClarifyList', 720, 640); $('ovClarifyList').querySelectorAll('[data-clamp]').forEach(function (el) { P.clampLines(el, 2); }); }
+  if (!$('ovClarify').hidden && $('ovClarify').querySelector('#clrCommitList')) P.layoutOverlay('ovClarify', 720, 640);
 });
 
 /* ==================== 总渲染与初始化 ==================== */
@@ -1389,8 +1720,10 @@ function renderAll() {
   renderStats();
   renderPool();
   $('periodLabel').querySelector('span').textContent = periodText() + (S.view !== 'week' ? ' ▾' : '');
-  document.querySelectorAll('#viewSwitch .busy-radio-button').forEach(function (lb) {
-    lb.classList.toggle('is-checked', lb.getAttribute('data-view') === S.view);
+  document.querySelectorAll('#viewSwitch [data-view]').forEach(function (b) {
+    var on = b.getAttribute('data-view') === S.view;
+    b.classList.toggle('busy-button--primary', on);
+    b.setAttribute('aria-selected', String(on));
   });
   $('viewMonth').hidden = S.view !== 'month';
   $('viewWeek').hidden = S.view !== 'week';
@@ -1403,6 +1736,7 @@ function renderAll() {
     ? visibleScheduled().filter(function (c) { return c.start && c.start.slice(0, 7) === S.year + '-' + String(S.month + 1).padStart(2, '0') && matchSearch(c); }).length > 0
     : visibleScheduled().filter(function (c) { return c.start; }).filter(matchSearch).length > 0;
   $('zeroHit').hidden = !(anyFilterActive() && !hasVisible);
+  renderCommandLayout();
 }
 P.renderNav({ active: 'schedule' });
 renderBars();

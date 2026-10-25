@@ -7,25 +7,35 @@
 <!--
   功能排期 · 卡片详情页（Web 原型 · Mock 演示数据，刷新即重置）
   页面描述真源：../../references/web-ui.md#卡片详情页 ｜ 页面类型 order-detail
-  整页范例：busyming-skills-design/templates/web/order-detail.html ｜ 状态机：../../references/state-machine.md
-  区块：页头 J1（返回 / 编号标题 / 标签行 / 右上操作区 L1-L2）→ 业务提示 J2 → 开发进度 J3（busy-steps）
-    → 关键摘要 J4（固定三项：排期 / 开发人 / 完成 commit；合并卡追加第四项「子卡 N 张」，非合并卡无第四项）
+  整页范例：busyming-skills-design/templates/web/order-detail.html ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
+  页面定位：一屏回答「这张卡片现在什么状态、排在哪天、谁在开发、交付了哪些 commit」，待澄清时说明卡在什么问题上。
+  区块：页头 J1（返回 / 编号标题 / 标签行（待澄清为警示）/ 右上操作区 L1-L2）
+    → 业务提示 J2（子卡只读 / 非需求改动 / 延期 / 待澄清：问题全文、发起人、发起时间、已等待（超 2 天警示）、澄清前状态与原排期 /
+      完成澄清生成的合并卡：「由 {前序卡片编号…} 完成澄清合并而来」，子卡编号可点击、已并入的中间合并卡仅显示文本）
+    → 开发进度 J3（busy-steps；待澄清卡在澄清前状态对应的步骤以警示态呈现，副文案「待澄清，等待产品修订需求」）
+    → 关键摘要 J4（固定三项：排期（待澄清显示「—」与「待澄清，排期已移除」）/ 开发人 / 完成 commit；合并卡追加第四项「子卡 N 张」）
     → 任务内容 J5（独立面板，内容原文保留换行，空显示「暂无内容」）
-    → 页级 Tab K1-K5（基本信息 / 子卡明细 / 完成 commit / 操作日志）
+    → 页级 Tab K1-K6（基本信息（待澄清卡不显示排期入口；澄清合并卡显示澄清来源）/ 子卡明细 / 完成 commit / 澄清记录 / 操作日志）
     → 弹窗 M1 编辑 / M2 调整排期（日期区间选择器，今天之前置灰）/ M3 标记完成·关联 commit / M4 回退 / M5 二次确认·气泡确认 / M6 全局提示
-  直达规则：以卡片编号为路径参数（原型以 ?no= 模拟）；编号不存在或已删除 →「卡片不存在或已删除」。
-  导航栏「原型页面」可切换页面、演示卡片（合并卡 / 延期卡 / 完成卡 / 子卡只读 / 非需求改动卡）与整页状态（正常 / 加载失败 / 不存在）。
-  演示基准日 2026-10-21（周三）；当前登录人演示为「陈默」（PM，全权限）。
+      / M7 转待澄清 / M8 完成澄清（成功后进入新合并卡详情）/ M9 撤回澄清（M7–M9 与工作台 G14 同一实现：FS_PROTO.clarify）
+  操作区按状态：待开发「转待澄清」「标记完成」「领取开发」(主) / 开发中「转待澄清」「取消领取」「标记完成」(主) / 开发完成「回退」/
+    待澄清「撤回澄清」「完成澄清」(主)（更多操作不展示移入非需求改动；待澄清的合并卡「解散合并」置灰并提示需先完成或撤回澄清）/ 非需求改动「恢复为待开发」(主)
+  直达规则：以卡片编号为路径参数（原型以 ?no= 模拟，命中演示卡片、待澄清列表条目或演示合并卡的子卡）；编号不存在或已删除 →「卡片不存在或已删除」。
+  导航栏「原型页面」可切换页面、演示卡片（合并卡 / 延期卡 / 完成卡 / 子卡只读 / 非需求改动卡 / 待澄清卡（澄清前开发中，保留开发人）/
+    澄清合并卡（FS-20261013-004 经两轮澄清并入，含澄清来源与两条已澄清记录；?no=FS-20261014-009 演示中间合并卡跳转））与整页状态（正常 / 加载失败 / 不存在）。
+  演示基准日 2026-10-21（周三，演示当前时间 10:30）；当前登录人演示为「陈默」（PM，全权限）。
+  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → templates/web/templates.css；
+    浮层以 busy-overlay-demo + busy-overlay（fixed 遮罩）承载，打开时移至 body 末尾，Esc 按打开顺序逐层关闭。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
 </head>
 <body>
 <nav class="tpl-nav">
   <span class="tpl-nav__logo">鸣鸣很忙</span>
-  <span class="tpl-nav__crumb">首页 / 研发 / 研发管理 / <a href="feature-schedule.html">功能排期管理</a> / <b>卡片详情</b></span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 研发管理 / <a class="busy-button busy-button--small busy-button--ghost" href="feature-schedule.html">功能排期管理</a> / <b>卡片详情</b></span>
   <span class="tpl-nav__spacer"></span>
   <span class="tpl-nav__crumb">产品经理 · 陈默</span>
 </nav>
@@ -35,21 +45,66 @@
   <div class="tpl-page-head" id="pageHead"></div>
 
   <!-- J2 业务提示 / J3 开发进度 / J4 关键摘要 / J5 任务内容 / K 页级 Tab：均由脚本按演示卡片渲染 -->
-  <div id="pageBody"></div>
+  <div class="tpl-dual__main" id="pageBody"></div>
 </section>
 
-<!-- M. 弹窗（overlay host：文档流内承载，Esc 分层关闭） -->
-<div class="busy-overlay-demo" id="ovEdit" hidden></div>
-<div class="busy-overlay-demo" id="ovSchedule" hidden></div>
-<div class="busy-overlay-demo" id="ovDone" hidden></div>
-<div class="busy-overlay-demo" id="ovRevert" hidden></div>
-<div class="busy-overlay-demo" id="ovMore" hidden></div>
+<!-- M. 弹窗（overlay host：busy-overlay-demo + busy-overlay 遮罩层，打开时移至 body 末尾，Esc 分层关闭） -->
+<div class="busy-overlay-demo busy-overlay" id="ovEdit" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovSchedule" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovDone" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovRevert" hidden></div>
+<div class="busy-overlay-demo busy-overlay" id="ovMore" hidden></div>
+<!-- M7 转待澄清 / M8 完成澄清 / M9 撤回澄清 -->
+<div class="busy-overlay-demo busy-overlay" id="ovClarify" hidden></div>
 
 <script src="./feature-schedule-data.js"></script>
 <script>
 /* ==================== 演示卡片装配（数据真源 feature-schedule-data.js） ==================== */
 var D = FS_DATA, P = FS_PROTO;
+var PERM = { edit: true, del: true, markDone: true }; /* 演示账号陈默持有全部按钮权限（permission-rules §1） */
 function byNo(no) { return D.scheduled.filter(function (c) { return c.no === no; })[0]; }
+function clarifyItem(no) { return D.clarifying.items.filter(function (i) { return i.no === no; })[0]; }
+function logsOf(c) { return c.logs || D.logs; }
+function childrenOf(m) { return m.children || D.children; }
+
+/* 由待澄清列表条目装配待澄清卡：当前澄清 = 待澄清记录投影（问题 / 发起人 / 发起时间 / 渠道 / 澄清前状态 / 原排期） */
+function buildClarifying(it) {
+  var logs = [{ time: it.raisedAt, type: '发起澄清', op: it.raiser,
+    desc: '发起澄清（第 ' + it.round + ' 次）：' + P.summary(it.question) + (it.preStart ? '；原排期 ' + P.rangeText(it.preStart, it.preEnd) + ' 已移除' : '') }];
+  if (it.developer) logs.push({ time: it.takenAt, type: '领取开发', op: it.developer, desc: '领取开发：' + it.developer });
+  logs.push({ time: it.created, type: '创建卡片', op: '系统', desc: '由 ' + P.harnessOf(it) + ' commit ' + it.srcHash + ' 自动出卡' });
+  return {
+    no: it.no, title: it.title, module: it.module, project: it.project, status: 'CLARIFYING',
+    submitter: it.submitter, developer: it.developer, takenAt: it.takenAt, nature: it.nature, bizContact: it.bizContact,
+    created: it.created, content: it.content, srcHash: it.srcHash, merged: it.merged, childCount: it.childCount,
+    clarify: { round: it.round, question: it.question, raiser: it.raiser, raisedAt: it.raisedAt, channel: it.channel,
+      preStatus: it.preStatus, preStart: it.preStart, preEnd: it.preEnd },
+    logs: logs
+  };
+}
+/* 合并卡子卡（只读）：状态、排期与开发人随合并卡；澄清原卡 / 澄清修订卡带对应流水 */
+function buildChild(s, m) {
+  var c = {
+    no: s.no, title: s.title, module: s.module, project: m.project, status: m.status, start: m.start, end: m.end,
+    developer: m.developer, takenAt: m.takenAt, submitter: s.submitter, nature: '业务功能', bizContact: '',
+    created: s.created || '—', srcHash: s.srcHash, child: true, parent: m.no, logs: []
+  };
+  var origin = D.clarifyRecords.filter(function (r) { return r.cardNo === s.no && r.status === 'RESOLVED'; })[0];
+  var revOf = D.clarifyRecords.filter(function (r) { return r.mergedInto === m.no && (r.revisions || []).some(function (v) { return v.card === s.no; }); })[0];
+  if (origin) {
+    c.logs.push({ time: origin.handledAt, type: '澄清完成', op: origin.handler,
+      desc: '澄清完成：修订 commit ' + origin.revisions.map(function (v) { return v.hash; }).join(', ') + '，并入合并卡 ' + origin.mergedInto + '，恢复为「' + P.statusLabel(origin.preStatus) + '」' });
+    c.logs.push({ time: origin.raisedAt, type: '发起澄清', op: origin.raiser,
+      desc: '发起澄清（第 ' + origin.round + ' 次）：' + P.summary(origin.question) + (origin.preStart ? '；原排期 ' + P.rangeText(origin.preStart, origin.preEnd) + ' 已移除' : '') });
+  } else if (revOf) {
+    c.logs.push({ time: revOf.handledAt, type: '编辑', op: revOf.handler, desc: '并入合并卡 ' + m.no + '（澄清修订）' });
+  } else {
+    c.logs.push({ time: s.mergedAt, type: '编辑', op: '陈默', desc: '并入合并卡 ' + m.no });
+  }
+  c.logs.push({ time: s.created || s.mergedAt, type: '创建卡片', op: '系统', desc: '由 commit 自动出卡' });
+  return c;
+}
+
 var CARDS = {
   merge: byNo('FS-20261018-001'),
   delayed: byNo('FS-20261010-001'),
@@ -64,20 +119,100 @@ var CARDS = {
     no: 'FS-20261016-003', title: '修正 README 排版', module: 'MISC', project: 'none',
     status: 'NON_FEATURE', submitter: '王倩', nature: '技术支持', bizContact: '', created: '2026-10-16 09:40',
     content: 'docs: 修正 README 排版\n\n- 统一标题层级\n- 补齐目录链接'
-  }
+  },
+  /* 待澄清卡：澄清前为开发中、保留开发人刘洋；第 1 次澄清已撤回，第 2 次待澄清（经 MCP 发起，等待超过 2 天） */
+  clarifying: buildClarifying(clarifyItem('FS-20261014-003')),
+  /* 完成澄清生成的合并卡：澄清来源 FS-20261013-004，澄清记录为已澄清（修订 commit 2 条） */
+  clarified: D.clarifiedMerge
 };
 CARDS.merge.content = '合并自 3 张子卡：\n- FS-20261015-005 要货数量输入框失焦抖动\n- FS-20261016-004 要货单列表分页闪烁\n- FS-20261017-002 要货单打印缺少门店编码';
 CARDS.delayed.bizContact = '张敏';
+CARDS.delayed.ownerUnmatched = true; /* 负责人未匹配系统用户（commit 作者原文），转待澄清不发送通知 */
+CARDS.clarifying.logs = [
+  { time: '2026-10-16 15:20', type: '发起澄清', op: '刘洋', desc: '发起澄清（第 2 次）：' + P.summary(clarifyItem('FS-20261014-003').question) + '；原排期 2026-10-16 ~ 2026-10-17 已移除' },
+  { time: '2026-10-16 09:10', type: '排期', op: '陈默', desc: '排期：— → 2026-10-16 ~ 2026-10-17' },
+  { time: '2026-10-15 17:36', type: '撤回澄清', op: '王倩', desc: '撤回澄清，恢复为「开发中」：沿用《门店商品临期管理规范》第 2 条：短保 ≤3 天、常温 ≤30 天，需求文档无需修订' },
+  { time: '2026-10-15 11:02', type: '发起澄清', op: '刘洋', desc: '发起澄清（第 1 次）：1. 「临期商品」判定口径未写明：按剩余保质期天数还是剩余比例？ 2. 拦截规则是否区分短保烘焙与常…；原排期 2026-10-15 ~ 2026-10-16 已移除' },
+  { time: '2026-10-15 09:40', type: '领取开发', op: '刘洋', desc: '领取开发：刘洋' },
+  { time: '2026-10-15 09:20', type: '排期', op: '陈默', desc: '排期：— → 2026-10-15 ~ 2026-10-16' },
+  { time: '2026-10-14 10:31', type: '创建卡片', op: '系统', desc: '由 harness-main commit d4e7a10 自动出卡' }
+];
 
+/* 工作台其余静态卡也可按编号直达，避免正常卡片点击误入「不存在」。 */
+D.scheduled.concat(D.pool.items, D.pool.page2, D.pool.page3, D.nonFeature.items).forEach(function (c) {
+  if (!Object.keys(CARDS).some(function (k) { return CARDS[k].no === c.no; })) CARDS['card_' + c.no] = c;
+});
 var cur = { cardKey: 'merge', pageState: 'normal', tab: 'base', logType: '全部操作类型', logKw: '' };
+
+/* 编号 → 演示卡片：演示卡片 → 待澄清列表条目 → 已知合并卡的子卡快照；均未命中为「卡片不存在或已删除」 */
+function keyOf(no) {
+  var keys = Object.keys(CARDS);
+  var k = keys.filter(function (x) { return CARDS[x].no === no; })[0];
+  if (k) return CARDS[k].deleted ? null : k;
+  var it = clarifyItem(no);
+  if (it) { CARDS['clr_' + no] = buildClarifying(it); return 'clr_' + no; }
+  for (var i = 0; i < keys.length; i++) {
+    var m = CARDS[keys[i]];
+    if (!m.merged || m.deleted) continue;
+    var snap = childrenOf(m).filter(function (s) { return s.no === no; })[0];
+    if (snap) { CARDS['sub_' + no] = buildChild(snap, m); return 'sub_' + no; }
+  }
+  return null;
+}
+/* 澄清来源：子卡编号可点击，已并入本卡的中间合并卡编号仅显示文本 */
+function lineageHtml(c) {
+  var childNos = childrenOf(c).map(function (s) { return s.no; });
+  return P.lineageOf(c).map(function (no) {
+    return childNos.indexOf(no) >= 0 ? goLink(no) : '<span class="u-mono">' + no + '</span>';
+  }).join('、');
+}
+/* 已在后续完成澄清中并入新合并卡的中间合并卡编号：打开最新合并卡并提示 */
+function redirectNo(no) {
+  var live = P.liveNo(no);
+  if (live !== no) P.toast('卡片 ' + no + ' 已在完成澄清后并入 ' + live + '，已为你打开', 'info');
+  return live;
+}
+function goCard(no, tab) {
+  no = redirectNo(no);
+  var k = keyOf(no);
+  if (k) { cur.cardKey = k; cur.pageState = 'normal'; } else cur.pageState = 'notFound';
+  cur.tab = tab || 'base'; cur.logType = '全部操作类型'; cur.logKw = '';
+  history.replaceState(null, '', '?no=' + encodeURIComponent(no));
+  syncSwitchers();
+  render();
+  window.scrollTo(0, 0);
+}
+
+/* 一次性读取工作台交接；消费后清除，因此刷新页面依旧恢复原始演示数据。 */
+(function () {
+  var json = sessionStorage.getItem('fs_card_handoff');
+  sessionStorage.removeItem('fs_card_handoff');
+  if (!json) return;
+  var handoff;
+  try { handoff = JSON.parse(json); } catch (err) { return; }
+  if (!handoff.card || !location.search.includes(encodeURIComponent(handoff.card.no))) return;
+  var c = handoff.card;
+  if (c.status === 'CLARIFYING' && !c.clarify) c = buildClarifying(c);
+  var key = Object.keys(CARDS).filter(function (k) { return CARDS[k].no === c.no; })[0] || 'handoff';
+  CARDS[key] = c;
+  (handoff.records || []).forEach(function (r) {
+    var idx = D.clarifyRecords.findIndex(function (x) { return x.cardNo === r.cardNo && x.round === r.round; });
+    if (idx >= 0) D.clarifyRecords[idx] = r; else D.clarifyRecords.push(r);
+  });
+})();
 
 /* URL 直达：?no= 命中演示卡片，未命中 → 卡片不存在或已删除 */
 (function () {
   var m = /[?&]no=([^&]+)/.exec(location.search);
   if (m) {
-    var no = decodeURIComponent(m[1]);
-    var hit = Object.keys(CARDS).filter(function (k) { return CARDS[k].no === no; })[0];
-    if (hit) cur.cardKey = hit; else cur.pageState = 'notFound';
+    var asked = decodeURIComponent(m[1]);
+    var no = P.liveNo(asked);
+    var k = keyOf(no);
+    if (k) cur.cardKey = k; else cur.pageState = 'notFound';
+    if (k && no !== asked) {
+      history.replaceState(null, '', '?no=' + encodeURIComponent(no));
+      setTimeout(function () { P.toast('卡片 ' + asked + ' 已在完成澄清后并入 ' + no + '，已为你打开', 'info'); }, 0);
+    }
   }
 })();
 
@@ -88,7 +223,7 @@ function delayDays(c) { return Math.round((parseD(D.today) - parseD(c.end)) / 86
 function parseD(s) { return new Date(s + 'T00:00:00'); }
 function statusTag(c) {
   var m = P.statusMeta(c);
-  var cls = { '待开发': 'busy-tag--info is-plain', '开发中': '', '开发完成': 'busy-tag--success', '延期': 'busy-tag--warning', '非需求改动': 'busy-tag--info' }[m.label];
+  var cls = { '待开发': 'busy-tag--info is-plain', '开发中': '', '开发完成': 'busy-tag--success', '延期': 'busy-tag--warning', '待澄清': 'busy-tag--warning', '非需求改动': 'busy-tag--info' }[m.label];
   return '<span class="busy-tag ' + cls + '">' + m.label + '</span>';
 }
 function bizContactText(c) {
@@ -97,9 +232,29 @@ function bizContactText(c) {
   if (c.linkedReq) return '未填写，以需求单提交人 ' + c.reqSubmitter + ' 兜底';
   return '未填写';
 }
+function goLink(no, text) { return '<a href="javascript:void 0" data-goto="' + no + '">' + (text || no) + '</a>'; }
+/* 本卡澄清记录：当前待澄清（投影）+ 本卡历史记录 + 完成后并入本卡的原卡记录；按发起时间倒序 */
+function recordsOf(c) {
+  var out = [];
+  if (c.status === 'CLARIFYING' && c.clarify) {
+    var open = { cardNo: c.no, status: 'OPEN' };
+    Object.keys(c.clarify).forEach(function (k) { open[k] = c.clarify[k]; });
+    out.push(open);
+  }
+  var lineage = P.lineageOf(c);
+  var origins = [c.no].concat(lineage);
+  if (c.merged) childrenOf(c).forEach(function (s) { origins.push(s.no); });
+  D.clarifyRecords.forEach(function (r) {
+    if (r.status === 'OPEN' && r.cardNo === c.no && c.clarify) return; /* 当前投影已在上方加入 */
+    if (origins.indexOf(r.cardNo) >= 0 || r.mergedInto === c.no || lineage.indexOf(r.mergedInto) >= 0) out.push(r);
+  });
+  return out.sort(function (a, b) { return a.raisedAt < b.raisedAt ? 1 : a.raisedAt > b.raisedAt ? -1 : 0; });
+}
+function ownRounds(c) { return D.clarifyRecords.filter(function (r) { return r.cardNo === c.no; }).length; }
 
 /* ==================== 整页渲染 ==================== */
 function render() {
+  if (cur.pageState === 'normal' && (!card() || card().deleted)) cur.pageState = 'notFound';
   if (cur.pageState === 'loadError') {
     $('pageHead').innerHTML = '';
     $('pageBody').innerHTML =
@@ -107,7 +262,7 @@ function render() {
       '<div class="busy-result__title">卡片详情加载失败</div>' +
       '<div class="busy-result__subtitle">请检查网络后重试</div>' +
       '<button class="busy-button busy-button--primary" type="button" id="btnReload"><span>重新加载</span></button></div></div>';
-    $('btnReload').onclick = function () { cur.pageState = 'normal'; render(); P.toast('已重新加载', 'success'); };
+    $('btnReload').onclick = function () { cur.pageState = 'normal'; syncSwitchers(); render(); P.toast('已重新加载', 'success'); };
     return;
   }
   if (cur.pageState === 'notFound') {
@@ -125,11 +280,24 @@ function render() {
 
 /* ---------- J1 页头 + L 操作区 ---------- */
 function headHint(c) {
+  if (!PERM.edit && !PERM.del && !PERM.markDone) return '当前账号无功能排期编辑权限，仅可查看';
   if (c.child) return '子卡只读：状态、排期与开发人由合并卡控制';
   if (c.status === 'NON_FEATURE') return '恢复后回到待排期池';
-  var base = { PENDING: '领取后进入开发中并记录开发人', IN_PROGRESS: '标记完成时可选关联完成 commit', DONE: '已锁定排期，回退将清空完成 commit 回执' }[c.status] || '';
+  var base = {
+    PENDING: '领取后进入开发中并记录开发人',
+    IN_PROGRESS: '标记完成时可选关联完成 commit',
+    DONE: '已锁定排期，回退将清空完成 commit 回执',
+    CLARIFYING: '产品修订需求文档并提交后完成澄清；无需修订时可撤回'
+  }[c.status] || '';
   if (c.merged) base += '；状态与编辑同步扩散至 ' + c.childCount + ' 张子卡';
   return base;
+}
+/* 更多操作项：移入非需求改动（非非需求改动、非待澄清）/ 解散合并（合并卡；开发完成或待澄清时置灰并提示） */
+function moreItems(c) {
+  var items = [];
+  if (PERM.edit && c.status !== 'NON_FEATURE' && c.status !== 'CLARIFYING') items.push('nonfeature');
+  if (PERM.edit && c.merged) items.push('dissolve');
+  return items;
 }
 function renderHead() {
   var c = card();
@@ -145,28 +313,35 @@ function renderHead() {
   if (c.child) {
     actions.push('<button class="busy-button busy-button--primary" type="button" id="actParent"><span>查看合并卡</span></button>');
   } else {
-    actions.push('<button class="busy-button" type="button" id="actMore"><span>更多操作 ▾</span></button>');
-    actions.push('<button class="busy-button busy-button--danger is-plain" type="button" id="actDelete"><span>删除</span></button>');
+    if (moreItems(c).length) actions.push('<button class="busy-button" type="button" id="actMore"><span>更多操作 ▾</span></button>');
+    if (PERM.del) actions.push('<button class="busy-button busy-button--danger is-plain" type="button" id="actDelete"><span>删除</span></button>');
     if (c.status === 'PENDING') {
-      actions.push('<button class="busy-button" type="button" id="actDone"><span>标记完成</span></button>');
-      actions.push('<button class="busy-button busy-button--primary" type="button" id="actTake"><span>领取开发</span></button>');
+      if (PERM.markDone) actions.push('<button class="busy-button" type="button" id="actRaise"><span>转待澄清</span></button>');
+      if (PERM.markDone) actions.push('<button class="busy-button" type="button" id="actDone"><span>标记完成</span></button>');
+      if (PERM.edit) actions.push('<button class="busy-button busy-button--primary" type="button" id="actTake"><span>领取开发</span></button>');
     } else if (c.status === 'IN_PROGRESS') {
-      actions.push('<button class="busy-button" type="button" id="actUntake"><span>取消领取</span></button>');
-      actions.push('<button class="busy-button busy-button--primary" type="button" id="actDone"><span>标记完成</span></button>');
+      if (PERM.markDone) actions.push('<button class="busy-button" type="button" id="actRaise"><span>转待澄清</span></button>');
+      if (PERM.edit) actions.push('<button class="busy-button" type="button" id="actUntake"><span>取消领取</span></button>');
+      if (PERM.markDone) actions.push('<button class="busy-button busy-button--primary" type="button" id="actDone"><span>标记完成</span></button>');
     } else if (c.status === 'DONE') {
-      actions.push('<button class="busy-button busy-button--warning" type="button" id="actRevert"><span>回退</span></button>');
+      if (PERM.markDone) actions.push('<button class="busy-button busy-button--warning" type="button" id="actRevert"><span>回退</span></button>');
+    } else if (c.status === 'CLARIFYING') {
+      /* 撤回澄清：发起人本人具标记完成权限，或具编辑权限；完成澄清：具编辑权限 */
+      if (c.clarify.raiser === D.user ? PERM.markDone : PERM.edit) actions.push('<button class="busy-button" type="button" id="actWithdraw"><span>撤回澄清</span></button>');
+      if (PERM.edit) actions.push('<button class="busy-button busy-button--primary" type="button" id="actResolve"><span>完成澄清</span></button>');
     } else if (c.status === 'NON_FEATURE') {
-      actions.push('<button class="busy-button busy-button--primary" type="button" id="actRestore"><span>恢复为待开发</span></button>');
+      if (PERM.edit) actions.push('<button class="busy-button busy-button--primary" type="button" id="actRestore"><span>恢复为待开发</span></button>');
     }
   }
   $('pageHead').innerHTML =
     '<div class="tpl-page-head__main">' +
       '<a class="tpl-page-head__back" href="feature-schedule.html">‹ 返回功能排期管理</a>' +
-      '<h1 class="tpl-page-title"><span class="u-mono">' + c.no + '</span> ' + c.title + '</h1>' +
+      '<h1 class="tpl-page-title"><span class="u-mono">' + c.no + '</span> ' + P.esc(c.title) + '</h1>' +
       '<div class="tpl-page-head__tags">' + tags.join('') + '</div>' +
     '</div>' +
-    '<div class="tpl-page-head__actions" id="headActions">' +
-      '<span class="u-sub">' + headHint(c) + '</span>' + actions.join('') +
+    '<div class="tpl-overview__main u-right" id="headActions">' +
+      '<span class="u-sub">' + headHint(c) + '</span>' +
+      '<div class="tpl-page-head__actions tpl-actionbar__row">' + actions.join('') + '</div>' +
     '</div>';
   $('actCopy').onclick = function () {
     var done = function () { P.toast('卡片编号 ' + c.no + ' 已复制', 'success'); };
@@ -174,80 +349,121 @@ function renderHead() {
     else done();
   };
   var b;
-  if ((b = $('actParent'))) b.onclick = function () { cur.cardKey = 'merge'; cur.tab = 'children'; render(); };
+  if ((b = $('actParent'))) b.onclick = function () { goCard(c.parent, 'children'); };
   if ((b = $('actMore'))) b.onclick = openMore;
   if ((b = $('actDelete'))) b.onclick = function () {
     P.confirmBox({
       title: '删除卡片',
       message: '删除后该卡片不可恢复（源 commit 不会再次触发生成）。确认删除 ' + c.no + '？',
-      onOk: function () { P.toast('卡片 ' + c.no + ' 已删除', 'success'); location.href = 'feature-schedule.html'; }
+      onOk: function () {
+        if (c.status === 'CLARIFYING' && c.clarify) P.saveClarification(c.no, c.clarify, 'WITHDRAWN', { reason: '卡片已删除' });
+        P.toast('卡片 ' + c.no + ' 已删除', 'success'); location.href = 'feature-schedule.html';
+      }
     });
   };
   if ((b = $('actTake'))) b.onclick = function () {
-    P.btnLoading(b, function () {
+    P.btnLoading(this, function () {
       c.status = 'IN_PROGRESS'; c.developer = D.user; c.takenAt = D.today + ' 10:00';
-      D.logs.unshift({ time: D.today + ' 10:00', type: '领取开发', op: D.user, desc: '领取开发：' + D.user + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
+      logsOf(c).unshift({ time: D.today + ' 10:00', type: '领取开发', op: D.user, desc: '领取开发：' + D.user + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
       P.toast('已领取开发', 'success'); render();
     });
   };
   if ((b = $('actUntake'))) b.onclick = function () {
-    P.btnLoading(b, function () {
+    P.btnLoading(this, function () {
       var dev = c.developer;
       c.status = 'PENDING'; delete c.developer; delete c.takenAt;
-      D.logs.unshift({ time: D.today + ' 10:05', type: '释放开发', op: D.user, desc: '释放开发：' + dev });
+      logsOf(c).unshift({ time: D.today + ' 10:05', type: '释放开发', op: D.user, desc: '释放开发：' + dev });
       P.toast('已释放开发', 'success'); render();
     });
   };
   if ((b = $('actDone'))) b.onclick = function () { openDone('mark'); };
   if ((b = $('actRevert'))) b.onclick = openRevert;
   if ((b = $('actRestore'))) b.onclick = function () {
-    P.btnLoading(b, function () {
+    P.btnLoading(this, function () {
       c.status = 'PENDING';
-      D.logs.unshift({ time: D.today + ' 10:06', type: '编辑', op: D.user, desc: '从非需求改动恢复为待开发' });
+      logsOf(c).unshift({ time: D.today + ' 10:06', type: '编辑', op: D.user, desc: '从非需求改动恢复为待开发' });
       P.toast('已恢复为待开发，卡片回到待排期池', 'success'); render();
     });
+  };
+  /* M7 / M8 / M9 需求澄清 */
+  if ((b = $('actRaise'))) b.onclick = function () {
+    P.clarify.openRaise('ovClarify', c, { onSuccess: function (q) { raiseCard(c, q); } });
+  };
+  if ((b = $('actResolve'))) b.onclick = function () {
+    P.clarify.openResolve('ovClarify', c, { lookup: lookupCard, onSuccess: function (picks) { resolveCard(c, picks); } });
+  };
+  if ((b = $('actWithdraw'))) b.onclick = function () {
+    P.clarify.openWithdraw('ovClarify', c, { onSuccess: function (reason) { withdrawCard(c, reason); } });
   };
 }
 
 /* ---------- J2 业务提示 + J3 开发进度 + J4 关键摘要 + J5 任务内容 ---------- */
+function metaItem(label, value) {
+  return '<div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">' + label + '</span><span class="tpl-overview__meta-value">' + value + '</span></div>';
+}
 function renderBody() {
   var c = card();
   var h = '';
 
-  /* J2 业务提示 */
+  /* J2 业务提示（按条件出现） */
   if (c.child) {
-    h += '<div class="tpl-panel"><span class="busy-message busy-message--info">当前隶属合并卡 ' + c.parent +
-      '，状态、排期与开发人由合并卡控制，本页只读。<a href="javascript:void 0" id="lnkParent">查看合并卡</a></span></div>';
+    h += '<div class="tpl-panel">' + P.alertHtml('info', '当前隶属合并卡 ' + c.parent + '，状态、排期与开发人由合并卡控制，本页只读。' + goLink(c.parent, '查看合并卡')) + '</div>';
   } else if (c.status === 'NON_FEATURE') {
-    h += '<div class="tpl-panel"><span class="busy-message busy-message--info">非需求改动：不进入待排期池与月历，不参与排期、领取与完成。</span></div>';
+    h += '<div class="tpl-panel">' + P.alertHtml('info', '非需求改动：不进入待排期池与月历，不参与排期、领取与完成。') + '</div>';
   } else if (isDelayed(c)) {
-    h += '<div class="tpl-panel"><span class="busy-message busy-message--warning">已延期：排期截止 ' + c.end +
-      '，当前仍为「' + (c.status === 'PENDING' ? '待开发' : '开发中') + '」，已超出 ' + delayDays(c) + ' 天</span></div>';
+    h += '<div class="tpl-panel">' + P.alertHtml('warning', '已延期：排期截止 ' + c.end + '，当前仍为「' + (c.status === 'PENDING' ? '待开发' : '开发中') + '」，已超出 ' + delayDays(c) + ' 天') + '</div>';
+  }
+  if (c.status === 'CLARIFYING' && c.clarify) {
+    var ci = c.clarify, w = P.waitInfo(ci.raisedAt);
+    h += '<div class="tpl-panel" id="clarifyHint">' +
+      P.alertHtml('warning', '待澄清：等待产品修订需求文档') +
+      '<div class="tpl-overview__codes">' +
+        metaItem('发起人', P.esc(ci.raiser)) +
+        metaItem('发起时间', '<span class="u-mono">' + ci.raisedAt + '</span> · ' + ci.channel) +
+        metaItem('已等待', w.over2d
+          ? '<span class="busy-tag busy-tag--small busy-tag--warning" data-wait="over">' + w.long + '（超过 2 天）</span>'
+          : '<span data-wait="ok">' + w.long + '</span>') +
+        metaItem('澄清前状态', P.statusLabel(ci.preStatus)) +
+        metaItem('原排期', ci.preStart ? '<span class="u-mono">' + P.rangeText(ci.preStart, ci.preEnd) + '</span>' : '未排期') +
+        metaItem('轮次', '第 ' + ci.round + ' 次') +
+      '</div>' +
+      '<div class="tpl-section"><div class="tpl-section__head">澄清问题</div><div>' + P.multiline(ci.question) + '</div></div>' +
+    '</div>';
+  }
+  if (P.lineageOf(c).length && !c.child) {
+    h += '<div class="tpl-panel" id="clarifiedHint">' + P.alertHtml('info', '由 ' + lineageHtml(c) + ' 完成澄清合并而来（由早到晚），原卡已成为本合并卡的子卡；已并入本卡的中间合并卡编号仅作记录。') + '</div>';
   }
 
-  /* J3 开发进度（非需求改动卡不渲染） */
+  /* J3 开发进度（非需求改动卡不渲染）；待澄清卡在澄清前状态对应的步骤以警示态呈现 */
   if (c.status !== 'NON_FEATURE') {
-    var step = c.status === 'PENDING' ? 0 : c.status === 'IN_PROGRESS' ? 1 : 2;
+    var clarifying = c.status === 'CLARIFYING';
+    var basis = clarifying ? c.clarify.preStatus : c.status;
+    var step = basis === 'PENDING' ? 0 : basis === 'IN_PROGRESS' ? 1 : 2;
     var steps = ['待开发', '开发中', '开发完成'].map(function (t, i) {
-      var cls = i < step ? 'is-finish' : i === step ? 'is-process' : '';
+      var warn = clarifying && i === step;
+      var cls = i < step ? 'is-finish' : i === step && !warn ? 'is-process' : '';
       var desc = '';
-      if (i === 0 && c.status !== 'PENDING') desc = '已领取 ' + (c.takenAt || '');
-      if (i === 0 && c.status === 'PENDING') desc = '当前阶段';
-      if (i === 1 && c.status === 'IN_PROGRESS') desc = '当前阶段 · ' + c.developer + ' ' + (c.takenAt || '') + (isDelayed(c) ? ' · 已延期 ' + delayDays(c) + ' 天' : '');
-      if (i === 1 && c.status === 'DONE') desc = c.developer + ' ' + (c.takenAt || '');
-      if (i === 2 && c.status === 'DONE') desc = '完成于 ' + (c.doneAt || '');
-      if (i === 2 && c.status !== 'DONE') desc = '待开始';
+      if (warn) desc = '待澄清，等待产品修订需求' + (i === 1 && c.developer ? ' · 开发人 ' + c.developer : '');
+      else {
+        if (i === 0 && basis !== 'PENDING') desc = '已领取 ' + (c.takenAt || '');
+        if (i === 0 && basis === 'PENDING') desc = '当前阶段';
+        if (i === 1 && basis === 'IN_PROGRESS') desc = '当前阶段 · ' + c.developer + ' ' + (c.takenAt || '') + (isDelayed(c) ? ' · 已延期 ' + delayDays(c) + ' 天' : '');
+        if (i === 1 && basis === 'DONE') desc = c.developer + ' ' + (c.takenAt || '');
+        if (i === 2 && basis === 'DONE') desc = '完成于 ' + (c.doneAt || '');
+        if (i === 2 && basis !== 'DONE') desc = '待开始';
+      }
       if (c.child) desc += (desc ? ' · ' : '') + '随合并卡流转';
-      return '<div class="busy-step ' + cls + '"><span class="busy-step__icon">' + (i < step ? '✓' : i + 1) + '</span>' +
-        '<div><div class="busy-step__title">' + t + '</div><div class="busy-step__desc">' + desc + '</div></div>' +
+      return '<div class="busy-step ' + cls + '"' + (warn ? ' data-step="warning"' : '') + '><span class="busy-step__icon' + (warn ? ' u-warning' : '') + '">' + (i < step ? '✓' : warn ? '!' : i + 1) + '</span>' +
+        '<div><div class="busy-step__title' + (warn ? ' u-warning' : '') + '">' + t + '</div><div class="busy-step__desc' + (warn ? ' u-warning' : '') + '">' + desc + '</div></div>' +
         (i < 2 ? '<span class="busy-step__line"></span>' : '') + '</div>';
     }).join('');
     h += '<div class="tpl-panel"><div class="busy-steps">' + steps + '</div></div>';
   }
 
   /* J4 关键摘要 */
-  var scheduleVal, scheduleFoot = '';
-  if (!c.start) { scheduleVal = '—'; scheduleFoot = '<span class="tpl-kpi__foot-text">未排期，卡片在待排期池</span>'; }
+  var scheduleVal, scheduleFoot = '', scheduleDot = 'is-primary';
+  if (c.status === 'CLARIFYING') { scheduleVal = '—'; scheduleDot = 'is-warning'; scheduleFoot = '<span class="tpl-kpi__foot-text u-warning">待澄清，排期已移除</span>'; }
+  else if (!c.start) { scheduleVal = '—'; scheduleFoot = '<span class="tpl-kpi__foot-text">未排期，卡片在待排期池</span>'; }
   else {
     scheduleVal = P.mmdd(c.start) + ' ~ ' + P.mmdd(c.end);
     scheduleFoot = '<span class="tpl-kpi__foot-text">共 ' + P.daysBetween(c.start, c.end) + ' 天</span>' +
@@ -256,11 +472,11 @@ function renderBody() {
   var commitN = c.no === 'FS-20261009-002' ? D.doneCommits.length : (c.commits || 0);
   /* J4：固定三项（排期 / 开发人 / 完成 commit）；合并卡追加第四项「子卡 N 张」，非合并卡无第四项（所属项目在基本信息分组展示） */
   h += '<div class="tpl-kpi-grid">' +
-    '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">排期</span></div>' +
+    '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot ' + scheduleDot + '"></span><span class="tpl-kpi__label">排期</span></div>' +
       '<div class="tpl-kpi__number"><span class="tpl-kpi__value u-mono">' + scheduleVal + '</span></div><div class="tpl-kpi__foot">' + scheduleFoot + '</div></div>' +
     '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">开发人</span></div>' +
-      '<div class="tpl-kpi__number"><span class="tpl-kpi__value">' + (c.developer || '待领取') + '</span></div>' +
-      '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">' + (c.takenAt ? '领取于 ' + c.takenAt : '') + '</span></div></div>' +
+      '<div class="tpl-kpi__number"><span class="tpl-kpi__value">' + (c.developer || '—') + '</span></div>' +
+      '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">' + (c.takenAt ? '领取于 ' + c.takenAt : '待领取') + '</span></div></div>' +
     '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">完成 commit</span></div>' +
       '<div class="tpl-kpi__number"><span class="tpl-kpi__value">' + commitN + '</span><span class="tpl-kpi__unit">个</span></div>' +
       '<div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">' + (c.doneAt ? '完成于 ' + c.doneAt : '') + '</span></div></div>' +
@@ -274,16 +490,19 @@ function renderBody() {
   /* J5 任务内容（独立面板，位于关键摘要与页级 Tab 之间；内容原文保留换行，空显示「暂无内容」） */
   h += '<div class="tpl-panel"><div class="tpl-section">' +
     '<div class="tpl-section__head">任务内容</div>' +
-    (c.content ? '<div>' + c.content.replace(/\n/g, '<br>') + '</div>' : '<div class="u-sub">暂无内容</div>') +
+    (c.content ? '<div>' + P.multiline(c.content) + '</div>' : '<div class="u-sub">暂无内容</div>') +
     '</div></div>';
 
   /* K 页级 Tab */
   h += '<div class="tpl-panel"><div id="tabHost"></div></div>';
   $('pageBody').innerHTML = h;
-
-  var lp = document.getElementById('lnkParent');
-  if (lp) lp.onclick = function () { cur.cardKey = 'merge'; cur.tab = 'base'; render(); };
+  bindGoto($('pageBody'));
   renderTabs();
+}
+function bindGoto(root) {
+  root.querySelectorAll('[data-goto]').forEach(function (a) {
+    a.onclick = function (e) { e.preventDefault(); goCard(a.getAttribute('data-goto')); };
+  });
 }
 
 /* ---------- K 页级 Tab ---------- */
@@ -295,57 +514,64 @@ function tabList() {
     var commitN = c.no === 'FS-20261009-002' ? D.doneCommits.length : (c.commits || 0);
     tabs.push({ key: 'commits', label: '完成 commit', badge: commitN });
   }
-  tabs.push({ key: 'logs', label: '操作日志', badge: D.logs.length });
+  var recN = recordsOf(c).length;
+  if (recN) tabs.push({ key: 'clarify', label: '澄清记录', badge: recN }); /* K6：仅有澄清记录时显示 */
+  tabs.push({ key: 'logs', label: '操作日志', badge: logsOf(c).length });
   return tabs;
 }
 function renderTabs() {
   var c = card();
   var tabs = tabList();
   if (!tabs.filter(function (t) { return t.key === cur.tab; })[0]) cur.tab = 'base';
-  var h = '<div class="busy-tabs">' + tabs.map(function (t) {
-    return '<span class="busy-tabs__item' + (t.key === cur.tab ? ' is-active' : '') + '" data-tab="' + t.key + '">' + t.label +
-      (t.badge ? ' <span class="busy-badge"><span class="busy-badge__content">' + t.badge + '</span></span>' : '') + '</span>';
+  /* 页签角标：busy-badge 包裹页签文字，角标位于文字右上 */
+  var h = '<div class="busy-tabs" role="tablist">' + tabs.map(function (t) {
+    return '<span class="busy-tabs__item' + (t.key === cur.tab ? ' is-active' : '') + '" data-tab="' + t.key + '" role="tab">' +
+      (t.badge ? '<span class="busy-badge">' + t.label + '<sup class="busy-badge__content">' + t.badge + '</sup></span>' : t.label) + '</span>';
   }).join('') + '</div>';
   if (cur.tab === 'base') h += tabBase(c);
   if (cur.tab === 'children') h += tabChildren(c);
   if (cur.tab === 'commits') h += tabCommits(c);
+  if (cur.tab === 'clarify') h += tabClarify(c);
   if (cur.tab === 'logs') h += tabLogs(c);
   $('tabHost').innerHTML = h;
   $('tabHost').querySelectorAll('[data-tab]').forEach(function (t) {
     t.addEventListener('click', function () { cur.tab = t.getAttribute('data-tab'); renderTabs(); });
   });
   bindTabEvents(c);
+  bindGoto($('tabHost'));
 }
 
 /* K1 基本信息 */
 function tabBase(c) {
   var repo = c.merged ? '合并卡（无源仓）' : (P.projectOf(c.project).harness || '—');
-  var commit = c.merged ? 'MERGE-' + c.no : 'a1b2c3d';
+  var commit = c.merged ? 'MERGE-' + c.no : (c.srcHash || 'a1b2c3d');
   var h = '<div class="tpl-section">' +
     '<div class="tpl-toolbar"><div class="tpl-toolbar__left"><div class="tpl-section__head">卡片信息</div></div>' +
-    '<div class="tpl-toolbar__right">' + (c.child ? '' : '<button class="busy-button busy-button--small" type="button" id="btnEdit"><span>编辑</span></button>') + '</div></div>' +
+    '<div class="tpl-toolbar__right">' + (c.child || !PERM.edit ? '' : '<button class="busy-button busy-button--small" type="button" id="btnEdit"><span>编辑</span></button>') + '</div></div>' +
     '<table class="busy-descriptions is-border">' +
-      '<tr><th>卡片编号</th><td class="u-mono">' + c.no + '</td><th>标题</th><td>' + c.title + '</td></tr>' +
-      '<tr><th>负责人</th><td>' + c.submitter + (c.no === 'FS-20261010-001' ? ' <span class="u-sub">（commit 作者未匹配系统用户）</span>' : '') + '</td>' +
+      '<tr><th>卡片编号</th><td class="u-mono">' + c.no + '</td><th>标题</th><td>' + P.esc(c.title) + '</td></tr>' +
+      '<tr><th>负责人</th><td>' + (c.submitter || '—') + (c.ownerUnmatched ? ' <span class="u-sub">（commit 作者未匹配系统用户）</span>' : '') + '</td>' +
       '<th>来源模块</th><td><span class="busy-tag busy-tag--small busy-tag--info is-plain">' + c.module + '</span></td></tr>' +
       '<tr><th>需求性质</th><td>' + (c.nature || '业务功能') + '</td><th>业务对接人</th><td>' + bizContactText(c) + '</td></tr>' +
       '<tr><th>所属项目</th><td>' + P.projectTag(c.project, true) + ' <span class="u-sub u-mono">按源仓 ' + (P.projectOf(c.project).harness || '—') + ' 解析</span></td>' +
       '<th>源代码仓</th><td class="u-mono">' + repo + '</td></tr>' +
       '<tr><th>源 commit</th><td class="u-mono">' + commit + '</td><th>创建时间</th><td class="u-mono">' + (c.created || '—') + '</td></tr>' +
+      /* K1：完成澄清生成的合并卡另显示澄清来源（前序卡片编号，规则同 J2） */
+      (P.lineageOf(c).length ? '<tr><th>澄清来源</th><td colspan="3">' + lineageHtml(c) + ' <span class="u-sub">完成澄清后与修订卡自动合并，原卡成为本卡子卡</span></td></tr>' : '') +
     '</table></div>'; /* K1：内容不在本分组，由「任务内容」面板（J5）承担 */
   if (c.status === 'NON_FEATURE') return h;
 
-  var lockNote = c.status === 'DONE'
-    ? '<span class="u-sub u-warning">开发完成的卡片已锁定排期，如需改期请先回退状态</span>' : '';
-  var btns = c.child || c.status === 'DONE' ? '' :
+  var lockNote = c.status === 'DONE' ? '开发完成的卡片已锁定排期，如需改期请先回退状态'
+    : c.status === 'CLARIFYING' ? '待澄清的卡片已移出排期，完成或撤回澄清后回到待排期池' : '';
+  var btns = c.child || c.status === 'DONE' || c.status === 'CLARIFYING' || !PERM.edit ? '' :
     '<button class="busy-button busy-button--small" type="button" id="btnSchedule"><span>调整排期</span></button>' +
-    '<button class="busy-button busy-button--small" type="button" id="btnUnsched"' + (c.start ? '' : ' disabled class="busy-button busy-button--small is-disabled"') + '><span>移回待排期</span></button>';
+    '<button class="busy-button busy-button--small' + (c.start ? '' : ' is-disabled') + '" type="button" id="btnUnsched"' + (c.start ? '' : ' disabled') + '><span>移回待排期</span></button>';
   h += '<hr class="tpl-divider"><div class="tpl-section">' +
     '<div class="tpl-toolbar"><div class="tpl-toolbar__left"><div class="tpl-section__head">排期与开发</div></div>' +
     '<div class="tpl-toolbar__right">' + btns + '</div></div>' +
-    (lockNote ? '<div>' + lockNote + '</div>' : '') +
+    (lockNote ? '<div><span class="u-sub u-warning" id="lockNote">' + lockNote + '</span></div>' : '') +
     '<table class="busy-descriptions is-border">' +
-      '<tr><th>排期日期</th><td class="u-mono">' + (c.start ? c.start + (c.end !== c.start ? ' ~ ' + c.end : '') : '—') + '</td>' +
+      '<tr><th>排期日期</th><td class="u-mono">' + (c.start ? P.rangeText(c.start, c.end) : '—') + '</td>' +
       '<th>排期天数</th><td class="u-mono">' + (c.start ? '共 ' + P.daysBetween(c.start, c.end) + ' 天' : '—') + '</td></tr>' +
       '<tr><th>开发状态</th><td>' + P.statusCell(c) + '</td><th>开发人</th><td>' + (c.developer || '—') + '</td></tr>' +
       '<tr><th>领取时间</th><td class="u-mono">' + (c.takenAt || '—') + '</td><th>完成时间</th><td class="u-mono">' + (c.doneAt || '—') + '</td></tr>' +
@@ -355,14 +581,18 @@ function tabBase(c) {
 
 /* K3 子卡明细（仅合并卡；按并入时间倒序） */
 function tabChildren(c) {
+  var revNos = [];
+  D.clarifyRecords.forEach(function (r) { if (r.mergedInto === c.no) (r.revisions || []).forEach(function (v) { revNos.push(v.card); }); });
   return '<div class="tpl-section">' +
     '<div class="u-sub">子卡状态、排期与开发人随合并卡扩散；合并前快照用于解散恢复。</div>' +
     '<table class="busy-table busy-table--border"><thead><tr>' +
     '<th>子卡编号</th><th>标题</th><th>来源模块</th><th>提交人</th><th>合并前状态</th><th>合并前排期日</th><th>并入时间</th><th>操作</th>' +
     '</tr></thead><tbody>' +
-    D.children.map(function (s) {
+    childrenOf(c).map(function (s) {
+      var mark = s.clarifyOrigin ? ' <span class="busy-tag busy-tag--small busy-tag--warning is-plain">澄清原卡</span>'
+        : revNos.indexOf(s.no) >= 0 ? ' <span class="busy-tag busy-tag--small is-plain">澄清修订</span>' : '';
       return '<tr><td class="u-mono"><a href="javascript:void 0" data-child="' + s.no + '">' + s.no + '</a></td>' +
-        '<td>' + s.title + '</td>' +
+        '<td>' + P.esc(s.title) + mark + '</td>' +
         '<td><span class="busy-tag busy-tag--small busy-tag--info is-plain">' + s.module + '</span></td>' +
         '<td>' + s.submitter + '</td><td>' + s.preStatus + '</td>' +
         '<td class="u-mono">' + s.preDate + '</td><td class="u-mono">' + s.mergedAt + '</td>' +
@@ -374,7 +604,7 @@ function tabChildren(c) {
 /* K4 完成 commit */
 function tabCommits(c) {
   var commits = c.no === 'FS-20261009-002' ? D.doneCommits : [];
-  var canEdit = c.status === 'DONE' && !c.child;
+  var canEdit = c.status === 'DONE' && !c.child && PERM.edit;
   var h = '<div class="tpl-section">' +
     '<div class="u-sub">commit 选填；候选仓为卡片所属项目的代码服务仓，只能从仓内检索点选，hash 与链接自动回填。</div>';
   if (canEdit) {
@@ -399,11 +629,50 @@ function tabCommits(c) {
   return h + '</div>';
 }
 
+/* K6 澄清记录：每条一个分组（轮次、状态标签、问题全文、发起信息、澄清前状态与原排期；已澄清 / 已撤回的处理信息） */
+function tabClarify(c) {
+  var recs = recordsOf(c);
+  var tagOf = { OPEN: ['待澄清', 'busy-tag--warning'], RESOLVED: ['已澄清', 'busy-tag--success'], WITHDRAWN: ['已撤回', 'busy-tag--info is-plain'] };
+  return '<div class="tpl-section">' +
+    '<div class="u-sub">按发起时间倒序；含本卡与子卡发起的轮次，以及经多轮澄清逐级并入本卡的更早轮次（标注发起卡片编号）；修订 commit 为完成澄清时的快照。</div>' +
+    recs.map(function (r, i) {
+      var tag = tagOf[r.status];
+      var rows =
+        '<tr><th>澄清问题</th><td colspan="3">' + P.multiline(r.question) + '</td></tr>' +
+        '<tr><th>发起</th><td>' + P.esc(r.raiser) + ' · <span class="u-mono">' + r.raisedAt + '</span> · ' + r.channel + '</td>' +
+        '<th>澄清前状态 / 原排期</th><td>' + P.statusLabel(r.preStatus) + ' · ' + (r.preStart ? '<span class="u-mono">' + P.rangeText(r.preStart, r.preEnd) + '</span>' : '未排期') + '</td></tr>';
+      if (r.status === 'RESOLVED') {
+        rows +=
+          '<tr><th>处理</th><td>' + P.esc(r.handler) + ' · <span class="u-mono">' + r.handledAt + '</span> · ' + r.handleChannel + '</td>' +
+          '<th>并入合并卡</th><td>' + (r.mergedInto === c.no ? '并入合并卡 <span class="u-mono">' + r.mergedInto + '</span>（本卡）' : goLink(r.mergedInto, '并入合并卡 ' + r.mergedInto)) + '</td></tr>' +
+          '<tr><th>修订 commit</th><td colspan="3">' + (r.revisions || []).map(function (v) {
+            return '<div class="chip-group">' + goLink(v.card, '<span class="u-mono">' + v.hash + '</span>') +
+              '<span>' + P.esc(v.msg) + '</span><span class="u-sub">' + P.esc(v.author) + ' · ' + v.time + '</span>' +
+              '<span class="busy-tag busy-tag--small is-plain">修订卡 ' + v.card + '</span></div>';
+          }).join('') + '</td></tr>';
+      }
+      if (r.status === 'WITHDRAWN') {
+        rows +=
+          '<tr><th>撤回</th><td>' + P.esc(r.handler) + ' · <span class="u-mono">' + r.handledAt + '</span> · ' + r.handleChannel + '</td>' +
+          '<th>撤回理由</th><td>' + (r.reason ? P.esc(r.reason) : '<span class="u-sub">未填写理由</span>') + '</td></tr>';
+      }
+      return (i ? '<hr class="tpl-divider">' : '') +
+        '<div class="tpl-section" data-record="' + r.status + '">' +
+          '<div class="chip-group"><span class="tpl-toolbar__title">第 ' + r.round + ' 次澄清</span>' +
+          '<span class="busy-tag busy-tag--small ' + tag[1] + '">' + tag[0] + '</span>' +
+          (r.cardNo !== c.no ? goLink(r.cardNo, '<span class="busy-tag busy-tag--small busy-tag--info is-plain">原卡 ' + r.cardNo + '</span>') : '') + '</div>' +
+          '<table class="busy-descriptions is-border">' + rows + '</table>' +
+        '</div>';
+    }).join('') +
+    '</div>';
+}
+
 /* K5 操作日志 */
 function tabLogs(c) {
+  var logs = logsOf(c);
   var types = ['全部操作类型'];
-  D.logs.forEach(function (l) { if (types.indexOf(l.type) < 0) types.push(l.type); });
-  var rows = D.logs.filter(function (l) {
+  logs.forEach(function (l) { if (types.indexOf(l.type) < 0) types.push(l.type); });
+  var rows = logs.filter(function (l) {
     if (cur.logType !== '全部操作类型' && l.type !== cur.logType) return false;
     if (cur.logKw && (l.op + l.desc).indexOf(cur.logKw) < 0) return false;
     return true;
@@ -420,7 +689,7 @@ function tabLogs(c) {
       rows.map(function (l) {
         return '<tr><td class="u-mono">' + l.time + '</td>' +
           '<td><span class="busy-tag busy-tag--small busy-tag--info is-plain">' + l.type + '</span></td>' +
-          '<td>' + l.op + '</td><td>' + l.desc + '</td></tr>';
+          '<td>' + l.op + '</td><td>' + P.esc(l.desc) + '</td></tr>';
       }).join('') + '</tbody></table>'
     : '<div class="busy-empty"><div class="busy-empty__image">▦</div>没有匹配的操作日志</div>') +
     '</div>';
@@ -433,15 +702,15 @@ function bindTabEvents(c) {
   if ((b = $('btnSchedule'))) b.onclick = openSchedule;
   if ((b = $('btnUnsched'))) b.onclick = function () {
     if (!c.start) return;
-    P.btnLoading(b, function () {
+    P.btnLoading(this, function () {
       delete c.start; delete c.end;
-      D.logs.unshift({ time: D.today + ' 10:07', type: '取消排期', op: D.user, desc: '取消排期' });
+      logsOf(c).unshift({ time: D.today + ' 10:07', type: '取消排期', op: D.user, desc: '取消排期' });
       P.toast('已移回待排期', 'success'); render();
     });
   };
   if ((b = $('btnLinkCommit'))) b.onclick = function () { openDone('link'); };
-  document.querySelectorAll('[data-child]').forEach(function (a) {
-    a.addEventListener('click', function () { cur.cardKey = 'child'; cur.tab = 'base'; render(); });
+  document.querySelectorAll('#tabHost [data-child]').forEach(function (a) {
+    a.addEventListener('click', function () { goCard(a.getAttribute('data-child')); });
   });
   document.querySelectorAll('[data-rm]').forEach(function (btn) {
     btn.addEventListener('click', function () {
@@ -452,7 +721,7 @@ function bindTabEvents(c) {
         '<button class="busy-button busy-button--small" type="button" data-x="no"><span>取消</span></button>' +
         '<button class="busy-button busy-button--small busy-button--primary" type="button" data-x="yes"><span>确定</span></button></div>';
       btn.parentNode.appendChild(pop);
-      P.onEsc(function () { pop.remove(); });
+      P.onEsc(function () { pop.remove(); }, pop);
       pop.querySelector('[data-x="no"]').onclick = function () { pop.remove(); };
       pop.querySelector('[data-x="yes"]').onclick = function () {
         P.btnLoading(pop.querySelector('[data-x="yes"]'), function () {
@@ -460,7 +729,7 @@ function bindTabEvents(c) {
           var i = D.doneCommits.findIndex(function (m) { return m.hash === hash; });
           var before = D.doneCommits.length;
           if (i >= 0) D.doneCommits.splice(i, 1);
-          D.logs.unshift({ time: D.today + ' 10:08', type: '编辑', op: D.user, desc: '完成 commit：' + before + ' → ' + D.doneCommits.length + ' 个' });
+          logsOf(c).unshift({ time: D.today + ' 10:08', type: '编辑', op: D.user, desc: '完成 commit：' + before + ' → ' + D.doneCommits.length + ' 个' });
           P.toast('已移除完成 commit ' + hash, 'success');
           render();
         });
@@ -473,13 +742,83 @@ function bindTabEvents(c) {
     it.addEventListener('click', function () { cur.logType = it.getAttribute('data-t'); renderTabs(); });
   });
   var lk = $('logKw');
-  if (lk) lk.addEventListener('input', function () { cur.logKw = this.value.trim();
-    document.querySelectorAll('#tabHost tbody tr').forEach(function () {});
-    renderTabsSoon();
-  });
+  if (lk) lk.addEventListener('input', function () { cur.logKw = this.value.trim(); renderTabsSoon(); });
 }
 var logTimer = null;
 function renderTabsSoon() { clearTimeout(logTimer); logTimer = setTimeout(renderTabs, 300); }
+
+/* ==================== M7 / M8 / M9 需求澄清：状态写入（演示态，规则见 business-rule §11 / state-machine §2） ==================== */
+function lookupCard(no) {
+  var k = Object.keys(CARDS).filter(function (x) { return CARDS[x].no === no && !CARDS[x].deleted; })[0];
+  if (k) return CARDS[k];
+  var merged = Object.keys(CARDS).map(function (key) { return CARDS[key]; }).filter(function (m) { return m.merged && !m.deleted && childrenOf(m).some(function (s) { return s.no === no; }); })[0];
+  if (merged) return { no: no, status: merged.status, child: true, parent: merged.no };
+  return P.findAnyCard(no);
+}
+function ownLogs(c) { if (!c.logs && c !== CARDS.merge) c.logs = []; return logsOf(c); }
+/* 转待澄清：排期清空、开发人保留；生成澄清记录（第 N 次，澄清前状态与原排期）；停留并刷新 */
+function raiseCard(c, question) {
+  var round = ownRounds(c) + 1;
+  var range = c.start ? P.rangeText(c.start, c.end) : '';
+  c.clarify = { round: round, question: question, raiser: D.user, raisedAt: D.now, channel: 'PC', preStatus: c.status, preStart: c.start || '', preEnd: c.end || '' };
+  P.saveClarification(c.no, c.clarify, 'OPEN');
+  c.status = 'CLARIFYING'; delete c.start; delete c.end;
+  ownLogs(c).unshift({ time: D.now, type: '发起澄清', op: D.user,
+    desc: '发起澄清（第 ' + round + ' 次）：' + P.summary(question) + (range ? '；原排期 ' + range + ' 已移除' : '') + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
+  var owner = c.submitter || '';
+  P.toast(!owner || owner === D.user || c.ownerUnmatched ? '已转为待澄清' : '已转为待澄清，已通知 ' + owner, 'success');
+  cur.tab = 'base';
+  render();
+}
+/* 完成澄清：原卡与修订卡自动合并为新合并卡（标题 / 负责人 / 性质 / 对接人取原卡，状态与开发人恢复为澄清前，排期为空回到待排期池），
+   原卡为合并卡时扁平化并删除旧合并卡；成功后进入新合并卡的卡片详情页 */
+function resolveCard(c, picks) {
+  var info = c.clarify;
+  var isUsed = function (no) { return !!lookupCard(no) || D.revisionCommits.some(function (x) { return x.card === no; }); };
+  var revNos = picks.map(function (p) { return p.card || P.nextCardNo(isUsed); }); /* 未出卡的修订 commit 当场出卡 */
+  var newNo = P.nextCardNo(isUsed);
+  picks.forEach(function (p, i) { if (!p.card) p.card = revNos[i]; });
+  var restored = info.preStatus;
+  var revChildren = picks.map(function (p, i) {
+    return { no: revNos[i], title: p.msg.replace(/^[a-z]+(\([^)]*\))?:\s*/, '').slice(0, 30), module: c.module, submitter: p.author,
+      preStatus: '待开发', preDate: '—', mergedAt: D.now, created: p.time, srcHash: p.hash };
+  });
+  var origChildren = c.merged
+    ? childrenOf(c).map(function (s) { var x = {}; Object.keys(s).forEach(function (k) { x[k] = s[k]; }); return x; })
+    : [{ no: c.no, title: c.title, module: c.module, submitter: c.submitter, preStatus: P.statusLabel(restored), preDate: '—',
+         mergedAt: D.now, created: c.created, srcHash: c.srcHash, clarifyOrigin: true }];
+  var children = revChildren.concat(origChildren);
+  P.saveClarification(c.no, info, 'RESOLVED', {
+    revisions: picks.map(function (p, i) { return { hash: p.hash, msg: p.msg, author: p.author, time: p.time, card: revNos[i] }; }),
+    mergedInto: newNo
+  });
+  var m = {
+    no: newNo, title: c.title, module: c.module, project: c.project, status: restored, submitter: c.submitter,
+    nature: c.nature, bizContact: c.bizContact, created: D.now, merged: true, childCount: children.length,
+    clarifiedFrom: P.lineageOf(c).concat([c.no]), children: children,
+    content: '合并自 ' + children.length + ' 张子卡：\n' + children.map(function (s) { return '- ' + s.no + ' ' + s.title; }).join('\n'),
+    logs: [{ time: D.now, type: '创建卡片', op: D.user, desc: '澄清完成，合并自 ' + children.length + ' 张：' + children.map(function (s) { return s.no; }).join(', ') }]
+  };
+  if (restored === 'IN_PROGRESS') { m.developer = c.developer; m.takenAt = c.takenAt; }
+  CARDS['res_' + newNo] = m;
+  ownLogs(c).unshift({ time: D.now, type: '澄清完成', op: D.user,
+    desc: '澄清完成：修订 commit ' + picks.map(function (p) { return p.hash; }).join(', ') + '，并入合并卡 ' + newNo + '，恢复为「' + P.statusLabel(restored) + '」' });
+  delete c.clarify;
+  if (c.merged) { c.deleted = true; D.mergedAway[c.no] = newNo; } /* 嵌套合并扁平化：旧合并卡软删除，编号打开时跳转到新合并卡 */
+  else { c.child = true; c.parent = newNo; c.status = restored; }
+  P.toast('澄清完成，已并入合并卡 ' + newNo, 'success');
+  goCard(newNo);
+}
+/* 撤回澄清：恢复澄清前状态，排期为空回到待排期池，开发人信息不变；澄清记录置为已撤回；停留并刷新 */
+function withdrawCard(c, reason) {
+  var info = c.clarify;
+  P.saveClarification(c.no, info, 'WITHDRAWN', { reason: reason });
+  c.status = info.preStatus; delete c.clarify;
+  ownLogs(c).unshift({ time: D.now, type: '撤回澄清', op: D.user,
+    desc: '撤回澄清，恢复为「' + P.statusLabel(c.status) + '」' + (reason ? '：' + reason : '') + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
+  P.toast('已撤回澄清，卡片恢复为「' + P.statusLabel(c.status) + '」回到待排期池', 'success');
+  render();
+}
 
 /* ==================== M1 编辑卡片信息弹窗 ==================== */
 var editForm = null;
@@ -487,7 +826,7 @@ function openEdit() {
   var c = card();
   editForm = { title: c.title, content: c.content || '', owner: c.submitter, nature: c.nature || '业务功能', contact: c.bizContact || '', dirty: false };
   renderEdit();
-  P.openOverlay('ovEdit');
+  P.openOverlay('ovEdit', function () { $('ovEdit').querySelector('[data-x="cancel"]').click(); });
 }
 function renderEdit() {
   var c = card(), f = editForm;
@@ -498,15 +837,15 @@ function renderEdit() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">编辑卡片信息</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        (c.merged ? '<span class="busy-message busy-message--info">合并卡：保存后标题、内容与负责人扩散至 ' + c.childCount + ' 张子卡</span>' : '') +
+        (c.merged ? P.alertHtml('info', '合并卡：保存后标题、内容与负责人扩散至 ' + c.childCount + ' 张子卡') : '') +
         '<div class="busy-form-item"><div class="busy-form-item__label is-required">标题</div>' +
-        '<div class="busy-form-item__content"><div class="busy-input"><input id="editTitle" maxlength="30" value="' + f.title + '"></div>' +
+        '<div class="busy-form-item__content"><div class="busy-input"><input id="editTitle" maxlength="30" value="' + P.esc(f.title) + '"></div>' +
         '<div class="u-sub"><span id="editTitleCnt">' + f.title.length + '</span>/30</div>' +
         '<div class="busy-form-item__error" id="editTitleErr" hidden></div></div></div>' +
         '<div class="busy-form-item"><div class="busy-form-item__label">内容</div>' +
-        '<div class="busy-form-item__content"><textarea class="busy-textarea" id="editContent">' + f.content + '</textarea></div></div>' +
+        '<div class="busy-form-item__content"><textarea class="busy-textarea" id="editContent">' + P.esc(f.content) + '</textarea></div></div>' +
         '<div class="busy-form-item"><div class="busy-form-item__label is-required">负责人</div>' +
-        '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input readonly id="editOwner" value="' + f.owner + '" placeholder="请选择负责人"></div><span class="busy-select__caret">▾</span></div>' +
+        '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input readonly id="editOwner" value="' + (f.owner || '') + '" placeholder="请选择负责人"></div><span class="busy-select__caret">▾</span></div>' +
         '<div class="busy-select-dropdown" id="editOwnerDd" hidden>' +
           users.map(function (u) { return '<div class="busy-select-dropdown__item' + (u === f.owner ? ' is-selected' : '') + '" data-u="' + u + '">' + u + '</div>'; }).join('') +
         '</div><div class="busy-form-item__error" id="editOwnerErr" hidden>请选择负责人</div></div></div>' +
@@ -517,7 +856,7 @@ function renderEdit() {
           }).join('') +
         '</div><div class="u-sub">技术支持：技术类、非功能性改动（文档补录、参数说明、性能优化、工具脚本、changelog）</div></div></div>' +
         '<div class="busy-form-item"><div class="busy-form-item__label">业务对接人</div>' +
-        '<div class="busy-form-item__content"><div class="busy-input' + (nonFeature ? ' is-disabled' : '') + '"><input id="editContact" maxlength="64" value="' + f.contact + '"' + (nonFeature ? ' disabled' : '') + '></div>' +
+        '<div class="busy-form-item__content"><div class="busy-input' + (nonFeature ? ' is-disabled' : '') + '"><input id="editContact" maxlength="64" value="' + P.esc(f.contact) + '"' + (nonFeature ? ' disabled' : '') + '></div>' +
         '<div class="u-sub"><span id="editContactCnt">' + f.contact.length + '</span>/64' + (c.linkedReq ? ' · REQ 单提交人：' + c.reqSubmitter : '') + '</div>' +
         '<div class="busy-form-item__error" id="editContactErr" hidden>业务对接人最长 64 字</div></div></div>' +
       '</div></div>' +
@@ -566,7 +905,7 @@ function renderEdit() {
     var btn = this;
     P.btnLoading(btn, function () {
       c.title = f.title.trim(); c.content = f.content; c.submitter = f.owner; c.nature = f.nature; c.bizContact = f.contact;
-      D.logs.unshift({ time: D.today + ' 10:09', type: '编辑', op: D.user, desc: '编辑卡片信息' + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
+      logsOf(c).unshift({ time: D.today + ' 10:09', type: '编辑', op: D.user, desc: '编辑卡片信息' + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
       P.closeOverlay('ovEdit');
       P.toast('卡片已保存', 'success');
       render();
@@ -614,7 +953,7 @@ function renderSchedule() {
         '<table class="busy-table busy-table--border"><thead><tr><th class="u-center">一</th><th class="u-center">二</th><th class="u-center">三</th><th class="u-center">四</th><th class="u-center">五</th><th class="u-center">六</th><th class="u-center">日</th></tr></thead>' +
         '<tbody>' + cells + '</tbody></table>' +
         '<div>已选区间：<b class="u-mono">' + rangeText + '</b></div>' +
-        '<div class="busy-form-item__error" id="schedErr" hidden></div>' +
+        '<div class="u-sub u-danger" id="schedErr" hidden></div>' +
       '</div></div>' +
       '<div class="busy-dialog__footer">' +
         '<button class="busy-button" type="button" data-x="cancel"><span>取 消</span></button>' +
@@ -643,7 +982,7 @@ function renderSchedule() {
     P.btnLoading(btn, function () {
       var old = c.start ? c.start : '—';
       c.start = schedSel.start; c.end = schedSel.end;
-      D.logs.unshift({ time: D.today + ' 10:10', type: '调整排期', op: D.user, desc: '排期：' + old + ' → ' + c.start + (c.end !== c.start ? ' ~ ' + c.end : '') + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
+      logsOf(c).unshift({ time: D.today + ' 10:10', type: '调整排期', op: D.user, desc: '排期：' + old + ' → ' + c.start + (c.end !== c.start ? ' ~ ' + c.end : '') + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
       P.closeOverlay('ovSchedule');
       P.toast('排期已更新：' + P.mmdd(c.start) + ' ~ ' + P.mmdd(c.end), 'success');
       render();
@@ -674,7 +1013,7 @@ function renderDone() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">' + (doneSel.mode === 'link' ? '关联完成 commit' : '标记完成') + '</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        (doneSel.mode === 'mark' ? '<span class="busy-message busy-message--info">完成 commit 选填，可不关联直接完成</span>' : '') +
+        (doneSel.mode === 'mark' ? P.alertHtml('info', '完成 commit 选填，可不关联直接完成') : '') +
         '<div class="tpl-section"><div class="tpl-section__head">已选 commit（' + doneSel.picks.length + '）</div>' +
           (doneSel.picks.length ? doneSel.picks.map(function (h2) {
             var m = D.doneCandidates.filter(function (x) { return x.hash === h2; })[0] || D.doneCommits.filter(function (x) { return x.hash === h2; })[0];
@@ -682,7 +1021,7 @@ function renderDone() {
               '<button class="busy-button is-link" type="button" data-unpick="' + h2 + '"><span>移除</span></button></div>';
           }).join('') : '<div class="u-sub">暂无</div>') +
         '</div>' +
-        (noRepo ? '<span class="busy-message busy-message--warning">该项目未配置代码服务仓，可不关联直接完成</span>' :
+        (noRepo ? P.alertHtml('warning', '该项目未配置代码服务仓，可不关联直接完成') :
         '<div class="busy-form-item"><div class="busy-form-item__label">代码仓</div>' +
         '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input readonly id="doneRepo" value="' + doneSel.repo + '"></div><span class="busy-select__caret">▾</span></div>' +
         '<div class="busy-select-dropdown" id="doneRepoDd" hidden>' +
@@ -751,7 +1090,7 @@ function renderDone() {
       if (doneSel.mode === 'mark') {
         c.status = 'DONE'; c.doneAt = D.today + ' 10:12';
         if (!c.developer) { c.developer = D.user; c.takenAt = D.today + ' 10:12'; }
-        D.logs.unshift({ time: D.today + ' 10:12', type: '标记完成', op: D.user, desc: '标记完成' + (doneSel.picks.length ? '，关联 ' + doneSel.picks.length + ' 个完成 commit' : '，未关联完成 commit') + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
+        logsOf(c).unshift({ time: D.today + ' 10:12', type: '标记完成', op: D.user, desc: '标记完成' + (doneSel.picks.length ? '，关联 ' + doneSel.picks.length + ' 个完成 commit' : '，未关联完成 commit') + (c.merged ? '（扩散至 ' + c.childCount + ' 张子卡）' : '') });
         P.closeOverlay('ovDone');
         P.toast(doneSel.picks.length ? '已标记完成，关联 ' + doneSel.picks.length + ' 个 commit' : '已标记完成', 'success');
       } else {
@@ -761,7 +1100,7 @@ function renderDone() {
           return m;
         });
         if (before === D.doneCommits.length) { P.toast('没有需要保存的修改', 'info'); return; }
-        D.logs.unshift({ time: D.today + ' 10:13', type: '编辑', op: D.user, desc: '完成 commit：' + before + ' → ' + D.doneCommits.length + ' 个' });
+        logsOf(c).unshift({ time: D.today + ' 10:13', type: '编辑', op: D.user, desc: '完成 commit：' + before + ' → ' + D.doneCommits.length + ' 个' });
         P.closeOverlay('ovDone');
         P.toast('完成 commit 已更新', 'success');
       }
@@ -779,7 +1118,7 @@ function openRevert() {
       '<div class="busy-dialog__header"><span class="busy-dialog__title">回退</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<span class="busy-message busy-message--warning">回退将清空完成 commit 回执与完成时间</span>' +
+        P.alertHtml('warning', '回退将清空完成 commit 回执与完成时间') +
         '<div class="busy-radio-group">' +
           '<label class="busy-radio' + (hasDev ? ' is-checked' : ' is-disabled') + '" data-r="IN_PROGRESS"' + (hasDev ? '' : ' data-dis="1"') + '><span class="busy-radio__inner"></span><span>回退为开发中（保留开发人' + (hasDev ? ' ' + c.developer : '') + '）</span></label>' +
           '<label class="busy-radio' + (hasDev ? '' : ' is-checked') + '" data-r="PENDING"><span class="busy-radio__inner"></span><span>回退为待开发（清空开发人）</span></label>' +
@@ -808,7 +1147,7 @@ function openRevert() {
       c.status = target;
       delete c.doneAt; c.commits = 0;
       if (target === 'PENDING') { delete c.developer; delete c.takenAt; }
-      D.logs.unshift({ time: D.today + ' 10:14', type: '回退', op: D.user, desc: '已回退为「' + (target === 'IN_PROGRESS' ? '开发中' : '待开发') + '」' + (target === 'IN_PROGRESS' && c.developer ? '，保留开发人 ' + c.developer : '') });
+      logsOf(c).unshift({ time: D.today + ' 10:14', type: '回退', op: D.user, desc: '已回退为「' + (target === 'IN_PROGRESS' ? '开发中' : '待开发') + '」' + (target === 'IN_PROGRESS' && c.developer ? '，保留开发人 ' + c.developer : '') });
       P.closeOverlay('ovRevert');
       P.toast(target === 'IN_PROGRESS' ? '已回退为开发中' : '已回退为待开发', 'success');
       render();
@@ -819,14 +1158,16 @@ function openRevert() {
 /* ==================== 更多操作（移入非需求改动 / 解散合并） ==================== */
 function openMore() {
   var c = card();
-  var dissolveDisabled = c.merged && c.status === 'DONE';
+  var items = moreItems(c);
+  /* 开发完成的合并卡需先回退；待澄清的合并卡需先完成或撤回澄清 */
+  var dissolveHint = c.status === 'DONE' ? '开发完成的合并卡需先回退' : c.status === 'CLARIFYING' ? '待澄清的合并卡需先完成或撤回澄清' : '';
   $('ovMore').innerHTML =
     '<div class="busy-dialog">' +
       '<div class="busy-dialog__header"><span class="busy-dialog__title">更多操作</span>' +
       '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
       '<div class="busy-dialog__body"><div class="tpl-section">' +
-        (c.status !== 'NON_FEATURE' ? '<button class="busy-button is-text" type="button" data-x="nonfeature"><span>移入非需求改动</span></button>' : '') +
-        (c.merged ? '<button class="busy-button is-text' + (dissolveDisabled ? ' is-disabled' : '') + '" type="button" data-x="dissolve"' + (dissolveDisabled ? ' disabled' : '') + '><span>解散合并' + (dissolveDisabled ? '（开发完成的合并卡需先回退）' : '') + '</span></button>' : '') +
+        (items.indexOf('nonfeature') >= 0 ? '<button class="busy-button is-text" type="button" data-x="nonfeature"><span>移入非需求改动</span></button>' : '') +
+        (items.indexOf('dissolve') >= 0 ? '<button class="busy-button is-text' + (dissolveHint ? ' is-disabled' : '') + '" type="button" data-x="dissolve"' + (dissolveHint ? ' disabled' : '') + '><span>解散合并' + (dissolveHint ? '（' + dissolveHint + '）' : '') + '</span></button>' : '') +
       '</div></div>' +
     '</div>';
   P.openOverlay('ovMore');
@@ -840,7 +1181,7 @@ function openMore() {
       onOk: function () {
         var fromLabel = { PENDING: '待开发', IN_PROGRESS: '开发中', DONE: '开发完成' }[c.status] || c.status;
         c.status = 'NON_FEATURE'; delete c.start; delete c.end; delete c.developer; delete c.takenAt; delete c.doneAt; c.commits = 0;
-        D.logs.unshift({ time: D.today + ' 10:15', type: '编辑', op: D.user, desc: '从『' + fromLabel + '』移入非需求改动' });
+        logsOf(c).unshift({ time: D.today + ' 10:15', type: '编辑', op: D.user, desc: '从『' + fromLabel + '』移入非需求改动' });
         P.toast('已移入非需求改动', 'success');
         render();
       }
@@ -861,34 +1202,42 @@ function openMore() {
 }
 
 /* ==================== 初始化：导航切换器 + 首渲染 ==================== */
-P.renderNav({
-  active: 'detail',
-  switchers: [
-    {
-      label: '演示卡片', current: '合并卡（开发中）', currentKey: 'merge',
-      options: [
-        { key: 'merge', label: '合并卡（开发中）FS-20261018-001' },
-        { key: 'delayed', label: '延期卡（开发中）FS-20261010-001' },
-        { key: 'done', label: '完成卡（已锁定）FS-20261009-002' },
-        { key: 'child', label: '子卡（只读）FS-20261015-005' },
-        { key: 'nonfeature', label: '非需求改动卡 FS-20261016-003' }
-      ],
-      onPick: function (k) { cur.cardKey = k; cur.tab = 'base'; cur.pageState = 'normal'; render(); }
-    },
-    {
-      label: '整页状态', current: '正常', currentKey: 'normal',
-      options: [
-        { key: 'normal', label: '正常' },
-        { key: 'loadError', label: '加载失败' },
-        { key: 'notFound', label: '卡片不存在或已删除' }
-      ],
-      onPick: function (k) { cur.pageState = k; render(); }
-    }
-  ]
-});
+var SW_CARD = {
+  label: '演示卡片', current: '', currentKey: cur.cardKey,
+  options: [
+    { key: 'merge', label: '合并卡（开发中）FS-20261018-001', short: '合并卡（开发中）' },
+    { key: 'delayed', label: '延期卡（开发中）FS-20261010-001', short: '延期卡（开发中）' },
+    { key: 'done', label: '完成卡（已锁定）FS-20261009-002', short: '完成卡（已锁定）' },
+    { key: 'child', label: '子卡（只读）FS-20261015-005', short: '子卡（只读）' },
+    { key: 'nonfeature', label: '非需求改动卡 FS-20261016-003', short: '非需求改动卡' },
+    { key: 'clarifying', label: '待澄清卡（澄清前开发中）FS-20261014-003', short: '待澄清卡' },
+    { key: 'clarified', label: '澄清合并卡（开发中）FS-20261016-008', short: '澄清合并卡' }
+  ],
+  onPick: function (k) { cur.cardKey = k; cur.tab = 'base'; cur.pageState = 'normal'; cur.logType = '全部操作类型'; cur.logKw = ''; render(); window.scrollTo(0, 0); }
+};
+var SW_STATE = {
+  label: '整页状态', current: '正常', currentKey: 'normal',
+  options: [
+    { key: 'normal', label: '正常' },
+    { key: 'loadError', label: '加载失败' },
+    { key: 'notFound', label: '卡片不存在或已删除' }
+  ],
+  onPick: function (k) { cur.pageState = k; render(); }
+};
+function syncSwitchers() {
+  if (!SW_CARD.sync) return;
+  var hit = SW_CARD.options.filter(function (o) { return o.key === cur.cardKey; })[0];
+  if (!hit) { SW_CARD.current = card() ? card().no : '—'; SW_CARD.currentKey = cur.cardKey; }
+  SW_CARD.sync(cur.cardKey);
+  if (SW_STATE.sync) SW_STATE.sync(cur.pageState);
+}
+(function initSwitcherLabel() {
+  var hit = SW_CARD.options.filter(function (o) { return o.key === cur.cardKey; })[0];
+  SW_CARD.current = hit ? hit.short : (card() ? card().no : '—');
+  if (cur.pageState === 'notFound') { SW_STATE.current = '卡片不存在或已删除'; SW_STATE.currentKey = 'notFound'; }
+})();
+P.renderNav({ active: 'detail', switchers: [SW_CARD, SW_STATE] });
 render();
-
-
 </script>
 </body>
 </html>
