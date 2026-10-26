@@ -10,7 +10,7 @@ metadata:
 
 ## 模块概述
 
-面向研发、运维与管理层的故障全生命周期管理：**登记 → 处理 → 复盘 → 闭环**，关联运维证据沉淀复盘资产，替代群消息散落与口头复盘。与「运维管理 / 黑灯工厂管理」分工：黑灯工单 = agent 巡检产出的自动化修复闭环；故障报告 = 影响业务的故障事件的**人工复盘闭环**，可关联黑灯工单作为证据，同一事件两边互相引用、不重复展开。
+面向研发、运维与管理层的故障全生命周期管理：**登记 → 处理 → 复盘 → 闭环**，关联运维证据沉淀复盘资产，替代群消息散落与口头复盘。与「运维管理 / 黑灯工厂管理」分工：黑灯工单 = agent 巡检产出的巡检问题工单闭环；故障报告 = 影响业务的故障事件的**人工复盘闭环**，可关联黑灯工单作为证据，同一事件两边互相引用、不重复展开。
 
 ## 端
 
@@ -35,7 +35,7 @@ metadata:
 | 原型样式链 | [templates.css](../../../busyming-skills-design/templates/web/templates.css) + [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css) | 原型样式链：components/web/tokens/pc.css → docs-site/demos/pc/css/convert-el-plus.css → docs-site/ep-base-shim.css → templates/web/templates.css（`--busy-*` Token 与 `busy-*` / `.tpl-*` 组件类） | busyming-skills-design |
 | 错误日志管理 | [SKILL.md](../../运维管理/错误日志管理/SKILL.md) | 故障证据来源（错误日志指纹报表项引用） | busyming-skills-devops |
 | 服务器监控 | [SKILL.md](../../运维管理/服务器监控/SKILL.md) | 故障证据来源（异常快照引用） | busyming-skills-devops |
-| 黑灯工厂管理 | [SKILL.md](../../运维管理/黑灯工厂管理/SKILL.md) | 故障证据来源（工单引用）；自动化修复闭环与人工故障复盘的分工边界 | busyming-skills-devops |
+| 黑灯工厂管理 | [SKILL.md](../../运维管理/黑灯工厂管理/SKILL.md) | 故障证据来源（工单引用）；巡检问题工单闭环与人工故障复盘的分工边界 | busyming-skills-devops |
 
 ## 页面功能概览
 
