@@ -47,7 +47,7 @@ metadata:
 | 需求管理 | [business-rule.md §5](../需求管理/references/business-rule.md#5-排期关联规则) | 需求单单向关联卡片；业务对接人为空时的提交人兜底来源 | busyming-skills-devops |
 | 企微个人消息 | [需求管理 business-rule.md §4](../需求管理/references/business-rule.md#4-通知与企微推送) | 澄清发起、完成与撤回通知；与需求管理共用 DevHub 企微应用消息通道，事务提交后异步推送，失败不回滚 | busyming-skills-devops |
 | MCP 接入管理 | [SKILL.md](../../平台能力/MCP接入管理/SKILL.md) | 个人令牌生成、能力分组勾选与调用审计 | busyming-skills-devops |
-| 云效 Codeup | 公共仓未迁入真源（busyming-skills-common 的 api、agent 目录仅有占位） | 研发仓列表获取（项目配置选仓）、commit 采集、检索与完成链接生成 | busyming-skills-common |
+| 仓库访问契约 | [DevhubGitClient.java](../../../busyming-devhub/busyming-devhub-api/src/main/java/io/busyming/basic/devhub/api/facade/DevhubGitClient.java) | 通用 Git 的分支、commit 查询与统计契约，项目选仓同时保留云效 Codeup | busyming-devhub |
 | 菜单与角色 | system 仓未迁入文档，权限编码以生产菜单管理数据为准 | 权限编码与角色授予 | busyming-skills-system |
 
 下游引用方（以本模块为真源）：
