@@ -85,4 +85,11 @@
 - 存量停用范围仅限旧 DEVTOOL 资源授权，不自动升级为 SLS / ARMS 工具族分配或扩充既有令牌；数据库与 SYSTEM 业务工具范围不受影响，不将存量资源授权表现为新的工具分配
 - 授权变更记录保留 3 年，不可编辑、不可删除
 - 权限管理员在权限分配页按人员查看；本人可在「我的令牌」页查看本人的分配与变更
-- 对象描述与变更内容依据见 [权限分配与变更记录](../../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpGrantServiceImpl.java)
+- 对象描述与变更内容依据见 [权限分配与变更记录](../../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpGrantServiceImpl.java)
+
+## 7. 同步任务取证
+
+- 仓成员同步进度不是 MCP 调用审计或人工授权变更。进度保存在 Redis，最后更新后保留 72 小时；不改变调用记录 180 天与授权变更记录 3 年的保留规则。
+- 同步日志以 MCP_REPO_SYNC 关联 taskId、阶段、进度计数及最终结果，运行心跳不增加完成数量。partial 必须关联失败仓列表与安全原因；SchedulerX 的 SKIPPED 不覆盖活动任务状态，也不能报告为同步完成。
+- 不记录令牌、云凭据、完整邮箱或原始成员 profile。阶段计数、POST 受理成功与百分比完成均不能替代最终结果和逐仓成功保存证据。
+- 查询前核对运行物料；实际仍运行仅有完成日志的旧版本时，只能搜索「研发代码仓成员同步完成」，不能声称已存在 MCP_REPO_SYNC、taskId 查询或新 progress。没有完成日志只说明本次未取得完成证据，不推断任务未启动或具体阶段。

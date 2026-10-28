@@ -19,7 +19,7 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 | 我的令牌 | [SKILL.md](我的令牌/SKILL.md) | `/mcp-access/tokens` | 个人令牌、生成与编辑、续期与吊销、详情、接入配置及本人权限 |
 | 权限分配 | [SKILL.md](权限分配/SKILL.md) | `/mcp-access/grants` | 按人或批量分配工具族与数据库范围、有效期、理由及变更记录 |
 | 数据源管理 | [SKILL.md](数据源管理/SKILL.md) | `/mcp-access/datasources` | 只读数据源登记、详情、库表开放、脱敏与查询上限 |
-| 研发工具资源 | [SKILL.md](研发工具资源/SKILL.md) | `/mcp-access/devtool-resources` | 研发代码仓、云效成员与身份映射事实的查询和同步 |
+| 研发工具资源 | [SKILL.md](研发工具资源/SKILL.md) | `/mcp-access/devtool-resources` | 研发代码仓、成员与身份映射，异步同步、可恢复进度和日志取证 |
 | 调用审计 | [SKILL.md](调用审计/SKILL.md) | `/mcp-access/audit` | 调用证据、拒绝原因、汇总、明细及导出 |
 
 ## 共享规则真源

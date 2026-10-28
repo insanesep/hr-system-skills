@@ -69,6 +69,13 @@
 - 分配、收回与到期收回按既有消息规则通知被分配人，内容为变化对象、有效期与摘要；分配到期前 3 天发送提醒。
 - 通知发送失败不改变已经提交的授权事实，更不能恢复被撤销许可。
 
+### 2.6 工具清单下发
+
+- tools/list 先检查有效用户与有效令牌。SLS/ARMS 已注册工具仅按持有人当前有效工具 grant 与令牌显式工具族选择下发，不查询成员快照是否成功，也不要求存在可访问仓。
+- 成员同步未执行、失败、快照过期或当前可访问仓为空，不阻止已获许可且已勾选的工具族进入清单，也不影响其作为生成、编辑令牌的有效选择；工具 grant 撤销、到期或令牌未勾选才使对应工具不下发。
+- 下发清单不调用 SLS/ARMS，不以目录、PID、Prometheus 或云能力就绪作为下发前提。SYSTEM 和 DATABASE 继续采用各自的目录与范围规则，不因观测工具调整而扩权。
+- 已下发工具不等于已获目标查询许可。每次目录或定向查询仍执行下一节完整实时判定；无有效成员范围不得返回受保护目标或结果，不以空成功掩盖授权失败。
+
 ## 3. 调用时授权判定
 
 每次调用均重新判定，不以客户端已下发工具、旧目录或 PID 缓存作为放行依据。任一必需条件失败即拒绝，并按 [调用审计规则](../调用审计/references/audit-rules.md)记录原因。
@@ -78,10 +85,10 @@
 3. SYSTEM 工具不要求管理员预分配，仍按工具自身的功能、数据与身份校验执行，不能借令牌扩大业务权限。
 4. DEVTOOL 工具要求相应有效工具 grant 与令牌选择同时成立。完整 appName 去除环境后缀后必须精确匹配当前有效仓成员范围中的唯一代码仓。
 5. DEVTOOL 每次检查成员状态、至少浏览者角色、已知到期、唯一门户映射、代码仓及成员快照均未超过 24 小时、项目仍启用、仓仍归项目且仓名无冲突。
-6. 校验 Skills 提供的 group 已在当前 MCP 配置中启用，并校验 appName 后缀与生产或非生产身份匹配；SLS 目录、Prometheus 或 PID 的失败不得扩展为其他能力失败。
+6. 校验 Skills 提供的 group 已在当前 MCP 配置中启用，并校验 appName 后缀与生产或非生产身份匹配；逐次核验本次能力所需云配置、凭据和只读权限。SLS 目录、Prometheus 或 PID 的失败只影响依赖该项的能力，不得扩展为其他能力失败或放宽授权。
 7. DATABASE 仍取令牌选择与当前有效分配共同覆盖的库表，检查数据源启用、对象开放与存在、只读约束、脱敏、行数与超时上限；任一不可见表使查询整体拒绝。
 
-- 云端成员移除由下一次成功完整同步确认，确认后后续查询即时失效；不承诺尚未同步时实时得知。同步失败不刷新旧日期，超过快照上限后拒绝。
+- 云端成员移除由下一次该仓成功完整同步确认，确认后后续查询即时失效；不承诺尚未同步时实时得知。同步失败不刷新旧日期，超过快照上限后拒绝；Redis 任务进度保留 72 小时不续期两个授权快照。
 - 已知账号停用、工具撤销、工具分配或成员到期即时拒绝，不等待云端同步，也不被任何缓存绕过。
 - 应用范围变化不自动添加或删除令牌的工具族选择。工具选择可用不代表用户当前拥有应用范围，更不证明每项云能力就绪。
 - 同一 TraceId 关联日志与调用链时仍须同一已核验连接、同一完整应用；额外应用必须分别满足当前授权，不隐式跨应用或环境。
@@ -100,7 +107,7 @@
 
 ## 6. 实现依据
 
-- [有效 scope 与授权树](../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/support/McpScopeSupport.java)。
-- [显式分配与多人锁内事务](../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpGrantServiceImpl.java)。
-- [令牌校验与当前分配交集](../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpTokenServiceImpl.java)。
-- [逐次成员与应用判定](../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/support/McpRepositoryAccess.java)、[观测工具执行](../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/support/McpObservabilityTools.java)、[统一网关](../../../busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpGatewayServiceImpl.java)。
+- [有效 scope 与授权树](../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/support/McpScopeSupport.java)。
+- [显式分配与多人锁内事务](../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpGrantServiceImpl.java)。
+- [令牌校验与当前分配交集](../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpTokenServiceImpl.java)。
+- [逐次成员与代码仓判定](../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/support/McpRepositoryAccess.java)、[观测工具执行](../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/support/McpObservabilityTools.java)、[统一网关](../../../code/02-devops/busyming-devhub/busyming-devhub-service/src/main/java/io/busyming/basic/devhub/service/mcp/impl/McpGatewayServiceImpl.java)。
