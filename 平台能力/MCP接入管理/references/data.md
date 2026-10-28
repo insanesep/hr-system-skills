@@ -1,17 +1,17 @@
 # MCP接入管理 · 数据定义
 
-> 本文件以产品语义描述已实现对象、事实快照与关系，不定义数据库结构。工具目录仅是已注册能力的展示概念，不构造第三方服务或工具登记实体。规则见 [业务规则](business-rule.md)、[权限规则](permission-rules.md)、[观测应用规则](devtool-rules.md)、[数据源规则](datasource-rules.md)与 [审计规则](audit-rules.md)。
+> 本文件以产品语义描述已实现对象、事实快照与关系，不定义数据库结构。工具目录仅是已注册能力的展示概念，不构造第三方服务或工具登记实体。规则见 [业务规则](business-rule.md)、[权限规则](permission-rules.md)、[研发工具规则](devtool-rules.md)、[数据源规则](datasource-rules.md)与 [审计规则](audit-rules.md)。
 
 ## 1. 对象关系
 
 - 门户用户可持有多个访问令牌，并关联显式权限分配与授权变更记录。
 - 令牌包含用户显式选择的授权项，生成与编辑必须至少有一项当前有效 scope；权限撤销后选择可保留，但不代表可调用。
 - 权限管理员分配 SLS/ARMS 工具族与数据库实例、库、表。SYSTEM 已注册内置业务工具默认可选，不必生成管理员分配记录。
-- 项目维护 harness 工程、代码服务仓列表和观测分组。应用只从代码服务仓派生，harness 关联本身不派生应用。
-- 一个代码仓可对应多个完整应用名；每个完整名字各是一条应用记录，同时承载 SLS/ARMS，不拆双资源。
-- 云效仓成员事实通过组织成员邮箱唯一映射到启用门户用户，有效成员派生应用范围，但不产生工具族 grant 或令牌授权项。
+- 项目维护 harness 工程和代码服务仓列表。harness 是需求与 Skills 真源，不派生研发查询范围；代码服务仓是真源。
+- 代码仓快照保存云效仓 ID、精确仓名、所属项目和同步状态；完整应用名由仓名与调用时明确的环境后缀组成，不保存逐应用授权记录。
+- 云效仓成员事实通过组织成员邮箱唯一映射到启用门户用户，有效成员派生查询范围，但不产生工具族 grant 或令牌授权项。
 - 数据源包含库、表、字段；表归库、字段归表，字段至多绑定一个门户脱敏规则。
-- 调用记录关联令牌与工具目标，观测目标是完整应用名；成员快照、应用目录、工具许可、令牌选择分别存在，不互相代替。
+- 调用记录关联令牌与工具目标，观测目标是 Skills 识别的 group 与完整 appName；成员快照、代码仓快照、工具许可和令牌选择互不代替。
 
 ## 2. 已注册工具目录概念
 
@@ -57,7 +57,7 @@
 | 当前可用性 | 当前许可与对象校验结果 | 已超出分配、停用、删除或可用；工具族可用不证明应用范围或云能力就绪 |
 
 - 生成、编辑必须至少选择一项当前有效 scope；已有令牌因分配或对象变化可以失去所有可调用能力，但不因此自动改变生命周期。
-- DEVTOOL 不保存具体应用、日志库、业务域、资源类型或独立环境限定；应用范围逐次从成员及应用事实计算。
+- DEVTOOL 不保存具体应用、日志库、group 或独立环境限定；查询范围逐次从代码仓及成员事实计算。
 - 非工具型 DEVTOOL 授权项不生效，不转换成工具许可，不扩展已有令牌选择；数据库层级与有效范围保持原规则。
 
 ## 5. 权限分配项
@@ -77,27 +77,21 @@
 - 观测分配不含环境限定、应用资源类型或业务域。仓成员只提供事实，不写人工应用分配记录。
 - SYSTEM 默认可选不表示自动写入 grant；token 仍须主动选择已注册工具。
 
-## 6. 观测应用
+## 6. 研发代码仓快照
 
 | 字段 | 产品语义 | 规则 |
 | ---- | ---- | ---- |
-| 应用 ID | 应用记录标识 | SLS/ARMS 共用，不按产品复制 |
-| 完整应用名 | 云效仓名加环境后缀 | 精确唯一；每个完整名字独立，不把 pre 与 gray 当别名 |
-| 应用类型 | 观测目录对象 | 统一应用，不是单独 SLS 日志库或 ARMS 资源类型 |
-| 所属项目 | 项目真源关联 | 查询仍要求项目启用且未删除 |
-| 云效仓 ID | 对应代码服务仓 | 必须仍在项目代码服务仓列表中 |
-| 来源观测分组 | 同步时项目观测分组 | 服务器内部映射依据，须与当前项目一致，不是 Nacos 分组或授权业务域 |
-| SLS Project | 服务器解析日志目标 | 不由客户端指定 |
-| SLS 与 ARMS 地域 | 各能力的来源坐标 | 分别校验，SLS 不可用不影响 ARMS |
-| 日志保留天数 | SLS 元数据 | 定向 GetLogStore 验证所得；未能验证不能推定当前 SLS 就绪 |
-| SLS 就绪 | 定向日志库验证结果 | 仅表示 SLS 能力，不是整个应用开放开关 |
-| 冲突标记 | 重名或映射冲突 | 有冲突默认拒绝，不选首项 |
-| 对象状态 | 正常或已删除 | 成功完整目录确认消失后失效 |
-| 最近同步时间 | 最近成功应用快照日期 | 24 小时后失效；目录读取失败保留旧日期 |
+| 快照 ID | 代码仓事实标识 | 系统生成 |
+| 所属项目 | 项目真源关联 | 查询要求项目启用且未删除 |
+| 云效仓 ID | 项目代码服务仓标识 | 必须仍在项目代码服务仓列表中 |
+| 仓名称 | appName 的精确基础前缀 | 同名有效仓冲突时拒绝选择 |
+| 冲突标记 | 多项目引用或同名仓冲突 | 有冲突默认拒绝，不选首项 |
+| 对象状态 | 正常或已移除 | 从启用项目代码服务仓列表移除后失效 |
+| 最近同步时间 | 最近成功读取仓资料时间 | 24 小时后失效；读取失败保留旧日期 |
 
-- 应用不含手工开放、标签、资源组、名称归属规则、人工业务域、独立环境授权或 PID 必填项。
-- 环境从完整应用名后缀推导，只用于目标区分与当前连接路由，不另设 grant。Prometheus UID 和分组实例由服务器配置，namespace 与 Pod 按该应用后缀、项目分组和部署约定推导，不是用户选择字段。
-- 应用可见成员数是同步事实的展示汇总，不是分配人数或实际工具许可人数，不能据计数放行。
+- 快照不保存 group、完整应用名、SLS Project、地域、日志保留期、SLS 就绪或 PID。同步不访问 SLS/ARMS。
+- group 由 Skills 从目标后端 config group 识别；完整 appName 由仓名和环境后缀组成。服务器在查询时验证 group 配置与连接身份。
+- 页面展示有效云效研发成员数及门户映射数，仅说明同步事实，不代表工具许可。
 
 ## 7. 云效仓成员快照
 
@@ -117,7 +111,7 @@
 
 - 成功完整同步后，未再出现的成员标记移除、清空门户关联，后续查询立即失效；尚未同步不承诺实时获知云端删除。
 - 邮箱映射缺失或重复的事实不产生有效范围；异常或无法完整解析的响应不当作空成功，不据此删除旧成员。
-- 成员快照与应用快照分别刷新，各自新鲜度都必须满足。工具 grant 与令牌选择另行校验，缓存 PID 不能替代成员事实。
+- 成员快照与代码仓快照分别刷新，各自新鲜度都必须满足。工具 grant 与令牌选择另行校验，目录结果或 PID 缓存不能替代成员事实。
 
 ## 8. 调用记录
 
@@ -128,7 +122,7 @@
 | 客户端 | 调用来源信息 |
 | 接入领域与工具 | 具体已注册工具能力，不依赖第三方服务登记实体 |
 | 目标对象 | 观测为工具族与完整 appName；数据库为实例、库、表；业务工具按其契约记录 |
-| 业务分类或观测分组 | 数据库记录其业务域，观测记录服务器解析后的项目观测分组；该信息不额外授予访问范围 |
+| 业务分类或观测 group | 数据库记录其业务域，观测记录调用时经服务器验证并实际采用的 group；该信息不额外授予访问范围 |
 | 查询摘要 | 脱敏后的查询条件，不保存凭据原文 |
 | 返回数量、截断与脱敏 | 结果覆盖范围，不把未知字段按零值解释 |
 | 结果、原因及耗时 | 成功、拒绝、失败及可追溯原因 |
@@ -185,6 +179,6 @@
 ## 12. 实现依据
 
 - [令牌实体](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpTokenEntity.java)、[令牌 scope](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpTokenScopeEntity.java)、[显式分配](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpGrantEntity.java)。
-- [应用实体](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDevtoolResourceEntity.java)、[成员快照实体](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpRepositoryMemberEntity.java)、[项目真源](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/schedule/ProjectEntity.java)。
+- [代码仓快照实体](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDevtoolResourceEntity.java)、[成员快照实体](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpRepositoryMemberEntity.java)、[项目真源](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/schedule/ProjectEntity.java)。
 - [数据源](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDatasourceEntity.java)、[库表字段](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDbObjectEntity.java)、[脱敏绑定](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpFieldMaskingEntity.java)。
 - [调用记录](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpCallRecordEntity.java)、[授权变更](../../../../code/02-devops/busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpGrantChangeEntity.java)、[已注册工具目录](../../../../code/02-devops/busyming-devhub/busyming-devhub-api/src/main/java/io/busyming/basic/devhub/api/constant/McpToolConstants.java)。
