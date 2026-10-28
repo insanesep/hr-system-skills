@@ -49,8 +49,9 @@
 ### 报告详情
 
 - **页面路径**：`/subapp/devhub/report/consistency/detail/:id`
+- **路由名称**：`devhubConsistencyReportDetail`，为文档一致性报告的非菜单详情页
 - **权限编码**：
-  - 路由：`devhubConsistencyReport`
+  - 所属菜单资源：`devhubConsistencyReport`，不等同于详情路由名称
 - **页面类型**：详情页（阅读型）
 - **区块职责**：
   - 顶部：返回链接「‹ 返回报告列表」；报告标题 + 报告类型 Tag（文档一致性校验）+ 项目 Tag

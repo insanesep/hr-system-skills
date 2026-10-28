@@ -1,0 +1,1028 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>生成令牌 · MCP接入管理</title>
+<!--
+  需求真源：busyming-skills-devops/平台能力/references/web-ui.md「生成令牌」
+           + business-rule.md §2.3 / §3 / §4 / §5、permission-rules.md §2、devtool-rules.md §2
+  页型：archive-form（DOM 结构依据 busyming-skills-design/templates/web/archive-form.html）
+  静态原型：数据全部为 Mock，刷新即重置；可选范围 = 当前用户（张研发）被权限管理员分配且当前可用的对象。
+  演示参数：?mode=edit 编辑授权范围模式；?empty=business|devtools|database 指定领域未被分配；
+           ?noperm=1 未被分配任何 MCP 权限（仅生成模式）；?fail=1 提交失败。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级布局约定：仅定位与几何；颜色 / 圆角 / 字号一律消费 var(--busy-*) */
+  .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }
+  .page-nav-links { display: flex; align-items: center; gap: 12px; white-space: nowrap; overflow-x: auto; }
+  .page-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+  .page-overlay--top { z-index: 300; }
+  .page-overlay > .busy-dialog { margin-top: 6vh; margin-bottom: 6vh; }
+  .page-overlay > .busy-message-box { margin-top: 18vh; }
+  .page-dialog--lg { width: 720px; }
+  .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 400; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .page-message-host .busy-message { position: static; }
+  .busy-message-box__btns { gap: 8px; }
+  .page-radio-buttons { gap: 0; }
+  .page-radio-buttons .busy-radio-button.is-checked .busy-radio-button__inner { color: var(--busy-color-white); }
+  .busy-form-item.is-error .busy-input { border-color: var(--busy-color-danger); }
+  .page-tab-panel { display: flex; flex-direction: column; gap: 8px; padding-top: 4px; }
+  .page-tree .busy-tree-node__content { gap: 6px; }
+  .page-dev-groups { display: flex; flex-direction: column; gap: 16px; }
+  .page-dev-group { display: flex; flex-direction: column; gap: 4px; }
+  .page-dev-group__head { padding: 0 8px; }
+  .page-node-check-placeholder { display: inline-block; width: 14px; }
+  .page-dialog-result .busy-result { padding: 8px 0 16px; }
+  .page-dialog-result .busy-dialog__body { display: flex; flex-direction: column; gap: 12px; }
+  .page-dialog-result .busy-form-item { margin-bottom: 0; }
+  .page-code { margin: 0; padding: 12px 16px; max-height: 260px; overflow: auto; white-space: pre; font-family: Menlo, Consolas, monospace; font-size: var(--busy-font-size-small); border-radius: var(--busy-border-radius-base); background: var(--busy-fill-color-light); color: var(--busy-text-primary); }
+  .busy-form-item__content > .tpl-filter__row { width: 100%; }
+  .page-btn-row { display: flex; gap: 8px; }
+  .page-summary th { width: 120px; }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 平台能力 / <a href="token-list.html">MCP接入管理</a> / <a href="token-list.html">我的令牌</a> / <b id="crumbLast">生成令牌</b></span>
+  <span class="page-nav-links">
+    <a class="tpl-nav__crumb" href="token-list.html">我的令牌</a>
+    <a class="tpl-nav__crumb" href="token-form.html" aria-current="page"><b>生成令牌</b></a>
+    <a class="tpl-nav__crumb" href="token-detail.html">令牌详情</a>
+    <a class="tpl-nav__crumb" href="../../../权限分配/assets/web/grant-list.html">权限分配</a>
+    <a class="tpl-nav__crumb" href="../../../权限分配/assets/web/grant-form.html">分配权限</a>
+    <a class="tpl-nav__crumb" href="../../../assets/web/service-list.html">MCP 服务目录</a>
+    <a class="tpl-nav__crumb" href="../../../研发工具资源/assets/web/devtool-resources.html">研发工具资源</a>
+    <a class="tpl-nav__crumb" href="../../../数据源管理/assets/web/datasource-list.html">数据源管理</a>
+    <a class="tpl-nav__crumb" href="../../../数据源管理/assets/web/datasource-detail.html">数据源详情</a>
+    <a class="tpl-nav__crumb" href="../../../调用审计/assets/web/call-audit.html">调用审计</a>
+  </span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">张研发（Mock）</span>
+</nav>
+
+<section class="tpl-page tpl-page--with-actionbar">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <a class="tpl-page-head__back" href="token-list.html" id="backLink">‹ 返回我的令牌</a>
+      <h1 class="tpl-page-title" id="pageTitle">生成令牌</h1>
+      <div class="tpl-page-subtitle" id="pageSubtitle">带 <b class="u-danger">*</b> 为必填项；Mock 数据，刷新即重置 · 演示：<a href="token-form.html?mode=edit" id="modeLink">编辑模式（?mode=edit）</a> · ?empty=devtools 某领域未分配 · <a href="token-form.html?noperm=1">?noperm=1 未被分配权限</a> · ?fail=1 提交失败</div>
+    </div>
+  </div>
+
+  <!-- 第一节：基本信息 -->
+  <div class="tpl-panel" data-form-panel>
+    <div class="tpl-section">
+      <div class="tpl-section__head">基本信息</div>
+      <div class="tpl-filter">
+        <div class="busy-form-item" id="nameItem">
+          <div class="busy-form-item__label is-required">令牌名称</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input" id="nameBox"><input id="nameInput" placeholder="2–32 字，如：Qoder 日常开发"></div>
+            <div class="busy-form-item__error" id="nameError" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item tpl-filter__item--wide" id="validityItem">
+          <div class="busy-form-item__label is-required">有效期</div>
+          <div class="busy-form-item__content">
+            <div class="busy-radio-group" id="validityGroup">
+              <label class="busy-radio" data-value="7"><span class="busy-radio__input"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">7 天</span></label>
+              <label class="busy-radio" data-value="30"><span class="busy-radio__input"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">30 天</span></label>
+              <label class="busy-radio" data-value="90"><span class="busy-radio__input is-checked"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">90 天</span></label>
+              <label class="busy-radio" data-value="180"><span class="busy-radio__input"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">180 天</span></label>
+            </div>
+            <div class="busy-form-item__error" id="validityError" hidden>请选择有效期</div>
+          </div>
+        </div>
+        <div class="busy-form-item">
+          <div class="busy-form-item__label">到期时间预览</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input is-disabled"><input readonly id="expirePreview"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第二节：授权范围（只展示本人已分配且当前可用的对象） -->
+  <div class="tpl-panel" data-form-panel>
+    <div class="tpl-section" id="scopeSection">
+      <div class="tpl-section__head">授权范围</div>
+      <div class="tpl-panel__subtitle">ⓘ 授权范围可不选，未配置时令牌不能调用任何工具；获得权限后可编辑授权范围</div>
+      <div class="busy-tabs" id="domainTabs" role="tablist">
+        <div class="busy-tabs__item is-active" role="tab" data-domain="business">业务系统（<span data-count="business">0</span>）</div>
+        <div class="busy-tabs__item" role="tab" data-domain="devtools">研发工具（<span data-count="devtools">0</span>）</div>
+        <div class="busy-tabs__item" role="tab" data-domain="database">数据库（<span data-count="database">0</span>）</div>
+      </div>
+      <div class="page-tab-panel" data-panel="business">
+        <div class="tpl-panel__subtitle">ⓘ 可选范围来自权限管理员为你分配的权限</div>
+        <div class="tpl-panel__subtitle" id="bizHint">ⓘ 业务系统工具以你的身份调用，返回结果受你在业务系统中的权限约束</div>
+        <div class="busy-tree page-tree" id="tree-business"></div>
+      </div>
+      <div class="page-tab-panel" data-panel="devtools" hidden>
+        <div class="tpl-panel__subtitle">ⓘ 可选范围来自权限管理员为你分配的权限</div>
+        <div class="page-dev-groups" id="tree-devtools"></div>
+      </div>
+      <div class="page-tab-panel" data-panel="database" hidden>
+        <div class="tpl-panel__subtitle">ⓘ 可选范围来自权限管理员为你分配的权限</div>
+        <div class="busy-tree page-tree" id="tree-database"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 第三节：已选汇总 -->
+  <div class="tpl-panel" data-form-panel>
+    <div class="tpl-section">
+      <div class="tpl-section__head">已选汇总</div>
+      <table class="busy-descriptions is-border page-summary">
+        <tbody>
+          <tr><th>业务系统</th><td id="sumBusiness">未配置</td></tr>
+          <tr><th>研发工具</th><td id="sumDevtools">未配置</td></tr>
+          <tr><th>数据库</th><td id="sumDatabase">未配置</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- 沉底操作栏 -->
+  <div class="tpl-actionbar">
+    <div class="tpl-actionbar__inner">
+      <button class="busy-button" type="button" id="btnCancel"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="btnSubmit"><span>生成令牌</span></button>
+    </div>
+  </div>
+</section>
+
+<!-- 生成结果弹窗（不可点遮罩关闭，无右上角关闭） -->
+<div class="page-overlay busy-overlay-demo" id="resultOverlay" hidden>
+  <div class="busy-dialog page-dialog--lg page-dialog-result" role="dialog" aria-modal="true" aria-labelledby="resultDialogTitle">
+    <div class="busy-dialog__header">
+      <span class="busy-dialog__title" id="resultDialogTitle">生成结果</span>
+    </div>
+    <div class="busy-dialog__body">
+      <div class="busy-result">
+        <div class="busy-result__icon">✓</div>
+        <div class="busy-result__title" id="resultTitle">令牌已生成</div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">令牌明文</div>
+        <div class="busy-form-item__content">
+          <div class="tpl-filter__row">
+            <div class="busy-input"><input readonly id="tokenPlain"></div>
+            <button class="busy-button" type="button" id="btnCopyToken"><span>复制</span></button>
+          </div>
+        </div>
+      </div>
+      <div class="u-danger u-strong">⚠ 令牌仅展示这一次，关闭后无法再次查看，请立即复制保存</div>
+      <div class="tpl-panel__subtitle" id="emptyScopeResult" hidden>当前未配置授权范围，不能调用任何工具；获得权限后可编辑授权范围</div>
+      <div class="tpl-section">
+        <div class="tpl-section__head">MCP 配置</div>
+        <div class="busy-radio-group page-radio-buttons" id="clientGroup">
+          <label class="busy-radio-button is-checked" data-value="qoder"><span class="busy-radio-button__inner">Qoder</span></label>
+          <label class="busy-radio-button" data-value="claude"><span class="busy-radio-button__inner">Claude Code</span></label>
+          <label class="busy-radio-button" data-value="cursor"><span class="busy-radio-button__inner">Cursor</span></label>
+          <label class="busy-radio-button" data-value="generic"><span class="busy-radio-button__inner">通用</span></label>
+        </div>
+        <pre class="page-code" id="configCode"></pre>
+        <div class="page-btn-row">
+          <button class="busy-button" type="button" id="btnCopyConfig"><span>复制配置</span></button>
+          <button class="busy-button" type="button" id="btnDownload"><span>下载配置文件</span></button>
+        </div>
+      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button busy-button--primary" type="button" id="btnCloseResult"><span>我已保存，关闭</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MessageBox -->
+<div class="page-overlay page-overlay--top busy-overlay-demo" id="msgboxOverlay" hidden>
+  <div class="busy-message-box" role="alertdialog" aria-modal="true" aria-labelledby="msgboxTitle">
+    <div class="busy-message-box__header"><div class="busy-message-box__title" id="msgboxTitle">提示</div></div>
+    <div class="busy-message-box__content">
+      <div class="busy-message-box__container">
+        <span class="busy-message-box__status busy-message-box-icon--warning" id="msgboxIcon">!</span>
+        <div class="busy-message-box__message"><p id="msgboxText"></p></div>
+      </div>
+    </div>
+    <div class="busy-message-box__btns">
+      <button class="busy-button" type="button" id="msgboxCancel"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="msgboxOk"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="page-message-host" id="messageHost"></div>
+
+<script>
+/* ===================== Mock 数据（刷新即重置） ===================== */
+var MOCK_NOW = new Date(2026, 9, 22, 10, 0);
+var QS = location.search;
+var IS_EDIT = /[?&]mode=edit(&|$)/.test(QS);
+var MOCK_FAIL = /[?&]fail=1(&|$)/.test(QS);
+var EMPTY_MATCH = QS.match(/[?&]empty=(business|devtools|database)(&|$)/);
+var EMPTY_DOMAIN = EMPTY_MATCH ? EMPTY_MATCH[1] : '';
+/* 未被分配任何 MCP 权限：仍可生成空权限令牌 */
+var NO_PERM = !IS_EDIT && /[?&]noperm=1(&|$)/.test(QS);
+
+/* 本人未吊销令牌名称（唯一性校验用） */
+var MY_ACTIVE_NAMES = ['Qoder 日常开发', 'SLS 排障', '报表取数', 'Cursor 联调', '旧版周报脚本'];
+
+/*
+ * 以下均为「张研发」被权限管理员分配且当前可用的对象（Mock）。
+ * unavailable 项为已不可用的授权项，仅在编辑模式且令牌原已授权时回显（只能取消不能新增）。
+ */
+/* 业务系统：服务 → 工具（type: query / write）。商品中心、门店服务按服务分配；客服工单仅分配写入类工具「创建工单备注」 */
+var BIZ_SERVICES = [
+  { id: 'goods', name: '商品中心', desc: '商品档案与商品计划查询，商品标签维护', tools: [
+    { id: 'goods.archive', name: '查询商品档案', type: 'query' },
+    { id: 'goods.plan', name: '查询商品计划', type: 'query' },
+    { id: 'goods.price', name: '查询商品价格', type: 'query', unavailable: '已停用' }
+  ] },
+  { id: 'store', name: '门店服务', desc: '门店档案与门店经营数据查询', tools: [
+    { id: 'store.archive', name: '查询门店档案', type: 'query' },
+    { id: 'store.data', name: '查询门店数据', type: 'query' },
+    { id: 'store.traffic', name: '查询门店客流', type: 'query', unavailable: '已下线' }
+  ] },
+  { id: 'ticket', name: '客服工单', desc: '客服工单查询与工单备注', tools: [
+    { id: 'ticket.note', name: '创建工单备注', type: 'write' }
+  ] },
+  { id: 'purchase', name: '采购协同', desc: '采购订单与供应商协同查询', tools: [
+    { id: 'purchase.order', name: '查询采购订单', type: 'query', unavailable: '已超出分配范围' }
+  ] }
+];
+/*
+ * 研发工具：SLS 日志 / ARMS 应用监控两组，业务域 → 资源。
+ * grant: 'domain' 按业务域分配（可整域勾选，含后续开放资源，带环境限定）；'resource' 仅分配单个资源（业务域节点仅作分组）
+ */
+var DEV_GROUPS = [
+  { key: 'sls', label: 'SLS 日志', unit: '日志库', domains: [
+    { id: 'sls:门店', domain: '门店', grant: 'domain', env: '全部环境', resources: [
+      { id: 'sls:mmhm-store-prod/store-gateway-access', name: 'store-gateway-access', project: 'mmhm-store-prod', retention: 30 },
+      { id: 'sls:mmhm-store-prod/store-service-app', name: 'store-service-app', project: 'mmhm-store-prod', retention: 30 },
+      { id: 'sls:mmhm-store-test/store-service-app', name: 'store-service-app', project: 'mmhm-store-test', retention: 7 },
+      { id: 'sls:mmhm-store-prod/store-legacy-access', name: 'store-legacy-access', project: 'mmhm-store-prod', retention: 30, unavailable: '已删除' }
+    ] },
+    { id: 'sls:公共', domain: '公共', grant: 'resource', resources: [
+      { id: 'sls:mmhm-gateway-prod/gateway-access', name: 'gateway-access', project: 'mmhm-gateway-prod', retention: 90 }
+    ] },
+    { id: 'sls:营运', domain: '营运', grant: 'domain', env: '仅生产', unavailable: '已超出分配范围', resources: [] }
+  ] },
+  { key: 'arms', label: 'ARMS 应用监控', unit: '应用', domains: [
+    { id: 'arms:门店', domain: '门店', grant: 'domain', env: '仅生产', resources: [
+      { id: 'arms:store-service', name: 'store-service', region: '华东1（杭州）' }
+    ] },
+    { id: 'arms:商品', domain: '商品', grant: 'resource', resources: [
+      { id: 'arms:product-center-test', name: 'product-center-test', region: '华东1（杭州）' }
+    ] }
+  ] }
+];
+/*
+ * 数据库：实例 → 库 → 表。
+ * grant: 'instance' 按实例分配（实例 / 库节点均可整体勾选，含后续开放表）；'db' 按库分配（实例节点仅作分组，库节点可整体勾选）
+ */
+var DB_INSTANCES = [
+  { id: 'devhub-prod', env: '生产', rowLimit: 1000, timeout: 10, grant: 'db', dbs: [{ name: 'devhub', tables: ['rnd_report', 'mcp_call_log', 'feature_schedule'] }] },
+  { id: 'lemeng-wms-test', env: '测试', rowLimit: 1000, timeout: 10, grant: 'instance', dbs: [{ name: 'lemeng_wms', tables: ['stock', 'stock_flow'] }] }
+];
+/* 编辑模式回显的令牌（Mock） */
+var EDIT_TOKEN = {
+  id: 't001', name: 'Qoder 日常开发', expireAt: '2026-12-20 10:12',
+  business: ['goods.archive', 'goods.plan', 'goods.price', 'store.traffic', 'purchase.order'],
+  devtools: {
+    'sls:门店': { mode: 'res', res: { 'sls:mmhm-store-prod/store-gateway-access': true, 'sls:mmhm-store-prod/store-legacy-access': true } },
+    'sls:营运': { mode: 'domain', res: {} },
+    'arms:门店': { mode: 'domain', res: {} },
+    'arms:商品': { mode: 'res', res: { 'arms:product-center-test': true } }
+  },
+  database: {}
+};
+
+if (NO_PERM || EMPTY_DOMAIN === 'business') BIZ_SERVICES = [];
+if (NO_PERM || EMPTY_DOMAIN === 'devtools') DEV_GROUPS.forEach(function (g) { g.domains = []; });
+if (NO_PERM || EMPTY_DOMAIN === 'database') DB_INSTANCES = [];
+
+/* ===================== 常量与工具 ===================== */
+var DOMAIN_LABEL = { business: '业务系统', devtools: '研发工具', database: '数据库' };
+var DOMAIN_ORDER = ['business', 'devtools', 'database'];
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info', '开发': 'busy-tag--info' };
+var ENV_LIMIT_TAG = { '全部环境': 'busy-tag--info', '仅生产': 'busy-tag--danger', '仅非生产': 'busy-tag--warning' };
+var MCP_BASE = 'https://devhub.busyming.com/mcp/';
+var MCP_ENTRY = { business: 'mmhm-business', devtools: 'mmhm-devtools', database: 'mmhm-database' };
+
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function fmtDt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function addDays(d, n) { var r = new Date(d.getTime()); r.setDate(r.getDate() + n); return r; }
+function keysOf(o) { return Object.keys(o); }
+
+function showMessage(type, text) {
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  $('messageHost').appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+function setLoading(btn, on) {
+  if (on) {
+    btn.dataset.label = btn.innerHTML;
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    btn.insertAdjacentHTML('afterbegin', '<span class="busy-button__loading"></span>');
+  } else {
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+    if (btn.dataset.label != null) btn.innerHTML = btn.dataset.label;
+  }
+}
+function mockRequest(ms, onOk, onFail) {
+  setTimeout(function () { if (MOCK_FAIL) onFail(); else onOk(); }, ms);
+}
+
+/* MessageBox：opts = { text, type: 'warning'|'error', alert: 仅确定按钮, loading: 确认按钮 loading, onConfirm(done) } */
+var msgboxOpts = null;
+function messageBox(opts) {
+  msgboxOpts = opts;
+  $('msgboxText').textContent = opts.text;
+  $('msgboxTitle').textContent = opts.type === 'error' ? '操作失败' : '提示';
+  $('msgboxIcon').className = 'busy-message-box__status busy-message-box-icon--' + (opts.type || 'warning');
+  $('msgboxIcon').textContent = opts.type === 'error' ? '✕' : '!';
+  $('msgboxCancel').hidden = !!opts.alert;
+  $('msgboxOverlay').hidden = false;
+}
+$('msgboxCancel').addEventListener('click', function () { $('msgboxOverlay').hidden = true; });
+$('msgboxOk').addEventListener('click', function () {
+  var ok = $('msgboxOk');
+  var o = msgboxOpts;
+  if (!o || !o.onConfirm) { $('msgboxOverlay').hidden = true; return; }
+  if (o.loading) {
+    setLoading(ok, true);
+    o.onConfirm(function (close) { setLoading(ok, false); if (close) $('msgboxOverlay').hidden = true; });
+  } else {
+    $('msgboxOverlay').hidden = true;
+    o.onConfirm(function () {});
+  }
+});
+
+/* ===================== 表单状态 ===================== */
+var state = {
+  name: '',
+  validity: 90,
+  business: {},   /* toolId -> true */
+  devtools: {},   /* 业务域节点 id -> { mode: 'none'|'domain'|'res', res: { resId: true } } */
+  dbInst: {},     /* 实例 id -> true（整实例授权，仅 grant=instance） */
+  database: {}    /* 'inst/db' -> { mode: 'none'|'all'|'tables', tables: { name: true } } */
+};
+var expanded = {};
+var leaving = false;
+var submitting = false;
+
+DB_INSTANCES.forEach(function (inst) {
+  expanded['inst:' + inst.id] = true;
+  state.dbInst[inst.id] = false;
+  inst.dbs.forEach(function (db) { state.database[inst.id + '/' + db.name] = { mode: 'none', tables: {} }; });
+});
+BIZ_SERVICES.forEach(function (s) { expanded['svc:' + s.id] = true; expanded['grp:' + s.id] = true; });
+DEV_GROUPS.forEach(function (g) {
+  g.domains.forEach(function (d) { expanded['dom:' + d.id] = true; state.devtools[d.id] = { mode: 'none', res: {} }; });
+});
+
+/* 编辑模式下回显时已勾选的项（不可用项只能取消不能新增） */
+var originallyChecked = {};
+if (IS_EDIT) {
+  state.name = EDIT_TOKEN.name;
+  EDIT_TOKEN.business.forEach(function (id) { state.business[id] = true; originallyChecked[id] = true; });
+  keysOf(EDIT_TOKEN.devtools).forEach(function (k) {
+    if (!state.devtools[k]) return;
+    var src = EDIT_TOKEN.devtools[k];
+    state.devtools[k] = { mode: src.mode, res: JSON.parse(JSON.stringify(src.res)) };
+    if (src.mode === 'domain') originallyChecked[k] = true;
+    keysOf(src.res).forEach(function (r) { originallyChecked[r] = true; });
+  });
+  keysOf(EDIT_TOKEN.database).forEach(function (k) { if (state.database[k]) state.database[k] = EDIT_TOKEN.database[k]; });
+}
+
+function snapshot() { return JSON.stringify(state); }
+
+/* ===================== 可见性（只展示已分配且可用；不可用项仅编辑模式回显） ===================== */
+function isVisible(item) { return !item.unavailable || (IS_EDIT && !!originallyChecked[item.id]); }
+function visibleTools(s) { return s.tools.filter(isVisible); }
+function visibleServices() { return BIZ_SERVICES.filter(function (s) { return visibleTools(s).length > 0; }); }
+function visibleResources(d) { return d.resources.filter(isVisible); }
+function availResources(d) { return d.resources.filter(function (r) { return !r.unavailable; }); }
+function visibleDomains(g) { return g.domains.filter(function (d) { return d.unavailable ? isVisible(d) : visibleResources(d).length > 0; }); }
+function devHasAny() { return DEV_GROUPS.some(function (g) { return visibleDomains(g).length > 0; }); }
+
+/* ===================== 统计 ===================== */
+function bizStats() {
+  var sel = state.business;
+  var svc = 0, tools = 0, writes = 0;
+  BIZ_SERVICES.forEach(function (s) {
+    var n = 0;
+    s.tools.forEach(function (t) { if (sel[t.id]) { n++; if (t.type === 'write') writes++; } });
+    if (n) svc++;
+    tools += n;
+  });
+  return { services: svc, tools: tools, writes: writes };
+}
+/* 研发工具：按授权对象计数（整域 = 1 个业务域；逐个勾选 = N 个资源） */
+function devStats() {
+  var r = { total: 0 };
+  DEV_GROUPS.forEach(function (g) {
+    var gs = { domains: 0, resources: 0 };
+    g.domains.forEach(function (d) {
+      var s = state.devtools[d.id];
+      if (!s) return;
+      if (s.mode === 'domain') gs.domains++;
+      else if (s.mode === 'res') gs.resources += keysOf(s.res).length;
+    });
+    r[g.key] = gs;
+    r.total += gs.domains + gs.resources;
+  });
+  return r;
+}
+function dbStats() {
+  var inst = 0, dbs = 0, tables = 0, autoNew = 0;
+  DB_INSTANCES.forEach(function (i) {
+    var whole = !!state.dbInst[i.id];
+    var hit = whole;
+    if (whole) autoNew++;
+    i.dbs.forEach(function (db) {
+      var s = state.database[i.id + '/' + db.name];
+      var n = whole || s.mode === 'all' ? db.tables.length : (s.mode === 'tables' ? keysOf(s.tables).length : 0);
+      if (n || whole || s.mode === 'all') { hit = true; dbs++; }
+      if (!whole && s.mode === 'all') autoNew++;
+      tables += n;
+    });
+    if (hit) inst++;
+  });
+  return { instances: inst, dbs: dbs, tables: tables, autoNew: autoNew };
+}
+function domainCount(domain) {
+  if (domain === 'database') return dbStats().tables;
+  if (domain === 'devtools') return devStats().total;
+  return bizStats().tools;
+}
+function selectedDomains() { return DOMAIN_ORDER.filter(function (d) { return domainCount(d) > 0; }); }
+
+function renderSummary() {
+  var b = bizStats(), d = devStats(), db = dbStats();
+  $('sumBusiness').textContent = b.tools ? (b.services + ' 个服务 · ' + b.tools + ' 个工具' + (b.writes ? '（含写入类 ' + b.writes + ' 个）' : '')) : '未配置';
+  var devParts = [];
+  DEV_GROUPS.forEach(function (g) {
+    var gs = d[g.key];
+    var seg = [];
+    if (gs.domains) seg.push(gs.domains + ' 个业务域（含后续开放资源）');
+    if (gs.resources) seg.push(gs.resources + ' 个' + g.unit);
+    if (seg.length) devParts.push(g.label + '：' + seg.join('、'));
+  });
+  $('sumDevtools').textContent = devParts.length ? devParts.join(' · ') : '未配置';
+  $('sumDatabase').textContent = db.tables ? (db.instances + ' 个实例 · ' + db.dbs + ' 个库 · ' + db.tables + ' 张表' + (db.autoNew ? '（' + db.autoNew + ' 个实例 / 库含后续开放表）' : '')) : '未配置';
+  DOMAIN_ORDER.forEach(function (k) { document.querySelector('[data-count="' + k + '"]').textContent = domainCount(k); });
+}
+
+/* ===================== 树渲染 ===================== */
+function checkboxHtml(checked, indeterminate, disabled, attrs) {
+  return '<label class="busy-checkbox' + (checked ? ' is-checked' : '') + (disabled ? ' is-disabled' : '') + '" ' + attrs + '>' +
+    '<span class="busy-checkbox__input' + (indeterminate ? ' is-indeterminate' : '') + '"><span class="busy-checkbox__inner"></span></span></label>';
+}
+function expandHtml(key, hasChildren) {
+  if (!hasChildren) return '<span class="busy-tree-node__expand"></span>';
+  return '<span class="busy-tree-node__expand" data-toggle="' + key + '">' + (expanded[key] ? '▾' : '▸') + '</span>';
+}
+function unavailableTag(item) {
+  return item.unavailable ? '<span class="busy-tag busy-tag--info busy-tag--small">' + item.unavailable + '</span>' : '';
+}
+function markerTag(text) { return '<span class="busy-tag busy-tag--small">' + text + '</span>'; }
+function emptyHtml(domain) {
+  return '<div class="busy-empty"><div class="busy-empty__image">☁</div><div>你还没有被分配' + DOMAIN_LABEL[domain] + '权限，请联系权限管理员分配</div></div>';
+}
+function childrenHtml(key, inner) {
+  return '<div class="busy-tree-node__children"' + (expanded[key] ? '' : ' hidden') + '>' + inner + '</div>';
+}
+
+/* —— 业务系统：服务 → 工具 —— */
+function serviceState(s) {
+  var sel = state.business;
+  var tools = visibleTools(s);
+  var query = tools.filter(function (t) { return t.type !== 'write' && !t.unavailable; });
+  var anyChecked = tools.some(function (t) { return sel[t.id]; });
+  var allQuery = query.length > 0 && query.every(function (t) { return sel[t.id]; });
+  return { hasQuery: query.length > 0, checked: allQuery, indeterminate: !allQuery && anyChecked };
+}
+function toolNodeHtml(t) {
+  var checked = !!state.business[t.id];
+  var disabled = !!t.unavailable && !checked;
+  return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml('', false) +
+    checkboxHtml(checked, false, disabled, 'data-check="tool" data-id="' + t.id + '"') +
+    '<span class="busy-tree-node__label">' + esc(t.name) + '</span>' + unavailableTag(t) +
+    '</div></div>';
+}
+function renderBizTree() {
+  var list = visibleServices();
+  var box = $('tree-business');
+  if (!list.length) { box.innerHTML = emptyHtml('business'); return; }
+  box.innerHTML = list.map(function (s) {
+    var st = serviceState(s);
+    var tools = visibleTools(s);
+    var query = tools.filter(function (t) { return t.type !== 'write'; });
+    var writes = tools.filter(function (t) { return t.type === 'write'; });
+    var key = 'svc:' + s.id, gkey = 'grp:' + s.id;
+    var children = query.map(toolNodeHtml).join('');
+    if (writes.length) {
+      children += '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml(gkey, true) +
+        '<span class="busy-tree-node__label">写入类工具</span><span class="busy-tag busy-tag--warning busy-tag--small">写入</span>' +
+        '<span class="u-sub">写入类工具将以你的身份修改业务数据</span></div>' +
+        childrenHtml(gkey, writes.map(toolNodeHtml).join('')) + '</div>';
+    }
+    /* 服务下无可勾选的查询类工具（仅分配了写入类工具 / 仅剩不可用项）时，服务节点仅作分组 */
+    var svcCheck = st.hasQuery
+      ? checkboxHtml(st.checked, st.indeterminate, false, 'data-check="svc" data-id="' + s.id + '"')
+      : '<span class="page-node-check-placeholder"></span>';
+    return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml(key, true) + svcCheck +
+      '<span class="busy-tree-node__label u-strong">' + esc(s.name) + '</span>' +
+      '<span class="u-sub">' + esc(s.desc) + '</span></div>' +
+      childrenHtml(key, children) + '</div>';
+  }).join('');
+}
+
+/* —— 研发工具：SLS 日志 / ARMS 应用监控 两组，业务域 → 资源 —— */
+function domainCheckState(d) {
+  var s = state.devtools[d.id];
+  if (s.mode === 'domain') return { checked: true, indeterminate: false };
+  var avail = availResources(d);
+  var n = visibleResources(d).filter(function (r) { return s.res[r.id]; }).length;
+  var full = avail.length > 0 && avail.every(function (r) { return s.res[r.id]; });
+  return { checked: full, indeterminate: !full && n > 0 };
+}
+function resourceNodeHtml(g, d, r) {
+  var s = state.devtools[d.id];
+  var checked = s.mode === 'domain' ? !r.unavailable : !!s.res[r.id];
+  var disabled = !!r.unavailable && !checked;
+  var meta = g.key === 'sls'
+    ? 'Project ' + esc(r.project) + ' · 保留 ' + r.retention + ' 天'
+    : '地域 ' + esc(r.region);
+  return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml('', false) +
+    checkboxHtml(checked, false, disabled, 'data-check="res" data-dom="' + d.id + '" data-id="' + r.id + '"') +
+    '<span class="busy-tree-node__label">' + esc(r.name) + '</span>' +
+    '<span class="u-sub">' + meta + '</span>' + unavailableTag(r) +
+    '</div></div>';
+}
+function domainNodeHtml(g, d) {
+  var s = state.devtools[d.id];
+  var st = domainCheckState(d);
+  var res = visibleResources(d);
+  var key = 'dom:' + d.id;
+  var disabled = !!d.unavailable && s.mode === 'none';
+  var tags = '';
+  if (d.grant === 'domain') tags += '<span class="busy-tag busy-tag--small ' + ENV_LIMIT_TAG[d.env] + '">' + d.env + '</span>';
+  if (s.mode === 'domain') tags += markerTag('含后续开放资源');
+  tags += unavailableTag(d);
+  return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml(key, res.length > 0) +
+    checkboxHtml(st.checked, st.indeterminate, disabled, 'data-check="dom" data-id="' + d.id + '"') +
+    '<span class="busy-tree-node__label u-strong">' + esc(d.domain) + '</span>' + tags + '</div>' +
+    (res.length ? childrenHtml(key, res.map(function (r) { return resourceNodeHtml(g, d, r); }).join('')) : '') +
+    '</div>';
+}
+function renderDevTree() {
+  var box = $('tree-devtools');
+  if (!devHasAny()) { box.innerHTML = emptyHtml('devtools'); return; }
+  box.innerHTML = DEV_GROUPS.map(function (g) {
+    var doms = visibleDomains(g);
+    if (!doms.length) return '';
+    return '<div class="page-dev-group"><div class="page-dev-group__head u-strong">' + g.label + '</div>' +
+      '<div class="busy-tree page-tree">' + doms.map(function (d) { return domainNodeHtml(g, d); }).join('') + '</div></div>';
+  }).join('');
+}
+
+/* —— 数据库：实例 → 库 → 表 —— */
+function dbChecked(inst, db) {
+  if (state.dbInst[inst.id]) return 'inst';
+  var s = state.database[inst.id + '/' + db.name];
+  if (s.mode === 'all') return 'all';
+  if (s.mode === 'tables') {
+    var n = keysOf(s.tables).length;
+    if (n === db.tables.length) return 'full';
+    if (n > 0) return 'partial';
+  }
+  return 'none';
+}
+function isOn(c) { return c === 'inst' || c === 'all' || c === 'full'; }
+function renderDbTree() {
+  var box = $('tree-database');
+  if (!DB_INSTANCES.length) { box.innerHTML = emptyHtml('database'); return; }
+  box.innerHTML = DB_INSTANCES.map(function (inst) {
+    var whole = !!state.dbInst[inst.id];
+    var states = inst.dbs.map(function (db) { return dbChecked(inst, db); });
+    var allOn = states.every(isOn);
+    var anyOn = states.some(function (x) { return x !== 'none'; });
+    var ikey = 'inst:' + inst.id;
+    var dbsHtml = inst.dbs.map(function (db) {
+      var k = inst.id + '/' + db.name;
+      var s = state.database[k];
+      var c = dbChecked(inst, db);
+      var dkey = 'db:' + k;
+      var tablesHtml = db.tables.map(function (tb) {
+        var on = c === 'inst' || s.mode === 'all' || !!s.tables[tb];
+        return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml('', false) +
+          checkboxHtml(on, false, false, 'data-check="table" data-key="' + k + '" data-id="' + tb + '"') +
+          '<span class="busy-tree-node__label">' + esc(tb) + '</span></div></div>';
+      }).join('');
+      return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml(dkey, true) +
+        checkboxHtml(isOn(c), c === 'partial', false, 'data-check="db" data-key="' + k + '"') +
+        '<span class="busy-tree-node__label">' + esc(db.name) + '</span>' +
+        (c === 'all' ? markerTag('含后续开放表') : '') +
+        '</div>' + childrenHtml(dkey, tablesHtml) + '</div>';
+    }).join('');
+    return '<div class="busy-tree-node"><div class="busy-tree-node__content">' + expandHtml(ikey, true) +
+      checkboxHtml(allOn, !allOn && anyOn, false, 'data-check="inst" data-id="' + inst.id + '"') +
+      '<span class="busy-tree-node__label u-strong">' + esc(inst.id) + '</span>' +
+      '<span class="busy-tag busy-tag--small ' + ENV_TAG[inst.env] + '">' + inst.env + '</span>' +
+      '<span class="u-sub">行数上限 ' + inst.rowLimit + ' · 超时 ' + inst.timeout + 's</span>' +
+      (whole ? markerTag('含后续开放表') : '') + '</div>' +
+      childrenHtml(ikey, dbsHtml) + '</div>';
+  }).join('');
+}
+function renderAll() {
+  renderBizTree();
+  renderDevTree();
+  renderDbTree();
+  renderSummary();
+}
+
+/* ===================== 树交互 ===================== */
+function findService(id) { return BIZ_SERVICES.filter(function (s) { return s.id === id; })[0]; }
+function findTool(id) {
+  var r = null;
+  BIZ_SERVICES.forEach(function (s) { s.tools.forEach(function (t) { if (t.id === id) r = t; }); });
+  return r;
+}
+function findDomain(id) {
+  var r = null;
+  DEV_GROUPS.forEach(function (g) { g.domains.forEach(function (d) { if (d.id === id) r = d; }); });
+  return r;
+}
+function findInst(id) { return DB_INSTANCES.filter(function (i) { return i.id === id; })[0]; }
+function findDb(key) {
+  var p = key.split('/'), r = null;
+  DB_INSTANCES.forEach(function (i) { if (i.id === p[0]) i.dbs.forEach(function (d) { if (d.name === p[1]) r = d; }); });
+  return r;
+}
+/* 整实例授权拆开：其余库改为整库授权（实例按实例分配，库可整体勾选） */
+function splitInstance(inst) {
+  state.dbInst[inst.id] = false;
+  inst.dbs.forEach(function (db) { state.database[inst.id + '/' + db.name] = { mode: 'all', tables: {} }; });
+}
+function onTreeClick(e) {
+  var tg = e.target.closest('[data-toggle]');
+  if (tg) { var k = tg.getAttribute('data-toggle'); expanded[k] = !expanded[k]; renderAll(); return; }
+  var cb = e.target.closest('label.busy-checkbox');
+  if (!cb) return;
+  e.preventDefault();
+  if (cb.classList.contains('is-disabled')) return;
+  var kind = cb.getAttribute('data-check');
+  var id = cb.getAttribute('data-id');
+  if (kind === 'tool') {
+    var t = findTool(id);
+    if (state.business[id]) delete state.business[id];
+    else if (!t.unavailable) state.business[id] = true;  /* 不可用项只能取消不能新增 */
+  } else if (kind === 'svc') {
+    var s = findService(id);
+    var st = serviceState(s);
+    if (st.checked) {
+      s.tools.forEach(function (x) { delete state.business[x.id]; });
+    } else {
+      /* 勾选服务 = 全部已分配且启用的查询类工具；写入类默认不勾选 */
+      s.tools.forEach(function (x) { if (x.type !== 'write' && !x.unavailable) state.business[x.id] = true; });
+    }
+  } else if (kind === 'dom') {
+    var d = findDomain(id);
+    var ds = state.devtools[id];
+    if (d.unavailable) {
+      if (ds.mode !== 'none') state.devtools[id] = { mode: 'none', res: {} };
+    } else if (domainCheckState(d).checked) {
+      state.devtools[id] = { mode: 'none', res: {} };
+    } else if (d.grant === 'domain') {
+      /* 按业务域分配：整域勾选，含后续开放资源 */
+      state.devtools[id] = { mode: 'domain', res: {} };
+    } else {
+      /* 仅分配单个资源：业务域节点仅作分组，勾选即勾选其下已分配资源 */
+      var all = {};
+      availResources(d).forEach(function (r) { all[r.id] = true; });
+      state.devtools[id] = { mode: 'res', res: all };
+    }
+  } else if (kind === 'res') {
+    var dom = findDomain(cb.getAttribute('data-dom'));
+    var rs = state.devtools[dom.id];
+    if (rs.mode === 'domain') {
+      /* 展开改为逐个勾选：不再含后续开放资源 */
+      var rest = {};
+      availResources(dom).forEach(function (r) { if (r.id !== id) rest[r.id] = true; });
+      state.devtools[dom.id] = { mode: keysOf(rest).length ? 'res' : 'none', res: rest };
+    } else {
+      var res = dom.resources.filter(function (r) { return r.id === id; })[0];
+      if (rs.res[id]) delete rs.res[id];
+      else if (!res.unavailable) rs.res[id] = true;
+      rs.mode = keysOf(rs.res).length ? 'res' : 'none';
+    }
+  } else if (kind === 'inst') {
+    var inst = findInst(id);
+    var allOn = inst.dbs.every(function (db) { return isOn(dbChecked(inst, db)); });
+    state.dbInst[inst.id] = false;
+    inst.dbs.forEach(function (db) { state.database[inst.id + '/' + db.name] = { mode: 'none', tables: {} }; });
+    if (!allOn) {
+      if (inst.grant === 'instance') state.dbInst[inst.id] = true;  /* 整实例：含后续开放表 */
+      else inst.dbs.forEach(function (db) { state.database[inst.id + '/' + db.name] = { mode: 'all', tables: {} }; });  /* 实例仅作分组 */
+    }
+  } else if (kind === 'db') {
+    var key = cb.getAttribute('data-key');
+    var inst2 = findInst(key.split('/')[0]);
+    var c = dbChecked(inst2, findDb(key));
+    if (c === 'inst') { splitInstance(inst2); state.database[key] = { mode: 'none', tables: {} }; }
+    else state.database[key] = isOn(c) ? { mode: 'none', tables: {} } : { mode: 'all', tables: {} };
+  } else if (kind === 'table') {
+    var dkey = cb.getAttribute('data-key');
+    var inst3 = findInst(dkey.split('/')[0]);
+    var db = findDb(dkey);
+    if (state.dbInst[inst3.id]) splitInstance(inst3);
+    var s2 = state.database[dkey];
+    if (s2.mode === 'all') {
+      /* 展开改为逐表勾选：不再含后续开放表 */
+      var tables = {};
+      db.tables.forEach(function (tb) { if (tb !== id) tables[tb] = true; });
+      state.database[dkey] = { mode: keysOf(tables).length ? 'tables' : 'none', tables: tables };
+    } else {
+      if (s2.tables[id]) delete s2.tables[id]; else s2.tables[id] = true;
+      s2.mode = keysOf(s2.tables).length ? 'tables' : 'none';
+    }
+  }
+  renderAll();
+}
+DOMAIN_ORDER.forEach(function (d) { $('tree-' + d).addEventListener('click', onTreeClick); });
+
+/* 领域页签 */
+document.querySelectorAll('#domainTabs .busy-tabs__item').forEach(function (tab) {
+  tab.addEventListener('click', function () {
+    var d = tab.getAttribute('data-domain');
+    document.querySelectorAll('#domainTabs .busy-tabs__item').forEach(function (x) { x.classList.toggle('is-active', x === tab); });
+    document.querySelectorAll('.page-tab-panel').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== d; });
+  });
+});
+
+/* ===================== 基本信息 ===================== */
+function updatePreview() {
+  $('expirePreview').value = IS_EDIT ? EDIT_TOKEN.expireAt : fmtDt(addDays(MOCK_NOW, state.validity));
+}
+document.querySelectorAll('#validityGroup .busy-radio').forEach(function (r) {
+  r.addEventListener('click', function () {
+    state.validity = +r.getAttribute('data-value');
+    document.querySelectorAll('#validityGroup .busy-radio').forEach(function (x) { x.querySelector('.busy-radio__input').classList.toggle('is-checked', x === r); });
+    $('validityError').hidden = true;
+    updatePreview();
+  });
+});
+
+function nameRuleError(v) {
+  v = v.trim();
+  if (v.length < 2 || v.length > 32) return '请输入 2–32 字的令牌名称';
+  var others = MY_ACTIVE_NAMES.filter(function (n) { return !(IS_EDIT && n === EDIT_TOKEN.name); });
+  if (others.indexOf(v) >= 0) return '已有同名令牌';
+  return '';
+}
+function showNameError(msg) {
+  $('nameError').textContent = msg;
+  $('nameError').hidden = !msg;
+  $('nameItem').classList.toggle('is-error', !!msg);
+}
+$('nameInput').addEventListener('input', function () { state.name = $('nameInput').value; });
+$('nameInput').addEventListener('blur', function () {
+  var v = $('nameInput').value;
+  var t = v.trim();
+  if (t.length < 2 || t.length > 32) { showNameError('请输入 2–32 字的令牌名称'); return; }
+  /* 唯一性：异步校验（Mock 300ms） */
+  setTimeout(function () {
+    if ($('nameInput').value !== v) return;
+    showNameError(nameRuleError(v));
+  }, 300);
+});
+
+/* ===================== 提交 ===================== */
+function validateAll() {
+  var first = null;
+  var nErr = nameRuleError($('nameInput').value);
+  showNameError(nErr);
+  if (nErr) first = first || $('nameItem');
+  if (!IS_EDIT && [7, 30, 90, 180].indexOf(state.validity) < 0) { $('validityError').hidden = false; first = first || $('validityItem'); }
+  if (first) first.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  return !first;
+}
+function setFormDisabled(on) {
+  document.querySelectorAll('[data-form-panel]').forEach(function (p) { if (on) p.setAttribute('inert', ''); else p.removeAttribute('inert'); });
+  $('nameBox').classList.toggle('is-disabled', on);
+  $('btnCancel').disabled = on;
+  $('btnCancel').classList.toggle('is-disabled', on);
+}
+function editHadDomain(d) {
+  if (d === 'business') return EDIT_TOKEN.business.length > 0;
+  if (d === 'devtools') return keysOf(EDIT_TOKEN.devtools).some(function (k) { var s = EDIT_TOKEN.devtools[k]; return s.mode !== 'none'; });
+  return keysOf(EDIT_TOKEN.database).length > 0;
+}
+
+$('btnSubmit').addEventListener('click', function () {
+  if (submitting) return;
+  if (!validateAll()) return;
+  if (IS_EDIT) {
+    var removed = DOMAIN_ORDER.filter(function (d) { return editHadDomain(d) && domainCount(d) === 0; });
+    if (removed.length) {
+      messageBox({
+        text: '已移除「' + removed.map(function (d) { return DOMAIN_LABEL[d]; }).join('、') + '」的全部授权，需在令牌详情重新复制 MCP 配置，确认保存？',
+        onConfirm: function () { saveEdit(); }
+      });
+      return;
+    }
+    saveEdit();
+  } else {
+    generate();
+  }
+});
+
+function generate() {
+  var btn = $('btnSubmit');
+  submitting = true;
+  setLoading(btn, true);
+  setFormDisabled(true);
+  mockRequest(1000, function () {
+    setLoading(btn, false);
+    openResult();
+  }, function () {
+    submitting = false;
+    setLoading(btn, false);
+    setFormDisabled(false);
+    messageBox({ type: 'error', alert: true, text: '生成失败：生效中令牌已达 10 个上限，请先吊销不用的令牌（Mock 错误详情）' });
+  });
+}
+function saveEdit() {
+  var btn = $('btnSubmit');
+  submitting = true;
+  setLoading(btn, true);
+  setFormDisabled(true);
+  mockRequest(800, function () {
+    showMessage('success', '令牌「' + $('nameInput').value.trim() + '」授权范围已更新');
+    leaving = true;
+    setTimeout(function () { location.href = 'token-detail.html?id=' + EDIT_TOKEN.id; }, 1500);
+  }, function () {
+    submitting = false;
+    setLoading(btn, false);
+    setFormDisabled(false);
+    messageBox({ type: 'error', alert: true, text: '保存失败：所选授权项「门店服务 · 查询门店客流」已不可用，请取消后重试（Mock 错误详情）' });
+  });
+}
+
+/* ===================== 生成结果弹窗 ===================== */
+var tokenPlain = '';
+var client = 'qoder';
+var CLIENT_FILE = { qoder: 'qoder-mcp.json', claude: 'claude-code-mcp.sh', cursor: 'cursor-mcp.json', generic: 'mcp-config.json' };
+
+function genToken() {
+  var cs = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var s = 'mcp_7Hq2';
+  for (var i = 0; i < 36; i++) s += cs.charAt(Math.floor(Math.random() * cs.length));
+  return s;
+}
+/* 配置按已授权领域生成，每个领域一个 MCP 服务条目（business-rule.md §4） */
+function buildConfig(c, token, domains) {
+  if (c === 'claude') {
+    return domains.map(function (d) {
+      return 'claude mcp add --transport http ' + MCP_ENTRY[d] + ' ' + MCP_BASE + d + ' \\\n  --header "Authorization: Bearer ' + token + '"';
+    }).join('\n\n');
+  }
+  var servers = {};
+  domains.forEach(function (d) {
+    var url = MCP_BASE + d;
+    var headers = { Authorization: 'Bearer ' + token };
+    if (c === 'qoder') servers[MCP_ENTRY[d]] = { type: 'streamableHttp', url: url, headers: headers };
+    else if (c === 'cursor') servers[MCP_ENTRY[d]] = { url: url, headers: headers };
+    else servers[MCP_ENTRY[d]] = { transport: 'streamable-http', url: url, headers: headers };
+  });
+  return JSON.stringify({ mcpServers: servers }, null, 2);
+}
+function renderConfig() {
+  $('configCode').textContent = buildConfig(client, tokenPlain, selectedDomains());
+}
+function openResult() {
+  tokenPlain = genToken();
+  client = 'qoder';
+  document.querySelectorAll('#clientGroup .busy-radio-button').forEach(function (b) { b.classList.toggle('is-checked', b.getAttribute('data-value') === client); });
+  $('resultTitle').textContent = '令牌「' + $('nameInput').value.trim() + '」已生成';
+  $('tokenPlain').value = tokenPlain;
+  $('emptyScopeResult').hidden = selectedDomains().length > 0;
+  renderConfig();
+  $('resultOverlay').hidden = false;
+}
+document.querySelectorAll('#clientGroup .busy-radio-button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    client = b.getAttribute('data-value');
+    document.querySelectorAll('#clientGroup .busy-radio-button').forEach(function (x) { x.classList.toggle('is-checked', x === b); });
+    renderConfig();
+  });
+});
+
+function copyText(text, el, cb) {
+  function fallback() {
+    var ok = false;
+    try {
+      if (el.tagName === 'INPUT') { el.focus(); el.select(); ok = document.execCommand('copy'); }
+      else {
+        var r = document.createRange(); r.selectNodeContents(el);
+        var sel = window.getSelection(); sel.removeAllRanges(); sel.addRange(r);
+        ok = document.execCommand('copy');
+        sel.removeAllRanges();
+      }
+    } catch (err) { ok = false; }
+    cb(ok);
+  }
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).then(function () { cb(true); }, fallback);
+  } else {
+    fallback();
+  }
+}
+function copyFeedback(ok) {
+  if (ok) showMessage('success', '已复制到剪贴板');
+  else showMessage('error', '复制失败，请手动选择复制');
+}
+$('btnCopyToken').addEventListener('click', function () { copyText(tokenPlain, $('tokenPlain'), copyFeedback); });
+$('btnCopyConfig').addEventListener('click', function () { copyText($('configCode').textContent, $('configCode'), copyFeedback); });
+$('btnDownload').addEventListener('click', function () {
+  var btn = $('btnDownload');
+  setLoading(btn, true);
+  mockRequest(500, function () {
+    try {
+      var blob = new Blob([$('configCode').textContent + '\n'], { type: 'text/plain;charset=utf-8' });
+      var a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = CLIENT_FILE[client];
+      document.body.appendChild(a);
+      a.click();
+      setTimeout(function () { URL.revokeObjectURL(a.href); a.parentNode.removeChild(a); }, 0);
+      showMessage('success', '配置文件已下载');
+    } catch (err) {
+      showMessage('error', '配置文件下载失败，请重试');
+    }
+    setLoading(btn, false);
+  }, function () {
+    setLoading(btn, false);
+    showMessage('error', '配置文件下载失败，请重试');
+  });
+});
+$('btnCloseResult').addEventListener('click', function () {
+  messageBox({
+    text: '关闭后将无法再次查看令牌明文，确认已保存？',
+    onConfirm: function () { leaving = true; location.href = 'token-list.html'; }
+  });
+});
+
+/* ===================== 取消 / 离开守卫 ===================== */
+var initialSnapshot = '';
+function isDirty() { return !leaving && !submitting && snapshot() !== initialSnapshot; }
+function guardLeave(href) {
+  if (!isDirty()) { location.href = href; return; }
+  messageBox({ text: '您有未保存的修改，确认离开？', onConfirm: function () { leaving = true; location.href = href; } });
+}
+$('btnCancel').addEventListener('click', function () {
+  if ($('btnCancel').disabled) return;
+  guardLeave(IS_EDIT ? 'token-detail.html?id=' + EDIT_TOKEN.id : 'token-list.html');
+});
+document.addEventListener('click', function (e) {
+  var a = e.target.closest('a[href]');
+  if (!a) return;
+  var href = a.getAttribute('href');
+  if (!href || href.charAt(0) === '#') return;
+  if (isDirty()) { e.preventDefault(); guardLeave(href); }
+}, true);
+
+/* ===================== 初始化 ===================== */
+if (IS_EDIT) {
+  document.title = '编辑授权范围 · MCP接入管理';
+  $('pageTitle').textContent = '编辑授权范围';
+  $('crumbLast').textContent = '编辑授权范围';
+  $('validityItem').hidden = true;
+  $('btnSubmit').innerHTML = '<span>保存授权范围</span>';
+  $('modeLink').textContent = '生成模式';
+  $('modeLink').setAttribute('href', 'token-form.html');
+}
+$('nameInput').value = state.name;
+updatePreview();
+renderAll();
+initialSnapshot = snapshot();
+</script>
+</body>
+</html>

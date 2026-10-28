@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>品牌成本报表 · 研发成本统计</title>
+<!--
+  cost-report · Web 原型（requirement-add Step 5）
+  骨架：page-blueprint skeletons/web/dashboard-multi.vue.tpl（.tpl-page 根 + 筛选 .tpl-panel + .tpl-kpi-grid + 透视表 .tpl-panel）
+  Token 真源：page-blueprint/tokens/web.css（外链引用，禁止内联 :root）
+  口径真源：references/business-rule.md §5（仅已审核 · 按费用开始~结束年月逐月均摊、尾差末月倒算 · 行=品牌可叠加科目 · 列=年月 · 值=分摊金额合计）
+  页面描述：references/web-ui.md §品牌成本报表
+  演示数据：13 张已审核单据（含单月 / 跨月 / 尾差样例）→ 按 §5 月均分摊规则实时聚合，透视表非硬编码
+-->
+<link rel="stylesheet" href="../../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: var(--ac-ff-sans); font-size: var(--ac-fs-md); line-height: var(--ac-lh-normal); color: var(--ac-color-text-1); background: var(--ac-color-fill-2); min-height: 100vh; }
+
+  /* ═══ 骨架容器 ═══ */
+  .tpl-page { width: 100%; max-width: 1400px; margin: 0 auto; padding: var(--ac-space-6); display: flex; flex-direction: column; gap: var(--ac-space-4); }
+  .tpl-panel { background: var(--ac-color-bg-1); border-radius: var(--ac-radius-lg); box-shadow: var(--ac-shadow-1); padding: var(--ac-space-5); display: flex; flex-direction: column; gap: var(--ac-space-4); }
+  .tpl-panel__head { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-4); }
+  .tpl-panel__title { font-size: var(--ac-fs-xl); font-weight: var(--ac-fw-medium); color: var(--ac-color-text-1); }
+  .tpl-panel__hint { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+
+  /* ═══ 筛选区 ═══ */
+  .ac-form.tpl-filter { display: flex; align-items: flex-end; gap: var(--ac-space-4); flex-wrap: wrap; }
+  .tpl-filter__item { display: flex; flex-direction: column; gap: var(--ac-space-1); min-width: 0; }
+  .ac-form-item__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-2); }
+  .tpl-filter__actions { display: flex; gap: var(--ac-space-2); }
+  .ac-select, .ac-date-picker { display: flex; align-items: center; justify-content: space-between; gap: var(--ac-space-2); height: var(--ac-hit-click); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); padding: 0 var(--ac-space-3); font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); cursor: pointer; }
+  .ac-select { width: 220px; }
+  .ac-date-picker { width: 260px; font-family: var(--ac-ff-mono); }
+  .ac-select:hover, .ac-date-picker:hover { border-color: var(--ac-color-primary-6); }
+  .ac-select__view, .ac-date-picker__view { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .ac-select__suffix, .ac-date-picker__suffix { color: var(--ac-color-text-3); font-size: var(--ac-fs-xs); }
+
+  /* ═══ 勾选框（AcCheckbox 渲染输出） ═══ */
+  .ac-checkbox { display: inline-flex; align-items: center; gap: var(--ac-space-2); cursor: pointer; height: var(--ac-hit-click); user-select: none; }
+  .ac-checkbox__box { width: 16px; height: 16px; border: 1px solid var(--ac-color-border-3); border-radius: var(--ac-radius-xs); background: var(--ac-color-bg-1); display: inline-flex; align-items: center; justify-content: center; font-size: var(--ac-fs-xs); color: var(--ac-color-text-white); }
+  .ac-checkbox.is-checked .ac-checkbox__box { background: var(--ac-color-primary-6); border-color: var(--ac-color-primary-6); }
+  .ac-checkbox.is-checked .ac-checkbox__box::after { content: '✓'; }
+  .ac-checkbox__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-1); }
+
+  /* ═══ 按钮 ═══ */
+  .ac-btn { display: inline-flex; align-items: center; justify-content: center; height: var(--ac-hit-click); padding: 0 var(--ac-space-4); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-sm); background: var(--ac-color-bg-1); color: var(--ac-color-text-1); font-family: inherit; font-size: var(--ac-fs-sm); font-weight: var(--ac-fw-medium); white-space: nowrap; cursor: pointer; }
+  .ac-btn:hover { border-color: var(--ac-color-primary-6); color: var(--ac-color-primary-6); }
+  .ac-btn--primary { background: var(--ac-color-primary-6); border-color: var(--ac-color-primary-6); color: var(--ac-color-text-white); }
+  .ac-btn--primary:hover { background: var(--ac-color-primary-5); border-color: var(--ac-color-primary-5); color: var(--ac-color-text-white); }
+
+  /* ═══ KPI 区（.tpl-kpi-grid：筛选 panel 后 / 表格 panel 前） ═══ */
+  .tpl-kpi-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--ac-space-4); }
+  .tpl-kpi { background: var(--ac-color-bg-1); border: 1px solid var(--ac-color-border-2); border-radius: var(--ac-radius-md); padding: var(--ac-space-4); display: flex; flex-direction: column; gap: var(--ac-space-2); min-height: 96px; }
+  .tpl-kpi__head { display: flex; align-items: center; gap: var(--ac-space-2); }
+  .tpl-kpi__dot { width: 8px; height: 8px; border-radius: 50%; background: var(--ac-color-primary-6); flex-shrink: 0; }
+  .tpl-kpi__dot.is-success { background: var(--ac-color-success-6); }
+  .tpl-kpi__dot.is-warning { background: var(--ac-color-warning-6); }
+  .tpl-kpi__label { font-size: var(--ac-fs-sm); color: var(--ac-color-text-3); }
+  .tpl-kpi__hint { display: inline-flex; align-items: center; justify-content: center; width: 14px; height: 14px; border: 1px solid var(--ac-color-border-2); border-radius: 50%; font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); cursor: help; }
+  .tpl-kpi__value-row { display: flex; align-items: baseline; gap: var(--ac-space-1); }
+  .tpl-kpi__value { font-size: var(--ac-fs-3xl); font-weight: var(--ac-fw-medium); font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; color: var(--ac-color-text-1); }
+  .tpl-kpi__suffix { font-size: var(--ac-fs-sm); color: var(--ac-color-text-3); }
+  .tpl-kpi__foot { font-size: var(--ac-fs-xs); color: var(--ac-color-text-3); }
+
+  /* ═══ 透视表 ═══ */
+  .pivot-wrap { overflow-x: auto; }
+  .ac-table { width: 100%; border-collapse: collapse; font-size: var(--ac-fs-sm); }
+  .ac-table th { text-align: left; font-weight: var(--ac-fw-medium); color: var(--ac-color-text-2); background: var(--ac-color-fill-1); padding: var(--ac-space-2) var(--ac-space-3); white-space: nowrap; }
+  .ac-table th.cell-num, .ac-table td.cell-num { text-align: right; }
+  .ac-table td { padding: var(--ac-space-2) var(--ac-space-3); border-top: 1px solid var(--ac-color-border-1); white-space: nowrap; }
+  .ac-table .cell-num { font-family: var(--ac-ff-mono); font-variant-numeric: tabular-nums; }
+  .ac-table tbody tr:hover { background: var(--ac-color-fill-1); }
+  .ac-table tr.is-brand td { font-weight: var(--ac-fw-medium); background: var(--ac-color-fill-1); }
+  .ac-table tr.is-subject td:first-child { padding-left: var(--ac-space-6); color: var(--ac-color-text-2); }
+  .ac-table tr.is-total td { font-weight: var(--ac-fw-semibold); background: var(--ac-color-primary-1); }
+  .cell-empty { color: var(--ac-color-text-4); }
+
+  /* ═══ 原型页间互联条 ═══ */
+  .ac-proto-bar { position: fixed; right: var(--ac-space-5); bottom: var(--ac-space-5); display: flex; gap: var(--ac-space-1); background: var(--ac-color-text-1); border-radius: var(--ac-radius-full); padding: var(--ac-space-1); z-index: var(--ac-z-toast); box-shadow: var(--ac-shadow-1); }
+  .ac-proto-bar a { font-size: var(--ac-fs-xs); color: var(--ac-color-text-white); text-decoration: none; padding: 2px var(--ac-space-3); border-radius: var(--ac-radius-full); }
+  .ac-proto-bar a.is-active { background: var(--ac-color-primary-6); font-weight: var(--ac-fw-semibold); }
+
+  /* ═══ Toast ═══ */
+  .ac-toast { position: fixed; top: var(--ac-space-6); left: 50%; transform: translateX(-50%); background: var(--ac-color-text-1); color: var(--ac-color-text-white); font-size: var(--ac-fs-sm); padding: var(--ac-space-2) var(--ac-space-4); border-radius: var(--ac-radius-sm); opacity: 0; transition: opacity var(--ac-duration-fast) var(--ac-easing-standard); z-index: var(--ac-z-toast); pointer-events: none; }
+  .ac-toast.is-show { opacity: 1; }
+</style>
+</head>
+<body>
+<section class="tpl-page">
+
+  <!-- ① 筛选 panel -->
+  <div class="tpl-panel">
+    <form class="ac-form ac-form--inline tpl-filter" onsubmit="return false">
+      <div class="ac-form-item tpl-filter__item">
+        <label class="ac-form-item__label">费用年月</label>
+        <div class="ac-form-item__control">
+          <div class="ac-date-picker" data-type="range">
+            <span class="ac-date-picker__view">2025-10 ~ 2026-09</span>
+            <span class="ac-date-picker__suffix">📅</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-form-item tpl-filter__item">
+        <label class="ac-form-item__label">费用科目</label>
+        <div class="ac-form-item__control">
+          <div class="ac-select" title="人员 / Token / 系统采购 / 弱电 / 硬件 / 差旅 / 福利">
+            <span class="ac-select__view">全部（7 项）</span>
+            <span class="ac-select__suffix">▾</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-form-item tpl-filter__item">
+        <label class="ac-form-item__label">品牌</label>
+        <div class="ac-form-item__control">
+          <div class="ac-select" title="鸣鸣很忙 / 有点推荐 / 满气食品 / 数字化中心">
+            <span class="ac-select__view">全部（4 个）</span>
+            <span class="ac-select__suffix">▾</span>
+          </div>
+        </div>
+      </div>
+      <div class="ac-form-item tpl-filter__item">
+        <label class="ac-form-item__label">行维度</label>
+        <div class="ac-form-item__control">
+          <div class="ac-checkbox" id="chkSubject">
+            <span class="ac-checkbox__box"></span>
+            <span class="ac-checkbox__label">叠加科目维度</span>
+          </div>
+        </div>
+      </div>
+      <div class="tpl-filter__actions">
+        <button type="button" class="ac-btn ac-btn--primary" onclick="acToast('已按筛选条件刷新报表')">查询</button>
+        <button type="button" class="ac-btn" id="btnReset">重置</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- ② KPI 区（筛选 panel 后 / 表格 panel 前；数值由演示单据集实时聚合） -->
+  <div class="tpl-kpi-grid">
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head">
+        <span class="tpl-kpi__dot"></span>
+        <span class="tpl-kpi__label">期间费用总额</span>
+        <span class="tpl-kpi__hint" title="筛选范围内各月已审核分摊额之和（非单据全额）">?</span>
+      </div>
+      <div class="tpl-kpi__value-row"><span class="tpl-kpi__value" id="kpiTotal">—</span><span class="tpl-kpi__suffix">元</span></div>
+      <div class="tpl-kpi__foot">仅统计已审核单据</div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head">
+        <span class="tpl-kpi__dot is-success"></span>
+        <span class="tpl-kpi__label">分摊品牌数</span>
+        <span class="tpl-kpi__hint" title="范围内分摊金额 > 0 的品牌数">?</span>
+      </div>
+      <div class="tpl-kpi__value-row"><span class="tpl-kpi__value" id="kpiBrands">—</span><span class="tpl-kpi__suffix">个</span></div>
+      <div class="tpl-kpi__foot">鸣鸣很忙 / 有点推荐 / 满气食品 / 数字化中心</div>
+    </div>
+    <div class="tpl-kpi">
+      <div class="tpl-kpi__head">
+        <span class="tpl-kpi__dot is-warning"></span>
+        <span class="tpl-kpi__label">涉及费用单数</span>
+        <span class="tpl-kpi__hint" title="范围内已审核费用单张数">?</span>
+      </div>
+      <div class="tpl-kpi__value-row"><span class="tpl-kpi__value" id="kpiBills">—</span><span class="tpl-kpi__suffix">单</span></div>
+      <div class="tpl-kpi__foot">按覆盖区间相交命中</div>
+    </div>
+  </div>
+
+  <!-- ③ 透视表 panel -->
+  <div class="tpl-panel">
+    <div class="tpl-panel__head">
+      <span class="tpl-panel__title">品牌成本透视表</span>
+      <span class="tpl-panel__hint">仅统计已审核单据 · 按费用开始~结束年月逐月均摊 · 单位：元</span>
+    </div>
+    <div class="pivot-wrap">
+      <table class="ac-table" id="pivotTable">
+        <thead id="pivotHead"></thead>
+        <tbody id="pivotBody"></tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<!-- 原型页间互联 -->
+<div class="ac-proto-bar">
+  <a href="./cost-list.html">费用列表</a>
+  <a href="./cost-detail.html">费用明细</a>
+  <a href="./cost-report.html" class="is-active">品牌成本报表</a>
+</div>
+<div class="ac-toast" id="toast"></div>
+
+<script>
+  /* ═══ 演示单据集：13 张已审核费用单（含单月 / 跨月 / 尾差样例） ═══
+     聚合链路（business-rule §3 + §5）：
+     单据金额 → 品牌分摊金额（比例，末行倒算）→ 覆盖月逐月均摊（末月倒算）→ 报表交叉格  */
+  var MONTHS = ['2026-04', '2026-05', '2026-06', '2026-07', '2026-08', '2026-09'];
+  var BRANDS = ['鸣鸣很忙', '有点推荐', '满气食品', '数字化中心'];
+  var BILLS = [
+    /* 人员：单月单，逐月一张 */
+    { subject: '人员', amount: 64000.00, start: '2026-04', end: '2026-04', shares: [['鸣鸣很忙', 50], ['有点推荐', 20], ['满气食品', 10], ['数字化中心', 20]] },
+    { subject: '人员', amount: 64000.00, start: '2026-05', end: '2026-05', shares: [['鸣鸣很忙', 50], ['有点推荐', 20], ['满气食品', 10], ['数字化中心', 20]] },
+    { subject: '人员', amount: 64000.00, start: '2026-06', end: '2026-06', shares: [['鸣鸣很忙', 50], ['有点推荐', 20], ['满气食品', 10], ['数字化中心', 20]] },
+    { subject: '人员', amount: 66000.00, start: '2026-07', end: '2026-07', shares: [['鸣鸣很忙', 50], ['有点推荐', 20], ['满气食品', 10], ['数字化中心', 20]] },
+    { subject: '人员', amount: 66000.00, start: '2026-08', end: '2026-08', shares: [['鸣鸣很忙', 50], ['有点推荐', 20], ['满气食品', 10], ['数字化中心', 20]] },
+    { subject: '人员', amount: 66000.00, start: '2026-09', end: '2026-09', shares: [['鸣鸣很忙', 50], ['有点推荐', 20], ['满气食品', 10], ['数字化中心', 20]] },
+    /* Token：跨 3 月；10,000 / 3 月为尾差样例（3,333.33 × 2 + 末月倒算 3,333.34） */
+    { subject: 'Token', amount: 10000.00, start: '2026-04', end: '2026-06', shares: [['鸣鸣很忙', 60], ['数字化中心', 40]] },
+    { subject: 'Token', amount: 36000.00, start: '2026-07', end: '2026-09', shares: [['鸣鸣很忙', 40], ['有点推荐', 25], ['满气食品', 15], ['数字化中心', 20]] },
+    /* 系统采购：跨 3 月（对应费用明细页演示单 FY202609110001 的已审核态口径） */
+    { subject: '系统采购', amount: 12000.00, start: '2026-07', end: '2026-09', shares: [['鸣鸣很忙', 50], ['有点推荐', 30], ['数字化中心', 20]] },
+    /* 硬件：跨 3 月 */
+    { subject: '硬件', amount: 45000.00, start: '2026-04', end: '2026-06', shares: [['鸣鸣很忙', 60], ['数字化中心', 40]] },
+    /* 差旅：跨 2 月 */
+    { subject: '差旅', amount: 8450.00, start: '2026-08', end: '2026-09', shares: [['鸣鸣很忙', 50], ['有点推荐', 30], ['满气食品', 20]] },
+    /* 福利 / 弱电：单月 */
+    { subject: '福利', amount: 15200.00, start: '2026-08', end: '2026-08', shares: [['鸣鸣很忙', 40], ['有点推荐', 30], ['满气食品', 20], ['数字化中心', 10]] },
+    { subject: '弱电', amount: 6800.00, start: '2026-08', end: '2026-08', shares: [['鸣鸣很忙', 50], ['满气食品', 30], ['数字化中心', 20]] }
+  ];
+
+  function round2(n) { return Math.round(n * 100) / 100; }
+  function fmt(n) { return n.toLocaleString('zh-CN', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); }
+  function acToast(msg) {
+    var t = document.getElementById('toast');
+    t.textContent = msg;
+    t.classList.add('is-show');
+    clearTimeout(t._timer);
+    t._timer = setTimeout(function () { t.classList.remove('is-show'); }, 1800);
+  }
+
+  /* 单据品牌分摊金额：比例换算，末行倒算防尾差（business-rule §3） */
+  function brandShares(bill) {
+    var out = [], acc = 0;
+    bill.shares.forEach(function (s, i) {
+      var amt = i === bill.shares.length - 1 ? round2(bill.amount - acc) : round2(bill.amount * s[1] / 100);
+      acc = round2(acc + amt);
+      out.push([s[0], amt]);
+    });
+    return out;
+  }
+
+  /* 品牌分摊金额 → 覆盖月逐月均摊，末月倒算防尾差（business-rule §5） */
+  function monthlySplit(total, months) {
+    var n = months.length, per = round2(total / n), out = [], acc = 0;
+    for (var i = 0; i < n - 1; i++) { out.push(per); acc = round2(acc + per); }
+    out.push(round2(total - acc));
+    return out;
+  }
+
+  function monthRange(start, end) {
+    var out = [], y = +start.slice(0, 4), m = +start.slice(5, 7);
+    var ey = +end.slice(0, 4), em = +end.slice(5, 7);
+    while (y < ey || (y === ey && m <= em)) {
+      out.push(y + '-' + String(m).padStart(2, '0'));
+      m++; if (m > 12) { m = 1; y++; }
+    }
+    return out;
+  }
+
+  /* 聚合：brandMonth[brand][mi] 与 brandSubjectMonth[brand][subject][mi] */
+  var brandMonth = {}, brandSubjectMonth = {}, hitBills = 0;
+  BRANDS.forEach(function (b) {
+    brandMonth[b] = MONTHS.map(function () { return 0; });
+    brandSubjectMonth[b] = {};
+  });
+  BILLS.forEach(function (bill) {
+    var months = monthRange(bill.start, bill.end).filter(function (m) { return MONTHS.indexOf(m) >= 0; });
+    if (!months.length) return; /* 覆盖区间与筛选范围不相交 */
+    hitBills++;
+    brandShares(bill).forEach(function (e) {
+      var brand = e[0];
+      var monthly = monthlySplit(e[1], months);
+      months.forEach(function (m, i) {
+        var mi = MONTHS.indexOf(m);
+        brandMonth[brand][mi] = round2(brandMonth[brand][mi] + monthly[i]);
+        if (!brandSubjectMonth[brand][bill.subject]) brandSubjectMonth[brand][bill.subject] = MONTHS.map(function () { return 0; });
+        brandSubjectMonth[brand][bill.subject][mi] = round2(brandSubjectMonth[brand][bill.subject][mi] + monthly[i]);
+      });
+    });
+  });
+
+  function rowSum(arr) { return round2(arr.reduce(function (s, v) { return s + v; }, 0)); }
+  function cell(v) { return v === 0 ? '<td class="cell-num cell-empty">-</td>' : '<td class="cell-num">' + fmt(v) + '</td>'; }
+
+  function render(withSubject) {
+    var head = document.getElementById('pivotHead');
+    var body = document.getElementById('pivotBody');
+
+    var htr = '<tr><th>' + (withSubject ? '品牌 / 费用科目' : '品牌') + '</th>';
+    MONTHS.forEach(function (m) { htr += '<th class="cell-num">' + m + '</th>'; });
+    htr += '<th class="cell-num">行合计</th></tr>';
+    head.innerHTML = htr;
+
+    var html = '';
+    BRANDS.forEach(function (b) {
+      html += '<tr class="is-brand"><td>' + (withSubject ? b + '（小计）' : b) + '</td>';
+      brandMonth[b].forEach(function (v) { html += cell(v); });
+      html += '<td class="cell-num">' + fmt(rowSum(brandMonth[b])) + '</td></tr>';
+      if (withSubject) {
+        Object.keys(brandSubjectMonth[b]).forEach(function (sub) {
+          html += '<tr class="is-subject"><td>' + sub + '</td>';
+          brandSubjectMonth[b][sub].forEach(function (v) { html += cell(v); });
+          html += '<td class="cell-num">' + fmt(rowSum(brandSubjectMonth[b][sub])) + '</td></tr>';
+        });
+      }
+    });
+
+    /* 列合计 + 总计 */
+    html += '<tr class="is-total"><td>列合计</td>';
+    var grand = 0;
+    MONTHS.forEach(function (m, mi) {
+      var col = rowSum(BRANDS.map(function (b) { return brandMonth[b][mi]; }));
+      grand = round2(grand + col);
+      html += '<td class="cell-num">' + fmt(col) + '</td>';
+    });
+    html += '<td class="cell-num">' + fmt(grand) + '</td></tr>';
+    body.innerHTML = html;
+
+    /* KPI 由聚合结果回写 */
+    document.getElementById('kpiTotal').textContent = fmt(grand);
+    document.getElementById('kpiBrands').textContent = BRANDS.filter(function (b) { return rowSum(brandMonth[b]) > 0; }).length;
+    document.getElementById('kpiBills').textContent = hitBills;
+  }
+
+  var chk = document.getElementById('chkSubject');
+  chk.onclick = function () {
+    chk.classList.toggle('is-checked');
+    render(chk.classList.contains('is-checked'));
+  };
+  document.getElementById('btnReset').onclick = function () {
+    chk.classList.remove('is-checked');
+    render(false);
+    acToast('筛选已重置为默认（近 12 个月 + 全部 + 不叠加科目）');
+  };
+
+  render(false);
+</script>
+</body>
+</html>

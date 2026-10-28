@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>我的令牌 · MCP接入管理</title>
+<!--
+  需求真源：busyming-skills-devops/平台能力/references/web-ui.md「我的令牌」
+           + business-rule.md §3 / state-machine.md / permission-rules.md §1 §2 / audit-rules.md §6
+  页型：archive-list（DOM 结构依据 busyming-skills-design/templates/web/archive-list.html）
+  静态原型：数据全部为 Mock，刷新即重置；演示参数 ?full=1（生效中已达上限）/ ?empty=1（无令牌）/ ?fail=1（接口失败）
+           / ?noperm=1（未被分配任何 MCP 权限）/ ?drawer=perm（企微权限变更通知入口，直接打开我的权限抽屉）。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级布局约定：仅定位与几何；颜色 / 圆角 / 字号一律消费 var(--busy-*) */
+  .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }
+  .page-nav-links { display: flex; align-items: center; gap: 12px; white-space: nowrap; overflow-x: auto; }
+  .page-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+  .page-overlay--top { z-index: 300; }
+  .page-overlay > .busy-dialog, .page-overlay > .busy-message-box { margin-top: 12vh; }
+  .page-dialog--md { width: 560px; }
+  .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 400; display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .page-message-host .busy-message { position: static; }
+  .busy-message-box__btns { gap: 8px; }
+  .page-radio-buttons { gap: 0; }
+  .page-radio-buttons .busy-radio-button.is-checked .busy-radio-button__inner { color: var(--busy-color-white); }
+  .page-tip { position: relative; display: inline-flex; }
+  .page-tip > .busy-tooltip { position: absolute; top: calc(100% + 8px); right: 0; z-index: 50; white-space: nowrap; max-width: none; display: none; }
+  .page-tip:hover > .busy-tooltip { display: inline-block; }
+  .page-select { position: relative; }
+  .page-select .busy-select-dropdown { position: absolute; left: 0; right: 0; top: 100%; z-index: 20; }
+  .page-table-wrap { position: relative; min-height: 120px; }
+  .page-table-wrap .busy-loading-mask { z-index: 10; background-color: var(--busy-bg-color-overlay); opacity: .85; }
+  .busy-form-item.is-error .busy-input { border-color: var(--busy-color-danger); }
+  .page-dialog-form .busy-form-item:last-child { margin-bottom: 0; }
+  .page-overlay--drawer { justify-content: flex-end; align-items: stretch; padding: 0; border-radius: 0; }
+  .page-drawer { position: relative; width: 760px; max-width: 100%; height: 100%; min-height: 100vh; }
+  .page-drawer .busy-drawer__header { margin-bottom: 0; padding: 16px 20px; }
+  .page-drawer .busy-drawer__body { display: block; flex: 1; padding: 0 20px 20px; overflow: auto; }
+  .page-drawer-close { margin-left: auto; }
+  .page-drawer-section { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+  .page-drawer .busy-table td, .page-drawer .busy-table th { white-space: nowrap; }
+  .page-drawer .busy-table td.page-cell-wrap { white-space: normal; }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 平台能力 / <a href="token-list.html">MCP接入管理</a> / <b>我的令牌</b></span>
+  <span class="page-nav-links">
+    <a class="tpl-nav__crumb" href="token-list.html" aria-current="page"><b>我的令牌</b></a>
+    <a class="tpl-nav__crumb" href="token-form.html">生成令牌</a>
+    <a class="tpl-nav__crumb" href="token-detail.html">令牌详情</a>
+    <a class="tpl-nav__crumb" href="../../../权限分配/assets/web/grant-list.html">权限分配</a>
+    <a class="tpl-nav__crumb" href="../../../权限分配/assets/web/grant-form.html">分配权限</a>
+    <a class="tpl-nav__crumb" href="../../../assets/web/service-list.html">MCP 服务目录</a>
+    <a class="tpl-nav__crumb" href="../../../研发工具资源/assets/web/devtool-resources.html">研发工具资源</a>
+    <a class="tpl-nav__crumb" href="../../../数据源管理/assets/web/datasource-list.html">数据源管理</a>
+    <a class="tpl-nav__crumb" href="../../../数据源管理/assets/web/datasource-detail.html">数据源详情</a>
+    <a class="tpl-nav__crumb" href="../../../调用审计/assets/web/call-audit.html">调用审计</a>
+  </span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">张研发（Mock）</span>
+</nav>
+
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">我的令牌</h1>
+      <div class="tpl-page-subtitle">静态原型 · Mock 数据，刷新即重置；演示参数：?full=1 生效中已达上限 / ?empty=1 无令牌 / ?fail=1 接口失败 / ?noperm=1 未被分配权限 / ?drawer=perm 直接打开我的权限抽屉（企微通知入口）</div>
+    </div>
+    <div class="tpl-page-head__actions">
+      <span class="tpl-page-subtitle" id="activeHint">生效中 0 / 10</span>
+      <button class="busy-button" type="button" id="btnMyPerm"><span>我的权限</span></button>
+      <span class="page-tip">
+        <button class="busy-button busy-button--primary" type="button" id="btnCreate"><span>生成令牌</span></button>
+        <span class="busy-tooltip" id="createTip" hidden>生效中令牌已达 10 个上限，请先吊销不用的令牌</span>
+      </span>
+    </div>
+  </div>
+
+  <!-- 筛选卡 -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="busy-form-item" id="scopeItem">
+        <div class="busy-form-item__label">范围</div>
+        <div class="busy-form-item__content">
+          <div class="busy-radio-group page-radio-buttons" id="scopeGroup">
+            <label class="busy-radio-button is-checked" data-value="mine"><span class="busy-radio-button__inner">我的令牌</span></label>
+            <label class="busy-radio-button" data-value="all" id="scopeAll"><span class="busy-radio-button__inner">全部令牌</span></label>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">状态</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select" data-select="status" data-options="全部,生效中,已过期,已吊销">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">授权领域</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select page-select" data-select="domain" data-options="全部,业务系统,研发工具,数据库">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">关键词</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="kwInput" placeholder="令牌名称 / 前缀"></div>
+        </div>
+      </div>
+      <div class="tpl-filter__actions">
+        <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查 询</span></button>
+        <button class="busy-button" type="button" id="btnReset"><span>重 置</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表格卡 -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left">
+        <span>数据为 Mock</span>
+        <span>·</span>
+        <label class="busy-checkbox busy-checkbox--small is-checked" id="adminSwitch"><span class="busy-checkbox__input"><span class="busy-checkbox__inner"></span></span><span class="busy-checkbox__label">管理员视角（Mock）</span></label>
+      </div>
+      <div class="tpl-toolbar__right"></div>
+    </div>
+
+    <div class="page-table-wrap" id="tableWrap">
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>令牌名称</th>
+            <th>令牌前缀</th>
+            <th id="thHolder" hidden>持有人</th>
+            <th>授权领域</th>
+            <th>状态</th>
+            <th>到期时间</th>
+            <th>最近使用时间</th>
+            <th>创建时间</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="listTbody"></tbody>
+      </table>
+      <div class="busy-empty" id="listEmpty" hidden>
+        <div class="busy-empty__image">☁</div>
+        <div id="listEmptyText">还没有令牌，点击「生成令牌」为你的 AI Agent 接入 MCP</div>
+      </div>
+      <div class="busy-loading-mask" id="tableLoading" hidden>
+        <div class="busy-loading-spinner"><span class="busy-button__loading"></span><p class="busy-loading-text">加载中…</p></div>
+      </div>
+    </div>
+
+    <div class="tpl-table-foot">
+      <div class="busy-pagination">
+        <span class="u-muted">共 <span id="totalCount">0</span> 条</span>
+        <button type="button" disabled>‹</button>
+        <button type="button" class="is-active">1</button>
+        <button type="button" disabled>›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 续期弹窗 -->
+<div class="page-overlay busy-overlay-demo" id="renewOverlay" hidden>
+  <div class="busy-dialog page-dialog--md" role="dialog" aria-modal="true" aria-labelledby="renewTitle">
+    <div class="busy-dialog__header">
+      <span class="busy-dialog__title" id="renewTitle">续期</span>
+      <button class="busy-dialog__close" type="button" data-close="renewOverlay">✕</button>
+    </div>
+    <div class="busy-dialog__body page-dialog-form">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">令牌名称</div>
+        <div class="busy-form-item__content"><div class="busy-input is-disabled"><input readonly id="renewName"></div></div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">当前到期时间</div>
+        <div class="busy-form-item__content"><div class="busy-input is-disabled"><input readonly id="renewCurrent"></div></div>
+      </div>
+      <div class="busy-form-item" id="renewDaysItem">
+        <div class="busy-form-item__label is-required">续期时长</div>
+        <div class="busy-form-item__content">
+          <div class="busy-radio-group" id="renewDays">
+            <label class="busy-radio" data-value="7"><span class="busy-radio__input"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">7 天</span></label>
+            <label class="busy-radio" data-value="30"><span class="busy-radio__input"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">30 天</span></label>
+            <label class="busy-radio" data-value="90"><span class="busy-radio__input is-checked"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">90 天</span></label>
+            <label class="busy-radio" data-value="180"><span class="busy-radio__input"><span class="busy-radio__inner"></span></span><span class="busy-radio__label">180 天</span></label>
+          </div>
+          <div class="busy-form-item__error" id="renewDaysError" hidden>请选择续期时长</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">新到期时间</div>
+        <div class="busy-form-item__content"><div class="busy-input is-disabled"><input readonly id="renewNew"></div></div>
+      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="renewOverlay"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="renewOk"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 管理员吊销他人令牌：吊销原因弹窗 -->
+<div class="page-overlay busy-overlay-demo" id="revokeOverlay" hidden>
+  <div class="busy-dialog page-dialog--md" role="dialog" aria-modal="true" aria-labelledby="revokeTitle">
+    <div class="busy-dialog__header">
+      <span class="busy-dialog__title" id="revokeTitle">吊销令牌</span>
+      <button class="busy-dialog__close" type="button" data-close="revokeOverlay">✕</button>
+    </div>
+    <div class="busy-dialog__body page-dialog-form">
+      <div class="busy-form-item" id="reasonItem">
+        <div class="busy-form-item__label is-required">吊销原因</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="reasonInput" placeholder="请输入吊销原因，将通知持有人"></div>
+          <div class="busy-form-item__error" id="reasonError" hidden>请填写 2–200 字的吊销原因</div>
+        </div>
+      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" data-close="revokeOverlay"><span>取 消</span></button>
+      <button class="busy-button busy-button--danger" type="button" id="revokeOk"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- 我的权限抽屉（只读）：已分配权限 + 最近变更（近 20 条） -->
+<div class="page-overlay page-overlay--drawer busy-overlay-demo" id="permOverlay" hidden>
+  <div class="busy-drawer page-drawer" role="dialog" aria-modal="true" aria-labelledby="permTitle">
+    <div class="busy-drawer__header">
+      <span class="busy-drawer__title" id="permTitle">我的权限</span>
+      <button class="busy-button is-link page-drawer-close" type="button" data-close="permOverlay" aria-label="关闭"><span>✕</span></button>
+    </div>
+    <div class="busy-drawer__body">
+      <div class="page-drawer-section" id="permGrantSection">
+        <div class="tpl-section__head">已分配权限</div>
+        <table class="busy-table">
+          <thead>
+            <tr>
+              <th>领域</th>
+              <th>对象</th>
+              <th>粒度</th>
+              <th>有效期</th>
+              <th>分配人</th>
+            </tr>
+          </thead>
+          <tbody id="permTbody"></tbody>
+        </table>
+      </div>
+      <div class="page-drawer-section" id="permChangeSection">
+        <div class="tpl-section__head">最近变更</div>
+        <table class="busy-table">
+          <thead>
+            <tr>
+              <th>时间</th>
+              <th>变更类型</th>
+              <th>对象</th>
+              <th>操作人</th>
+            </tr>
+          </thead>
+          <tbody id="changeTbody"></tbody>
+        </table>
+      </div>
+      <div class="busy-empty" id="permEmpty" hidden>
+        <div class="busy-empty__image">☁</div>
+        <div>你还没有被分配 MCP 权限，请联系权限管理员分配</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MessageBox 确认框（本人吊销） -->
+<div class="page-overlay page-overlay--top busy-overlay-demo" id="msgboxOverlay" hidden>
+  <div class="busy-message-box" role="alertdialog" aria-modal="true" aria-labelledby="msgboxTitle">
+    <div class="busy-message-box__header"><div class="busy-message-box__title" id="msgboxTitle">提示</div></div>
+    <div class="busy-message-box__content">
+      <div class="busy-message-box__container">
+        <span class="busy-message-box__status busy-message-box-icon--warning">!</span>
+        <div class="busy-message-box__message"><p id="msgboxText"></p></div>
+      </div>
+    </div>
+    <div class="busy-message-box__btns">
+      <button class="busy-button" type="button" id="msgboxCancel"><span>取 消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="msgboxOk"><span>确 定</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="page-message-host" id="messageHost"></div>
+
+<script>
+/* ===================== Mock 数据（刷新即重置） ===================== */
+var MOCK_NOW = new Date(2026, 9, 22, 10, 0);
+var CURRENT_USER = '张研发';
+var ACTIVE_LIMIT = 10;
+var QS = location.search;
+var MOCK_FLAGS = {
+  full: /[?&]full=1(&|$)/.test(QS),
+  empty: /[?&]empty=1(&|$)/.test(QS),
+  fail: /[?&]fail=1(&|$)/.test(QS),
+  noperm: /[?&]noperm=1(&|$)/.test(QS),
+  drawerPerm: /[?&]drawer=perm(&|$)/.test(QS)
+};
+var TOKENS = [
+  { id: 't001', name: 'Qoder 日常开发', prefix: 'mcp_7Hq2', holder: '张研发', domains: ['业务系统', '研发工具'], status: '生效中', expireAt: '2026-12-20 10:12', lastUsedAt: '2026-10-22 09:41', createdAt: '2026-09-21 10:12' },
+  { id: 't002', name: 'SLS 排障', prefix: 'mcp_K3pZ', holder: '张研发', domains: ['研发工具'], status: '生效中', expireAt: '2026-10-26 18:30', lastUsedAt: '2026-10-21 16:05', createdAt: '2026-09-26 18:30' },
+  { id: 't003', name: '报表取数', prefix: 'mcp_bR8m', holder: '张研发', domains: ['数据库'], status: '生效中', expireAt: '2027-01-15 14:20', lastUsedAt: '', createdAt: '2026-10-17 14:20' },
+  { id: 't004', name: 'Cursor 联调', prefix: 'mcp_Wd4n', holder: '张研发', domains: ['业务系统', '数据库'], status: '生效中', expireAt: '2026-11-30 09:05', lastUsedAt: '2026-10-20 11:32', createdAt: '2026-10-01 09:05' },
+  { id: 't005', name: '旧版周报脚本', prefix: 'mcp_9fTx', holder: '张研发', domains: ['业务系统'], status: '已过期', expireAt: '2026-09-30 08:00', lastUsedAt: '2026-09-29 22:10', createdAt: '2026-09-23 08:00' },
+  { id: 't006', name: '临时调试', prefix: 'mcp_Ae1c', holder: '张研发', domains: ['研发工具', '数据库'], status: '已吊销', expireAt: '2026-11-10 15:40', lastUsedAt: '2026-10-08 17:26', createdAt: '2026-10-11 15:40' },
+  { id: 't007', name: '待配置令牌', prefix: 'mcp_Empty', holder: '张研发', domains: [], status: '生效中', expireAt: '2027-01-20 10:12', lastUsedAt: '', createdAt: '2026-10-22 10:12' },
+  { id: 't101', name: 'ARMS 告警分析', prefix: 'mcp_Lm6v', holder: '李产品', domains: ['研发工具'], status: '生效中', expireAt: '2026-12-02 13:00', lastUsedAt: '2026-10-22 08:57', createdAt: '2026-09-03 13:00' },
+  { id: 't102', name: '门店数据核对', prefix: 'mcp_Qs2e', holder: '王实施', domains: ['业务系统', '数据库'], status: '生效中', expireAt: '2026-10-25 20:00', lastUsedAt: '2026-10-21 19:44', createdAt: '2026-09-25 20:00' }
+];
+if (MOCK_FLAGS.full) {
+  for (var fi = 1; fi <= 6; fi++) {
+    TOKENS.push({ id: 't2' + fi, name: 'CI 巡检 0' + fi, prefix: 'mcp_Ci0' + fi, holder: '张研发', domains: ['研发工具'], status: '生效中', expireAt: '2027-01-0' + fi + ' 09:00', lastUsedAt: '2026-10-22 0' + fi + ':00', createdAt: '2026-10-0' + fi + ' 09:00' });
+  }
+}
+if (MOCK_FLAGS.empty) {
+  TOKENS = TOKENS.filter(function (t) { return t.holder !== CURRENT_USER; });
+}
+
+/* 本人已分配权限（Mock：张研发；由权限管理员按人分配，只读）。expire 为空 = 长期 */
+var MY_GRANTS = [
+  { domain: '业务系统', object: '商品中心', grain: '服务', expire: '', by: '王权限' },
+  { domain: '业务系统', object: '门店服务', grain: '服务', expire: '2026-10-27', by: '王权限' },
+  { domain: '业务系统', object: '客服工单 · 创建工单备注', grain: '工具', expire: '2026-12-31', by: '李安全' },
+  { domain: '研发工具', object: 'SLS 日志 · 门店 · 全部环境', grain: '业务域', expire: '', by: '王权限' },
+  { domain: '研发工具', object: 'SLS 日志 · mmhm-gateway-prod/gateway-access', grain: '日志库', expire: '2026-11-30', by: '王权限' },
+  { domain: '研发工具', object: 'ARMS 应用监控 · 门店 · 仅生产', grain: '业务域', expire: '2026-12-31', by: '王权限' },
+  { domain: '研发工具', object: 'ARMS 应用监控 · product-center-test', grain: '应用', expire: '', by: '王权限' },
+  { domain: '数据库', object: 'devhub-prod · devhub', grain: '库', expire: '2027-03-31', by: '李安全' },
+  { domain: '数据库', object: 'lemeng-wms-test', grain: '实例', expire: '', by: '李安全' }
+];
+/* 本人授权变更记录（近 20 条，Mock） */
+var MY_CHANGES = [
+  { time: '2026-10-20 15:32', type: '分配', object: '研发工具 · SLS 日志 · 门店 · 全部环境（业务域）', by: '王权限' },
+  { time: '2026-10-20 15:32', type: '分配', object: '研发工具 · ARMS 应用监控 · 门店 · 仅生产（业务域）', by: '王权限' },
+  { time: '2026-10-19 00:00', type: '到期收回', object: '数据库 · snackingdom-ro · snackingdom（库）', by: '系统' },
+  { time: '2026-10-15 11:20', type: '收回', object: '研发工具 · SLS 日志 · 营运 · 仅生产（业务域）', by: '王权限' },
+  { time: '2026-10-12 09:48', type: '分配', object: '数据库 · lemeng-wms-test（实例）', by: '李安全' },
+  { time: '2026-10-08 17:05', type: '收回', object: '业务系统 · 采购协同（服务）', by: '李安全' },
+  { time: '2026-09-26 10:30', type: '分配', object: '业务系统 · 门店服务（服务）', by: '王权限' }
+];
+if (MOCK_FLAGS.noperm) {
+  MY_GRANTS = [];
+  MY_CHANGES = [];
+}
+
+/* ===================== 通用工具 ===================== */
+function $(id) { return document.getElementById(id); }
+function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+function pad(n) { return n < 10 ? '0' + n : '' + n; }
+function parseDt(s) { var m = s.match(/(\d+)-(\d+)-(\d+) (\d+):(\d+)/); return new Date(+m[1], +m[2] - 1, +m[3], +m[4], +m[5]); }
+function fmtDt(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes()); }
+function addDays(d, n) { var r = new Date(d.getTime()); r.setDate(r.getDate() + n); return r; }
+
+function showMessage(type, text) {
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  $('messageHost').appendChild(el);
+  setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 2500);
+}
+function setLoading(btn, on) {
+  if (on) {
+    btn.dataset.label = btn.innerHTML;
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    btn.insertAdjacentHTML('afterbegin', '<span class="busy-button__loading"></span>');
+  } else {
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+    if (btn.dataset.label != null) btn.innerHTML = btn.dataset.label;
+  }
+}
+/* Mock 请求：?fail=1 时统一失败 */
+function mockRequest(ms, onOk, onFail) {
+  setTimeout(function () { if (MOCK_FLAGS.fail) onFail('服务暂不可用，请稍后重试（Mock）'); else onOk(); }, ms);
+}
+function openOverlay(id) { $(id).hidden = false; }
+function closeOverlay(id) { $(id).hidden = true; }
+document.querySelectorAll('[data-close]').forEach(function (b) {
+  b.addEventListener('click', function () { closeOverlay(b.getAttribute('data-close')); });
+});
+
+/* MessageBox：onConfirm(done) 中调用 done(true) 关闭，done(false) 恢复按钮 */
+var msgboxHandler = null;
+function messageBox(text, onConfirm, danger) {
+  $('msgboxText').textContent = text;
+  var ok = $('msgboxOk');
+  ok.className = 'busy-button ' + (danger ? 'busy-button--danger' : 'busy-button--primary');
+  msgboxHandler = onConfirm;
+  openOverlay('msgboxOverlay');
+}
+$('msgboxCancel').addEventListener('click', function () { closeOverlay('msgboxOverlay'); });
+$('msgboxOk').addEventListener('click', function () {
+  var ok = $('msgboxOk');
+  if (!msgboxHandler) { closeOverlay('msgboxOverlay'); return; }
+  setLoading(ok, true);
+  msgboxHandler(function (close) {
+    setLoading(ok, false);
+    if (close) closeOverlay('msgboxOverlay');
+  });
+});
+
+/* ===================== 状态 ===================== */
+var isAdmin = true;
+var applied = { scope: 'mine', status: '全部', domain: '全部', keyword: '' };
+
+function isExpiringSoon(t) {
+  if (t.status !== '生效中') return false;
+  var diff = parseDt(t.expireAt) - MOCK_NOW;
+  return diff > 0 && diff <= 7 * 24 * 3600 * 1000;
+}
+function myActiveCount() {
+  return TOKENS.filter(function (t) { return t.holder === CURRENT_USER && t.status === '生效中'; }).length;
+}
+function refreshCreateBtn() {
+  var n = myActiveCount();
+  $('activeHint').innerHTML = '生效中 <b>' + n + '</b> / ' + ACTIVE_LIMIT;
+  var full = n >= ACTIVE_LIMIT;
+  $('btnCreate').classList.toggle('is-disabled', full);
+  $('btnCreate').setAttribute('aria-disabled', String(full));
+  $('createTip').hidden = !full;
+}
+
+/* ===================== 列表渲染 ===================== */
+var STATUS_TAG = { '生效中': 'busy-tag--success', '已过期': 'busy-tag--info', '已吊销': 'busy-tag--danger' };
+
+function rowHtml(t) {
+  var showHolder = applied.scope === 'all';
+  var soon = isExpiringSoon(t);
+  var expire = soon
+    ? '<span class="chip-group"><span class="u-warning u-mono">' + esc(t.expireAt) + '</span><span class="busy-tag busy-tag--warning busy-tag--small">即将到期</span></span>'
+    : '<span class="u-mono">' + esc(t.expireAt) + '</span>';
+  var domains = t.domains.length
+    ? '<span class="chip-group">' + t.domains.map(function (d) { return '<span class="busy-tag busy-tag--small">' + esc(d) + '</span>'; }).join('') + '</span>'
+    : '<span class="u-muted">未配置</span>';
+  var own = t.holder === CURRENT_USER;
+  var detailUrl = 'token-detail.html?id=' + t.id + (t.domains.length ? '' : '&scope=empty');
+  var acts = '<a class="busy-button is-link" href="' + detailUrl + '"><span>详情</span></a>';
+  if (t.status === '生效中' && own) {
+    acts += '<button class="busy-button is-link" type="button" data-act="renew" data-id="' + t.id + '"><span>续期</span></button>';
+  }
+  if (t.status === '生效中' && (own || (isAdmin && applied.scope === 'all'))) {
+    acts += '<button class="busy-button busy-button--danger is-link" type="button" data-act="revoke" data-id="' + t.id + '"><span>吊销</span></button>';
+  }
+  return '<tr data-id="' + t.id + '">' +
+    '<td><a href="' + detailUrl + '">' + esc(t.name) + '</a></td>' +
+    '<td class="u-mono">' + esc(t.prefix) + '…</td>' +
+    (showHolder ? '<td>' + esc(t.holder) + '</td>' : '') +
+    '<td>' + domains + '</td>' +
+    '<td><span class="busy-tag busy-tag--small ' + STATUS_TAG[t.status] + '">' + t.status + '</span></td>' +
+    '<td>' + expire + '</td>' +
+    '<td class="u-mono">' + (t.lastUsedAt ? esc(t.lastUsedAt) : '—') + '</td>' +
+    '<td class="u-mono">' + esc(t.createdAt) + '</td>' +
+    '<td><div class="tpl-row-actions">' + acts + '</div></td>' +
+    '</tr>';
+}
+
+function filtered() {
+  var kw = applied.keyword.trim().toLowerCase();
+  return TOKENS.filter(function (t) {
+    if (applied.scope === 'mine' && t.holder !== CURRENT_USER) return false;
+    if (applied.status !== '全部' && t.status !== applied.status) return false;
+    if (applied.domain !== '全部' && t.domains.indexOf(applied.domain) < 0) return false;
+    if (kw) {
+      var hay = (t.name + ' ' + t.prefix + (applied.scope === 'all' ? ' ' + t.holder : '')).toLowerCase();
+      if (hay.indexOf(kw) < 0) return false;
+    }
+    return true;
+  });
+}
+
+function render() {
+  var rows = filtered();
+  $('thHolder').hidden = applied.scope !== 'all';
+  $('listTbody').innerHTML = rows.map(rowHtml).join('');
+  $('totalCount').textContent = rows.length;
+  var noneAtAll = applied.scope === 'mine' && TOKENS.filter(function (t) { return t.holder === CURRENT_USER; }).length === 0;
+  $('listEmpty').hidden = rows.length > 0;
+  $('listEmptyText').textContent = noneAtAll ? '还没有令牌，点击「生成令牌」为你的 AI Agent 接入 MCP' : '暂无符合条件的令牌';
+  refreshCreateBtn();
+}
+
+/* ===================== 筛选：下拉（busy-select） ===================== */
+var selectValues = { status: '全部', domain: '全部' };
+document.querySelectorAll('.page-select').forEach(function (sel) {
+  var key = sel.getAttribute('data-select');
+  var opts = sel.getAttribute('data-options').split(',');
+  var dd = document.createElement('div');
+  dd.className = 'busy-select-dropdown';
+  dd.hidden = true;
+  dd.innerHTML = opts.map(function (o) { return '<div class="busy-select-dropdown__item" data-value="' + o + '">' + o + '</div>'; }).join('');
+  sel.appendChild(dd);
+  sel.addEventListener('click', function (e) {
+    var item = e.target.closest('.busy-select-dropdown__item');
+    if (item) {
+      selectValues[key] = item.getAttribute('data-value');
+      sel.querySelector('input').value = selectValues[key];
+      dd.hidden = true;
+      sel.querySelector('.busy-input').classList.remove('is-focus');
+      e.stopPropagation();
+      return;
+    }
+    var willOpen = dd.hidden;
+    document.querySelectorAll('.page-select .busy-select-dropdown').forEach(function (x) { x.hidden = true; });
+    dd.hidden = !willOpen;
+    dd.querySelectorAll('.busy-select-dropdown__item').forEach(function (it) { it.classList.toggle('is-selected', it.getAttribute('data-value') === selectValues[key]); });
+    e.stopPropagation();
+  });
+});
+document.addEventListener('click', function () {
+  document.querySelectorAll('.page-select .busy-select-dropdown').forEach(function (x) { x.hidden = true; });
+});
+function setSelect(key, v) {
+  selectValues[key] = v;
+  document.querySelector('.page-select[data-select="' + key + '"] input').value = v;
+}
+
+/* 范围切换（全部令牌仅管理员可见） */
+var scopeValue = 'mine';
+function setScope(v) {
+  scopeValue = v;
+  document.querySelectorAll('#scopeGroup .busy-radio-button').forEach(function (b) { b.classList.toggle('is-checked', b.getAttribute('data-value') === v); });
+  $('kwInput').placeholder = v === 'all' ? '令牌名称 / 前缀 / 持有人' : '令牌名称 / 前缀';
+}
+document.querySelectorAll('#scopeGroup .busy-radio-button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    if (b.getAttribute('data-value') === scopeValue) return;
+    setScope(b.getAttribute('data-value'));
+    doQuery();
+  });
+});
+function applyAdmin() {
+  $('scopeAll').hidden = !isAdmin;
+  $('adminSwitch').classList.toggle('is-checked', isAdmin);
+  if (!isAdmin && scopeValue === 'all') { setScope('mine'); applied.scope = 'mine'; }
+}
+$('adminSwitch').addEventListener('click', function (e) {
+  e.preventDefault();
+  isAdmin = !isAdmin;
+  applyAdmin();
+  render();
+});
+
+/* 查询 / 重置 */
+function doQuery() {
+  var btn = $('btnQuery');
+  setLoading(btn, true);
+  $('tableLoading').hidden = false;
+  mockRequest(500, function () {
+    applied = { scope: scopeValue, status: selectValues.status, domain: selectValues.domain, keyword: $('kwInput').value };
+    $('tableLoading').hidden = true;
+    setLoading(btn, false);
+    render();
+  }, function (err) {
+    $('tableLoading').hidden = true;
+    setLoading(btn, false);
+    showMessage('error', '查询失败：' + err);
+  });
+}
+$('btnQuery').addEventListener('click', doQuery);
+$('kwInput').addEventListener('keydown', function (e) { if (e.key === 'Enter') doQuery(); });
+$('btnReset').addEventListener('click', function () {
+  setScope('mine');
+  setSelect('status', '全部');
+  setSelect('domain', '全部');
+  $('kwInput').value = '';
+  doQuery();
+});
+
+/* 生成令牌 */
+$('btnCreate').addEventListener('click', function () {
+  if ($('btnCreate').classList.contains('is-disabled')) return;
+  location.href = 'token-form.html';
+});
+
+/* ===================== 我的权限抽屉（只读） ===================== */
+var CHANGE_TAG = { '分配': 'busy-tag--success', '收回': 'busy-tag--danger', '到期收回': 'busy-tag--info', '停用收回': 'busy-tag--info' };
+/* 分配有效期：截止日期次日 00:00 收回；7 天内到期橙显 */
+function grantExpiringSoon(g) {
+  if (!g.expire) return false;
+  var p = g.expire.split('-');
+  var end = new Date(+p[0], +p[1] - 1, +p[2] + 1, 0, 0);
+  var diff = end - MOCK_NOW;
+  return diff > 0 && diff <= 7 * 24 * 3600 * 1000;
+}
+function grantRowHtml(g) {
+  var validity = !g.expire ? '长期'
+    : grantExpiringSoon(g)
+      ? '<span class="chip-group"><span class="u-warning u-mono">' + esc(g.expire) + '</span><span class="busy-tag busy-tag--warning busy-tag--small">即将到期</span></span>'
+      : '<span class="u-mono">' + esc(g.expire) + '</span>';
+  return '<tr><td>' + esc(g.domain) + '</td>' +
+    '<td class="page-cell-wrap">' + esc(g.object) + '</td>' +
+    '<td>' + esc(g.grain) + '</td>' +
+    '<td>' + validity + '</td>' +
+    '<td>' + esc(g.by) + '</td></tr>';
+}
+function changeRowHtml(c) {
+  return '<tr><td class="u-mono">' + esc(c.time) + '</td>' +
+    '<td><span class="busy-tag busy-tag--small ' + CHANGE_TAG[c.type] + '">' + esc(c.type) + '</span></td>' +
+    '<td class="page-cell-wrap">' + esc(c.object) + '</td>' +
+    '<td>' + esc(c.by) + '</td></tr>';
+}
+function openPermDrawer() {
+  var none = MY_GRANTS.length === 0;
+  $('permGrantSection').hidden = none;
+  $('permChangeSection').hidden = none;
+  $('permEmpty').hidden = !none;
+  $('permTbody').innerHTML = MY_GRANTS.map(grantRowHtml).join('');
+  $('changeTbody').innerHTML = MY_CHANGES.slice(0, 20).map(changeRowHtml).join('');
+  openOverlay('permOverlay');
+}
+$('btnMyPerm').addEventListener('click', openPermDrawer);
+$('permOverlay').addEventListener('click', function (e) { if (e.target === $('permOverlay')) closeOverlay('permOverlay'); });
+document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !$('permOverlay').hidden) closeOverlay('permOverlay'); });
+
+/* ===================== 行操作 ===================== */
+function findToken(id) { return TOKENS.filter(function (t) { return t.id === id; })[0]; }
+var current = null;
+
+$('listTbody').addEventListener('click', function (e) {
+  var btn = e.target.closest('button[data-act]');
+  if (!btn) return;
+  current = findToken(btn.getAttribute('data-id'));
+  var act = btn.getAttribute('data-act');
+  if (act === 'renew') openRenew();
+  if (act === 'revoke') {
+    if (current.holder === CURRENT_USER) revokeOwn();
+    else openAdminRevoke();
+  }
+});
+
+/* 续期弹窗 */
+var renewDays = 90;
+function renewPreview() {
+  $('renewNew').value = renewDays ? fmtDt(addDays(MOCK_NOW, renewDays)) : '—';
+}
+function openRenew() {
+  renewDays = 90;
+  document.querySelectorAll('#renewDays .busy-radio').forEach(function (r) { r.querySelector('.busy-radio__input').classList.toggle('is-checked', r.getAttribute('data-value') === '90'); });
+  $('renewDaysError').hidden = true;
+  $('renewName').value = current.name;
+  $('renewCurrent').value = current.expireAt;
+  renewPreview();
+  openOverlay('renewOverlay');
+}
+document.querySelectorAll('#renewDays .busy-radio').forEach(function (r) {
+  r.addEventListener('click', function () {
+    renewDays = +r.getAttribute('data-value');
+    document.querySelectorAll('#renewDays .busy-radio').forEach(function (x) { x.querySelector('.busy-radio__input').classList.toggle('is-checked', x === r); });
+    $('renewDaysError').hidden = true;
+    renewPreview();
+  });
+});
+$('renewOk').addEventListener('click', function () {
+  if ([7, 30, 90, 180].indexOf(renewDays) < 0) { $('renewDaysError').hidden = false; return; }
+  var btn = $('renewOk');
+  setLoading(btn, true);
+  mockRequest(800, function () {
+    setLoading(btn, false);
+    current.expireAt = fmtDt(addDays(MOCK_NOW, renewDays));
+    closeOverlay('renewOverlay');
+    showMessage('success', '令牌「' + current.name + '」已续期至 ' + current.expireAt);
+    render();
+  }, function (err) {
+    setLoading(btn, false);
+    showMessage('error', '续期失败：' + err);
+  });
+});
+
+/* 吊销（本人）：MessageBox 确认 */
+function revokeOwn() {
+  var t = current;
+  messageBox('吊销后使用该令牌的 Agent 将立即无法调用，且不可恢复，确认吊销？', function (done) {
+    mockRequest(800, function () {
+      t.status = '已吊销';
+      done(true);
+      showMessage('success', '令牌「' + t.name + '」已吊销');
+      render();
+    }, function (err) {
+      done(false);
+      showMessage('error', '吊销失败：' + err);
+    });
+  }, true);
+}
+
+/* 吊销（管理员 · 他人令牌）：吊销原因弹窗 */
+function reasonValid() {
+  var v = $('reasonInput').value.trim();
+  return v.length >= 2 && v.length <= 200;
+}
+function showReasonError(show) {
+  $('reasonError').hidden = !show;
+  $('reasonItem').classList.toggle('is-error', show);
+}
+function openAdminRevoke() {
+  $('revokeTitle').textContent = '吊销「' + current.holder + '」的令牌「' + current.name + '」';
+  $('reasonInput').value = '';
+  showReasonError(false);
+  openOverlay('revokeOverlay');
+  $('reasonInput').focus();
+}
+$('reasonInput').addEventListener('blur', function () { showReasonError(!reasonValid()); });
+$('reasonInput').addEventListener('input', function () { if (reasonValid()) showReasonError(false); });
+$('revokeOk').addEventListener('click', function () {
+  if (!reasonValid()) { showReasonError(true); return; }
+  var btn = $('revokeOk');
+  var t = current;
+  setLoading(btn, true);
+  mockRequest(800, function () {
+    setLoading(btn, false);
+    t.status = '已吊销';
+    closeOverlay('revokeOverlay');
+    showMessage('success', '已吊销「' + t.holder + '」的令牌「' + t.name + '」，已通知持有人');
+    render();
+  }, function (err) {
+    setLoading(btn, false);
+    showMessage('error', '吊销失败：' + err);
+  });
+});
+
+/* ===================== 初始化 ===================== */
+applyAdmin();
+setScope('mine');
+render();
+/* 企微权限变更通知入口：?drawer=perm 直接打开我的权限抽屉 */
+if (MOCK_FLAGS.drawerPerm) openPermDrawer();
+</script>
+</body>
+</html>

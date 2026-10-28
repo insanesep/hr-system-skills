@@ -1,0 +1,931 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="light">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>需求审批配置 · 需求管理 · 鸣鸣很忙</title>
+<!--
+  页面名：审批链配置页（需求管理 Web 原型，管理员视角）
+  页面描述真源：../../references/web-ui.md「### 审批链配置页」（业务规则：business-rule.md §3 审批链配置规则；
+    data.md §12 枚举；permission-rules.md §1）
+  页面类型：archive-list（fork 范例：busyming-skills-design/web/templates/archive-list.html）
+  DOM 依据骨架：busyming-skills-design/.skills/page-blueprint/skeletons/web/list-page.vue.tpl（Tab 形态附录 §A）
+  演示基准日：2026-10-18；页面数据全部为虚构演示样例，仅用于表达交互与规则。
+  覆盖要点：产品线/业务线两级 Tab（Tab 切换页内 JS 驱动演示数据）；群消息配置（inline 编辑 + 未配置警示，
+    编辑态 Key 输入框为空不回填脱敏值、群名称默认「{归属}需求审批群」）；
+    审批链配置（先选提交对象：默认链 / 指定产品经理手填姓名与门户用户 ID、匹配优先级 inline 说明、6 列配置表格）；
+    配置弹窗（新增/编辑共用，各级审批人为「姓名 + 门户用户 ID」行，每级至少 1 行、多人即或签）；
+    删除/停用 AcPopconfirm；审批统计 4 卡（各带「?」口径 hint，受理量脚注含内部/外部构成、驳回率脚注含 L1/L2/L3 分级占比，
+    统计口径近 30 天按提交时间）；写操作反馈文案取文档原文。
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/web/styles/design-system.css" />
+</head>
+<body>
+<nav class="web-nav">
+  <span class="web-nav__logo">鸣鸣很忙</span>
+  <span class="web-nav__crumb">研发 / <a class="ac-link" href="../../../需求工单管理/assets/web/requirement-list.html">需求管理</a> / <b>需求审批配置</b></span>
+  <span class="web-nav__spacer"></span>
+  <div class="proto-bar ac-dropdown" data-ac="AcDropdown" data-trigger="click" id="protoDd">
+    <button class="ac-btn ac-dropdown__trigger" type="button" data-ac="AcButton" id="protoBtn"><span class="ac-btn__label">原型页面</span><span class="ac-icon ac-dropdown__chevron" data-ac="AcIcon" data-name="down" data-size="sm"></span></button>
+    <div class="ac-dropdown__menu" role="menu" id="protoMenu" hidden>
+      <div class="ac-dropdown-group-title">需求管理 · Web 7 页</div>
+      <a class="ac-dropdown-item" role="menuitem" href="../../../需求工单管理/assets/web/requirement-list.html">需求列表</a>
+      <a class="ac-dropdown-item" role="menuitem" href="../../../需求工单管理/assets/web/requirement-detail.html">需求详情</a>
+      <a class="ac-dropdown-item" role="menuitem" href="../../../需求工单管理/assets/web/requirement-submit.html">需求提交</a>
+      <a class="ac-dropdown-item" role="menuitem" href="../../../需求外链管理/assets/web/requirement-public-link.html">外链管理</a>
+      <a class="ac-dropdown-item is-active" role="menuitem" href="requirement-config.html">审批链配置</a>
+      <a class="ac-dropdown-item" role="menuitem" href="../../../SLA规则配置/assets/web/requirement-sla-config.html">SLA 配置</a>
+      <a class="ac-dropdown-item" role="menuitem" href="../../../需求SLA看板/assets/web/requirement-sla-dashboard.html">SLA 仪表盘</a>
+    </div>
+  </div>
+  <span class="web-nav__crumb">管理员 · 王强</span>
+</nav>
+
+<section class="tpl-page" id="cfgPage">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">需求审批配置</h1>
+      <div class="tpl-page-subtitle">按归属维护审批链与群消息映射，并查看该归属的审批统计；配置变更仅对新提交需求生效（快照机制）</div>
+    </div>
+  </div>
+
+  <!-- 一级 Tab（产品线）：鸣鸣很忙 / 有点推荐 -->
+  <div class="ac-tabs" id="pTabs">
+    <div class="ac-tabs__nav" id="pTabsNav"></div>
+  </div>
+  <!-- 二级 Tab（业务线，仅鸣鸣很忙下渲染） -->
+  <div class="ac-tabs" id="lTabs">
+    <div class="ac-tabs__nav" id="lTabsNav"></div>
+  </div>
+  <!-- 有点推荐 inline 说明 -->
+  <div class="ac-alert ac-alert--info" data-ac="AcAlert" role="status" id="ydTip" hidden>
+    <div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="info"></span></div>
+    <div class="ac-alert__body"><div class="ac-alert__content">有点推荐不区分业务线</div></div>
+  </div>
+
+  <!-- 卡片一：群消息配置 -->
+  <div class="tpl-panel" id="groupCard"></div>
+
+  <!-- 卡片二：审批链配置 -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">审批链配置</span></div>
+      <div class="tpl-toolbar__right">
+        <button class="ac-btn ac-btn--primary" type="button" id="addCfgBtn"><span class="ac-icon" data-ac="AcIcon" data-name="plus" data-size="sm"></span> 新增配置</button>
+      </div>
+    </div>
+
+    <!-- 先选提交对象：默认链（兜底）/ 指定产品经理（手填姓名与门户用户 ID，不使用人员选择器） -->
+    <div class="tpl-filter">
+      <div class="ac-form-item ac-form-item--wide">
+        <label class="ac-form-item__label">提交对象</label>
+        <div class="tpl-filter__row">
+          <div class="ac-radio-group ac-radio-group--inline" data-ac="AcRadioGroup" id="objRadios">
+            <span class="ac-radio ac-radio--dot is-checked" role="radio" aria-checked="true" data-ac="AcRadio" data-value="default" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">默认链（兜底）</span></span>
+            <span class="ac-radio ac-radio--dot" role="radio" aria-checked="false" data-ac="AcRadio" data-value="pm" tabindex="0"><span class="ac-radio__box"><span class="ac-radio__inner"></span></span><span class="ac-radio__label">指定产品经理</span></span>
+          </div>
+          <span id="pmInputs" hidden>
+            <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="pmNameInput" placeholder="产品经理姓名" autocomplete="off" /></span>
+            <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" id="pmIdInput" placeholder="门户用户 ID（数字）" inputmode="numeric" autocomplete="off" /></span>
+          </span>
+        </div>
+      </div>
+    </div>
+    <div class="u-secondary u-sm">默认链仅承接外部提交与防御兜底（内部单只能选本归属有专属链的产品经理）；为产品经理配置专属链后，提交给他的需求走专属链。提交对象为手填维护，不使用人员选择器，也不与提交页的提交对象候选集联动。</div>
+    <div class="u-secondary u-sm">匹配优先级：提交需求时按提交对象匹配专属链（内部单必中专属链，不回退默认链；外部提交走默认链）；同一链内按 类型+优先级精确 → 类型精确+优先级通配 → 类型通配+优先级精确 → 全通配 降级，命中即止。</div>
+
+    <!-- 配置表格（6 列）；空态、加载态见 render 实现 -->
+    <div class="ac-table-wrap">
+      <table class="ac-table" id="cfgTable">
+        <thead>
+          <tr>
+            <th>需求类型</th>
+            <th>优先级</th>
+            <th>审批级次</th>
+            <th>各级审批人</th>
+            <th>状态</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="cfgTbody"></tbody>
+      </table>
+    </div>
+    <div class="tpl-pagination">
+      <span class="tpl-pagination__info" id="cfgPageInfo">共 0 条</span>
+      <div class="tpl-pagination__pages">
+        <a class="tpl-pagination__page is-active">1</a>
+      </div>
+      <span class="tpl-pagination__size">20 条/页 <span class="ac-select__arrow"><span class="ac-icon" data-ac="AcIcon" data-name="down"></span></span></span>
+    </div>
+  </div>
+
+  <!-- 卡片三：审批统计（统计范围跟随当前产品线、业务线 Tab，近 30 天按提交时间过滤） -->
+  <div class="tpl-panel">
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left">
+        <span class="tpl-toolbar__title">审批统计</span>
+        <span class="u-sub" id="statScope">鸣鸣很忙 · 运营 · 近 30 天（按提交时间过滤）</span>
+      </div>
+    </div>
+    <div class="tpl-kpi-grid" id="statGrid"></div>
+  </div>
+</section>
+
+<!-- 配置弹窗（新增 / 编辑共用）：产品线/业务线/提交对象跟随上下文只读带入 -->
+<div class="ac-modal" data-ac="AcModal" id="cfgModal" hidden>
+  <div class="ac-modal__mask" data-close="cfgModal"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="640">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="cfgModalTitle">新增配置</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" data-close="cfgModal">×</button></div>
+      <div class="ac-modal__body">
+        <div id="cfgModalAlert"></div>
+        <div class="ac-form ac-form--horizontal" data-ac="AcForm" id="cfgForm">
+          <div class="ac-form-item ac-form-item--horizontal">
+            <label class="ac-form-item__label is-right">产品线 / 业务线</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><span class="u-strong" id="cfgLineText">鸣鸣很忙 · 运营</span></div></div>
+          </div>
+          <div class="ac-form-item ac-form-item--horizontal">
+            <label class="ac-form-item__label is-right">提交对象</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control"><span class="u-strong" id="cfgObjText">默认链（兜底）</span></div><div class="ac-form-item__help">跟随审批链配置卡当前所选，只读带入</div></div>
+          </div>
+          <div class="ac-form-item ac-form-item--horizontal is-required" data-field="type">
+            <label class="ac-form-item__label is-right"><span class="ac-form-item__required">*</span>需求类型</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="请选择需求类型或全部通配" id="cfgType">
+                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">请选择需求类型或全部通配</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+                <div class="ac-select__popup" hidden><ul class="ac-select__list">
+                  <li class="ac-select__option" data-value="*"><span class="ac-select__option-label">* 全部类型通配</span></li>
+                  <li class="ac-select__option" data-value="新功能"><span class="ac-select__option-label">新功能</span></li>
+                  <li class="ac-select__option" data-value="功能优化"><span class="ac-select__option-label">功能优化</span></li>
+                  <li class="ac-select__option" data-value="缺陷修复"><span class="ac-select__option-label">缺陷修复</span></li>
+                  <li class="ac-select__option" data-value="数据报表"><span class="ac-select__option-label">数据报表</span></li>
+                  <li class="ac-select__option" data-value="系统集成"><span class="ac-select__option-label">系统集成</span></li>
+                </ul></div>
+              </div>
+            </div><div class="ac-form-item__help" data-help></div></div>
+          </div>
+          <div class="ac-form-item ac-form-item--horizontal is-required" data-field="priority">
+            <label class="ac-form-item__label is-right"><span class="ac-form-item__required">*</span>优先级</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+              <div class="ac-select ac-select--medium" data-ac="AcSelect" data-placeholder="请选择优先级或全部通配" id="cfgPriority">
+                <div class="ac-select__trigger" tabindex="0"><span class="ac-select__single is-placeholder">请选择优先级或全部通配</span><span class="ac-select__suffix"><span class="ac-icon ac-select__arrow" data-ac="AcIcon" data-name="down" data-size="sm"></span></span></div>
+                <div class="ac-select__popup" hidden><ul class="ac-select__list">
+                  <li class="ac-select__option" data-value="*"><span class="ac-select__option-label">* 全部优先级通配</span></li>
+                  <li class="ac-select__option" data-value="P0"><span class="ac-select__option-label">P0 紧急</span></li>
+                  <li class="ac-select__option" data-value="P1"><span class="ac-select__option-label">P1 高</span></li>
+                  <li class="ac-select__option" data-value="P2"><span class="ac-select__option-label">P2 中</span></li>
+                  <li class="ac-select__option" data-value="P3"><span class="ac-select__option-label">P3 低</span></li>
+                </ul></div>
+              </div>
+            </div><div class="ac-form-item__help" data-help></div></div>
+          </div>
+          <div class="ac-form-item ac-form-item--horizontal is-required" data-field="levels">
+            <label class="ac-form-item__label is-right"><span class="ac-form-item__required">*</span>审批级次</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control" id="cfgLevels">
+              <span class="ac-checkbox" role="checkbox" tabindex="0" aria-checked="false" data-ac="AcCheckbox" data-value="1"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">L1 业务线审批</span></span>
+              <span class="ac-checkbox" role="checkbox" tabindex="0" aria-checked="false" data-ac="AcCheckbox" data-value="2"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">L2 实施确认</span></span>
+              <span class="ac-checkbox" role="checkbox" tabindex="0" aria-checked="false" data-ac="AcCheckbox" data-value="3"><span class="ac-checkbox__box"><span class="ac-icon ac-checkbox__icon" data-ac="AcIcon" data-name="check"></span></span><span class="ac-checkbox__label">L3 产品确认</span></span>
+            </div><div class="ac-form-item__help" data-help></div></div>
+          </div>
+          <!-- 各级审批人：按勾选级次动态渲染「姓名 + 门户用户 ID」行，每级至少 1 行不可删，多人即或签 -->
+          <div id="cfgApprovers"></div>
+          <div class="ac-form-item ac-form-item--horizontal" data-field="note">
+            <label class="ac-form-item__label is-right">配置说明</label>
+            <div class="ac-form-item__wrapper"><div class="ac-form-item__control">
+              <div class="ac-input is-textarea" data-ac="AcInput" data-size="medium">
+                <textarea class="ac-input__textarea" id="cfgNote" maxlength="256" rows="3" placeholder="选填，说明该配置的适用场景（不超过 256 字）"></textarea>
+                <span class="ac-input__word-limit" id="cfgNoteCount">0/256</span>
+              </div>
+            </div><div class="ac-form-item__help" data-help></div></div>
+          </div>
+        </div>
+      </div>
+      <div class="ac-modal__footer">
+        <button class="ac-btn" type="button" data-close="cfgModal">取消</button>
+        <button class="ac-btn ac-btn--primary" type="button" id="cfgOkBtn">确认保存</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 通用确认弹窗（脏关闭等） -->
+<div class="ac-modal ac-modal--center" data-ac="AcModal" id="confirmModal" hidden>
+  <div class="ac-modal__mask"></div>
+  <div class="ac-modal__wrap" role="dialog" aria-modal="true">
+    <div class="ac-modal__panel" data-width="440">
+      <div class="ac-modal__header"><div class="ac-modal__title" id="confirmTitle">确认操作</div><button class="ac-btn ac-modal__close" type="button" aria-label="关闭" id="confirmCloseBtn">×</button></div>
+      <div class="ac-modal__body ac-modal__body--semantic">
+        <span class="ac-modal__sem-icon ac-modal__sem-icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></span>
+        <div class="ac-modal__body-text" id="confirmContent"></div>
+      </div>
+      <div class="ac-modal__footer">
+        <button class="ac-btn" type="button" id="confirmCancelBtn">取消</button>
+        <button class="ac-btn ac-btn--primary" type="button" id="confirmOkBtn">确认</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- 通用 AcPopconfirm 浮层（删除 / 停用二次确认，JS 定位到触发元素上方） -->
+<div class="ac-popconfirm__panel ac-popconfirm__panel--arrow-bottom" data-ac="AcPopconfirm" role="dialog" id="popconfirm" hidden>
+  <div class="ac-popconfirm__inner">
+    <div class="ac-popconfirm__header"><span class="ac-popconfirm__icon ac-popconfirm__icon--warning"><span class="ac-icon" data-ac="AcIcon" data-name="caution"></span></span><div class="ac-popconfirm__text"><div class="ac-popconfirm__title" id="pcTitle"></div><div class="ac-popconfirm__content" id="pcContent"></div></div></div>
+    <div class="ac-popconfirm__footer"><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--secondary" type="button" id="pcCancelBtn">取消</button><button class="ac-btn ac-popconfirm__btn ac-popconfirm__btn--primary" type="button" id="pcOkBtn">确认</button></div>
+  </div>
+  <span class="ac-popconfirm__arrow"></span>
+</div>
+
+<!-- 全局提示宿主 -->
+<div class="ac-message" data-ac="AcMessage" role="alert" id="toastHost"><div class="ac-message__list" id="toastList"></div></div>
+
+<script src="../../../../../busyming-skills-design/web/styles/runtime.js"></script>
+<script>
+/* ==================== 基础工具（页面自管交互：body 委托 + stopPropagation，避免设计仓演示运行时干扰） ==================== */
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = (s) => String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+const wait = (ms) => new Promise((r) => setTimeout(r, ms || 400));
+
+function toast(msg, type) {
+  const t = type || 'success';
+  const el = document.createElement('div');
+  el.className = 'ac-message__item is-' + t;
+  el.innerHTML = '<span class="ac-message__icon is-' + t + '">' + ({ success: '✓', error: '!', warning: '!', info: 'i' })[t] + '</span><span class="ac-message__text">' + esc(msg) + '</span>';
+  $('#toastList').appendChild(el);
+  setTimeout(() => { el.classList.add('is-leaving'); setTimeout(() => el.remove(), 240); }, 2600);
+}
+function busy(btn, on) {
+  if (!btn) return;
+  btn.disabled = !!on;
+  btn.classList.toggle('is-loading', !!on);
+  const sp = btn.querySelector('.ac-btn-spin');
+  if (on && !sp) btn.insertAdjacentHTML('afterbegin', '<span class="ac-btn-spin"></span>');
+  if (!on && sp) sp.remove();
+}
+
+/* ---------- 浮层（AcModal 形态，data-ds-leave 过渡） ---------- */
+const OPEN = new Set();
+function showLayer(id) {
+  const el = $('#' + id);
+  clearTimeout(el.__leaveTimer);
+  el.hidden = false;
+  void el.offsetWidth;
+  el.classList.add('is-open');
+  OPEN.add(id);
+}
+function hideLayer(id) {
+  const el = $('#' + id);
+  if (!el || el.hidden) return;
+  OPEN.delete(id);
+  el.classList.remove('is-open');
+  el.__leaveTimer = setTimeout(() => { el.hidden = true; }, 220);
+}
+
+/* ---------- 通用确认弹窗 ---------- */
+let confirmResolve = null;
+function askConfirm(title, content, okText, danger) {
+  $('#confirmTitle').textContent = title;
+  $('#confirmContent').textContent = content;
+  const ok = $('#confirmOkBtn');
+  ok.textContent = okText || '确认';
+  ok.className = 'ac-btn ' + (danger ? 'ac-btn--danger' : 'ac-btn--primary');
+  showLayer('confirmModal');
+  return new Promise((r) => { confirmResolve = r; });
+}
+function settleConfirm(v) {
+  if (!confirmResolve) return;
+  const r = confirmResolve;
+  confirmResolve = null;
+  if (!v) hideLayer('confirmModal');
+  r(v);
+}
+
+/* ---------- 通用 Popconfirm（固定定位到触发元素上方） ---------- */
+let popResolve = null;
+function askPop(anchor, title, content, okText) {
+  const p = $('#popconfirm');
+  $('#pcTitle').textContent = title;
+  $('#pcContent').textContent = content || '';
+  $('#pcOkBtn').textContent = okText || '确认';
+  p.hidden = false;
+  const r = anchor.getBoundingClientRect();
+  p.style.left = Math.max(8, Math.min(window.innerWidth - p.offsetWidth - 8, r.left + r.width / 2 - p.offsetWidth / 2)) + 'px';
+  p.style.top = Math.max(8, r.top - p.offsetHeight - 10) + 'px';
+  return new Promise((res) => { popResolve = res; });
+}
+function settlePop(v) {
+  if (!popResolve) return;
+  const r = popResolve;
+  popResolve = null;
+  if (!v) $('#popconfirm').hidden = true;
+  r(v);
+}
+const popOpen = () => !$('#popconfirm').hidden;
+
+/* ---------- 事件委托：页面自管，事件不再冒泡到设计仓运行时 ---------- */
+const HANDLERS = {};
+const on = (type, sel, fn) => { (HANDLERS[type] = HANDLERS[type] || []).push([sel, fn]); };
+['click', 'input', 'keydown', 'mousedown', 'change'].forEach((type) => {
+  document.body.addEventListener(type, (e) => {
+    const t = e.target && e.target.nodeType === 1 ? e.target : e.target && e.target.parentElement;
+    for (const [sel, fn] of HANDLERS[type] || []) {
+      const el = sel ? t && t.closest(sel) : t;
+      if (el && fn(e, el) === true) break;
+    }
+    e.stopPropagation();
+  });
+});
+
+/* 含表单弹窗在捕获阶段接管 Esc：阻止设计仓全局 Esc 把弹窗变成透明拦截层，并走脏关闭校验 */
+window.addEventListener('keydown', (e) => {
+  if (e.key !== 'Escape') return;
+  if (!OPEN.size && !popOpen() && !$$('.ac-select.is-open').length) return;
+  e.stopPropagation();
+  onEscape();
+}, true);
+function onEscape() {
+  if (popOpen()) { settlePop(false); return; }
+  if (OPEN.has('confirmModal')) { settleConfirm(false); return; }
+  if (OPEN.has('cfgModal')) { requestCloseCfg(); return; }
+  $$('.ac-select.is-open').forEach((s) => closeSelect(s));
+}
+
+/* ---------- AcSelect 页面自管实现（单选 / 多选） ---------- */
+function closeSelect(root) {
+  root.classList.remove('is-open');
+  const pop = $('.ac-select__popup', root);
+  if (pop) pop.hidden = true;
+}
+function closeAllSelects(keep) { $$('.ac-select.is-open').forEach((s) => { if (s !== keep) closeSelect(s); }); }
+function selectValue(root) { return root.getAttribute('data-value') || ''; }
+function selectLabel(root, v) {
+  const opt = $(`.ac-select__option[data-value="${CSS.escape(v)}"]`, root);
+  return opt ? $('.ac-select__option-label', opt).textContent.trim() : '';
+}
+function setSelect(root, v, silent) {
+  root.setAttribute('data-value', v);
+  const single = $('.ac-select__single', root);
+  single.textContent = selectLabel(root, v);
+  single.classList.remove('is-placeholder');
+  $$('.ac-select__option', root).forEach((o) => o.classList.toggle('is-selected', o.getAttribute('data-value') === v));
+  if (!silent) root.dispatchEvent(new CustomEvent('ac:change', { bubbles: true, detail: { value: v } }));
+}
+function resetSelect(root) {
+  root.removeAttribute('data-value');
+  const single = $('.ac-select__single', root);
+  single.textContent = root.getAttribute('data-placeholder') || '请选择';
+  single.classList.add('is-placeholder');
+  $$('.ac-select__option', root).forEach((o) => o.classList.remove('is-selected'));
+}
+
+on('click', '.ac-select .ac-select__trigger', (e, el) => {
+  const root = el.closest('.ac-select');
+  if (root.classList.contains('is-disabled')) return true;
+  const willOpen = !root.classList.contains('is-open');
+  closeAllSelects(root);
+  root.classList.toggle('is-open', willOpen);
+  $('.ac-select__popup', root).hidden = !willOpen;
+  return true;
+});
+on('click', '.ac-select .ac-select__option', (e, el) => {
+  const root = el.closest('.ac-select');
+  setSelect(root, el.getAttribute('data-value'));
+  closeSelect(root);
+  return true;
+});
+on('mousedown', null, (e, t) => {
+  if (popOpen() && !(t && t.closest('#popconfirm'))) settlePop(false);
+  $$('.ac-select.is-open').forEach((s) => { if (!(t && s.contains(t))) closeSelect(s); });
+  const menu = $('#protoMenu');
+  if (!menu.hidden && !(t && t.closest('#protoDd'))) { menu.hidden = true; $('#protoDd').classList.remove('is-open'); }
+  return false;
+});
+/* ==================== 演示数据（虚构，基准日 2026-10-18） ==================== */
+const PRODUCTS = [
+  { key: 'mm', label: '鸣鸣很忙' },
+  { key: 'yd', label: '有点推荐' },
+];
+const LINES = [
+  { key: 'yy', label: '运营' },
+  { key: 'cw', label: '财务' },
+  { key: 'gyl', label: '供应链' },
+  { key: 'sz', label: '数字化' },
+];
+const LEVEL_NAMES = { 1: 'L1 业务线审批', 2: 'L2 实施确认', 3: 'L3 产品确认' };
+const AP = (name, id) => ({ name, id });
+
+/* 配置行：{ id, type('*' 通配), priority('*' 通配), levels[1..3], ap{level:[{name,id}]}, enabled, note } */
+const DATA = {
+  'mm|yy': {
+    group: { name: '鸣鸣很忙 · 运营需求审批群', key: 'a3f9' },
+    def: [
+      { id: 'd-yy-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('周文杰', '10231')], 2: [AP('李思远', '10312'), AP('孙浩', '10358')] }, enabled: true, note: '默认链兜底：外部无入口，仅防御' },
+    ],
+    pm: {
+      '陈默': [
+        { id: 'p-yy-1', type: '*', priority: '*', levels: [1, 2, 3], ap: { 1: [AP('周文杰', '10231')], 2: [AP('李思远', '10312')], 3: [AP('陈默', '10086')] }, enabled: true, note: '陈默全量专属链' },
+        { id: 'p-yy-2', type: '缺陷修复', priority: 'P0', levels: [3], ap: { 3: [AP('陈默', '10086')] }, enabled: true, note: 'P0 缺陷直送产品确认' },
+      ],
+      '李娜': [
+        { id: 'p-yy-3', type: '数据报表', priority: '*', levels: [2, 3], ap: { 2: [AP('孙浩', '10358')], 3: [AP('李娜', '10124')] }, enabled: false, note: '' },
+      ],
+    },
+    stats: { accept: 86, inOut: [70, 16], pass: '74.4%', reject: '12.8%', rejectLv: { 1: '6.1%', 2: '4.2%', 3: '2.5%' }, avg: '18 小时 24 分' },
+  },
+  'mm|cw': {
+    group: null,   /* 未配置企微群 → 警示条演示 */
+    def: [
+      { id: 'd-cw-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('王芳', '10255')], 2: [AP('李思远', '10312'), AP('孙浩', '10358')] }, enabled: true, note: '' },
+    ],
+    pm: {
+      '陈默': [
+        { id: 'p-cw-1', type: '*', priority: '*', levels: [2, 3], ap: { 2: [AP('李思远', '10312')], 3: [AP('陈默', '10086')] }, enabled: true, note: '' },
+      ],
+    },
+    stats: { accept: 23, inOut: [20, 3], pass: '82.6%', reject: '8.7%', rejectLv: { 1: '4.3%', 2: '2.9%', 3: '1.5%' }, avg: '12 小时 06 分' },
+  },
+  'mm|gyl': {
+    group: { name: '鸣鸣很忙 · 供应链需求审批群', key: 'b7e2' },
+    def: [
+      { id: 'd-gyl-1', type: '*', priority: '*', levels: [1], ap: { 1: [AP('郑凯', '10287')] }, enabled: true, note: '' },
+    ],
+    pm: {
+      '陈默': [
+        { id: 'p-gyl-1', type: '*', priority: '*', levels: [1, 2, 3], ap: { 1: [AP('郑凯', '10287')], 2: [AP('孙浩', '10358')], 3: [AP('陈默', '10086')] }, enabled: true, note: '' },
+      ],
+    },
+    stats: { accept: 31, inOut: [26, 5], pass: '71.0%', reject: '16.1%', rejectLv: { 1: '9.7%', 2: '3.8%', 3: '2.6%' }, avg: '26 小时 41 分' },
+  },
+  'mm|sz': {
+    group: { name: '鸣鸣很忙 · 数字化需求审批群', key: 'c1d8' },
+    def: [
+      { id: 'd-sz-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('吴迪', '10301')], 2: [AP('孙浩', '10358')] }, enabled: true, note: '' },
+    ],
+    pm: { '陈默': [] },   /* 专属链空态演示：「该产品经理尚未配置专属链，不能被选为提交对象」 */
+    stats: { accept: 12, inOut: [12, 0], pass: '66.7%', reject: '25.0%', rejectLv: { 1: '16.7%', 2: '5.6%', 3: '2.7%' }, avg: '31 小时 12 分' },
+  },
+  'yd|*': {
+    group: { name: '有点推荐需求审批群', key: 'e5k2' },
+    def: [
+      { id: 'd-yd-1', type: '*', priority: '*', levels: [1, 2], ap: { 1: [AP('何静', '10299')], 2: [AP('李思远', '10312')] }, enabled: true, note: '' },
+    ],
+    pm: {
+      '陈默': [
+        { id: 'p-yd-1', type: '*', priority: '*', levels: [3], ap: { 3: [AP('陈默', '10086')] }, enabled: true, note: '有点推荐内部单仅产品确认' },
+      ],
+    },
+    stats: { accept: 41, inOut: [9, 32], pass: '68.3%', reject: '19.5%', rejectLv: { 1: '7.3%', 2: '7.3%', 3: '4.9%' }, avg: '22 小时 03 分' },
+  },
+};
+
+const S = { product: 'mm', line: 'yy', obj: 'default', pmName: '', pmId: '', editing: null };
+const curKey = () => S.product === 'yd' ? 'yd|*' : `mm|${S.line}`;
+const curData = () => DATA[curKey()];
+const curScopeLabel = () => S.product === 'yd' ? '有点推荐' : `鸣鸣很忙 · ${LINES.find((l) => l.key === S.line).label}`;
+/* null = 指定产品经理但未填写姓名与门户用户 ID（表格空态一） */
+const curRows = () => {
+  const d = curData();
+  if (S.obj === 'default') return d.def;
+  if (!S.pmName.trim()) return null;
+  return (d.pm && d.pm[S.pmName.trim()]) || [];
+};
+
+/* ==================== 渲染 ==================== */
+function renderTabs() {
+  $('#pTabsNav').innerHTML = PRODUCTS.map((p) =>
+    `<span class="ac-tab${S.product === p.key ? ' is-active' : ''}" data-ptab="${p.key}">${p.label}</span>`).join('');
+  const showLines = S.product === 'mm';
+  $('#lTabs').hidden = !showLines;
+  if (showLines) {
+    $('#lTabsNav').innerHTML = LINES.map((l) =>
+      `<span class="ac-tab${S.line === l.key ? ' is-active' : ''}" data-ltab="${l.key}">${l.label}</span>`).join('');
+  }
+  $('#ydTip').hidden = S.product !== 'yd';
+}
+
+/* ---- 卡片一：群消息配置（已配置 / 未配置 / inline 编辑三态；编辑态 Key 输入框为空不回填脱敏值） ---- */
+let groupEditing = false;
+function renderGroup() {
+  const d = curData();
+  const g = d.group;
+  const host = $('#groupCard');
+  let body;
+  if (groupEditing) {
+    body = `
+      <div class="tpl-filter">
+        <div class="ac-form-item">
+          <label class="ac-form-item__label">企微群名称</label>
+          <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="groupNameInput" value="${esc((g && g.name) || curScopeLabel() + '需求审批群')}" /></span>
+        </div>
+        <div class="ac-form-item ac-form-item--wide">
+          <label class="ac-form-item__label">Webhook Key</label>
+          <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" id="groupKeyInput" placeholder="请输入完整 Webhook Key（不回填脱敏值）" /></span>
+        </div>
+        <div class="tpl-filter__actions">
+          <button class="ac-btn ac-btn--primary ac-btn--sm" type="button" id="groupSaveBtn">保存</button>
+          <button class="ac-btn ac-btn--sm" type="button" id="groupCancelBtn">取消</button>
+        </div>
+      </div>
+      <div class="ac-form-error" id="groupKeyErr" hidden></div>
+      <div class="u-secondary u-sm">保存时服务端校验机器人有效性；绑定后群消息按归属推送（提交待审 / 通过 / 驳回）。</div>`;
+  } else if (g) {
+    body = `
+      <div class="ac-descriptions" data-ac="AcDescriptions">
+        <div class="ac-descriptions__item"><span class="ac-descriptions__label">企微群名称</span><span class="ac-descriptions__value">${esc(g.name)}</span></div>
+        <div class="ac-descriptions__item"><span class="ac-descriptions__label">Webhook Key</span><span class="ac-descriptions__value mono">******${esc(g.key)}</span></div>
+      </div>`;
+  } else {
+    body = `
+      <div class="ac-alert ac-alert--warning" data-ac="AcAlert" role="alert"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="remind"></span></div><div class="ac-alert__body"><div class="ac-alert__content">该归属未配置企微群，群消息将静默跳过，不影响审批流转</div></div></div>`;
+  }
+  host.innerHTML = `
+    <div class="tpl-toolbar">
+      <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">群消息配置</span><span class="u-sub">当前归属：${esc(curScopeLabel())}</span></div>
+      <div class="tpl-toolbar__right">${groupEditing ? '' : '<button class="ac-btn ac-btn--sm" type="button" id="groupSetBtn"><span class="ac-icon" data-ac="AcIcon" data-name="setting" data-size="sm"></span> 设置</button>'}</div>
+    </div>
+    ${body}`;
+}
+
+/* ---- 卡片二：审批链配置 ---- */
+function renderObjArea() {
+  $$('#objRadios .ac-radio').forEach((r) => {
+    const on = r.getAttribute('data-value') === S.obj;
+    r.classList.toggle('is-checked', on);
+    r.setAttribute('aria-checked', String(on));
+  });
+  $('#pmInputs').hidden = S.obj !== 'pm';
+}
+
+function levelsLabel(levels) {
+  if (levels.length === 3) return 'L1+L2+L3';
+  if (levels.length === 1) return `仅 L${levels[0]}`;
+  return levels.map((l) => 'L' + l).join('+');
+}
+function approversCell(row) {
+  return row.levels.map((lv) =>
+    `<span class="u-strong">L${lv}</span> ${(row.ap[lv] || []).map((a) => esc(a.name)).join('/')}`
+  ).join(' <span class="u-muted">·</span> ');
+}
+function typeCell(row) {
+  return row.type === '*' ? '<span class="ac-tag ac-tag--gray">* 全部类型</span>' : esc(row.type);
+}
+function priorityCell(row) {
+  if (row.priority === '*') return '<span class="ac-tag ac-tag--gray">* 全部</span>';
+  const cls = { P0: 'red', P1: 'orange', P2: 'blue', P3: 'gray' }[row.priority];
+  const label = { P0: 'P0 紧急', P1: 'P1 高', P2: 'P2 中', P3: 'P3 低' }[row.priority];
+  return `<span class="ac-tag ac-tag--${cls}">${label}</span>`;
+}
+
+function renderTable() {
+  const rows = curRows();
+  const tbody = $('#cfgTbody');
+  /* 空态一：指定产品经理但未填姓名与门户用户 ID */
+  if (rows === null) {
+    $('#cfgPageInfo').textContent = '共 0 条';
+    tbody.innerHTML = `<tr><td colspan="6"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">请输入产品经理姓名与门户用户 ID 以查看其专属链配置</div></div></td></tr>`;
+    return;
+  }
+  $('#cfgPageInfo').textContent = `共 ${rows.length} 条`;
+  if (!rows.length) {
+    /* 空态二：默认链 →「该归属默认链尚未配置，外部提交与防御兜底不可用」；
+       指定产品经理 →「该产品经理尚未配置专属链，不能被选为提交对象」 */
+    const text = S.obj === 'default'
+      ? '该归属默认链尚未配置，外部提交与防御兜底不可用'
+      : '该产品经理尚未配置专属链，不能被选为提交对象';
+    tbody.innerHTML = `<tr><td colspan="6"><div class="ac-empty" data-ac="AcEmpty" role="status"><div class="ac-empty__art"></div><div class="ac-empty__title">${text}</div><div class="ac-empty__desc">点击右上角「新增配置」建立第一条审批链</div><button class="ac-btn ac-btn--primary ac-btn--sm" type="button" data-empty-add>新增配置</button></div></td></tr>`;
+    return;
+  }
+  tbody.innerHTML = rows.map((r) => `
+    <tr>
+      <td>${typeCell(r)}</td>
+      <td>${priorityCell(r)}</td>
+      <td><span class="ac-tag ac-tag--bordered">${levelsLabel(r.levels)}</span></td>
+      <td>${approversCell(r)}</td>
+      <td><button class="ac-btn ac-switch${r.enabled ? ' is-checked' : ''}" type="button" role="switch" aria-checked="${r.enabled}" data-ac="AcSwitch" data-size="small" data-shape="rounded" data-toggle-row="${r.id}" aria-label="启用或停用该配置"><span class="ac-switch__thumb"></span></button></td>
+      <td><div class="ac-row-actions" data-ac="AcRowActions">
+        <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-edit-row="${r.id}">编辑</button>
+        <button class="ac-btn ac-btn--text ac-btn--sm" type="button" data-del-row="${r.id}">删除</button>
+      </div></td>
+    </tr>`).join('');
+}
+
+/* ---- 卡片三：审批统计（4 卡，各带「?」口径 hint；近 30 天按提交时间过滤） ---- */
+function renderStats() {
+  const d = curData().stats;
+  $('#statScope').textContent = `${curScopeLabel()} · 近 30 天（按提交时间过滤）`;
+  const cards = [
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">受理量</span><span class="tpl-kpi__hint" title="近 30 天该归属已提交需求条数（不含草稿）" data-tip="近 30 天该归属已提交需求条数（不含草稿）">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.accept}</span><span class="tpl-kpi__unit">条</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">内部 ${d.inOut[0]} 条 · 外部 ${d.inOut[1]} 条</span></div></div>`,
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">通过率</span><span class="tpl-kpi__hint" title="全级审批通过（待关联排期 + 已关联排期）条数 ÷ 受理量" data-tip="全级审批通过（待关联排期 + 已关联排期）条数 ÷ 受理量">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.pass}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">全级通过 ÷ 受理量</span></div></div>`,
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">驳回率</span><span class="tpl-kpi__hint" title="驳回条数 ÷ 受理量" data-tip="驳回条数 ÷ 受理量">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.reject}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">L1 ${d.rejectLv[1]} · L2 ${d.rejectLv[2]} · L3 ${d.rejectLv[3]}</span></div></div>`,
+    `<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__dot"></span><span class="tpl-kpi__label">平均审批时长</span><span class="tpl-kpi__hint" title="提交至末级通过的时长均值" data-tip="提交至末级通过的时长均值">?</span></div><div class="tpl-kpi__number"><span class="tpl-kpi__value">${d.avg}</span></div><div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">提交 → 末级通过</span></div></div>`,
+  ];
+  $('#statGrid').innerHTML = cards.join('');
+}
+/* ==================== 事件绑定与初始化 ==================== */
+function findRow(id) {
+  const d = curData();
+  const inDef = d.def.find((r) => r.id === id);
+  if (inDef) return { row: inDef, list: d.def };
+  const arr = (d.pm && d.pm[S.pmName.trim()]) || [];
+  const inPm = arr.find((r) => r.id === id);
+  return inPm ? { row: inPm, list: arr } : { row: null, list: null };
+}
+function refreshAll() { renderTabs(); renderGroup(); renderObjArea(); renderTable(); renderStats(); }
+
+/* ---------- 一级 / 二级 Tab ---------- */
+on('click', '[data-ptab]', (e, el) => {
+  S.product = el.getAttribute('data-ptab');
+  refreshAll();
+  return true;
+});
+on('click', '[data-ltab]', (e, el) => {
+  S.line = el.getAttribute('data-ltab');
+  refreshAll();
+  return true;
+});
+
+/* ---------- 提交对象选择（默认链 / 指定产品经理手填姓名与门户用户 ID） ---------- */
+on('click', '#objRadios .ac-radio', (e, el) => {
+  S.obj = el.getAttribute('data-value');
+  renderObjArea();
+  renderTable();
+  return true;
+});
+on('input', '#pmNameInput', (e, el) => { S.pmName = el.value; renderTable(); return false; });
+on('input', '#pmIdInput', (e, el) => { S.pmId = el.value; return false; });
+
+/* ---------- 卡片一：群消息配置（inline 编辑） ---------- */
+on('click', '#groupSetBtn', () => { groupEditing = true; renderGroup(); return true; });
+on('click', '#groupCancelBtn', () => { groupEditing = false; renderGroup(); return true; });
+on('click', '#groupSaveBtn', async () => {
+  const input = $('#groupKeyInput');
+  const err = $('#groupKeyErr');
+  const v = (input.value || '').trim();
+  if (!v) { err.textContent = '请输入 Webhook Key'; err.hidden = false; input.focus(); return true; }
+  err.hidden = true;
+  const btn = $('#groupSaveBtn');
+  busy(btn, true);
+  await wait(600);   /* 演示：保存时服务端校验机器人有效性 */
+  busy(btn, false);
+  if (v.length < 6) {   /* 演示失败分支：Webhook Key 无效或机器人已移出群，输入保留 */
+    err.textContent = 'Webhook Key 无效或机器人已移出群';
+    err.hidden = false;
+    return true;
+  }
+  const d = curData();
+  const name = ($('#groupNameInput').value || '').trim() || `${curScopeLabel()}需求审批群`;
+  d.group = { name, key: v.slice(-4) };
+  groupEditing = false;
+  renderGroup();
+  toast(`${curScopeLabel()}企微群已绑定`);
+  return true;
+});
+
+/* ---------- 配置弹窗：级次勾选与各级审批人（姓名 + 门户用户 ID 行） ---------- */
+function checkedLevels() {
+  return $$('#cfgLevels .ac-checkbox.is-checked').map((c) => Number(c.getAttribute('data-value')));
+}
+function renderLevelChecks(levels) {
+  $$('#cfgLevels .ac-checkbox').forEach((c) => {
+    const lv = Number(c.getAttribute('data-value'));
+    const on = levels.includes(lv);
+    c.classList.toggle('is-checked', on);
+    c.setAttribute('aria-checked', String(on));
+  });
+}
+/* 每级审批人行：姓名 + 门户用户 ID；每级至少 1 行不可删，多人即或签 */
+function apRowHtml(lv, a, removable) {
+  return `<div class="tpl-filter__row" style="margin-bottom:8px" data-ap-row>
+    <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner" data-ap-name placeholder="审批人姓名" value="${a ? esc(a.name) : ''}" autocomplete="off" /></span>
+    <span class="ac-input" data-ac="AcInput"><input class="ac-input__inner mono" data-ap-id placeholder="门户用户 ID（数字）" value="${a ? esc(a.id) : ''}" inputmode="numeric" autocomplete="off" /></span>
+    ${removable ? '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-ap-del>删除</button>' : ''}
+  </div>`;
+}
+function renderApproverRows(levels, ap) {
+  $('#cfgApprovers').innerHTML = levels.map((lv) => {
+    const list = (ap && ap[lv] && ap[lv].length ? ap[lv] : [null]);
+    return `
+    <div class="ac-form-item ac-form-item--horizontal is-required" data-field="ap${lv}">
+      <label class="ac-form-item__label is-right"><span class="ac-form-item__required">*</span>${LEVEL_NAMES[lv]}审批人</label>
+      <div class="ac-form-item__wrapper"><div class="ac-form-item__control" data-ap-list="${lv}">
+        ${list.map((a, i) => apRowHtml(lv, a, list.length > 1)).join('')}
+        <button class="ac-btn ac-btn--sm" type="button" data-ap-add="${lv}">+ 加审批人（多人即或签）</button>
+      </div><div class="ac-form-item__help" data-help></div></div>
+    </div>`;
+  }).join('');
+}
+function refreshApRowDel(listEl) {
+  const rows = $$('[data-ap-row]', listEl);
+  rows.forEach((r, i) => {
+    const del = $('[data-ap-del]', r);
+    if (rows.length > 1 && !del) r.insertAdjacentHTML('beforeend', '<button class="ac-btn ac-btn--sm ac-btn--text" type="button" data-ap-del>删除</button>');
+    if (rows.length <= 1 && del) del.remove();
+  });
+}
+on('click', '[data-ap-add]', (e, el) => {
+  const listEl = el.closest('[data-ap-list]');
+  el.insertAdjacentHTML('beforebegin', apRowHtml(Number(listEl.getAttribute('data-ap-list')), null, true));
+  refreshApRowDel(listEl);
+  return true;
+});
+on('click', '[data-ap-del]', (e, el) => {
+  const listEl = el.closest('[data-ap-list]');
+  el.closest('[data-ap-row]').remove();
+  refreshApRowDel(listEl);
+  return true;
+});
+on('click', '#cfgLevels .ac-checkbox', (e, el) => {
+  const lv = Number(el.getAttribute('data-value'));
+  const on = !el.classList.contains('is-checked');
+  el.classList.toggle('is-checked', on);
+  el.setAttribute('aria-checked', String(on));
+  /* 保留已填写行的输入 */
+  const prev = {};
+  $$('#cfgApprovers [data-ap-list]').forEach((listEl) => {
+    prev[listEl.getAttribute('data-ap-list')] = $$('[data-ap-row]', listEl).map((r) => ({
+      name: $('[data-ap-name]', r).value, id: $('[data-ap-id]', r).value,
+    })).filter((a) => a.name || a.id);
+  });
+  renderApproverRows(checkedLevels(), prev);
+  return true;
+});
+
+/* ---------- 配置弹窗：打开 / 校验 / 保存 / 脏关闭 ---------- */
+let cfgSnapshot = '';
+function readApprovers() {
+  const ap = {};
+  $$('#cfgApprovers [data-ap-list]').forEach((listEl) => {
+    ap[listEl.getAttribute('data-ap-list')] = $$('[data-ap-row]', listEl).map((r) => ({
+      name: $('[data-ap-name]', r).value.trim(), id: $('[data-ap-id]', r).value.trim(),
+    }));
+  });
+  return ap;
+}
+function cfgFormState() {
+  return JSON.stringify({ type: selectValue($('#cfgType')), priority: selectValue($('#cfgPriority')), levels: checkedLevels(), ap: readApprovers(), note: $('#cfgNote').value });
+}
+function fieldErr(field, msg) {
+  const item = $(`#cfgForm [data-field="${field}"]`) || $(`#cfgApprovers [data-field="${field}"]`);
+  if (!item) return;
+  item.classList.add('is-error');
+  const help = $('[data-help]', item);
+  if (help) help.textContent = msg || '';
+}
+function clearCfgErrs() {
+  $$('#cfgModal .ac-form-item.is-error').forEach((i) => i.classList.remove('is-error'));
+  $$('#cfgModal [data-help]').forEach((h) => { h.textContent = ''; });
+  $('#cfgModalAlert').innerHTML = '';
+}
+function openCfgModal(row) {
+  S.editing = row ? row.id : null;
+  $('#cfgModalTitle').textContent = row ? '编辑配置' : '新增配置';
+  $('#cfgLineText').textContent = curScopeLabel();
+  $('#cfgObjText').textContent = S.obj === 'default' ? '默认链（兜底）' : `指定产品经理 · ${S.pmName.trim()}`;
+  clearCfgErrs();
+  if (row) { setSelect($('#cfgType'), row.type, true); setSelect($('#cfgPriority'), row.priority, true); }
+  else { resetSelect($('#cfgType')); resetSelect($('#cfgPriority')); }
+  const levels = row ? row.levels.slice() : [];
+  renderLevelChecks(levels);
+  renderApproverRows(levels, row && row.ap);
+  $('#cfgNote').value = (row && row.note) || '';
+  $('#cfgNoteCount').textContent = `${$('#cfgNote').value.length}/256`;
+  showLayer('cfgModal');
+  cfgSnapshot = cfgFormState();
+}
+function requestCloseCfg() {
+  if (cfgFormState() !== cfgSnapshot) {
+    askConfirm('确认关闭', '您有未保存的配置修改，确认关闭？', '放弃修改', true).then((ok) => {
+      hideLayer('confirmModal');
+      if (ok) hideLayer('cfgModal');
+    });
+  } else {
+    hideLayer('cfgModal');
+  }
+}
+/* 新增指定产品经理专属链前置校验 */
+function pmPrecheck() {
+  if (S.obj !== 'pm') return true;
+  if (!S.pmName.trim()) { toast('请先填写产品经理姓名与门户用户 ID', 'error'); return false; }
+  if (!/^\d+$/.test(S.pmId.trim())) { toast('门户用户 ID 需为数字', 'error'); return false; }
+  return true;
+}
+on('click', '#addCfgBtn', () => { if (pmPrecheck()) openCfgModal(null); return true; });
+on('click', '[data-empty-add]', () => { if (pmPrecheck()) openCfgModal(null); return true; });
+on('click', '[data-edit-row]', (e, el) => {
+  const { row } = findRow(el.getAttribute('data-edit-row'));
+  if (row) openCfgModal(row);
+  return true;
+});
+on('input', '#cfgNote', (e, el) => { $('#cfgNoteCount').textContent = `${el.value.length}/256`; return false; });
+on('click', '#cfgOkBtn', async (e, btn) => {
+  clearCfgErrs();
+  const type = selectValue($('#cfgType'));
+  const priority = selectValue($('#cfgPriority'));
+  const levels = checkedLevels();
+  let firstBad = null;
+  if (!type) { fieldErr('type', '请选择需求类型或全部通配'); firstBad = firstBad || 'type'; }
+  if (!priority) { fieldErr('priority', '请选择优先级或全部通配'); firstBad = firstBad || 'priority'; }
+  if (!levels.length) { fieldErr('levels', '请至少勾选一个审批级次'); firstBad = firstBad || 'levels'; }
+  const ap = {};
+  levels.forEach((lv) => {
+    const rows = (readApprovers()[lv] || []);
+    const filled = rows.filter((r) => r.name && r.id);
+    const partial = rows.some((r) => (r.name && !r.id) || (!r.name && r.id) || (r.id && !/^\d+$/.test(r.id)));
+    ap[lv] = filled;
+    if (!filled.length && !partial) { fieldErr(`ap${lv}`, `请选择 L${lv} 级至少一名审批人`); firstBad = firstBad || `ap${lv}`; }
+    else if (partial || !filled.length) { fieldErr(`ap${lv}`, `L${lv} 级审批人需同时填写姓名与数字用户 ID`); firstBad = firstBad || `ap${lv}`; }
+  });
+  if (firstBad) {
+    const item = $(`#cfgModal [data-field="${firstBad}"]`);
+    if (item && item.scrollIntoView) item.scrollIntoView({ block: 'center' });
+    return true;
+  }
+  /* 同条件同级次审批人唯一性校验（演示：同类型 + 同优先级即视为同条件） */
+  const dup = curRows() && curRows().some((r) => r.id !== S.editing && r.type === type && r.priority === priority);
+  if (dup) {
+    $('#cfgModalAlert').innerHTML = '<div class="ac-alert ac-alert--error" data-ac="AcAlert" role="alert"><div class="ac-alert__icon"><span class="ac-icon" data-ac="AcIcon" data-name="attention"></span></div><div class="ac-alert__body"><div class="ac-alert__content">该条件下已存在相同审批人配置</div></div></div>';
+    return true;
+  }
+  busy(btn, true);
+  await wait(600);
+  busy(btn, false);
+  const d = curData();
+  if (S.editing) {
+    const { row } = findRow(S.editing);
+    if (row) Object.assign(row, { type, priority, levels, ap, note: $('#cfgNote').value.trim() });
+  } else {
+    const row = { id: 'x-' + Date.now(), type, priority, levels, ap, enabled: true, note: $('#cfgNote').value.trim() };
+    if (S.obj === 'default') d.def.push(row);
+    else { if (!d.pm) d.pm = {}; if (!d.pm[S.pmName.trim()]) d.pm[S.pmName.trim()] = []; d.pm[S.pmName.trim()].push(row); }
+  }
+  hideLayer('cfgModal');
+  toast('配置已更新，仅对新提交需求生效');
+  renderTable();
+  return true;
+});
+
+/* ---------- 行操作：删除 / 启停 ---------- */
+on('click', '[data-del-row]', async (e, el) => {
+  const id = el.getAttribute('data-del-row');
+  const { row, list } = findRow(id);
+  if (!row) return true;
+  if (S.obj === 'default') {
+    /* 默认链缺级校验：删除后该归属默认链不得缺 L1（鸣鸣很忙还需 L2；有点推荐三级全需）；专属链不受限 */
+    const need = S.product === 'yd' ? [1, 2, 3] : [1, 2];
+    const rest = list.filter((r) => r.id !== id);
+    const missing = need.find((lv) => !rest.some((r) => r.levels.includes(lv)));
+    if (missing) { toast(`删除后该归属默认链将缺少 L${missing} 级审批人`, 'error'); return true; }
+  }
+  const ok = await askPop(el, '删除配置', '删除后该条件下新提交需求将无法匹配审批链，确认删除？', '删除');
+  $('#popconfirm').hidden = true;
+  if (!ok) return true;
+  busy(el, true);
+  await wait(400);
+  const i = list.indexOf(row);
+  if (i >= 0) list.splice(i, 1);
+  toast('配置已删除');
+  renderTable();
+  return true;
+});
+on('click', '[data-toggle-row]', async (e, el) => {
+  const { row } = findRow(el.getAttribute('data-toggle-row'));
+  if (!row) return true;
+  if (row.enabled) {
+    const ok = await askPop(el, '停用配置', '停用后该配置不参与审批链匹配，确认停用？', '停用');
+    $('#popconfirm').hidden = true;
+    if (!ok) return true;
+    row.enabled = false;
+    toast('配置已停用');
+  } else {
+    row.enabled = true;
+    toast('配置已启用');
+  }
+  renderTable();
+  return true;
+});
+
+/* ---------- proto-bar 页间互联 / 弹层关闭 / 通用确认 ---------- */
+on('click', '#protoBtn', () => {
+  const menu = $('#protoMenu');
+  const willOpen = menu.hidden;
+  menu.hidden = !willOpen;
+  $('#protoDd').classList.toggle('is-open', willOpen);
+  return true;
+});
+on('click', '[data-close]', (e, el) => {
+  const id = el.getAttribute('data-close');
+  if (id === 'cfgModal') { requestCloseCfg(); return true; }
+  hideLayer(id);
+  return true;
+});
+on('click', '#confirmOkBtn', () => { settleConfirm(true); return true; });
+on('click', '#confirmCancelBtn', () => { settleConfirm(false); return true; });
+on('click', '#confirmCloseBtn', () => { settleConfirm(false); return true; });
+on('click', '#pcOkBtn', () => { settlePop(true); return true; });
+on('click', '#pcCancelBtn', () => { settlePop(false); return true; });
+
+/* ---------- 初始化 ---------- */
+refreshAll();
+</script>
+</body>
+</html>

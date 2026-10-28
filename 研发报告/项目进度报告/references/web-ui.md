@@ -27,7 +27,7 @@
 #### 导航关系
 
 - 来源页：研发分组侧边菜单「研发报告 → 项目进度报告」
-- 去向页：行内「查看」→ `/subapp/devhub/report/project-progress/detail/:id`；缺失行「补传」→ 手动补传弹窗（项目与发报日预填）；缺失行「立即生成」→ 直接创建生成任务
+- 去向页：行内「查看」→ `/subapp/devhub/report/progress/detail/:id`；缺失行「补传」→ 手动补传弹窗（项目与发报日预填）；缺失行「立即生成」→ 直接创建生成任务
 - 返回行为：浏览器返回回到列表并保持 Tab 与筛选条件
 - 面包屑：首页 / 研发 / 研发报告 / 项目进度报告
 
@@ -45,9 +45,10 @@
 
 ### 报告详情
 
-- **页面路径**：`/subapp/devhub/report/project-progress/detail/:id`
+- **页面路径**：`/subapp/devhub/report/progress/detail/:id`
+- **路由名称**：`devhubProjectProgressReportDetail`，为项目进度报告的非菜单详情页
 - **权限编码**：
-  - 路由：`devhubProjectProgressReport`
+  - 所属菜单资源：`devhubProjectProgressReport`，不等同于详情路由名称
 - **页面类型**：详情页（阅读型）
 - **区块职责**：
   - 顶部：返回链接「‹ 返回报告列表」；报告标题 + 报告类型 Tag（项目进度报告）+ 项目 Tag

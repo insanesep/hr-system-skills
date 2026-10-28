@@ -26,7 +26,7 @@ description: "生成研发日报（人员产出维度，统计窗口：前一自
 
 前一自然日 00:00 ~ 24:00（东八区，完整单日窗口），覆盖前一自然日全天的研发活动。
 
-**统计日期锚点**：以生成日（定时器触发日 / 手动立即生成当日）的前一日为报告日期（标题、文件名、发报日索引），统计窗口即该前一自然日全天，与 Qoder 用量快照日（成员 × 自然日，见 [`../../../成本管理/Token管理/references/business-rule.md`](../../../成本管理/Token管理/references/business-rule.md) §1）天然一致。生成时点不在本 skill 固定，由「报告配置 → 报告触发配置」的定时规则维护（见 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md)）；定时规则应配置在当日凌晨前一日用量快照同步完成之后，保证窗口与用量数据完整。
+**统计日期锚点**：以生成日（定时器触发日 / 手动立即生成当日）的前一日为报告日期（标题、文件名、发报日索引），统计窗口即该前一自然日全天，与 Qoder 用量快照日（成员 × 自然日，见 [`../../../研发管理/Qoder用量分析/references/business-rule.md`](../../../研发管理/Qoder用量分析/references/business-rule.md) §1）天然一致。生成时点不在本 skill 固定，由「报告配置 → 报告触发配置」的定时规则维护（见 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md)）；定时规则应配置在当日凌晨前一日用量快照同步完成之后，保证窗口与用量数据完整。
 
 窗口为完整固定区间，不随生成时点截断；须在报告正文首部声明统计区间（`统计区间：YYYY-MM-DD 00:00 ~ 24:00`，起止同日，保证可解析入库）。
 
@@ -36,7 +36,7 @@ description: "生成研发日报（人员产出维度，统计窗口：前一自
 |--------|-------------|------|
 | Git 提交记录 | 是 | 程序采集完整窗口全部作者，独立模型识别后由程序校验并汇总；正文只使用选后统计。采集口径同 dev-report：master 与 feature/* 分支、不统计 tag、SHA 全局去重、剔除合并提交、逐提交 numstat，二进制文件不计行数 |
 | 功能排期卡片 | 是 | 窗口内流转事实（领取 / 完成），调用口径见共享契约 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md) |
-| Qoder 用量（成员 + 模型） | 是 | 取报告日期（前一自然日）快照，与统计窗口同一自然日：Credits 用量、请求次数、次均消耗口径同 [`../../../成本管理/Token管理/references/business-rule.md`](../../../成本管理/Token管理/references/business-rule.md) §2；折算金额 = Credits 用量 × 0.15 元 |
+| Qoder 用量（成员 + 模型） | 是 | 取报告日期（前一自然日）快照，与统计窗口同一自然日：Credits 用量、请求次数、次均消耗口径同 [`../../../研发管理/Qoder用量分析/references/business-rule.md`](../../../研发管理/Qoder用量分析/references/business-rule.md) §2；折算金额 = Credits 用量 × 0.15 元 |
 | 功能使用量 | 否 | 点击量维度由周报承载 |
 | MCP 工具用量 | 否 | 由周报承载 |
 
@@ -124,4 +124,4 @@ description: "生成研发日报（人员产出维度，统计窗口：前一自
 
 - [`dev-report.md`](dev-report.md) —— 执行流程、计数纪律与落库 / 推送口径真源（本 skill 不复述）
 - [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md) —— 功能排期卡片 MCP 调用 + 报告推送契约（旁路，共享）
-- [`../../../成本管理/Token管理/references/business-rule.md`](../../../成本管理/Token管理/references/business-rule.md) —— Qoder 用量快照落库机制（§1）与 Credits / 请求次数 / 次均消耗口径（§2）真源
+- [`../../../研发管理/Qoder用量分析/references/business-rule.md`](../../../研发管理/Qoder用量分析/references/business-rule.md) —— Qoder 用量快照落库机制（§1）与 Credits / 请求次数 / 次均消耗口径（§2）真源

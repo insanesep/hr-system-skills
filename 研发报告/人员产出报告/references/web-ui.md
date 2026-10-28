@@ -55,8 +55,9 @@
 ### 报告详情
 
 - **页面路径**：`/subapp/devhub/report/member-output/detail/:id`
+- **路由名称**：`devhubMemberOutputReportDetail`，为人员产出报告的非菜单详情页
 - **权限编码**：
-  - 路由：`devhubMemberOutputReport`
+  - 所属菜单资源：`devhubMemberOutputReport`，不等同于详情路由名称
 - **页面类型**：详情页（阅读型）
 - **区块职责**：
   - 顶部：返回链接「‹ 返回人员产出报告」；报告标题 + 报告类型 Tag（研发周报 / 研发日报）+ info Tag「仅管理层与研发负责人可见」

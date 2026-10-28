@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>数据源管理 · MCP接入管理 · 静态原型</title>
+<!--
+  MCP接入管理 · 数据源管理（archive-list · 静态原型，Mock 数据，刷新即重置）
+  需求真源：references/web-ui.md「数据源管理」；规则：references/datasource-rules.md §1 / §2 / §4 / §6；业务域枚举：references/devtool-rules.md §2.1
+  布局流：页头（标题 + 登记数据源）→ 筛选卡（数据库类型 / 环境 / 业务域 / 连通状态 / 关键词）→ 表格卡（busy-table + 分页）
+  浮层：登记 / 编辑数据源弹窗、MessageBox 二次确认与错误详情、Message 轻提示
+  DOM 骨架依据：busyming-skills-design/templates/web/archive-list.html
+  Mock 触发约定：只读账号含 "admin" → 具备写入权限；连接地址主机含 "bad" → 连接失败；连通状态「异常」的数据源启用失败
+-->
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<style>
+  /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/阴影/字号一律消费 var(--busy-*) */
+  .tpl-nav a { color: var(--busy-color-white); }
+  .page-nav-links { display: flex; align-items: center; gap: 12px; padding-left: 16px; border-left: 1px solid var(--busy-color-primary-light-5); min-width: 0; overflow-x: auto; white-space: nowrap; }
+  .page-nav-links a.is-active { opacity: 1; font-weight: 600; }
+  .tpl-filter .busy-form-item { margin-bottom: 0; }
+  .page-overlay { position: fixed; inset: 0; z-index: 200; display: flex; align-items: flex-start; justify-content: center; overflow: auto; }
+  .page-overlay--center { align-items: center; }
+  .page-overlay--top { z-index: 300; }
+  .page-overlay .busy-dialog { margin-top: 6vh; margin-bottom: 6vh; overflow: visible; }
+  .page-dialog--lg { width: 800px; }
+  .page-form-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 16px; }
+  .page-form-grid .busy-form-item { margin-bottom: 16px; }
+  .page-form-grid .busy-form-item__label { width: 110px; }
+  .page-form-tip { margin-bottom: 16px; }
+  .page-field-hint { padding-top: 4px; }
+  .page-unit { display: flex; align-items: center; gap: 8px; }
+  .page-message-host { position: fixed; top: 16px; left: 50%; transform: translateX(-50%); z-index: 500; display: flex; flex-direction: column; gap: 8px; align-items: center; pointer-events: none; }
+  .page-message-host .busy-message { position: static; white-space: nowrap; max-width: none; }
+  .page-dropdown { position: absolute; left: 0; right: 0; top: 100%; z-index: 30; }
+  .busy-select > .busy-input { cursor: pointer; }
+  .page-user-dept { margin-left: 8px; }
+  .busy-form-item.is-error .busy-input { border-color: var(--busy-color-danger); }
+  .busy-radio.is-checked .busy-radio__inner::after { transform: none; }
+  .busy-input-number__btns span { line-height: 1; }
+  .busy-switch .busy-switch__core,
+  .busy-switch.is-checked .busy-switch__core,
+  .busy-switch.is-checked.is-disabled .busy-switch__core,
+  .busy-switch.is-checked:not(.is-disabled):hover .busy-switch__core { min-width: 0; border: none; background-color: var(--busy-color-white); }
+  .busy-switch.is-loading { cursor: progress; pointer-events: none; opacity: .6; }
+  .busy-switch.is-loading .busy-switch__core::after { content: ""; display: block; width: 10px; height: 10px; margin: 3px; box-sizing: border-box; border: 2px solid var(--busy-color-primary); border-top-color: transparent; border-radius: 50%; animation: busy-rotate .8s linear infinite; }
+  .page-table-wrap .busy-loading-mask { z-index: 10; }
+</style>
+</head>
+<body>
+<nav class="tpl-nav">
+  <span class="tpl-nav__logo">鸣鸣很忙</span>
+  <span class="tpl-nav__crumb">首页 / 研发 / 平台能力 / <a href="../../../我的令牌/assets/web/token-list.html">MCP接入管理</a> / <b>数据源管理</b></span>
+  <span class="page-nav-links">
+    <a class="tpl-nav__crumb" href="../../../我的令牌/assets/web/token-list.html">我的令牌</a>
+    <a class="tpl-nav__crumb" href="../../../我的令牌/assets/web/token-form.html">生成令牌</a>
+    <a class="tpl-nav__crumb" href="../../../我的令牌/assets/web/token-detail.html">令牌详情</a>
+    <a class="tpl-nav__crumb" href="../../../权限分配/assets/web/grant-list.html">权限分配</a>
+    <a class="tpl-nav__crumb" href="../../../权限分配/assets/web/grant-form.html">分配权限</a>
+    <a class="tpl-nav__crumb" href="../../../assets/web/service-list.html">MCP 服务目录</a>
+    <a class="tpl-nav__crumb" href="../../../研发工具资源/assets/web/devtool-resources.html">研发工具资源</a>
+    <a class="tpl-nav__crumb is-active" href="datasource-list.html">数据源管理</a>
+    <a class="tpl-nav__crumb" href="datasource-detail.html">数据源详情</a>
+    <a class="tpl-nav__crumb" href="../../../调用审计/assets/web/call-audit.html">调用审计</a>
+  </span>
+  <span class="tpl-nav__spacer"></span>
+  <span class="tpl-nav__crumb">李管理（Mock）</span>
+</nav>
+
+<section class="tpl-page">
+  <div class="tpl-page-head">
+    <div class="tpl-page-head__main">
+      <h1 class="tpl-page-title">数据源管理</h1>
+      <div class="tpl-page-subtitle">Mock 数据，刷新即重置</div>
+    </div>
+    <div class="tpl-page-head__actions">
+      <button class="busy-button busy-button--primary" type="button" id="btnCreate"><span>登记数据源</span></button>
+    </div>
+  </div>
+
+  <!-- 筛选卡 -->
+  <div class="tpl-panel">
+    <div class="tpl-filter">
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">数据库类型</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fType" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" hidden>
+              <div class="busy-select-dropdown__item is-selected" data-value="">全部</div>
+              <div class="busy-select-dropdown__item" data-value="MySQL">MySQL</div>
+              <div class="busy-select-dropdown__item" data-value="PostgreSQL">PostgreSQL</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">环境</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fEnv" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" hidden>
+              <div class="busy-select-dropdown__item is-selected" data-value="">全部</div>
+              <div class="busy-select-dropdown__item" data-value="生产">生产</div>
+              <div class="busy-select-dropdown__item" data-value="预发">预发</div>
+              <div class="busy-select-dropdown__item" data-value="测试">测试</div>
+              <div class="busy-select-dropdown__item" data-value="开发">开发</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">业务域</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fDomain" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" id="fDomainList" hidden></div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">连通状态</div>
+        <div class="busy-form-item__content">
+          <div class="busy-select" id="fConn" data-value="">
+            <div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span>
+            <div class="busy-select-dropdown page-dropdown" hidden>
+              <div class="busy-select-dropdown__item is-selected" data-value="">全部</div>
+              <div class="busy-select-dropdown__item" data-value="正常">正常</div>
+              <div class="busy-select-dropdown__item" data-value="异常">异常</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="busy-form-item">
+        <div class="busy-form-item__label">关键词</div>
+        <div class="busy-form-item__content">
+          <div class="busy-input"><input id="fKeyword" placeholder="实例名称 / 所属业务系统"></div>
+        </div>
+      </div>
+      <div class="tpl-filter__actions">
+        <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查询</span></button>
+        <button class="busy-button" type="button" id="btnReset"><span>重置</span></button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 表格卡 -->
+  <div class="tpl-panel">
+    <div class="page-table-wrap busy-loading-parent--relative">
+      <table class="busy-table">
+        <thead>
+          <tr>
+            <th>实例名称</th>
+            <th>数据库类型</th>
+            <th>环境</th>
+            <th>业务域</th>
+            <th>所属业务系统</th>
+            <th>负责人</th>
+            <th class="u-center">库 / 表数量</th>
+            <th class="u-center">开放表数</th>
+            <th class="u-right">行数上限</th>
+            <th class="u-right">超时上限</th>
+            <th>连通状态</th>
+            <th>最近同步时间</th>
+            <th>启停</th>
+            <th>操作</th>
+          </tr>
+        </thead>
+        <tbody id="dsTbody"></tbody>
+      </table>
+      <div class="busy-empty" id="dsEmpty" hidden>
+        <div class="busy-empty__image"></div>
+        <div class="busy-empty__description" id="dsEmptyText">暂无数据</div>
+      </div>
+      <div class="busy-loading-mask" id="dsLoading" hidden>
+        <div class="busy-loading-spinner"><svg class="circular" viewBox="0 0 50 50"><circle class="path" cx="25" cy="25" r="20" fill="none"></circle></svg></div>
+      </div>
+    </div>
+    <div class="tpl-table-foot">
+      <div class="busy-pagination">
+        <span class="u-muted">共 <span id="dsTotal">0</span> 条</span>
+        <button type="button" disabled>‹</button>
+        <button type="button" class="is-active">1</button>
+        <button type="button" disabled>›</button>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- 登记 / 编辑数据源弹窗 -->
+<div class="page-overlay busy-overlay-demo" id="dsDialogOverlay" hidden>
+  <div class="busy-dialog page-dialog--lg" role="dialog" aria-modal="true" aria-labelledby="dsDialogTitle">
+    <div class="busy-dialog__header">
+      <span class="busy-dialog__title" id="dsDialogTitle">登记数据源</span>
+      <button class="busy-dialog__close" type="button" id="dsDialogClose" aria-label="关闭">✕</button>
+    </div>
+    <div class="busy-dialog__body">
+      <div class="u-sub page-form-tip">仅接受只读账号，保存时自动检测连通性与权限</div>
+      <div class="page-form-grid">
+        <div class="busy-form-item" data-item="name">
+          <div class="busy-form-item__label is-required">实例名称</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input"><input id="dName" maxlength="32" placeholder="不超过 32 字"></div>
+            <div class="busy-form-item__error" data-err="name" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="type">
+          <div class="busy-form-item__label is-required">数据库类型</div>
+          <div class="busy-form-item__content">
+            <div class="busy-radio-group" id="dType">
+              <label class="busy-radio" data-value="MySQL"><span class="busy-radio__inner"></span>MySQL</label>
+              <label class="busy-radio" data-value="PostgreSQL"><span class="busy-radio__inner"></span>PostgreSQL</label>
+            </div>
+            <div class="busy-form-item__error" data-err="type" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="env">
+          <div class="busy-form-item__label is-required">环境</div>
+          <div class="busy-form-item__content">
+            <div class="busy-radio-group" id="dEnv">
+              <label class="busy-radio" data-value="生产"><span class="busy-radio__inner"></span>生产</label>
+              <label class="busy-radio" data-value="预发"><span class="busy-radio__inner"></span>预发</label>
+              <label class="busy-radio" data-value="测试"><span class="busy-radio__inner"></span>测试</label>
+              <label class="busy-radio" data-value="开发"><span class="busy-radio__inner"></span>开发</label>
+            </div>
+            <div class="busy-form-item__error" data-err="env" hidden></div>
+            <div class="u-sub u-warning page-field-hint" id="dEnvHint" hidden>建议登记只读副本地址</div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="domain">
+          <div class="busy-form-item__label is-required">业务域</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" id="dDomain" data-value="">
+              <div class="busy-input"><input readonly placeholder="请选择业务域"></div><span class="busy-select__caret">▾</span>
+              <div class="busy-select-dropdown page-dropdown" id="dDomainList" hidden></div>
+            </div>
+            <div class="busy-form-item__error" data-err="domain" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="host">
+          <div class="busy-form-item__label is-required">连接地址</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input"><input id="dHost" placeholder="主机:端口"></div>
+            <div class="busy-form-item__error" data-err="host" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="account">
+          <div class="busy-form-item__label is-required">只读账号</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input"><input id="dAccount" maxlength="64" placeholder="DBA 预先创建的只读账号"></div>
+            <div class="busy-form-item__error" data-err="account" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="pwd">
+          <div class="busy-form-item__label" id="dPwdLabel">密码</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input"><input id="dPwd" type="password" autocomplete="new-password"></div>
+            <div class="busy-form-item__error" data-err="pwd" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="biz">
+          <div class="busy-form-item__label">所属业务系统</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input"><input id="dBiz" placeholder="如 DevHub"></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="owner">
+          <div class="busy-form-item__label is-required">负责人</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" id="dOwner" data-value="">
+              <div class="busy-input"><input readonly placeholder="请选择负责人"></div><span class="busy-select__caret">▾</span>
+              <div class="busy-select-dropdown page-dropdown" id="dOwnerList" hidden></div>
+            </div>
+            <div class="busy-form-item__error" data-err="owner" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="rows">
+          <div class="busy-form-item__label is-required">行数上限</div>
+          <div class="busy-form-item__content">
+            <div class="busy-input-number" data-min="1" data-max="5000" data-step="100">
+              <div class="busy-input"><input id="dRows" inputmode="numeric"></div>
+              <span class="busy-input-number__btns"><span data-step-dir="1">▲</span><span data-step-dir="-1">▼</span></span>
+            </div>
+            <div class="busy-form-item__error" data-err="rows" hidden></div>
+          </div>
+        </div>
+        <div class="busy-form-item" data-item="timeout">
+          <div class="busy-form-item__label is-required">超时上限</div>
+          <div class="busy-form-item__content">
+            <div class="page-unit">
+              <div class="busy-input-number" data-min="1" data-max="30" data-step="1">
+                <div class="busy-input"><input id="dTimeout" inputmode="numeric"></div>
+                <span class="busy-input-number__btns"><span data-step-dir="1">▲</span><span data-step-dir="-1">▼</span></span>
+              </div>
+              <span class="u-sub">秒</span>
+            </div>
+            <div class="busy-form-item__error" data-err="timeout" hidden></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="busy-dialog__footer">
+      <button class="busy-button" type="button" id="dsDialogCancel"><span>取消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="dsDialogSubmit"><span>确定</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- MessageBox（二次确认 / 错误详情） -->
+<div class="page-overlay page-overlay--center page-overlay--top busy-overlay-demo" id="mbOverlay" hidden>
+  <div class="busy-message-box busy-message-box--custom" role="alertdialog" aria-modal="true" aria-labelledby="mbTitle">
+    <div class="busy-message-box__header">
+      <div class="busy-message-box__title"><span class="busy-message-box__status busy-message-box-icon--warning" id="mbIcon">⚠</span><span id="mbTitle">提示</span></div>
+      <button class="busy-message-box__headerbtn" type="button" id="mbClose" aria-label="关闭"><span class="busy-message-box__close">✕</span></button>
+    </div>
+    <div class="busy-message-box__content">
+      <div class="busy-message-box__container"><div class="busy-message-box__message"><p id="mbText"></p></div></div>
+    </div>
+    <div class="busy-message-box__btns">
+      <button class="busy-button" type="button" id="mbCancel"><span>取消</span></button>
+      <button class="busy-button busy-button--primary" type="button" id="mbConfirm"><span>确定</span></button>
+    </div>
+  </div>
+</div>
+
+<div class="page-message-host" id="messageHost" aria-live="polite"></div>
+
+<script>
+/* ============ Mock 数据（刷新即重置） ============ */
+/* 业务域枚举：devtool-rules.md §2.1 */
+var DOMAINS = ['商品', '采购', '营运', '门店', '客服', '系统', '库存', '要货', '产研', '公共'];
+var USERS = [
+  { name: '赵敏', dept: 'DBA 组' },
+  { name: '陈静', dept: '门店研发组' },
+  { name: '刘洋', dept: '客服研发组' },
+  { name: '王磊', dept: '运维组' },
+  { name: '周明', dept: '商品研发组' },
+  { name: '李管理', dept: '平台组' }
+];
+/* openTables = 开放表数（库开放且表跟随库 + 表单独开放，不含已删除） */
+var DATASOURCES = [
+  { name: 'devhub-prod', type: 'MySQL', env: '生产', domain: '产研', host: 'rm-devhub-ro.mysql.rds.aliyuncs.com:3306', account: 'mcp_readonly', biz: 'DevHub', owner: '赵敏', dbCount: 1, tableCount: 5, openTables: 3, rows: 1000, timeout: 10, conn: '正常', lastSync: '2026-10-21 08:00', enabled: true },
+  { name: 'snackingdom-ro', type: 'MySQL', env: '生产', domain: '门店', host: 'rm-snack-ro.mysql.rds.aliyuncs.com:3306', account: 'mcp_readonly', biz: '零食很忙门店', owner: '陈静', dbCount: 1, tableCount: 3, openTables: 2, rows: 1000, timeout: 10, conn: '正常', lastSync: '2026-10-20 22:00', enabled: true },
+  { name: 'lemeng-wms-test', type: 'MySQL', env: '测试', domain: '库存', host: '10.20.8.15:3306', account: 'wms_ro', biz: '乐檬WMS', owner: '刘洋', dbCount: 1, tableCount: 2, openTables: 0, rows: 2000, timeout: 20, conn: '异常', lastSync: '2026-10-18 09:12', enabled: false },
+  { name: 'ocss-pre', type: 'PostgreSQL', env: '预发', domain: '客服', host: 'pg-ocss-pre.internal:5432', account: 'ocss_ro', biz: '客服', owner: '王磊', dbCount: 1, tableCount: 3, openTables: 2, rows: 500, timeout: 15, conn: '正常', lastSync: '2026-10-21 07:30', enabled: true }
+];
+
+/* ============ 通用工具 ============ */
+var $ = function (id) { return document.getElementById(id); };
+function esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"]/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]; });
+}
+function findDs(name) { return DATASOURCES.filter(function (d) { return d.name === name; })[0]; }
+
+/* Message 轻提示 */
+function toast(text, type) {
+  type = type || 'success';
+  var el = document.createElement('div');
+  el.className = 'busy-message busy-message--' + type;
+  el.setAttribute('role', 'status');
+  el.innerHTML = '<span class="busy-message__icon busy-message-icon--' + type + '">' + (type === 'error' ? '✕' : '✓') + '</span><span class="busy-message__content"></span>';
+  el.querySelector('.busy-message__content').textContent = text;
+  $('messageHost').appendChild(el);
+  setTimeout(function () { el.remove(); }, 2500);
+}
+
+/* MessageBox：opts = { text, type: 'warning' | 'error', showCancel, onConfirm, onCancel } */
+var mbState = null;
+function messageBox(opts) {
+  mbState = opts;
+  var isError = opts.type === 'error';
+  $('mbIcon').className = 'busy-message-box__status busy-message-box-icon--' + (isError ? 'error' : 'warning');
+  $('mbIcon').textContent = isError ? '✕' : '⚠';
+  $('mbText').textContent = opts.text;
+  $('mbCancel').hidden = opts.showCancel === false;
+  $('mbOverlay').hidden = false;
+}
+function closeMessageBox(confirmed) {
+  var o = mbState;
+  mbState = null;
+  $('mbOverlay').hidden = true;
+  if (!o) return;
+  if (confirmed && o.onConfirm) o.onConfirm();
+  if (!confirmed && o.onCancel) o.onCancel();
+}
+$('mbConfirm').addEventListener('click', function () { closeMessageBox(true); });
+$('mbCancel').addEventListener('click', function () { closeMessageBox(false); });
+$('mbClose').addEventListener('click', function () { closeMessageBox(false); });
+
+/* 按钮 loading */
+function setBtnLoading(btn, on, text) {
+  if (on) {
+    btn.setAttribute('data-label', btn.innerHTML);
+    btn.classList.add('is-loading');
+    btn.disabled = true;
+    var label = text || btn.textContent.trim();
+    btn.innerHTML = '<span class="busy-button__loading"></span><span>' + esc(label) + '</span>';
+  } else {
+    if (btn.hasAttribute('data-label')) btn.innerHTML = btn.getAttribute('data-label');
+    btn.classList.remove('is-loading');
+    btn.disabled = false;
+  }
+}
+/* 开关 loading */
+function switchLoading(sw, done) {
+  sw.classList.add('is-loading');
+  setTimeout(function () { sw.classList.remove('is-loading'); done(); }, 800);
+}
+
+/* 下拉选择（单选）：root[data-value] 保存值 */
+function closeAllDropdowns(except) {
+  document.querySelectorAll('.page-dropdown').forEach(function (d) { if (d !== except) d.hidden = true; });
+}
+document.addEventListener('click', function () { closeAllDropdowns(); });
+function bindSelect(root, onChange) {
+  var dd = root.querySelector('.busy-select-dropdown');
+  root.querySelector('.busy-input').addEventListener('click', function (e) {
+    e.stopPropagation();
+    closeAllDropdowns(dd);
+    dd.hidden = !dd.hidden;
+  });
+  dd.addEventListener('click', function (e) {
+    e.stopPropagation();
+    var item = e.target.closest('.busy-select-dropdown__item');
+    if (!item || item.classList.contains('is-disabled')) return;
+    setSelectValue(root, item.getAttribute('data-value'));
+    dd.hidden = true;
+    if (onChange) onChange(item.getAttribute('data-value'));
+  });
+}
+function setSelectValue(root, value) {
+  var input = root.querySelector('input');
+  root.setAttribute('data-value', value);
+  var label = '';
+  root.querySelectorAll('.busy-select-dropdown__item').forEach(function (i) {
+    var hit = i.getAttribute('data-value') === value;
+    i.classList.toggle('is-selected', hit);
+    if (hit) label = i.getAttribute('data-label') || i.textContent;
+  });
+  input.value = label;
+}
+
+/* ============ 列表：渲染 / 查询 / 重置 ============ */
+var ENV_TAG = { '生产': 'busy-tag--danger', '预发': 'busy-tag--warning', '测试': 'busy-tag--info', '开发': 'busy-tag--info' };
+var CONN_TAG = { '正常': 'busy-tag--success', '异常': 'busy-tag--danger' };
+function detailHref(d) { return 'datasource-detail.html?ds=' + encodeURIComponent(d.name); }
+function rowHtml(d) {
+  return '<tr>' +
+    '<td><a class="u-mono" href="' + detailHref(d) + '">' + esc(d.name) + '</a></td>' +
+    '<td>' + esc(d.type) + '</td>' +
+    '<td><span class="busy-tag ' + ENV_TAG[d.env] + ' busy-tag--small">' + esc(d.env) + '</span></td>' +
+    '<td>' + esc(d.domain) + '</td>' +
+    '<td>' + (d.biz ? esc(d.biz) : '<span class="u-muted">—</span>') + '</td>' +
+    '<td>' + esc(d.owner) + '</td>' +
+    '<td class="u-center u-mono">' + d.dbCount + ' / ' + d.tableCount + '</td>' +
+    '<td class="u-center u-mono">' + d.openTables + '</td>' +
+    '<td class="u-right u-mono">' + d.rows + '</td>' +
+    '<td class="u-right u-mono">' + d.timeout + ' 秒</td>' +
+    '<td><span class="busy-tag ' + CONN_TAG[d.conn] + ' busy-tag--small">' + esc(d.conn) + '</span></td>' +
+    '<td class="u-mono">' + esc(d.lastSync || '—') + '</td>' +
+    '<td><button class="busy-switch' + (d.enabled ? ' is-checked' : '') + '" type="button" data-act="toggle" data-name="' + esc(d.name) + '" aria-pressed="' + d.enabled + '" aria-label="启停"><span class="busy-switch__core"></span></button></td>' +
+    '<td><div class="tpl-row-actions">' +
+      '<a class="busy-button is-link" href="' + detailHref(d) + '"><span>详情</span></a>' +
+      '<button class="busy-button is-link" type="button" data-act="edit" data-name="' + esc(d.name) + '"><span>编辑</span></button>' +
+    '</div></td>' +
+    '</tr>';
+}
+var appliedFilter = { type: '', env: '', domain: '', conn: '', keyword: '' };
+function filteredList() {
+  var f = appliedFilter;
+  var kw = f.keyword.toLowerCase();
+  return DATASOURCES.filter(function (d) {
+    if (f.type && d.type !== f.type) return false;
+    if (f.env && d.env !== f.env) return false;
+    if (f.domain && d.domain !== f.domain) return false;
+    if (f.conn && d.conn !== f.conn) return false;
+    if (kw && d.name.toLowerCase().indexOf(kw) < 0 && (d.biz || '').toLowerCase().indexOf(kw) < 0) return false;
+    return true;
+  });
+}
+function renderRows() {
+  var rows = filteredList();
+  $('dsTbody').innerHTML = rows.map(rowHtml).join('');
+  $('dsTotal').textContent = rows.length;
+  $('dsEmpty').hidden = rows.length > 0;
+  $('dsEmptyText').textContent = DATASOURCES.length ? '暂无数据' : '暂无数据源，点击「登记数据源」接入';
+}
+
+function domainItemsHtml(withAll) {
+  return (withAll ? '<div class="busy-select-dropdown__item is-selected" data-value="">全部</div>' : '') + DOMAINS.map(function (n) {
+    return '<div class="busy-select-dropdown__item" data-value="' + esc(n) + '">' + esc(n) + '</div>';
+  }).join('');
+}
+$('fDomainList').innerHTML = domainItemsHtml(true);
+
+bindSelect($('fType'));
+bindSelect($('fEnv'));
+bindSelect($('fDomain'));
+bindSelect($('fConn'));
+$('btnQuery').addEventListener('click', function () {
+  var btn = this;
+  setBtnLoading(btn, true);
+  $('dsLoading').hidden = false;
+  setTimeout(function () {
+    appliedFilter = {
+      type: $('fType').getAttribute('data-value'),
+      env: $('fEnv').getAttribute('data-value'),
+      domain: $('fDomain').getAttribute('data-value'),
+      conn: $('fConn').getAttribute('data-value'),
+      keyword: $('fKeyword').value.trim()
+    };
+    renderRows();
+    $('dsLoading').hidden = true;
+    setBtnLoading(btn, false);
+  }, 500);
+});
+$('btnReset').addEventListener('click', function () {
+  setSelectValue($('fType'), '');
+  setSelectValue($('fEnv'), '');
+  setSelectValue($('fDomain'), '');
+  setSelectValue($('fConn'), '');
+  $('fKeyword').value = '';
+  appliedFilter = { type: '', env: '', domain: '', conn: '', keyword: '' };
+  renderRows();
+});
+
+/* 行内操作：编辑 / 启停 */
+$('dsTbody').addEventListener('click', function (e) {
+  var el = e.target.closest('[data-act]');
+  if (!el) return;
+  var d = findDs(el.getAttribute('data-name'));
+  if (!d) return;
+  if (el.getAttribute('data-act') === 'edit') openDsDialog(d);
+  if (el.getAttribute('data-act') === 'toggle') toggleDs(d, el);
+});
+function toggleDs(d, sw) {
+  if (d.enabled) {
+    messageBox({
+      text: '停用后所有令牌将立即无法查询该实例，确认停用？',
+      onConfirm: function () {
+        switchLoading(sw, function () { d.enabled = false; renderRows(); toast('数据源已停用'); });
+      }
+    });
+    return;
+  }
+  /* 启用前探测连接；Mock：连通状态「异常」的实例启用失败，开关回退 */
+  sw.classList.add('is-checked');
+  switchLoading(sw, function () {
+    if (d.conn === '异常') {
+      sw.classList.remove('is-checked');
+      toast('连接失败：连接超时', 'error');
+      return;
+    }
+    d.enabled = true;
+    renderRows();
+    toast('数据源已启用');
+  });
+}
+
+/* ============ 登记 / 编辑数据源弹窗 ============ */
+var editingName = null;
+var dialogSnapshot = '';
+
+$('dOwnerList').innerHTML = USERS.map(function (u) {
+  return '<div class="busy-select-dropdown__item" data-value="' + esc(u.name) + '" data-label="' + esc(u.name) + '">' + esc(u.name) + '<span class="u-sub page-user-dept">' + esc(u.dept) + '</span></div>';
+}).join('');
+bindSelect($('dOwner'), function () { validateField('owner'); });
+$('dDomainList').innerHTML = domainItemsHtml(false);
+bindSelect($('dDomain'), function () { validateField('domain'); });
+
+function bindRadioGroup(group, key, onChange) {
+  group.addEventListener('click', function (e) {
+    var radio = e.target.closest('.busy-radio');
+    if (!radio || radio.classList.contains('is-disabled')) return;
+    group.querySelectorAll('.busy-radio').forEach(function (r) { r.classList.toggle('is-checked', r === radio); });
+    validateField(key);
+    if (onChange) onChange(radio.getAttribute('data-value'));
+  });
+}
+function setRadioValue(group, value, disabled) {
+  group.querySelectorAll('.busy-radio').forEach(function (r) {
+    r.classList.toggle('is-checked', r.getAttribute('data-value') === value);
+    r.classList.toggle('is-disabled', !!disabled);
+  });
+}
+function radioValue(group) {
+  var c = group.querySelector('.busy-radio.is-checked');
+  return c ? c.getAttribute('data-value') : '';
+}
+function syncEnvHint() { $('dEnvHint').hidden = radioValue($('dEnv')) !== '生产'; }
+bindRadioGroup($('dType'), 'type');
+bindRadioGroup($('dEnv'), 'env', syncEnvHint);
+
+/* InputNumber 步进 */
+document.querySelectorAll('.busy-input-number').forEach(function (box) {
+  var input = box.querySelector('input');
+  box.querySelectorAll('[data-step-dir]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var min = +box.getAttribute('data-min'), max = +box.getAttribute('data-max'), step = +box.getAttribute('data-step');
+      var v = parseInt(input.value, 10);
+      if (isNaN(v)) v = min;
+      v = Math.min(max, Math.max(min, v + step * (+b.getAttribute('data-step-dir'))));
+      input.value = String(v);
+      validateField(input.id === 'dRows' ? 'rows' : 'timeout');
+    });
+  });
+});
+
+function readForm() {
+  return {
+    name: $('dName').value.trim(),
+    type: radioValue($('dType')),
+    env: radioValue($('dEnv')),
+    domain: $('dDomain').getAttribute('data-value'),
+    host: $('dHost').value.trim(),
+    account: $('dAccount').value.trim(),
+    pwd: $('dPwd').value,
+    biz: $('dBiz').value.trim(),
+    owner: $('dOwner').getAttribute('data-value'),
+    rows: $('dRows').value.trim(),
+    timeout: $('dTimeout').value.trim()
+  };
+}
+function setError(key, msg) {
+  var err = document.querySelector('[data-err="' + key + '"]');
+  var item = document.querySelector('[data-item="' + key + '"]');
+  if (!err) return;
+  err.textContent = msg || '';
+  err.hidden = !msg;
+  item.classList.toggle('is-error', !!msg);
+}
+function intIn(v, min, max) { return /^\d+$/.test(v) && +v >= min && +v <= max; }
+function validateField(key) {
+  var f = readForm();
+  var msg = '';
+  if (key === 'name') {
+    if (!f.name || f.name.length > 32) msg = '请输入实例名称';
+    else if (DATASOURCES.some(function (d) { return d.name === f.name && d.name !== editingName; })) msg = '实例名称已存在';
+  }
+  if (key === 'type' && !f.type) msg = '请选择数据库类型';
+  if (key === 'env' && !f.env) msg = '请选择环境';
+  if (key === 'domain' && !f.domain) msg = '请选择业务域';
+  if (key === 'host' && !/^[A-Za-z0-9._-]+:\d{1,5}$/.test(f.host)) msg = '请输入「主机:端口」格式的连接地址';
+  if (key === 'account' && (!f.account || f.account.length > 64)) msg = '请输入只读账号';
+  if (key === 'pwd' && !editingName && !f.pwd) msg = '请输入密码';
+  if (key === 'owner' && !f.owner) msg = '请选择负责人';
+  if (key === 'rows' && !intIn(f.rows, 1, 5000)) msg = '行数上限需为 1–5000 的整数';
+  if (key === 'timeout' && !intIn(f.timeout, 1, 30)) msg = '超时上限需为 1–30 秒';
+  setError(key, msg);
+  return !msg;
+}
+[['dName', 'name'], ['dHost', 'host'], ['dAccount', 'account'], ['dPwd', 'pwd'], ['dRows', 'rows'], ['dTimeout', 'timeout']].forEach(function (p) {
+  $(p[0]).addEventListener('blur', function () { validateField(p[1]); });
+});
+
+function openDsDialog(d) {
+  editingName = d ? d.name : null;
+  $('dsDialogTitle').textContent = d ? '编辑数据源' : '登记数据源';
+  $('dName').value = d ? d.name : '';
+  setRadioValue($('dType'), d ? d.type : '', !!d);
+  setRadioValue($('dEnv'), d ? d.env : '', false);
+  setSelectValue($('dDomain'), d ? d.domain : '');
+  $('dHost').value = d ? d.host : '';
+  $('dAccount').value = d ? d.account : '';
+  $('dPwd').value = '';
+  $('dPwd').placeholder = d ? '留空表示不修改' : '请输入密码';
+  $('dPwdLabel').classList.toggle('is-required', !d);
+  $('dBiz').value = d ? d.biz : '';
+  setSelectValue($('dOwner'), d ? d.owner : '');
+  $('dRows').value = String(d ? d.rows : 1000);
+  $('dTimeout').value = String(d ? d.timeout : 10);
+  syncEnvHint();
+  ['name', 'type', 'env', 'domain', 'host', 'account', 'pwd', 'owner', 'rows', 'timeout'].forEach(function (k) { setError(k, ''); });
+  dialogSnapshot = JSON.stringify(readForm());
+  $('dsDialogOverlay').hidden = false;
+  $('dName').focus();
+}
+function closeDsDialog() {
+  $('dsDialogOverlay').hidden = true;
+  closeAllDropdowns();
+}
+function tryCloseDsDialog() {
+  if (JSON.stringify(readForm()) !== dialogSnapshot) {
+    messageBox({ text: '您有未保存的修改，确认关闭？', onConfirm: closeDsDialog });
+  } else {
+    closeDsDialog();
+  }
+}
+$('btnCreate').addEventListener('click', function () { openDsDialog(null); });
+$('dsDialogClose').addEventListener('click', tryCloseDsDialog);
+$('dsDialogCancel').addEventListener('click', tryCloseDsDialog);
+$('dsDialogSubmit').addEventListener('click', function () {
+  var btn = this;
+  var keys = ['name', 'type', 'env', 'domain', 'host', 'account', 'pwd', 'owner', 'rows', 'timeout'];
+  var ok = keys.map(function (k) { return validateField(k); }).every(Boolean);
+  if (!ok) return;
+  var isEdit = !!editingName;
+  setBtnLoading(btn, true, isEdit ? null : '检测连接中…');
+  setTimeout(function () {
+    setBtnLoading(btn, false);
+    var f = readForm();
+    var host = f.host.split(':')[0];
+    /* Mock 探测：失败时弹窗保留已填内容（密码除外） */
+    if (/admin/i.test(f.account)) {
+      $('dPwd').value = '';
+      messageBox({ type: 'error', text: '该账号具备写入权限，请更换为只读账号', showCancel: false });
+      return;
+    }
+    if (/bad/i.test(host)) {
+      $('dPwd').value = '';
+      messageBox({ type: 'error', text: '连接失败：主机不可达', showCancel: false });
+      return;
+    }
+    if (isEdit) {
+      var d = findDs(editingName);
+      d.name = f.name; d.env = f.env; d.domain = f.domain; d.host = f.host; d.account = f.account; d.biz = f.biz;
+      d.owner = f.owner; d.rows = +f.rows; d.timeout = +f.timeout;
+      closeDsDialog();
+      renderRows();
+      toast('数据源「' + f.name + '」已保存');
+      return;
+    }
+    closeDsDialog();
+    toast('数据源「' + f.name + '」已登记，正在同步库表');
+    /* 跳转新数据源详情页（Mock 以 URL 参数携带登记信息，密码不传递） */
+    var q = ['new=1', 'name=' + encodeURIComponent(f.name), 'type=' + encodeURIComponent(f.type), 'env=' + encodeURIComponent(f.env),
+      'domain=' + encodeURIComponent(f.domain),
+      'host=' + encodeURIComponent(f.host), 'account=' + encodeURIComponent(f.account), 'biz=' + encodeURIComponent(f.biz),
+      'owner=' + encodeURIComponent(f.owner), 'rows=' + f.rows, 'timeout=' + f.timeout].join('&');
+    setTimeout(function () { location.href = 'datasource-detail.html?' + q; }, 1500);
+  }, 1200);
+});
+
+renderRows();
+</script>
+</body>
+</html>

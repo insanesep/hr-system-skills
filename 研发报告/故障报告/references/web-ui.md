@@ -86,8 +86,9 @@
 ### 故障详情
 
 - **页面路径**：`/subapp/devhub/report/fault/detail/:id`
+- **路由名称**：`devhubFaultDetail`，为故障报告的非菜单详情页
 - **权限编码**：
-  - 路由：`devhubFaultReport`
+  - 所属菜单资源：`devhubFaultReport`，不等同于详情路由名称
   - 按钮：`devhubFaultEdit`（编辑 / 追加处置记录 / 添加与移除证据 / 标记已恢复）、`devhubFaultReview`（提交复盘 / 打回 / 添加改进措施）、`devhubFaultClose`（闭环确认）
 - **页面类型**：`order-detail`（操作型）
 - **区块职责**（自上而下）：
