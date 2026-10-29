@@ -43,7 +43,7 @@ metadata:
 | 页面模板 | [order-list.html](../../../busyming-skills-design/templates/web/order-list.html) | 研发排期工作台 `order-list` 的整页范例 | busyming-skills-design |
 | 页面模板 | [order-detail.html](../../../busyming-skills-design/templates/web/order-detail.html) | 卡片详情页 `order-detail` 的整页范例 | busyming-skills-design |
 | 原型样式入口 | [templates.css](../../../busyming-skills-design/templates/web/templates.css)（+ [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css)、[runtime.css](../../../busyming-skills-design/docs-site/pc/runtime.css)） | 原型样式链：`components/web/tokens/pc.css` → `docs-site/pc/runtime.css` → `docs-site/ep-base-shim.css` → `templates/web/templates.css`，与 registry/prototype.json 中 PC 组件的样式清单一致 | busyming-skills-design |
-| 功能使用情况管理 | [SKILL.md](../../补充功能/成本管理/功能使用情况管理/SKILL.md) | 埋点登记：菜单权限、功能目录与前端路由三处一并登记 | busyming-skills-devops |
+| 功能使用情况分析 | [SKILL.md](../功能使用情况分析/SKILL.md) | 埋点登记：菜单权限、功能目录与前端路由三处一并登记 | busyming-skills-devops |
 | 需求管理 | [business-rule.md §5](../../需求管理/references/business-rule.md#5-排期关联规则) | 需求单单向关联卡片；业务对接人为空时的提交人兜底来源 | busyming-skills-devops |
 | 企微个人消息 | [需求管理 business-rule.md §4](../../需求管理/references/business-rule.md#4-通知与企微推送) | 澄清发起、完成与撤回通知；与需求管理共用 DevHub 企微应用消息通道，事务提交后异步推送，失败不回滚 | busyming-skills-devops |
 | 平台能力 | [SKILL.md](../../平台能力/SKILL.md) | 个人令牌生成、能力分组勾选与调用审计 | busyming-skills-devops |

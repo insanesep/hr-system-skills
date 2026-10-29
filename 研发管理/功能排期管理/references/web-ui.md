@@ -27,7 +27,7 @@
   - 路由：`devhubFeatureSchedule`
   - 按钮：`devhubFeatureScheduleEdit`、`devhubFeatureScheduleDelete`、`devhubFeatureScheduleMarkDone`、`devhubFeatureScheduleReleaseDay`，控制范围见 [permission-rules.md §1](permission-rules.md#1-权限编码)
 - **页面类型**：`order-list`
-- **埋点**：页面浏览由 SDK 自动上报；点击埋点的功能编码前缀为 `RND.MANAGE.FEATURE_SCHEDULE`，命名与登记规则见 [功能使用情况管理 business-rule §1.4](../../../补充功能/成本管理/功能使用情况管理/references/business-rule.md#14-功能编码命名规范)
+- **埋点**：页面浏览由 SDK 自动上报；点击埋点的功能编码前缀为 `RND.MANAGE.FEATURE_SCHEDULE`，命名与登记规则见 [功能使用情况分析 business-rule §1.4](../../功能使用情况分析/references/business-rule.md#14-功能编码命名规范)
 - **区块职责**：
   - 工具栏：单行指挥栏，承载时间导航、本月进度、搜索、视图切换、待澄清入口、筛选、新建卡片与更多菜单
   - 主体区：月视图 / 周视图 / 列表三种视图，展示当前期的排期卡片
