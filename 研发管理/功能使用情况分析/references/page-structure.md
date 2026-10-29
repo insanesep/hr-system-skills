@@ -12,6 +12,6 @@
 |------|------|------|------|
 | 事务流水明细 | [SKILL.md](../事务流水明细/SKILL.md) | [页面结构](../事务流水明细/references/web-ui.md#1-事务流水明细usage-eventshtml) | [usage-events.html](../事务流水明细/assets/web/usage-events.html) |
 | 使用情况报表 | [SKILL.md](../使用情况报表/SKILL.md) | [页面结构](../使用情况报表/references/web-ui.md#2-使用情况报表usage-reporthtml) | [usage-report.html](../使用情况报表/assets/web/usage-report.html) |
-| 功能目录管理 | [SKILL.md](../功能目录管理/SKILL.md) | [页面结构](../功能目录管理/references/web-ui.md#3-功能目录管理) | — |
+| 功能目录管理 | [SKILL.md](../功能目录管理/SKILL.md) | [页面结构](../功能目录管理/references/web-ui.md#3-功能目录管理)、[接入系统页签](../功能目录管理/references/web-ui.md#接入系统页签) | — |
 
 跨页面的业务判定与数据口径只引用[业务规则真源](business-rule.md)。
