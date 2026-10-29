@@ -8,8 +8,8 @@
   cost-report · Web 原型（requirement-add Step 5）
   骨架：page-blueprint skeletons/web/dashboard-multi.vue.tpl（.tpl-page 根 + 筛选 .tpl-panel + .tpl-kpi-grid + 透视表 .tpl-panel）
   Token 真源：page-blueprint/tokens/web.css（外链引用，禁止内联 :root）
-  口径真源：references/business-rule.md §5（仅已审核 · 按费用开始~结束年月逐月均摊、尾差末月倒算 · 行=品牌可叠加科目 · 列=年月 · 值=分摊金额合计）
-  页面描述：references/web-ui.md §品牌成本报表
+  口径真源：../../../references/business-rule.md §5（仅已审核 · 按费用开始~结束年月逐月均摊、尾差末月倒算 · 行=品牌可叠加科目 · 列=年月 · 值=分摊金额合计）
+  页面描述：../../references/web-ui.md §品牌成本报表
   演示数据：13 张已审核单据（含单月 / 跨月 / 尾差样例）→ 按 §5 月均分摊规则实时聚合，透视表非硬编码
 -->
 <link rel="stylesheet" href="../../../../../../../.agents/skills/page-blueprint/tokens/web.css" />
@@ -183,8 +183,8 @@
 
 <!-- 原型页间互联 -->
 <div class="ac-proto-bar">
-  <a href="./cost-list.html">费用列表</a>
-  <a href="./cost-detail.html">费用明细</a>
+  <a href="../../../费用列表/assets/web/cost-list.html">费用列表</a>
+  <a href="../../../费用列表/assets/web/cost-detail.html">费用明细</a>
   <a href="./cost-report.html" class="is-active">品牌成本报表</a>
 </div>
 <div class="ac-toast" id="toast"></div>

@@ -1,11 +1,11 @@
 # SLA规则配置 · Web 端 UI 描述
 
-> 本文件承载本功能页面正文；全局约定与跨页导航见 [需求管理 · Web 共享 UI](../../references/web-ui.md)，业务与权限规则见 [功能入口](../SKILL.md)。正文为产品目标要求，不以代码缺口删减；原型见本功能资产目录。
+> 本文件承载本功能页面正文；全局约定与跨页导航见 [需求管理 · Web 共享 UI](../../references/web-ui.md)，业务与权限规则见 [功能入口](../SKILL.md)。正文定义产品交互要求；原型见本功能资产目录，仅作视觉参考。
 
 ### SLA 配置页
 
 - **菜单名称**：SLA规则配置（与需求SLA看板同级，侧边栏各占一行）
-- **页面路径**：`/requirement/sla-config`；筛选条件同步至地址为产品目标，不代表当前代码已实现
+- **页面路径**：`/requirement/sla-config`；筛选条件须同步至页面地址
 - **route.name**：`devhubRequirementSlaConfig`；`/subapp/devhub` 仅为部署 base
 - **权限编码**：
   - 菜单资源码：`devhubRequirementSlaConfig`

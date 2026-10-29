@@ -12,7 +12,7 @@ metadata:
 
 承载内部需求的提出、草稿与驳回重提、审批处理和进度查看，以及内部人员对外部提交单的查阅与审批。功能类需求的排期关联、Qoder 开发会话承接和缺陷修复单分流黑灯工厂，按共享业务规则执行；不另建状态机或复制审批匹配规则。
 
-附件、AI 方案确认、流程中心接入、候选排期卡片、导出、分页和通知均保留共享规则的完整目标；页面正文与代码实现不等同，不能因现有页面缺少入口而取消目标能力。审批链配置、外链邀约和 SLA 看板及配置各归同级功能。
+附件、AI 方案确认、流程中心接入、候选排期卡片、导出、分页和通知均按共享规则执行。审批链配置、外链邀约和 SLA 看板及配置各归同级功能。
 
 ## 菜单与关联页面
 
@@ -22,7 +22,7 @@ metadata:
 | 需求详情 | `/requirement/detail/:id` | `devhubRequirementDetail` | 非菜单页面，归本功能 |
 | 需求提交、草稿编辑、驳回重提 | `/requirement/submit`；编辑与重提以 `?id=` 直达 | `devhubRequirementSubmit` | 非菜单页面，归本功能 |
 
-菜单资源码为 `devhubRequirementList`，不得用它替代详情或提交的 route.name。`/subapp/devhub` 是部署 base，不是路由名称或菜单层级。standalone 侧栏为「需求管理」平级分组，完整产品目标面包屑与返回恢复要求见共享 Web UI，不代表代码已经实现。
+菜单资源码为 `devhubRequirementList`，不得用它替代详情或提交的 route.name。`/subapp/devhub` 是部署 base，不是路由名称或菜单层级。「需求管理」下的五个菜单同级，完整面包屑与返回恢复要求见共享 Web UI。
 
 通过、驳回、关联排期、AI 确认与补材等弹窗归需求详情；App 的审批半屏、图片浏览器和方案全文只读子页仍归本功能，不建立菜单目录。App 工作台入口的资源码为 `devhubAppRequirement` / `devhubAppRequirementM`，不以 Web route.name 替代。公开 H5 表单与结果形态归 [需求外链管理](../需求外链管理/SKILL.md)。
 

@@ -14,7 +14,7 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 ## 页内功能
 
-- 查询调用记录，按时间范围、持有人、令牌名称 / 前缀与结果筛选，支持今天、近 7 天和近 31 天快捷时间段；接入领域与目标对象筛选同属产品目标，见 [UI 正文](references/web-ui.md#调用审计)，不能据现有筛选区删去要求。
+- 查询调用记录，按时间范围、持有人、令牌名称 / 前缀与结果筛选，支持今天、近 7 天和近 31 天快捷时间段；支持接入领域与目标对象筛选，见 [UI 正文](references/web-ui.md#调用审计)。
 - 查看调用次数、成功率、拒绝次数、活跃令牌数与数据库查询次数；明细展示实际工具、目标对象、结果原因、返回数量、截断、脱敏与耗时，不将缺失证据补为零值。
 - 行「详情」打开调用详情抽屉；有令牌关联时可进入 [我的令牌](../我的令牌/SKILL.md)所属详情页，查看他人令牌仍须令牌管理权限。
 - 导出沿用当前筛选条件，限额、异步任务、摘要与保留期统一引用 [审计规则](references/audit-rules.md)，本页不编辑或删除记录。
@@ -28,5 +28,5 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 - [Web 页面正文](references/web-ui.md#调用审计)：筛选、汇总、明细、抽屉、导出反馈及导航的唯一正文，保留领域与目标筛选的产品目标。
 - [审计规则](references/audit-rules.md)：记录范围、结果原因、可见范围、汇总、保留导出及授权变更的真源。
 - [共享业务规则](../references/business-rule.md)、[权限规则](../references/permission-rules.md)、[数据定义](../references/data.md)只引用不复制；工具目标含义由[研发工具规则](../研发工具资源/references/devtool-rules.md)与[数据源规则](../数据源管理/references/datasource-rules.md)定义。
-- [只读视觉参考](assets/web/call-audit.html)：不以资产判定筛选或权限已实现。
+- [原型](assets/web/call-audit.html)只作视觉参考；规则真源在 `references/`。
 - 实现依据：[调用审计页](../../../busyming-devhub-web/src/views/mcp/CallAuditView.vue)与[路由](../../../busyming-devhub-web/src/router/index.ts)。

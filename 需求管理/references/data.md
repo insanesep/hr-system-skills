@@ -1,6 +1,6 @@
 # 需求管理 · 数据定义
 
-> 面向产品视角定义本模块实体、字段语义与实体关系；表结构以代码仓为准，不在此描述（busyming-skills-common 的数据库定义尚未迁入）。需求状态见 [state-machine.md §2](state-machine.md#2-状态定义)，产品线与业务线见 [business-rule.md §1.1](business-rule.md#11-产品线与业务线)，其余枚举见 §12。
+> 面向产品视角定义本模块实体、字段语义与实体关系；表结构以代码仓为准，不在此描述，公共数据库定义由 busyming-skills-common 承载。需求状态见 [state-machine.md §2](state-machine.md#2-状态定义)，产品线与业务线见 [business-rule.md §1.1](business-rule.md#11-产品线与业务线)，其余枚举见 §12。
 
 ## 1. 实体关系
 

@@ -8,9 +8,9 @@
 
 - 仅 Web 管理端，无 App 端；九类页面归属五个同级菜单。服务与业务工具由平台注册，不提供任意第三方服务登记或独立服务目录菜单。
 - 菜单以 [路由](../../../busyming-devhub-web/src/router/index.ts) 的菜单标记、分组、标题和排序为依据：「平台能力 → 我的令牌 / 权限分配 / 数据源管理 / 研发工具资源 / 调用审计」。分组不是可跳转的聚合页面；生成、编辑、详情与批量分配均是所属功能内的非菜单页。
-- [PortalLayout](../../../busyming-devhub-web/src/layouts/PortalLayout.vue) 独立运行时只显示当前路由标题，不实现全路径面包屑；微应用模式由门户提供外壳。门户资源树未运行核验，不据视觉资产补写「首页 / 研发」等父级。
-- 路由编码（name）与菜单 / 按钮权限码分开描述，守卫仅对声明的权限码作校验。令牌列表、生成与详情没有路由权限码，不能声称按 name 自动校验；权限定义以 [权限规则](permission-rules.md#1-权限点矩阵) 为唯一真源。
-- 子页正文描述生效的产品目标；实际页面以 [Web 实现](../../../busyming-devhub-web/src/views/mcp) 为依据，不把未实现交互写成既成实现。原型资产仅作只读视觉参考，其中的资源开放、业务域授权或服务登记不构成规则；[服务列表资产](../assets/web/service-list.html)不对应第六个菜单。
+- 独立运行由 [PortalLayout](../../../busyming-devhub-web/src/layouts/PortalLayout.vue)承载外壳，微应用模式由门户提供外壳；菜单归属、页面标题、来源、去向与返回行为统一遵循各叶子正文的导航规则。
+- 路由编码（name）与菜单 / 按钮权限码分开描述，守卫按声明的权限码校验，不以 name 代替功能权限；页面可进入不代替服务端的本人范围与操作授权判定。权限定义以 [权限规则](permission-rules.md#1-权限点矩阵) 为唯一真源。
+- 子页正文定义产品交互要求；[Web 实现](../../../busyming-devhub-web/src/views/mcp)只作为代码引用入口。原型资产仅作只读视觉参考，其中的资源开放、业务域授权或服务登记不构成规则；[服务列表资产](../assets/web/service-list.html)不对应第六个菜单。
 - 观测执行遵循公共 [SLS 契约](../../../busyming-skills-common/agent/MCP/sls/references/mcp-tools.md) 与 [ARMS 契约](../../../busyming-skills-common/agent/MCP/arms/references/mcp-tools.md)。
 
 ## 五叶页面正文索引

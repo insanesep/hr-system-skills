@@ -1,6 +1,6 @@
 # 需求管理 · 流程中心接入
 
-> 审批流转接入流程中心（M4 外部表单模式），参考库存调整的流程中心接入实践；流程中心文档尚未迁入，见 [SKILL.md](../SKILL.md) Prerequisites。**提交表单（提交对象选择 / 附件 / 外链 H5 / AI 面板）全部留在本模块**，仅审批流转引擎接入平台。本模块状态机见 [state-machine.md](state-machine.md)，审批链配置见 [business-rule.md §3](business-rule.md#3-审批链配置规则)。
+> 审批流转接入流程中心（M4 外部表单模式），参考库存调整的流程中心接入实践；流程中心负责审批引擎与实例流转，依赖职责见 [SKILL.md](../SKILL.md) Prerequisites。**提交表单（提交对象选择 / 附件 / 外链 H5 / AI 面板）全部留在本模块**，仅审批流转引擎接入平台。本模块状态机见 [state-machine.md](state-machine.md)，审批链配置见 [business-rule.md §3](business-rule.md#3-审批链配置规则)。
 
 ## 1. 接入规则
 

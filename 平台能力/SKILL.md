@@ -27,7 +27,7 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 - [业务规则](references/business-rule.md)：角色职责、已注册工具、令牌与配置生成。
 - [权限与授权判定](references/permission-rules.md)：功能权限、显式分配、令牌交集、当前成员应用范围与身份透传；权限定义不在叶子复制。
 - [数据定义](references/data.md)：跨功能对象、关系及字段语义。
-- [Web 共用说明与五叶正文索引](references/web-ui.md)：菜单与非菜单页面归属、布局和实现边界；具体 UI 正文只保留在对应叶子。
+- [Web 共用说明与五叶正文索引](references/web-ui.md)：菜单与非菜单页面归属、布局和导航规则；具体 UI 正文只保留在对应叶子。
 
 ## 公共依赖与关联入口
 

@@ -35,7 +35,7 @@ metadata:
 | App 页面 | [references/app-ui.md](references/app-ui.md) | App 端页面元信息、导航、操作反馈、三态 | 本模块 |
 | 页面模板 | [templates/web](../../../busyming-skills-design/templates/web/) · [templates/mobile](../../../busyming-skills-design/templates/mobile/) | 页面类型取值与整页范例 | busyming-skills-design |
 | 原型样式入口 | Web：[pc.css](../../../busyming-skills-design/components/web/tokens/pc.css) → convert-el-plus.css → ep-base-shim.css → [templates.css](../../../busyming-skills-design/templates/web/templates.css)；App：[mobile.css](../../../busyming-skills-design/components/mobile/tokens/mobile.css) → docs-site/demos/mobile/css 组件 CSS → [templates.css](../../../busyming-skills-design/templates/mobile/templates.css) | 原型样式链与组件类 | busyming-skills-design |
-| Qoder Teams OpenAPI | 公共仓未迁入真源（busyming-skills-common 的 api 目录仅有占位） | 用量数据来源与时间范围硬约束 | busyming-skills-common |
+| Qoder Teams OpenAPI | busyming-skills-common 承载 Qoder Teams OpenAPI 公共接入能力 | 用量数据来源与时间范围硬约束 | busyming-skills-common |
 | 统计人员范围 | [报告配置](../../研发报告/报告配置/SKILL.md) → 统计人员范围 | 研发团队名单，Qoder 用量分析默认按此范围统计 | busyming-skills-devops |
 
 ## 页面功能概览
@@ -56,4 +56,4 @@ App 端页面元素与 Web 保持一致，仅做移动端布局适配（KPI 2 �
 ## Tips
 
 - 口径与规则唯一真源为 references/business-rule.md，页面与其余文档不复述
-- 上游数据来源（Qoder Teams OpenAPI）真源未迁入公共仓，模块内仅保留一句话指针，不复制接口细节
+- 上游数据来源为 Qoder Teams OpenAPI，公共接入能力由 busyming-skills-common 承载；模块内仅保留职责指针，不复制接口细节

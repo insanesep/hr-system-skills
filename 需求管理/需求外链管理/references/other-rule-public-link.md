@@ -1,6 +1,6 @@
 # 需求管理 · 外链邀约与外部提交
 
-> 有点推荐（`YDTJ`）外链邀约与外部免登录提交的规则真源，仅有点推荐产品线开放；能力范式对齐采购邀约的 token 反查模式（采购邀约文档尚未迁入，见 [SKILL.md](../../SKILL.md) Prerequisites）。外部单的状态差异见 [state-machine.md §6](../../references/state-machine.md#6-外部提交单差异)，H5 附件见 [other-rule-attachment.md §5](../../references/other-rule-attachment.md#5-h5-附件规则)，H5 页面见 [app-ui.md 公开 H5](app-ui.md#公开-h5)，外链台账页面见 [web-ui.md 外链管理页](web-ui.md#外链管理页)。
+> 有点推荐（`YDTJ`）外链邀约与外部免登录提交的规则真源，仅有点推荐产品线开放；能力范式对齐采购邀约的 token 反查模式（采购邀约能力职责见 [SKILL.md](../../SKILL.md) Prerequisites）。外部单的状态差异见 [state-machine.md §6](../../references/state-machine.md#6-外部提交单差异)，H5 附件见 [other-rule-attachment.md §5](../../references/other-rule-attachment.md#5-h5-附件规则)，H5 页面见 [app-ui.md 公开 H5](app-ui.md#公开-h5)，外链台账页面见 [web-ui.md 外链管理页](web-ui.md#外链管理页)。
 
 ## 1. 外链形态
 

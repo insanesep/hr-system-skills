@@ -1,6 +1,6 @@
 # Web 端 UI 描述 · 我的令牌
 
-> 共用布局、菜单与实现边界见 [平台能力 Web 索引](../../references/web-ui.md)；权限定义统一引用 [permission-rules.md](../../references/permission-rules.md)。页面正文按产品目标验收，资产不证明目标已实现。
+> 共用布局、菜单与导航规则见 [平台能力 Web 索引](../../references/web-ui.md)；权限定义统一引用 [permission-rules.md](../../references/permission-rules.md)。正文定义产品交互要求；原型仅作视觉参考。
 
 ---
 
@@ -9,7 +9,7 @@
 - **页面路径**：`/mcp-access/tokens`
 - **路由编码（name）**：`devhubMcpToken`
 - **菜单 / 按钮权限码**：功能权限定义见 [共享权限矩阵](../../references/permission-rules.md#1-权限点矩阵)；`devhubMcpTokenAdmin` 控制全部令牌与吊销他人令牌，`devhubMcpTokenEdit` 控制编辑本人有效令牌
-- **路由权限校验**：本路由未声明 `meta.permCode`，不能由路由 name 推断自动功能权限校验；列表范围与操作仍按实际权限及服务端判定
+- **权限判定**：列表范围与操作按功能权限及服务端规则判定，不以路由 name 代替授权校验
 - **页面类型**：`archive-list`
 - **区块职责**：
   - 工具栏：范围切换（我的令牌 / 全部令牌，后者仅管理员可见）、状态（全部 / 生效中 / 已过期 / 已吊销）、关键词（令牌名称 / 前缀；全部令牌范围下含持有人）、查询 / 重置；右侧「我的权限」按钮与「生成令牌」主按钮，旁注「生效中 N / 10」
@@ -57,7 +57,7 @@
 - **页面路径**：`/mcp-access/tokens/create`；编辑授权范围复用本页：`/mcp-access/tokens/:id/edit`
 - **路由编码（name）**：生成 `devhubMcpTokenCreate`；编辑 `devhubMcpTokenEdit`
 - **菜单 / 按钮权限码**：非菜单页；编辑本人有效令牌需 `devhubMcpTokenEdit`，职责与权限定义见 [共享权限矩阵](../../references/permission-rules.md#1-权限点矩阵)
-- **路由权限校验**：生成路由未声明 `meta.permCode`；编辑路由声明 `meta.permCode=devhubMcpTokenEdit`；name 与权限码须分别识别
+- **权限判定**：生成与编辑均按本人当前可用范围校验；编辑路由的权限码为 `devhubMcpTokenEdit`，name 与权限码分别识别
 - **页面类型**：`archive-form`
 - **区块职责**：
   - 基本信息分组：令牌名称、有效期（单选 7 / 30 / 90 / 180 天，默认 90；编辑模式隐藏，有效期只能通过续期修改）、到期时间预览（只读）
@@ -109,7 +109,7 @@
 - **页面路径**：`/mcp-access/tokens/:id`
 - **路由编码（name）**：`devhubMcpTokenDetail`
 - **菜单 / 按钮权限码**：非菜单页；本人编辑需 `devhubMcpTokenEdit`，查看或吊销他人令牌需 `devhubMcpTokenAdmin`，定义见 [共享权限矩阵](../../references/permission-rules.md#1-权限点矩阵)
-- **路由权限校验**：本路由未声明 `meta.permCode`；他人详情与管理动作不能仅凭路由可进入判定为有权操作
+- **权限判定**：他人详情与管理动作须按功能权限及服务端规则校验，不能仅凭路由可进入判定为有权操作
 - **页面类型**：`archive-detail`
 - **区块职责**：
   - 头部：令牌名称、状态 Tag、令牌前缀；操作按钮：编辑授权范围、续期、吊销（按状态可用，见 state-machine.md；编辑本人令牌需 `devhubMcpTokenEdit`，查看他人令牌时仅管理员吊销可用）

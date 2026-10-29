@@ -20,7 +20,7 @@ metadata:
 | 需求SLA看板 | [SKILL.md](需求SLA看板/SKILL.md) | `/requirement/sla-dashboard` | `devhubRequirementSlaDashboard` |
 | SLA规则配置 | [SKILL.md](SLA规则配置/SKILL.md) | `/requirement/sla-config` | `devhubRequirementSlaConfig` |
 
-五个菜单同级；详情与提交为需求工单管理的非菜单页面，公开 H5 与生成结果、配置弹窗归各功能。`/subapp/devhub` 是部署 base，不是路由名称或菜单层级。standalone 侧栏只有平级分组、页头只有当前页单标题，不自动按管理员过滤菜单；微应用外壳由门户提供，完整面包屑仅作为产品目标登记于共享 Web UI。
+五个菜单同级；详情与提交为需求工单管理的非菜单页面，公开 H5 与生成结果、配置弹窗归各功能。`/subapp/devhub` 是部署 base，不是路由名称或菜单层级。独立运行与微应用均按共享 Web UI 的菜单归属、完整面包屑及返回恢复规则导航；微应用外壳由门户提供。
 
 ## Prerequisites
 
@@ -38,13 +38,13 @@ metadata:
 | Web 全局语义、跨页导航与功能 UI 正文索引 | [Web 共享入口](references/web-ui.md) |
 | App / 公开 H5 全局约定与两份正文索引 | [App 共享入口](references/app-ui.md) |
 
-| 下游与外部依赖 | 入口或可用性 |
-|----------------|--------------|
+| 下游与外部依赖 | 职责与引用入口 |
+|----------------|----------------|
 | 功能排期与项目映射真源 | [功能排期管理](../研发管理/功能排期管理/SKILL.md)，项目映射见其 [业务规则 §9](../研发管理/功能排期管理/references/business-rule.md#9-项目归属与配置) |
 | 缺陷修复单承接 | [黑灯工厂工单](../运维管理/黑灯工厂工单/SKILL.md) |
 | 页面模板与原型样式 | [Web 模板](../../busyming-skills-design/templates/web/) / [移动模板](../../busyming-skills-design/templates/mobile/)；样式接入真源见 [设计入口](../../busyming-skills-design/SKILL.md) 与 [平台硬约束](../../busyming-skills-design/shared/platform-guidelines.md#2-平台硬约束) |
-| 企微消息、异步导出、数据一致性、数据库定义、Qoder 与 OSS | 公共仓真源尚未迁入，agent / api / sdk / data 仅有占位；不得以占位资料替代完整目标 |
-| 流程中心、采购邀约、商品申请审批范式 | 对应 system / procurement / product 仓文档尚未迁入 |
-| 任务中心与需求打磨规范 | 尚未迁入，归属待确认；分别作为或签待办聚合与提交描述引导的依据 |
+| 企微消息、异步导出、数据一致性、数据库定义、Qoder 与 OSS | busyming-skills-common 承载共享消息、导出、数据规则、Qoder 接入与对象存储能力；本模块引用公共能力，不复制其接口细节 |
+| 流程中心、采购邀约、商品申请审批范式 | busyming-skills-system 承载流程中心审批流转；busyming-skills-procurement 承载采购邀约的 token 反查范式；busyming-skills-product 承载商品申请审批范式 |
+| 任务中心与需求打磨规范 | 任务中心提供或签待办聚合与关闭规则；需求打磨规范提供提交描述引导依据 |
 
-按专题查规则并进入相应功能阅读页面正文；共享规则与功能页面的完整产品目标均须保留，不以代码缺口删除需求或声称目标已经实现。
+按专题查规则并进入相应功能阅读页面正文；共享规则定义跨功能逻辑，功能页面定义各菜单的交互要求。

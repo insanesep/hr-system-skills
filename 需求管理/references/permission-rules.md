@@ -1,14 +1,14 @@
 # 需求管理 · 权限规则
 
-> 权限编码以 system 菜单管理的生效数据为准（2026-10-18 核对生产菜单），本文件说明各编码控制的操作、角色可执行操作、数据可见范围与审批权限校验；角色与人员授予以 system 角色配置为准，本模块不维护人员名单。
+> 权限编码以 system 菜单管理的生效数据为准，本文件说明各编码控制的操作、角色可执行操作、数据可见范围与审批权限校验；角色与人员授予以 system 角色配置为准，本模块不维护人员名单。
 
 ## 1. 权限编码
 
 ### 1.1 Web
 
-资源归属按「需求管理」分组（资源分组编码 `devhubRequirementManage`）登记，下挂 5 个同级菜单。standalone 的实际侧栏由 [路由](../../../busyming-devhub-web/src/router/index.ts) 的「需求管理」分组生成，不包含「研发」上层菜单，也不按管理员自动过滤；微应用的完整资源树与外壳由门户宿主提供，本仓不据此断言其实现。
+资源归属按「需求管理」分组（资源分组编码 `devhubRequirementManage`）登记，下挂 5 个同级菜单。独立运行按 [路由](../../../busyming-devhub-web/src/router/index.ts)的分组生成侧栏，微应用的资源树与外壳由门户宿主提供；数据可见范围与管理员操作均按本文件的权限规则判定。
 
-菜单资源码与应用路由分别登记：五个菜单的 route.name 恰与菜单资源码同名，详情 `/requirement/detail/:id` 的 route.name 是 `devhubRequirementDetail`，提交 `/requirement/submit` 的 route.name 是 `devhubRequirementSubmit`；二者非菜单，归需求工单管理，权限仍沿用菜单与按钮资源码，不能把父菜单码当成它们的路由名称。`/subapp/devhub` 仅为部署 base。完整产品目标面包屑见 [Web 共享 UI](web-ui.md#页面间导航)，不代表 standalone 已实现。
+菜单资源码与应用路由分别登记：五个菜单的 route.name 恰与菜单资源码同名，详情 `/requirement/detail/:id` 的 route.name 是 `devhubRequirementDetail`，提交 `/requirement/submit` 的 route.name 是 `devhubRequirementSubmit`；二者非菜单，归需求工单管理，权限仍沿用菜单与按钮资源码，不能把父菜单码当成它们的路由名称。`/subapp/devhub` 仅为部署 base。完整面包屑与导航要求见 [Web 共享 UI](web-ui.md#页面间导航)。
 
 | 类型 | 编码 | 名称 | 控制的操作 |
 |------|------|------|-----------|

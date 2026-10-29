@@ -44,7 +44,7 @@ description: 黑灯工厂按项目巡检产出的工单化闭环管理。三个�
 | 业务规则真源 | [`references/business-rule.md`](references/business-rule.md) | 分项目执行与开关/状态机/建单幂等/负责人指派/通知规则/SLA/agent 接入规范 |
 | 数据模型 | [`references/data-model.md`](references/data-model.md) | 工单与项目执行配置的实体及字段业务语义 |
 | UI 描述 | [`references/web-ui.md`](references/web-ui.md) | 页面区块/项目配置抽屉/交互/权限点 |
-| 错误日志管理 | [`../../补充功能/运维管理/错误日志管理/SKILL.md`](../../补充功能/运维管理/错误日志管理/SKILL.md) | 指纹归一化口径复用;日志控制台跳转口径复用 |
+| 错误日志管理 | [`../错误日志管理/SKILL.md`](../错误日志管理/SKILL.md) | 指纹归一化口径复用;日志控制台跳转口径复用 |
 | 企微应用消息 | `../../../依赖文档/公共功能/企微应用消息发送/SKILL.md` | 按人提醒通道 |
 | 导出接入 | `../../../依赖文档/公共功能/导出接入/SKILL.md` | 工单列表导出复用统一导出中心 |
 | 错误日志黑灯工厂 | [`references/agent-error-log.md`](references/agent-error-log.md) | 来源 agent 之一(分诊/分级/负责人判定口径) |

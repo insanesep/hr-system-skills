@@ -1,6 +1,6 @@
 # 平台能力 · MCP 接入数据定义
 
-> 本文件以产品语义描述已实现对象、事实快照与关系，不定义数据库结构。工具目录仅是已注册能力的展示概念，不构造第三方服务或工具登记实体。规则见 [业务规则](business-rule.md)、[权限规则](permission-rules.md)、[研发工具规则](../研发工具资源/references/devtool-rules.md)、[数据源规则](../数据源管理/references/datasource-rules.md)与 [审计规则](../调用审计/references/audit-rules.md)。
+> 本文件描述产品对象、事实快照与关系，不定义数据库结构。工具目录仅是已注册能力的展示概念，不构造第三方服务或工具登记实体。规则见 [业务规则](business-rule.md)、[权限规则](permission-rules.md)、[研发工具规则](../研发工具资源/references/devtool-rules.md)、[数据源规则](../数据源管理/references/datasource-rules.md)与 [审计规则](../调用审计/references/audit-rules.md)。
 
 ## 1. 对象关系
 

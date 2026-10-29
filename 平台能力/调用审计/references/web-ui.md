@@ -1,6 +1,6 @@
 # Web 端 UI 描述 · 调用审计
 
-> 共用布局、菜单与实现边界见 [平台能力 Web 索引](../../references/web-ui.md)；权限定义统一引用 [permission-rules.md](../../references/permission-rules.md)。页面正文按产品目标验收，资产不证明目标已实现。
+> 共用布局、菜单与导航规则见 [平台能力 Web 索引](../../references/web-ui.md)；权限定义统一引用 [permission-rules.md](../../references/permission-rules.md)。正文定义产品交互要求；原型仅作视觉参考。
 
 ---
 

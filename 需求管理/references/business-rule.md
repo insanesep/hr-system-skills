@@ -128,7 +128,7 @@
 
 - 各级审批均为**或签**：同一级次配置多名审批人时，任一人通过即视为该级通过，其余人待办自动关闭
 - 任一人驳回即整单驳回，不等待其他审批人
-- 或签的待办聚合与关闭逻辑参考任务中心（文档尚未迁入），本模块不引入全员确认（多签）模式
+- 或签的待办聚合与关闭逻辑参考任务中心的待办管理规则，本模块不引入全员确认（多签）模式
 
 ### 3.6 快照机制
 
@@ -138,7 +138,7 @@
 
 ## 4. 通知与企微推送
 
-推送统一在业务事务提交后异步触发，禁止在事务内同步调用；能力复用公共企微消息能力（公共仓尚未迁入，见 SKILL.md Prerequisites）。审批超时催办、升级与目标日期预警见 [other-rule-sla.md](other-rule-sla.md)，审批中追加附件的通知见 [other-rule-attachment.md §4](other-rule-attachment.md#4-审批中追加附件)，AI 方案相关通知见 [other-rule-ai-plan.md](other-rule-ai-plan.md)；流程中心通道单的个人待办与结果通知由流程中心承担，见 [other-rule-flow-center.md §4](other-rule-flow-center.md#4-对接规则)。
+推送统一在业务事务提交后异步触发，禁止在事务内同步调用；能力复用公共企微消息能力（职责与引用入口见 SKILL.md Prerequisites）。审批超时催办、升级与目标日期预警见 [other-rule-sla.md](other-rule-sla.md)，审批中追加附件的通知见 [other-rule-attachment.md §4](other-rule-attachment.md#4-审批中追加附件)，AI 方案相关通知见 [other-rule-ai-plan.md](other-rule-ai-plan.md)；流程中心通道单的个人待办与结果通知由流程中心承担，见 [other-rule-flow-center.md §4](other-rule-flow-center.md#4-对接规则)。
 
 ### 4.1 双通道推送
 

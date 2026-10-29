@@ -33,8 +33,8 @@ metadata:
 | 页面模板 | [order-list.html](../../../busyming-skills-design/templates/web/order-list.html) | 故障列表 `order-list` 的整页范例 | busyming-skills-design |
 | 页面模板 | [order-detail.html](../../../busyming-skills-design/templates/web/order-detail.html) | 故障详情 `order-detail` 的整页范例 | busyming-skills-design |
 | 原型样式链 | [templates.css](../../../busyming-skills-design/templates/web/templates.css) + [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css) | 原型样式链：components/web/tokens/pc.css → docs-site/demos/pc/css/convert-el-plus.css → docs-site/ep-base-shim.css → templates/web/templates.css（`--busy-*` Token 与 `busy-*` / `.tpl-*` 组件类） | busyming-skills-design |
-| 错误日志管理 | [SKILL.md](../../补充功能/运维管理/错误日志管理/SKILL.md) | 故障证据来源（错误日志指纹报表项引用） | busyming-skills-devops |
-| 服务器监控 | [SKILL.md](../../补充功能/运维管理/服务器监控/SKILL.md) | 故障证据来源（异常快照引用） | busyming-skills-devops |
+| 错误日志管理 | [SKILL.md](../../运维管理/错误日志管理/SKILL.md) | 故障证据来源（错误日志指纹报表项引用） | busyming-skills-devops |
+| 服务器监控 | [SKILL.md](../../运维管理/服务器监控/SKILL.md) | 故障证据来源（异常快照引用） | busyming-skills-devops |
 | 黑灯工厂管理 | [SKILL.md](../../运维管理/黑灯工厂工单/SKILL.md) | 故障证据来源（工单引用）；巡检问题工单闭环与人工故障复盘的分工边界 | busyming-skills-devops |
 
 ## 页面功能概览
