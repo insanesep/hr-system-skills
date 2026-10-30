@@ -29,6 +29,11 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 单人与批量共用分配表单；人员选择弹窗与变更记录抽屉均不另设菜单。保存回到权限分配列表；取消按浏览器历史返回，从列表进入时回到列表。
 
+## Prerequisites
+
+- [产研人员管理 · 身份](../../研发管理/产研人员管理/references/business-rule.md#identity)及[权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：仅用于产研业务身份对照，不将分配对象限制为产研人员或自动授予权限。
+- [域及项目管理 · 执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：观测范围只读消费，工具 grant、令牌与真实成员快照仍独立校验。
+
 ## 规则、页面与资产
 
 - [Web 页面正文](references/web-ui.md)：[权限分配列表](references/web-ui.md#权限分配)、[分配表单](references/web-ui.md#分配权限)，保留表单校验、二次确认、反馈与未保存离开确认的产品目标。

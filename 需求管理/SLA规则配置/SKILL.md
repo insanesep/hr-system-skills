@@ -20,6 +20,10 @@ metadata:
 - 新增 / 编辑配置弹窗、启停与删除确认、初始化默认规则均属于本页，不新增菜单或详情目录；入口为独立侧边菜单或 SLA 看板的「SLA 配置」，提示条可前往同级审批配置。
 - standalone 侧栏在「需求管理」下平级展示，完整产品目标面包屑与筛选地址同步见 UI 正文，不能写成代码已有能力。写权限由服务端按管理员口径校验，侧栏不自动按管理员过滤。App 无独立规则配置入口。
 
+## Prerequisites
+
+- [产研人员管理 · 参与关系](../../研发管理/产研人员管理/references/business-rule.md#membership)与[域及项目管理 · 责任关系](../../研发管理/域及项目管理/references/business-rule.md#responsibility)：仅供已有明确项目的产研审批人升级取数，其他情况及实施兜底沿用共享 SLA 规则。
+
 ## 资料与资产
 
 - 先读 [共享业务规则](../references/business-rule.md)、[权限规则](../references/permission-rules.md)、[审批时效与 SLA](../references/other-rule-sla.md)，差异化配置真源见其 [第 3 节](../references/other-rule-sla.md#3-差异化配置)。

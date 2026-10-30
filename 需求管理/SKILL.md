@@ -38,9 +38,11 @@ metadata:
 | Web 全局语义、跨页导航与功能 UI 正文索引 | [Web 共享入口](references/web-ui.md) |
 | App / 公开 H5 全局约定与两份正文索引 | [App 共享入口](references/app-ui.md) |
 
-| 下游与外部依赖 | 职责与引用入口 |
-|----------------|----------------|
-| 功能排期与项目映射真源 | [功能排期管理](../研发管理/功能排期管理/SKILL.md)，项目映射见其 [业务规则 §9](../研发管理/功能排期管理/references/business-rule.md#9-项目归属与配置) |
+| 下游与外部依赖 | 入口或可用性 |
+|----------------|--------------|
+| 功能排期承接 | [功能排期管理](../研发管理/功能排期管理/SKILL.md)：卡片与开发状态，不维护基础项目映射 |
+| 产研人员与参与关系 | [产研人员管理](../研发管理/产研人员管理/SKILL.md) · [身份](../研发管理/产研人员管理/references/business-rule.md#identity) · [参与关系](../研发管理/产研人员管理/references/business-rule.md#membership) · [权限边界](../研发管理/产研人员管理/references/permission-rules.md#boundaries) |
+| 域、项目及执行映射 | [域及项目管理](../研发管理/域及项目管理/SKILL.md) · [清单](../研发管理/域及项目管理/references/business-rule.md#source) · [责任关系](../研发管理/域及项目管理/references/business-rule.md#responsibility) · [执行映射](../研发管理/域及项目管理/references/business-rule.md#execution-mapping) |
 | 缺陷修复单承接 | [黑灯工厂工单](../运维管理/黑灯工厂工单/SKILL.md) |
 | 页面模板与原型样式 | [Web 模板](../../busyming-skills-design/templates/web/) / [移动模板](../../busyming-skills-design/templates/mobile/)；样式接入真源见 [设计入口](../../busyming-skills-design/SKILL.md) 与 [平台硬约束](../../busyming-skills-design/shared/platform-guidelines.md#2-平台硬约束) |
 | 企微消息、异步导出、数据一致性、数据库定义、Qoder 与 OSS | busyming-skills-common 承载共享消息、导出、数据规则、Qoder 接入与对象存储能力；本模块引用公共能力，不复制其接口细节 |

@@ -26,6 +26,11 @@ metadata:
 
 通过、驳回、关联排期、AI 确认与补材等弹窗归需求详情；App 的审批半屏、图片浏览器和方案全文只读子页仍归本功能，不建立菜单目录。App 工作台入口的资源码为 `devhubAppRequirement` / `devhubAppRequirementM`，不以 Web route.name 替代。公开 H5 表单与结果形态归 [需求外链管理](../需求外链管理/SKILL.md)。
 
+## Prerequisites
+
+- [产研人员管理](../../研发管理/产研人员管理/SKILL.md) · [身份](../../研发管理/产研人员管理/references/business-rule.md#identity) · [参与关系](../../研发管理/产研人员管理/references/business-rule.md#membership)：产研候选与身份只读消费。
+- [域及项目管理](../../研发管理/域及项目管理/SKILL.md) · [清单](../../研发管理/域及项目管理/references/business-rule.md#source) · [执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：归属引用与开发会话范围。
+
 ## 资料与资产
 
 - 先读 [共享业务规则](../references/business-rule.md)、[权限规则](../references/permission-rules.md)、[状态机](../references/state-machine.md) 与 [数据定义](../references/data.md)。

@@ -21,6 +21,10 @@ metadata:
 - 产品线与业务线 Tab、群消息 inline 编辑、新增 / 编辑配置弹窗、启停与删除确认均属于本页，不新增菜单或详情目录；Tab 地址同步与产品目标面包屑见 UI 正文。
 - 服务端按共享权限规则校验管理员与操作权限；standalone 侧栏不自动按管理员过滤菜单，不能把「仅管理员操作」写成代码已有的菜单隐藏。App 无独立配置入口。
 
+## Prerequisites
+
+- [产研人员管理](../../研发管理/产研人员管理/SKILL.md) · [身份](../../研发管理/产研人员管理/references/business-rule.md#identity) · [权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：产研职责候选；非产研审批人仍引用公共用户，既有链与快照不自动改写。
+
 ## 资料与资产
 
 - 先读 [业务规则 · 审批链配置](../references/business-rule.md#3-审批链配置规则)、[权限规则](../references/permission-rules.md)、[数据定义 · 审批链配置](../references/data.md#5-审批链配置) 与 [状态机](../references/state-machine.md)。

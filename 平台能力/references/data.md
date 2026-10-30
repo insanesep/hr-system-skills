@@ -7,9 +7,9 @@
 - 门户用户可持有多个访问令牌，并关联显式权限分配与授权变更记录。
 - 令牌包含用户显式选择的授权项，生成与编辑必须至少有一项当前有效 scope；权限撤销后选择可保留，但不代表可调用。
 - 权限管理员分配 SLS/ARMS 工具族与数据库实例、库、表。SYSTEM 已注册内置业务工具默认可选，不必生成管理员分配记录。
-- 项目维护 harness 工程和代码服务仓列表。harness 是需求与 Skills 真源，不派生研发查询范围；代码服务仓是真源。
-- 代码仓快照保存云效仓 ID、精确仓名、所属项目和同步状态；完整应用名由仓名与调用时明确的环境后缀组成，不保存逐应用授权记录。
-- 云效仓成员事实通过组织成员邮箱唯一映射到启用门户用户，有效成员派生查询范围，但不产生工具族 grant 或令牌授权项。
+- 基础仓、域、项目只读引用[域及项目管理 · 清单](../../研发管理/域及项目管理/references/business-rule.md#source)，项目到实现仓与确认路径引用其[执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)，本模块不保存基础真源副本。harness 不自动派生研发应用范围。
+- 代码仓观测快照按仓稳定 ID 去重保存云效仓 ID、精确仓名、全部有效关联项目和同步状态；同仓多项目不重复保存也不视作冲突。完整应用名仍由仓名与明确的环境后缀组成，不保存逐应用授权记录。
+- 产研人员业务身份与跨源别名引用[产研人员管理 · 身份](../../研发管理/产研人员管理/references/business-rule.md#identity)；云效真实成员快照仍由研发工具资源维护，并按组织成员邮箱唯一映射到有效门户用户。有效成员只派生查询范围，不产生工具族 grant 或令牌授权项，局部业务身份与产研禁用状态不改写门户或全部 MCP 生命周期。
 - 数据源包含库、表、字段；表归库、字段归表，字段至多绑定一个门户脱敏规则。
 - 调用记录关联令牌与工具目标，观测目标是 Skills 识别的 group 与完整 appName；成员快照、代码仓快照、工具许可和令牌选择互不代替。
 
@@ -83,11 +83,11 @@
 | 字段 | 产品语义 | 规则 |
 | ---- | ---- | ---- |
 | 快照 ID | 代码仓事实标识 | 系统生成 |
-| 所属项目 | 项目真源关联 | 查询要求项目启用且未删除 |
-| 云效仓 ID | 项目代码服务仓标识 | 必须仍在项目代码服务仓列表中 |
-| 仓名称 | appName 的精确基础前缀 | 同名有效仓冲突时拒绝选择 |
-| 冲突标记 | 多项目引用或同名仓冲突 | 有冲突默认拒绝，不选首项 |
-| 对象状态 | 正常或已移除 | 从启用项目代码服务仓列表移除后失效 |
+| 所属项目 | 执行映射中的全部有效项目关联 | 查询要求至少一条有效关系且所属项目启用未删除，不限定单项目 |
+| 云效仓 ID | 实现仓稳定标识 | 按 ID 去重，必须仍在有效项目执行映射中 |
+| 仓名称 | appName 的精确基础前缀 | 同名对应不同有效仓 ID 时拒绝选择 |
+| 冲突标记 | 同名不同仓 ID 或映射事实歧义 | 同仓多项目不是冲突；真实歧义拒绝，不选首项 |
+| 对象状态 | 正常或已移除 | 已无任何有效项目执行映射后失效 |
 | 最近同步时间 | 最近成功读取仓资料时间 | 24 小时后失效；仓资料读取失败保留旧日期 |
 
 - 快照不保存 group、完整应用名、SLS Project、地域、日志保留期、SLS 就绪或 PID。同步不访问 SLS/ARMS。
@@ -196,6 +196,6 @@
 ## 12. 实现依据
 
 - [令牌实体](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpTokenEntity.java)、[令牌 scope](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpTokenScopeEntity.java)、[显式分配](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpGrantEntity.java)。
-- [代码仓快照实体](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDevtoolResourceEntity.java)、[成员快照实体](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpRepositoryMemberEntity.java)、[项目真源](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/schedule/ProjectEntity.java)。
+- [代码仓快照实体](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDevtoolResourceEntity.java)、[成员快照实体](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpRepositoryMemberEntity.java)、[基础清单与执行映射真源](../../研发管理/域及项目管理/SKILL.md)。
 - [数据源](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDatasourceEntity.java)、[库表字段](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpDbObjectEntity.java)、[脱敏绑定](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpFieldMaskingEntity.java)。
 - [调用记录](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpCallRecordEntity.java)、[授权变更](../../../busyming-devhub/busyming-devhub-domain/src/main/java/io/busyming/basic/devhub/domain/entity/mcp/McpGrantChangeEntity.java)、[已注册工具目录](../../../busyming-devhub/busyming-devhub-api/src/main/java/io/busyming/basic/devhub/api/constant/McpToolConstants.java)。

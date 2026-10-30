@@ -1,6 +1,7 @@
 # Web 端 UI 描述 · 产品文档健康度报告
 
 > 归档、版本、渲染与异常口径以子域 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md) 为真源；报告内容章节以 [`health-report.md`](health-report.md) 输出模板为真源。
+> 筛选、分组、徽标与元信息使用范围类型（域/项目）、名称、key，按稳定实体引用关联；下文旧「项目」词兼容范围语义。基础范围只读消费 [域及项目管理 #consumption](../../../研发管理/域及项目管理/references/business-rule.md#consumption)；域整仓、项目一级目录及各自确认映射，根文件不计项目，仍排除 common/design。应入库项只含有效且已配置启用范围，跨域/项目指标按稳定标识去重不相加；停用或远端确认缺失停止生成不删历史。旧整体项目只显式核对到对应域，保留 key / 文件名；此为产品目标，4 个既有 HTML 本次不修改，不证明实现上线。
 
 ## 页面清单
 

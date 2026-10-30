@@ -24,6 +24,11 @@ description: 服务器监控（异常现场快照）。Use when 事故发生、�
 |---|---|---|
 | Web | 运维管理 → 服务器监控：快照列表 + 快照详情 + 手动触发弹窗 | 研发、运维、技术负责人 |
 
+## Prerequisites
+
+- [产研人员管理 · 身份](../../../研发管理/产研人员管理/references/business-rule.md#identity)及[权限边界](../../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：产研职责身份只读引用，不替代菜单、手动采集与导出权限，不回写历史经办快照。
+- [域及项目管理 · 清单](../../../研发管理/域及项目管理/references/business-rule.md#source)及[执行映射](../../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：已确认归属对照，无项目证据只域级；实例、应用、命名空间及云监控坐标仍按原采集配置，不能由参与关系扩大云访问。
+
 ## 名词约定
 
 | 名词 | 定义 |

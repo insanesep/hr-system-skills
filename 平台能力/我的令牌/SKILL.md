@@ -29,6 +29,10 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 生成与编辑共用表单；生成结果、我的权限、续期与吊销均不另设菜单。保存、取消与返回目标见本功能 UI 正文。
 
+## Prerequisites
+
+- [产研人员管理 · 权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：产研业务身份与门户、MCP 生命周期边界只读引用。
+
 ## 规则、页面与资产
 
 - [Web 页面正文](references/web-ui.md)：[列表](references/web-ui.md#我的令牌)、[生成 / 编辑](references/web-ui.md#生成--编辑令牌)、[详情](references/web-ui.md#令牌详情)，保留表单校验、反馈及未保存离开确认的产品目标。

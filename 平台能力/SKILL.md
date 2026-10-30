@@ -29,6 +29,11 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 - [数据定义](references/data.md)：跨功能对象、关系及字段语义。
 - [Web 共用说明与五叶正文索引](references/web-ui.md)：菜单与非菜单页面归属、布局和导航规则；具体 UI 正文只保留在对应叶子。
 
+## Prerequisites
+
+- 基础仓、域、项目与执行范围：[域及项目管理](../研发管理/域及项目管理/SKILL.md) · [清单真源](../研发管理/域及项目管理/references/business-rule.md#source) · [执行映射](../研发管理/域及项目管理/references/business-rule.md#execution-mapping)。
+- 产研业务人员身份与边界：[产研人员管理](../研发管理/产研人员管理/SKILL.md) · [身份](../研发管理/产研人员管理/references/business-rule.md#identity) · [权限边界](../研发管理/产研人员管理/references/permission-rules.md#boundaries)；真实云效成员快照与同步任务、日志仍归研发工具资源。
+
 ## 公共依赖与关联入口
 
 - [SLS 能力](../../busyming-skills-common/agent/MCP/sls/SKILL.md)与[契约](../../busyming-skills-common/agent/MCP/sls/references/mcp-tools.md)、[ARMS 能力](../../busyming-skills-common/agent/MCP/arms/SKILL.md)与[契约](../../busyming-skills-common/agent/MCP/arms/references/mcp-tools.md)。

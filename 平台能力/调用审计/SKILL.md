@@ -23,6 +23,10 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 本功能只有调用审计菜单页；调用详情为页内抽屉，不新增详情路由或菜单。令牌链接的目标 `/mcp-access/tokens/:id` 属于平台能力 → 我的令牌的非菜单详情页；授权变更抽屉归权限分配，个人令牌调用记录归我的令牌，不复制到本功能页面正文。
 
+## Prerequisites
+
+- [域及项目管理 · 执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)与[产研人员管理 · 权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：核对当前基础引用，不改写历史调用、授权与经办人证据。
+
 ## 规则、页面与资产
 
 - [Web 页面正文](references/web-ui.md#调用审计)：筛选、汇总、明细、抽屉、导出反馈及导航的唯一正文，保留领域与目标筛选的产品目标。
