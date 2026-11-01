@@ -10,7 +10,7 @@
   布局流：页头（标题 + 归属规则 / 同步资源）→ 资源类型页签（SLS 日志库 / ARMS 应用，?type=sls|arms）
     → 筛选卡（业务域 / 环境 / 归属来源 / 开放状态 / 地域 / 关键词）→ 表格卡（批量条 + busy-table + 分页）
   浮层：调整归属弹窗、归属规则抽屉（内嵌规则编辑弹窗）、MessageBox 二次确认 / 错误详情、Message 轻提示
-  DOM 骨架依据：busyming-skills-design/templates/web/archive-list.html
+  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md
   Mock 归属判定：手工 > 标签 > 资源组 > 名称（前缀 / 后缀）；同级多条命中且目标不同 → 排序靠前者生效并标「规则冲突」；
     SLS 以所属 Project 的资源组与标签识别，日志库「继承 Project」时按 Project 判定；业务域或环境任一未判定即「未归属」；
     归属来源取业务域、环境两项判定依据中较弱的一级（Mock 口径）
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/阴影/字号一律消费 var(--busy-*) */
   .tpl-nav a { color: var(--busy-color-white); }

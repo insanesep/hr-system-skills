@@ -8,14 +8,14 @@
   报告配置（单页三 Tab：触发配置（默认）/ 项目配置 / 人员范围；静态原型，数据为 Mock，可经「重置 Mock」还原）
   路由：/subapp/devhub/report/trigger-config；权限：路由 devhubReportTriggerConfig，
     按钮 devhubReportTriggerConfig（编辑配置 / 启停 / 立即生成 / 失败重试 / 人员维护）、devhubReportUpload（工具栏「手动补传」）
-  页型：列表页（配置表格 + 编辑弹窗 + 生成记录抽屉），骨架对齐 busyming-skills-design/templates/web/archive-list.html
+  页型：列表页（配置表格 + 编辑弹窗 + 生成记录抽屉），编排对齐 busyming-skills-design/shared/page-standards/web-operation-list.md
   真源：references/web-ui.md（报告触发配置 / 统计人员范围 / 手动补传弹窗（报告模块共用））
   说明：「项目配置」页签的完整表格演示保留在同目录 project-config.html；本页手动补传弹窗演示「类型不固定，弹窗内下拉选择」形态
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
 /* 页面级骨架补位（templates.css 未含浮层壳类；仅定位与尺寸，色值全部消费 --busy-* token） */
 .tpl-mask { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--busy-popper-bg-dark) 45%, transparent); }

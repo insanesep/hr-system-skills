@@ -26,7 +26,7 @@
   - 配置边界：基础仓、域及项目清单引用[域及项目管理 · 清单](../../../研发管理/域及项目管理/references/business-rule.md#source)，项目与实现仓、确认路径引用其[执行映射](../../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)；项目不维护观测分组
   - 访问边界：每次查询复核有效令牌、有效用户、工具分配与令牌勾选、仓成员及项目仓关系、仓名唯一性、Skills 提供的 group 配置和 appName 环境后缀；同步成功不等于取得工具许可
   - 空态：Empty「暂无研发代码仓，请先到「域及项目管理」核对项目执行映射后同步」
-- **布局引用**：实际页面见 [研发工具资源页](../../../../code/02-devops/busyming-devhub-web/src/views/mcp/DevtoolResourceView.vue)；列表视觉规范见 `busyming-skills-design/templates/web/archive-list.html`。[列表资产](../assets/web/devtool-resources.html)仅作只读视觉参考，不作为当前字段或能力依据
+- **布局引用**：实际页面见 [研发工具资源页](../../../../code/02-devops/busyming-devhub-web/src/views/mcp/DevtoolResourceView.vue)；列表视觉规范见 `busyming-skills-design/shared/page-standards/web-operation-list.md`。[列表资产](../assets/web/devtool-resources.html)仅作只读视觉参考，不作为当前字段或能力依据
 
 #### 导航关系
 

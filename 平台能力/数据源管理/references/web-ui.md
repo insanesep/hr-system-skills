@@ -16,7 +16,7 @@
   - 主体区：表格列：实例名称、数据库类型、环境 Tag（生产红 / 预发橙 / 测试灰 / 开发灰）、业务域、所属业务系统、负责人、库 / 表数量、开放表数、行数上限、超时上限、连通状态 Tag、最近同步时间、启停开关、操作（详情 / 编辑）
   - 弹窗：**登记 / 编辑数据源弹窗**：实例名称、数据库类型、环境、业务域、连接地址、只读账号、密码（编辑时留空表示不修改）、所属业务系统、负责人（UserSelector）、行数上限（InputNumber，默认 1000）、超时上限（InputNumber，秒，默认 10）；提示「仅接受只读账号，保存时自动检测连通性与权限」；生产环境选中时提示「建议登记只读副本地址」
   - 空态：Empty「暂无数据源，点击「登记数据源」接入」
-- **布局引用**：[本功能原型](../assets/web/datasource-list.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-list.html`）
+- **布局引用**：[本功能原型](../assets/web/datasource-list.html)（编排依据：`busyming-skills-design/shared/page-standards/web-operation-list.md`）
 
 #### 导航关系
 
@@ -71,7 +71,7 @@
   - 库表开放（左右分栏）：左侧库 → 表树（带搜索，节点显示开放状态 Tag：开放 / 跟随库 / 不开放；已删除对象灰显）；右侧为选中节点的开放配置：对象名称与注释、开放状态（库：开放 / 不开放；表：跟随库 / 开放 / 不开放）、已分配人数（只读，说明「分配给哪些人由权限管理员在权限分配中维护」）、保存
   - 字段与脱敏（选中表节点时显示于右侧下方）：表格列：字段名、字段类型、注释、疑似敏感 Tag、脱敏规则（选择器，选项来自用户权限中心生效脱敏规则；空为不脱敏）
   - 空态：库表树为空时 Empty「尚未同步库表，点击「同步库表」」
-- **布局引用**：[本功能原型](../assets/web/datasource-detail.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-detail.html`）
+- **布局引用**：[本功能原型](../assets/web/datasource-detail.html)（编排依据：`busyming-skills-design/shared/page-standards/web-detail.md`）
 
 #### 导航关系
 

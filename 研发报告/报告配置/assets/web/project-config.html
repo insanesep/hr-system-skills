@@ -8,14 +8,14 @@
   报告配置 / 项目配置页签（静态原型，数据为 Mock，可经右上角「重置 Mock」还原）
   归属：本页内容已并入报告配置页「项目配置」页签（单页三 Tab：触发配置（默认）/ 项目配置 / 人员范围），本文件保留独立演示
   路由：/subapp/devhub/report/trigger-config（报告配置页内「项目配置」页签）；权限：路由 devhubReportTriggerConfig，按钮 devhubReportTriggerConfig（编辑扩展 / 启停）
-  页型：列表页（配置表格 + 编辑弹窗），骨架对齐 busyming-skills-design/templates/web/archive-list.html
+  页型：列表页（配置表格 + 编辑弹窗），编排对齐 busyming-skills-design/shared/page-standards/web-operation-list.md
   真源：references/web-ui.md「报告项目配置」
   要点：启用项目随功能排期自动成行（不可手工增删）；扩展维护项目 key（首次保存后不可改）与分支策略；启停联动触发配置行
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
 /* 页面级骨架补位（templates.css 未含浮层壳类；仅定位与尺寸，色值全部消费 --busy-* token） */
 .tpl-mask { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: center; justify-content: center; background: color-mix(in srgb, var(--busy-popper-bg-dark) 45%, transparent); }

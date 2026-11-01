@@ -7,7 +7,7 @@
 <!--
   需求真源：busyming-skills-devops/平台能力/references/web-ui.md「生成令牌」
            + business-rule.md §2.3 / §3 / §4 / §5、permission-rules.md §2、devtool-rules.md §2
-  页型：archive-form（DOM 结构依据 busyming-skills-design/templates/web/archive-form.html）
+  页型：archive-form（编排依据 busyming-skills-design/shared/page-standards/web-form.md）
   静态原型：数据全部为 Mock，刷新即重置；可选范围 = 当前用户（张研发）被权限管理员分配且当前可用的对象。
   演示参数：?mode=edit 编辑授权范围模式；?empty=business|devtools|database 指定领域未被分配；
            ?noperm=1 未被分配任何 MCP 权限（仅生成模式）；?fail=1 提交失败。
@@ -15,7 +15,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级布局约定：仅定位与几何；颜色 / 圆角 / 字号一律消费 var(--busy-*) */
   .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }

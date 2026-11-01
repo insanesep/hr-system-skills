@@ -44,7 +44,7 @@ metadata:
 | 产研人员与参与关系 | [产研人员管理](../研发管理/产研人员管理/SKILL.md) · [身份](../研发管理/产研人员管理/references/business-rule.md#identity) · [参与关系](../研发管理/产研人员管理/references/business-rule.md#membership) · [权限边界](../研发管理/产研人员管理/references/permission-rules.md#boundaries) |
 | 域、项目及执行映射 | [域及项目管理](../研发管理/域及项目管理/SKILL.md) · [清单](../研发管理/域及项目管理/references/business-rule.md#source) · [责任关系](../研发管理/域及项目管理/references/business-rule.md#responsibility) · [执行映射](../研发管理/域及项目管理/references/business-rule.md#execution-mapping) |
 | 缺陷修复单承接 | [黑灯工厂工单](../运维管理/黑灯工厂工单/SKILL.md) |
-| 页面模板与原型样式 | [Web 模板](../../busyming-skills-design/templates/web/) / [移动模板](../../busyming-skills-design/templates/mobile/)；样式接入真源见 [设计入口](../../busyming-skills-design/SKILL.md) 与 [平台硬约束](../../busyming-skills-design/shared/platform-guidelines.md#2-平台硬约束) |
+| 页面编排与原型样式 | [页面编排标准](../../busyming-skills-design/shared/page-standards/README.md)；样式接入真源见 [设计入口](../../busyming-skills-design/SKILL.md) 与 [平台规范](../../busyming-skills-design/shared/platform-guidelines.md) |
 | 企微消息、异步导出、数据一致性、数据库定义、Qoder 与 OSS | busyming-skills-common 承载共享消息、导出、数据规则、Qoder 接入与对象存储能力；本模块引用公共能力，不复制其接口细节 |
 | 流程中心、采购邀约、商品申请审批范式 | busyming-skills-system 承载流程中心审批流转；busyming-skills-procurement 承载采购邀约的 token 反查范式；busyming-skills-product 承载商品申请审批范式 |
 | 任务中心与需求打磨规范 | 任务中心提供或签待办聚合与关闭规则；需求打磨规范提供提交描述引导依据 |

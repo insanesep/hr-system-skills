@@ -10,13 +10,13 @@
   权限：路由与按钮 devhubMcpGrant（新建分配、分配权限、批量分配、变更记录）；当前用户「李管理」为权限管理员
   布局流：页头（标题 + 新建分配 + 批量分配）→ 筛选卡 → 表格卡（批量条 → busy-table → 分页）
   浮层：新建分配人员选择弹窗、变更记录抽屉（tpl-timeline）、Message 轻提示
-  DOM 骨架依据：busyming-skills-design/templates/web/archive-list.html
+  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md
   URL 约定（Mock）：?resource=<资源名称> 由研发工具资源页「已分配人数」带入分配对象筛选；?fail=1 演示查询 / 变更记录加载失败
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/字号一律消费 var(--busy-*) */
   .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }

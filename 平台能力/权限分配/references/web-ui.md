@@ -19,7 +19,7 @@
   - 弹窗：**新建权限分配弹窗**：被分配人（单选 UserSelector，可选择本人，展示姓名、工号）、取消、下一步；提示进入表单后可新增或收回该人员权限
   - 抽屉：**变更记录抽屉**：人员姓名；列出授权变更记录（时间、变更类型 Tag：分配 / 收回 / 到期收回 / 停用收回、对象描述、有效期、分配理由、操作人）；观测对象为工具族，不是应用分配记录
   - 空态：Empty「暂无符合条件的人员」
-- **布局引用**：[本功能原型](../assets/web/grant-list.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-list.html`）
+- **布局引用**：[本功能原型](../assets/web/grant-list.html)（编排依据：`busyming-skills-design/shared/page-standards/web-operation-list.md`）
 
 #### 导航关系
 
@@ -60,7 +60,7 @@
     - 数据库：实例节点显示环境 Tag 与业务域，保留实例 / 库 / 表粒度与库表开放规则；整实例或整库授权的后续开放表覆盖规则不变
   - 已选清单（表单底部表格）：列：对象、粒度（研发工具为工具族；数据库为实例 / 库 / 表）、环境（仅数据库显示，工具族为 —）、有效期（行内可改，留空为长期）、分配理由（数据库生产环境必填 2–200 字，其余选填且不超过 200 字）、状态（新增 / 保持 / 将收回）、操作（新增项可移除、现有项可收回、将收回项可撤销收回）；单人模式回显现有有效分配，取消勾选现有工具族即标记「将收回」
   - 底部操作：取消、保存分配；收回或到期只使对应工具调用拒绝，不吊销令牌、不改变其他有效范围
-- **布局引用**：[本功能原型](../assets/web/grant-form.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-form.html`）
+- **布局引用**：[本功能原型](../assets/web/grant-form.html)（编排依据：`busyming-skills-design/shared/page-standards/web-form.md`）
 
 #### 导航关系
 

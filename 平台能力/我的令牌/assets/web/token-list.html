@@ -7,14 +7,14 @@
 <!--
   需求真源：busyming-skills-devops/平台能力/references/web-ui.md「我的令牌」
            + business-rule.md §3 / state-machine.md / permission-rules.md §1 §2 / audit-rules.md §6
-  页型：archive-list（DOM 结构依据 busyming-skills-design/templates/web/archive-list.html）
+  页型：archive-list（编排依据 busyming-skills-design/shared/page-standards/web-operation-list.md）
   静态原型：数据全部为 Mock，刷新即重置；演示参数 ?full=1（生效中已达上限）/ ?empty=1（无令牌）/ ?fail=1（接口失败）
            / ?noperm=1（未被分配任何 MCP 权限）/ ?drawer=perm（企微权限变更通知入口，直接打开我的权限抽屉）。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级布局约定：仅定位与几何；颜色 / 圆角 / 字号一律消费 var(--busy-*) */
   .tpl-nav a.tpl-nav__crumb, .tpl-nav__crumb a { color: var(--busy-color-white); }

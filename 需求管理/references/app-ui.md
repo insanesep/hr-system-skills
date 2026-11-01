@@ -1,6 +1,6 @@
 # 需求管理 · App 端 UI 描述
 
-> 本文件仅承载 App 员工端与公开 H5 的共享约定和正文指针。员工端三页归需求工单管理，公开 H5 三种形态归需求外链管理；页面正文及 `assets/app/` 原型均在对应功能目录。视觉润色、Token 纪律、触控尺寸、三态、组件白名单等硬约束见 [设计入口](../../../busyming-skills-design/SKILL.md)、[平台硬约束](../../../busyming-skills-design/shared/platform-guidelines.md#2-平台硬约束) 与 [页面标准](../../../busyming-skills-design/shared/page-standards/)，交互三维度按 [interaction-spec.md](../../../busyming-skills-common/workflow/PM/references/interaction-spec.md) 填写。业务规则只引用、不复述，规则入口见 [SKILL.md](../SKILL.md) Prerequisites。
+> 本文件仅承载 App 员工端与公开 H5 的共享约定和正文指针。员工端三页归需求工单管理，公开 H5 三种形态归需求外链管理；页面正文及 `assets/app/` 原型均在对应功能目录。视觉润色、Token 纪律、触控尺寸、三态、组件白名单等硬约束见 [设计入口](../../../busyming-skills-design/SKILL.md)、[平台规范](../../../busyming-skills-design/shared/platform-guidelines.md) 与 [页面标准](../../../busyming-skills-design/shared/page-standards/)，交互三维度按 [interaction-spec.md](../../../busyming-skills-common/workflow/PM/references/interaction-spec.md) 填写。业务规则只引用、不复述，规则入口见 [SKILL.md](../SKILL.md) Prerequisites。
 
 ## 全局约定
 

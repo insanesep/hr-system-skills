@@ -8,7 +8,7 @@
   故障报告 · 故障列表（页型 order-list · 静态原型，数据为 Mock，Mock 今天 = 2026-10-21）
   需求真源：references/web-ui.md「故障列表 / 故障登记--编辑弹窗」、references/business-rule.md、references/data.md
   页面路由：/subapp/devhub/report/fault ｜ 权限：路由 devhubFaultReport；按钮 devhubFaultEdit（登记 / 编辑）
-  骨架依据：busyming-skills-design/templates/web/order-list.html（.tpl-* 骨架类保留）
+  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md（.tpl-* 骨架类保留）
   组件清单（registry/prototype.json · platform=pc 逐条核对）：
     Button / BusyInput / Form(busy-form-item) / Radio(定级单选) / DatePicker(busy-range-editor) /
     DateTimePicker(发生·发现时间触发器) / SimpleUserSelector(负责人) / PageableSelect(状态下拉契约) /
@@ -25,7 +25,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级模板扩展类：toast 顶部定位（尺寸收进 tpl- 类，不写行内 style） */
   .tpl-toast-fixed { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 3000; }

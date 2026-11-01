@@ -9,7 +9,7 @@
   需求真源：references/web-ui.md「故障详情」、references/business-rule.md §4 状态机 / §5 时限高亮 / §6 约束
   页面路由：/subapp/devhub/report/fault/detail/:id ｜ 权限：路由 devhubFaultReport；
     按钮 devhubFaultEdit（编辑/追加处置记录/添加与移除证据/标记已恢复）、devhubFaultReview（提交复盘/打回/添加改进措施）、devhubFaultClose（闭环确认）
-  骨架依据：busyming-skills-design/templates/web/order-detail.html（.tpl-* 骨架类保留）
+  编排依据：busyming-skills-design/shared/page-standards/web-detail.md（.tpl-* 骨架类保留）
   组件清单（registry/prototype.json · platform=pc 逐条核对）：
     Button / Steps(busy-steps 生命周期) / Descriptions(busy-descriptions 信息头) / Tag(定级/状态/证据类型) /
     Table(busy-table--border 证据与改进措施) / Checkbox(措施完成勾选) / Radio(证据类型) /
@@ -28,7 +28,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级模板扩展类：toast 顶部定位（尺寸收进 tpl- 类，不写行内 style） */
   .tpl-toast-fixed { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 3000; }

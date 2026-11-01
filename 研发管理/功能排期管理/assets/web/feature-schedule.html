@@ -7,7 +7,7 @@
 <!--
   功能排期 · 研发排期工作台（Web 原型 · Mock 演示数据，刷新即重置）
   页面描述真源：../../references/web-ui.md#研发排期工作台 ｜ 页面类型 order-list
-  整页范例：busyming-skills-design/templates/web/order-list.html ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
+  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
   区块：指挥栏 A1–A10（池展开/时间导航/本月进度（单选快捷筛选，再点取消）/搜索/视图切换/待澄清 N（视图切换与筛选之间，N>0 警示样式）/筛选/新建/更多）
     → 待排期池 B1–B6（编号位=创建时间+相对时间标签、超 7 天警示色；服务端分页 10/20/50（总数与每页一行、页码一行，不横向溢出）、批量多选、空态）
     → 月视图 C（卡片仅落在排期截止日所在格，区间卡不逐日铺开；+N 日详情弹层按排期区间覆盖当日取卡）
@@ -15,7 +15,7 @@
     → 浮层 G1–G14（筛选抽屉、日详情、年月选择、右键菜单（含移入非需求改动、转待澄清）、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示、
       待澄清列表 G13（全部/我负责的/我发起的，发起时间正序，等待超 2 天警示，完成澄清/撤回，10/20/50 分页）、澄清弹窗 G14（转待澄清/完成澄清/撤回澄清，与详情页 M7–M9 同一实现）
   演示基准日 2026-10-21（周三，演示当前时间 10:30）；当前登录人演示为「陈默」（PM，全权限）。
-  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → templates/web/templates.css（不加载 native.js / interactions.js）。
+  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → shared/prototype/web/templates.css（不加载 native.js / interactions.js）。
   演示约定：卡片 DOM 仅用 busy-*/.tpl-*/.u-* 类，JS 定位一律 data-* 属性；
     拖拽/右键/快捷键 (←/→/T/Esc) 均已实现；浮层以 busy-overlay-demo host 承载并叠加 runtime.css 的 busy-overlay（fixed 全屏遮罩，内容可滚动），
     打开时 host 移到 body 末尾保证后开的在上层；Esc 按打开顺序逐层关闭，无浮层时退出多选态。
@@ -24,7 +24,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 </head>
 <body>
 <nav class="tpl-nav">

@@ -7,7 +7,7 @@
 <!--
   功能排期 · 卡片详情页（Web 原型 · Mock 演示数据，刷新即重置）
   页面描述真源：../../references/web-ui.md#卡片详情页 ｜ 页面类型 order-detail
-  整页范例：busyming-skills-design/templates/web/order-detail.html ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
+  编排依据：busyming-skills-design/shared/page-standards/web-detail.md ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
   页面定位：一屏回答「这张卡片现在什么状态、排在哪天、谁在开发、交付了哪些 commit」，待澄清时说明卡在什么问题上。
   区块：页头 J1（返回 / 编号标题 / 标签行（待澄清为警示）/ 右上操作区 L1-L2）
     → 业务提示 J2（子卡只读 / 非需求改动 / 延期 / 待澄清：问题全文、发起人、发起时间、已等待（超 2 天警示）、澄清前状态与原排期 /
@@ -24,13 +24,13 @@
   导航栏「原型页面」可切换页面、演示卡片（合并卡 / 延期卡 / 完成卡 / 子卡只读 / 非需求改动卡 / 待澄清卡（澄清前开发中，保留开发人）/
     澄清合并卡（FS-20261013-004 经两轮澄清并入，含澄清来源与两条已澄清记录；?no=FS-20261014-009 演示中间合并卡跳转））与整页状态（正常 / 加载失败 / 不存在）。
   演示基准日 2026-10-21（周三，演示当前时间 10:30）；当前登录人演示为「陈默」（PM，全权限）。
-  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → templates/web/templates.css；
+  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → shared/prototype/web/templates.css；
     浮层以 busy-overlay-demo + busy-overlay（fixed 遮罩）承载，打开时移至 body 末尾，Esc 按打开顺序逐层关闭。
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 </head>
 <body>
 <nav class="tpl-nav">

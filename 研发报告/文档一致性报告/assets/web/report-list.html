@@ -8,7 +8,7 @@
   报告列表页（列表页 · Tab 双视角：按周索引 / 报告明细 · 静态原型，数据为 Mock）
   路由：/subapp/devhub/report/consistency；权限：路由 devhubConsistencyReport；手动补传 devhubReportUpload；立即生成 devhubReportTrigger（原型按已授权展示，行内注释标注）
   页面描述：references/web-ui.md「报告列表」；手动补传弹窗共用口径：报告配置 references/web-ui.md「手动补传弹窗（报告模块共用）」
-  结构依据：busyming-skills-design/templates/web/archive-list.html（列表页骨架：页头 → 筛选卡 → 表格卡内嵌 KPI → Tabs → busy-table）
+  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md（列表页骨架：页头 → 筛选卡 → 表格卡内嵌 KPI → Tabs → busy-table）
   组件树：BusyTabs / Table(busy-table) / Form(busy-form-item) / BusyInput / Select(el-select 原生 + convert 主题，契约 shared/contracts/select.md §1)
     / DatePicker(busy-date-editor) / Button / Tag / Empty(busy-empty)
     / Dialog(busy-dialog，手动补传弹窗) / MessageBox(确认) / Upload(拖拽区) / Message(toast)
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
 /* 页面级模板扩展类（templates.css 未含浮层壳/上传区块；仅定位与尺寸收进类，色值全部消费 --busy-* token，遮罩 rgba 沿用仓内先例） */
 .tpl-kpi__value--date { font-size: 22px; }

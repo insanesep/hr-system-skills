@@ -18,7 +18,7 @@
   - 弹窗：**续期弹窗**：令牌名称（只读）、当前到期时间（只读）、续期时长（单选 7 / 30 / 90 / 180 天，默认 90）、新到期时间（随选择实时计算，只读）
   - 弹窗：**吊销确认**：本人吊销为确认框；管理员吊销他人令牌为表单弹窗，含吊销原因（必填）
   - 空态：Empty「还没有令牌，点击「生成令牌」为你的 AI Agent 接入 MCP」
-- **布局引用**：[本功能原型](../assets/web/token-list.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-list.html`）
+- **布局引用**：[本功能原型](../assets/web/token-list.html)（编排依据：`busyming-skills-design/shared/page-standards/web-operation-list.md`）
 
 #### 导航关系
 
@@ -69,7 +69,7 @@
   - 已选汇总（表单底部）：实例、库、表、研发工具族、业务工具的已选数量
   - 底部操作：取消、生成令牌（编辑模式为「保存授权范围」）；创建与保存均须至少选择一项当前有效范围
   - 弹窗：**生成结果弹窗**（不可点遮罩关闭）：令牌明文（可复制）、醒目提示「令牌仅展示这一次，关闭后无法再次查看，请立即复制保存」、MCP 配置区（统一标准配置，服务名称带环境标识；只读配置内容已填入令牌明文；复制配置、下载配置文件）、底部「我已保存，关闭」
-- **布局引用**：[本功能原型](../assets/web/token-form.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-form.html`）
+- **布局引用**：[本功能原型](../assets/web/token-form.html)（编排依据：`busyming-skills-design/shared/page-standards/web-form.md`）
 
 #### 导航关系
 
@@ -117,7 +117,7 @@
   - 授权范围：统一表格列为领域、对象、粒度、范围、可用性；业务工具为令牌显式勾选的工具；研发工具为 SLS 日志 / ARMS 应用监控工具族，范围显示「当前仓成员应用范围」，不列业务域、环境限定或单应用授权；数据库保留实例 / 库 / 表粒度与「含后续开放表」标记；不可用项带「已停用」「已删除」「已超出分配范围」Tag，失去工具分配后对应工具族不可用。权限收回或到期不吊销令牌本身，仅拒绝受影响工具调用，其他有效范围不变
   - MCP 接入配置：统一标准配置（服务名称带环境标识）、只读配置内容（令牌位置以「<请填入令牌>」占位）、复制配置、下载配置文件；说明「令牌明文仅在生成时展示」；生产 / 非生产连接按完整应用名后缀路由，不是环境授权项；配置可复制不代表失效工具或应用可调用
   - 调用记录（近 30 天，本令牌）：按调用结果筛选；表格列：调用时间、工具、目标对象（观测查询为完整应用，数据库为库表）、调用结果 Tag、原因、耗时
-- **布局引用**：[本功能原型](../assets/web/token-detail.html)（DOM 结构依据：`busyming-skills-design/templates/web/archive-detail.html`）
+- **布局引用**：[本功能原型](../assets/web/token-detail.html)（编排依据：`busyming-skills-design/shared/page-standards/web-detail.md`）
 
 #### 导航关系
 

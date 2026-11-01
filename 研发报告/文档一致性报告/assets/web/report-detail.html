@@ -9,7 +9,7 @@
   路由：/subapp/devhub/report/consistency/detail/:id；权限：路由 devhubConsistencyReport
   页面描述：references/web-ui.md「报告详情」
   渲染口径：Web 端展示服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染；章节口径：本次检查范围明细 / 统计概览 / 文档三件套对齐表 / 功能覆盖度分析 / 总体摘要）
-  结构依据：busyming-skills-design/templates/web/archive-detail.html（页头返回 → 历史版本警示（黄 Alert，仅历史版本）→ 元信息卡 → 内容区）
+  编排依据：busyming-skills-design/shared/page-standards/web-detail.md（页头返回 → 历史版本警示（黄 Alert，仅历史版本）→ 元信息卡 → 内容区）
   组件树：Descriptions(busy-descriptions) / Select(版本切换，el-select 原生 + convert) / Table(busy-table，横滚容器)
     / Button / Tag / Drawer(窄屏大纲) / Message(toast) / MessageBox(口径见列表页)
   布局：tpl-dual--side（左阅读区 + 右大纲 sticky）；≤1024px 按模板媒体查询单栏堆叠，生产窄屏折叠为顶部「大纲」按钮弹 Drawer（本页已内置 Drawer 演示入口）
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
 /* 页面级模板扩展类（templates.css 未含浮层壳/大纲/正文排版块；仅定位与尺寸收进类，色值全部消费 --busy-* token，遮罩 rgba 沿用仓内先例） */
 .tpl-crumb-link { color: inherit; opacity: .85; }

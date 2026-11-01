@@ -13,12 +13,12 @@
     → KPI 卡片行 ×5（周环比公式见各卡「?」hint）→ 日 Credits 消耗堆叠柱形图（合计降序前 6 个模型等级分段 + 其他（灰）+ 未标注）
     → Credits 用量透视表（成员 × 日期）→ 模型用量透视表（成员 × 模型等级；两表服务端分页，默认 20 条/页，共用一次查询与同一分页）
     → 空态：筛选范围内无事件或上游未配置/未开通均按空数据展示（KPI 归零、图表空态），不报错
-  图表能力：设计仓静态原型登记的图表形态为 templates/web 的 .tpl-chart 占位（registry/prototype.json 未登记 Chart 组件，生产落地使用 ECharts 封装）
+  图表能力：设计仓静态原型登记的图表形态为 shared/prototype/web 的 .tpl-chart 占位（registry/prototype.json 未登记 Chart 组件，生产落地使用 ECharts 封装）
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 </head>
 <body>
 <nav class="tpl-nav">

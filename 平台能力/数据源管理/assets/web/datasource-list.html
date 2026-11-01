@@ -9,13 +9,13 @@
   需求真源：references/web-ui.md「数据源管理」；规则：references/datasource-rules.md §1 / §2 / §4 / §6；业务域枚举：references/devtool-rules.md §2.1
   布局流：页头（标题 + 登记数据源）→ 筛选卡（数据库类型 / 环境 / 业务域 / 连通状态 / 关键词）→ 表格卡（busy-table + 分页）
   浮层：登记 / 编辑数据源弹窗、MessageBox 二次确认与错误详情、Message 轻提示
-  DOM 骨架依据：busyming-skills-design/templates/web/archive-list.html
+  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md
   Mock 触发约定：只读账号含 "admin" → 具备写入权限；连接地址主机含 "bad" → 连接失败；连通状态「异常」的数据源启用失败
 -->
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
   /* 页面级布局约定：仅定位与几何尺寸；颜色/圆角/阴影/字号一律消费 var(--busy-*) */
   .tpl-nav a { color: var(--busy-color-white); }

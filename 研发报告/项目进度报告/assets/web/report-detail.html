@@ -7,7 +7,7 @@
 <!--
   项目进度报告 · 报告详情（Web 管理端 · 静态原型，数据为 Mock）
   页面描述真源：../../references/web-ui.md#报告详情 ｜ 页面路由 /subapp/devhub/report/project-progress/detail/:id
-  页面类型：详情页（阅读型）｜ 骨架依据：busyming-skills-design/templates/web/archive-detail.html（detail 页型族 + tpl-dual--side 右栏大纲）
+  页面类型：详情页（阅读型）｜ 编排依据：busyming-skills-design/shared/page-standards/web-detail.md（detail 页型族 + tpl-dual--side 右栏大纲）
   布局流：页头（返回 + 标题 + 报告类型/项目 Tag + 操作）→ 历史版本警示（黄 Alert，仅查看历史版本时）
     → 元信息卡（busy-descriptions + 版本切换 busy-select）→ tpl-dual--side[阅读区 panel | 大纲 panel（sticky 锚点目录）]
   渲染口径：Web 端展示服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染）；
@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/site.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/web/templates.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 <style>
 /* ===== 页面级扩展类（项目进度报告 · 报告详情）：行内样式收口 ===== */
 .tpl-page-title__tag { vertical-align: middle; }

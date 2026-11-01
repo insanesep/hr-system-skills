@@ -1,6 +1,6 @@
 # Web 端 UI 描述 · 故障报告
 
-> 硬约束（组件白名单 / Token / 三态）详见 PM 技能 `prompts/requirement-page-gen.prompt.md`【2. 硬约束】，此处仅填产品侧元信息。
+> 原型约束（组件白名单 / Token / 三态）与设计方法详见 PM 技能 `prompts/requirement-page-gen.prompt.md`（调用 huashu-design），此处仅填产品侧元信息。
 > 名词约定、业务流程、业务规则与权限编码以 [`business-rule.md`](business-rule.md) 为真源，字段口径以 [`data.md`](data.md) 为真源。
 
 ---

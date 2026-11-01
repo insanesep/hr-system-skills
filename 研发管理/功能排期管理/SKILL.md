@@ -34,9 +34,9 @@ Web：排期工作台、独立卡片详情。server：源仓采集与流程守�
 | 数据定义 | [references/data.md](references/data.md) | 卡片、完成回执、合并明细、流水、发版日、项目、澄清记录 | 本模块 |
 | Web 页面 | [references/web-ui.md](references/web-ui.md) | 工作台与卡片详情页的区块元素、导航、操作反馈与表单校验 | 本模块 |
 | MCP 能力 | [references/other-rule-mcp.md](references/other-rule-mcp.md) | 能力分组、工具清单与权限对应、调用约束、需求澄清的 agent 约定 | 本模块 |
-| 页面模板 | [order-list.html](../../../busyming-skills-design/templates/web/order-list.html) | 研发排期工作台 `order-list` 的整页范例 | busyming-skills-design |
-| 页面模板 | [order-detail.html](../../../busyming-skills-design/templates/web/order-detail.html) | 卡片详情页 `order-detail` 的整页范例 | busyming-skills-design |
-| 原型样式入口 | [templates.css](../../../busyming-skills-design/templates/web/templates.css)（+ [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css)、[runtime.css](../../../busyming-skills-design/docs-site/pc/runtime.css)） | 原型样式链：`components/web/tokens/pc.css` → `docs-site/pc/runtime.css` → `docs-site/ep-base-shim.css` → `templates/web/templates.css`，与 registry/prototype.json 中 PC 组件的样式清单一致 | busyming-skills-design |
+| 页面编排标准 | [web-operation-list.md](../../../busyming-skills-design/shared/page-standards/web-operation-list.md) | 研发排期工作台的区域编排 | busyming-skills-design |
+| 页面编排标准 | [web-detail.md](../../../busyming-skills-design/shared/page-standards/web-detail.md) | 卡片详情页的区域编排 | busyming-skills-design |
+| 原型样式入口 | [templates.css](../../../busyming-skills-design/shared/prototype/web/templates.css)（+ [pc.css](../../../busyming-skills-design/components/web/tokens/pc.css)、[runtime.css](../../../busyming-skills-design/docs-site/pc/runtime.css)） | 原型样式链：`components/web/tokens/pc.css` → `docs-site/pc/runtime.css` → `docs-site/ep-base-shim.css` → `shared/prototype/web/templates.css`，与 registry/prototype.json 中 PC 组件的样式清单一致 | busyming-skills-design |
 | 域及项目管理 | [SKILL.md](../域及项目管理/SKILL.md) | 域项目、代码仓与执行映射唯一真源；本模块只读消费 | busyming-skills-devops |
 | 产研人员管理 | [SKILL.md](../产研人员管理/SKILL.md) | 新职责人员候选与稳定身份 | busyming-skills-devops |
 | 功能使用情况分析 | [SKILL.md](../功能使用情况分析/SKILL.md) | 埋点登记：菜单权限、功能目录与前端路由三处一并登记 | busyming-skills-devops |

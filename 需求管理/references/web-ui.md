@@ -1,6 +1,6 @@
 # 需求管理 · Web 端 UI 描述
 
-> 本文件仅承载五个功能共用的全局约定、跨页导航与正文索引；页面元素和交互正文、原型分别归各叶子功能的 `references/` 与 `assets/web/`。组件白名单、Token 纪律、卡片化拓扑、三态等硬约束见 [设计入口](../../../busyming-skills-design/SKILL.md)、[平台硬约束](../../../busyming-skills-design/shared/platform-guidelines.md#2-平台硬约束) 与 [页面标准](../../../busyming-skills-design/shared/page-standards/)，交互三维度按 [interaction-spec.md](../../../busyming-skills-common/workflow/PM/references/interaction-spec.md) 填写。业务规则只引用、不复述，规则入口见 [SKILL.md](../SKILL.md) Prerequisites；公开 H5 三页见 [外链 H5 正文](../需求外链管理/references/app-ui.md#公开-h5)。
+> 本文件仅承载五个功能共用的全局约定、跨页导航与正文索引；页面元素和交互正文、原型分别归各叶子功能的 `references/` 与 `assets/web/`。组件白名单、Token 纪律、卡片化拓扑、三态等硬约束见 [设计入口](../../../busyming-skills-design/SKILL.md)、[平台规范](../../../busyming-skills-design/shared/platform-guidelines.md) 与 [页面标准](../../../busyming-skills-design/shared/page-standards/)，交互三维度按 [interaction-spec.md](../../../busyming-skills-common/workflow/PM/references/interaction-spec.md) 填写。业务规则只引用、不复述，规则入口见 [SKILL.md](../SKILL.md) Prerequisites；公开 H5 三页见 [外链 H5 正文](../需求外链管理/references/app-ui.md#公开-h5)。
 
 ## 全局约定
 
