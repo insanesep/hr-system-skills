@@ -46,10 +46,7 @@ description: "生成项目进度报告（由模型直接执行）。按项目独
 ### Step 2 同步仓库
 
 - **外部会话**：对项目映射 `code_repos` 与 `harness_repo` 下每个仓库，仓库缺失时按会话配置 `codeup` 凭证浅克隆（命令不内嵌，按生成环境约定执行）。
-- **服务端生成会话**：工作区即会话 cwd（起始为空）。仓库清单与云效访问凭证由调用方在会话数据「项目代码仓库」中提供，逐仓执行：
-  1. 解析仓库路径：`GET {base-url}/oapi/v1/codeup/organizations/{orgId}/repositories/{repoId}`（请求头 `x-yunxiao-token: {令牌}`），取响应 `pathWithNamespace`；解析失败写一行说明并跳过该仓，不得猜测路径
-  2. 克隆到当前目录：`git clone https://oauth2:{令牌}@codeup.aliyun.com/{pathWithNamespace}.git`（`pathWithNamespace` 已含组织前缀，不要再拼 orgId；需覆盖全分支，保证窗口内历史完整）；目录已存在则 `git fetch --all --prune` 增量同步
-  3. 令牌敏感：仅允许用于解析与克隆，禁止写入报告正文、禁止在输出中原样打印
+- **服务端生成会话**：工作区即会话 cwd（起始为空）。云效仓库按会话数据「项目代码仓库」中的云效访问信息同步；基础 Git 仓库由 Agent 程序预先完整同步，并在会话追加数据中提供 repoKey 与工作区目录映射。模型只在已同步的基础 Git 目录内读取与采集，不得自行克隆、拉取或索取基础 Git 凭据；所有访问凭证仅允许用于程序解析与克隆，禁止写入报告正文或在输出中原样打印
 
 按项目 `branch_policy` 切统计基准分支（只切 `WS` 内的工作区仓库，严禁碰开发目录）：
 
