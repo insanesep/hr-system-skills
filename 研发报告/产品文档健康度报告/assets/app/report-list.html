@@ -3,88 +3,137 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>产品文档健康度报告 · App 列表原型</title>
-<!--
-  产品文档健康度报告 · 报告列表（App 查阅端 · 静态原型，数据为 Mock）
-  页面描述真源：../../references/mobile-ui.md#报告列表 ｜ 路由 /rnd-report/doc-health/home
-  权限：devhubAppDocHealthReport；只读，不提供立即生成或自动修复
-  Mock 基准日：2026-10-18（周日）；启用项目 product / devops，不设置 _all 汇总项
--->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/mobile/runtime.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
+<title>文档健康度 · App 报告列表</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/app/tokens/app.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/app/templates.css">
 <style>
-.health-nav-icon { cursor: pointer; }
-.health-chips { background: var(--busy-bg-deep); }
-.busy-tabs--tag .health-chips__list { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0; }
-.busy-tabs--tag .health-chip { padding: 4px 12px; border-radius: 4px; flex-shrink: 0; }
+.health-icon { width: 20px; height: 20px; }
+.health-search { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border-radius: 6px; background: var(--rn-bg-strong); }
+.health-search__field { flex: 1; display: flex; align-items: center; gap: 8px; min-width: 0; color: var(--tpl-muted); }
+.health-search input { flex: 1; min-width: 0; height: 28px; border: 0; outline: 0; background: transparent; color: var(--rn-text-primary); font-size: var(--rn-font-size-md); }
+.health-search input::placeholder { color: var(--rn-text-placeholder); }
+.health-search__cancel { border: 0; background: transparent; color: var(--rn-color-primary); font-size: var(--rn-font-size-md); cursor: pointer; }
+.health-chips { display: flex; gap: 8px; overflow-x: auto; padding: 2px 0; scrollbar-width: none; }
+.health-chips::-webkit-scrollbar { display: none; }
+.health-chip { flex: 0 0 auto; min-height: 32px; padding: 0 14px; border: .5px solid var(--rn-border-strong); border-radius: 16px; background: var(--rn-bg-strong); color: var(--rn-text-secondary); font-size: var(--rn-font-size-md); cursor: pointer; }
+.health-chip.is-active { border-color: var(--rn-color-primary); background: var(--rn-color-primary-bg); color: var(--rn-color-primary-active); font-weight: var(--rn-font-weight-medium); }
 .health-week-list, .health-week-group { display: flex; flex-direction: column; gap: 12px; }
 .health-week-group { gap: 8px; }
-.health-week-head { display: flex; align-items: center; justify-content: space-between; }
-.health-week-label { font-size: var(--busy-font-size-md); }
-.health-card { text-decoration: none; color: inherit; }
-.health-card--missing { opacity: .55; }
-.health-card__project { font-size: var(--busy-font-size-sm); }
-.health-card__title { font-size: var(--busy-font-size-md); line-height: var(--busy-line-height-md); display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.health-card__metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; padding: 10px 0; }
-.health-metric__label { color: var(--busy-text-tertiary); font-size: var(--busy-font-size-xs); }
-.health-metric__value { margin-top: 3px; font-size: var(--busy-font-size-md); }
-.health-score { color: var(--busy-color-success); }
-.health-fail { color: var(--busy-color-danger); }
-.health-card__meta { font-size: var(--busy-font-size-sm); }
+.health-week-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px; }
+.health-week-title { font-size: var(--rn-font-size-base); font-weight: var(--rn-font-weight-medium); }
+.health-week-date { margin-left: 6px; color: var(--tpl-muted); font-size: var(--rn-font-size-sm); font-weight: var(--rn-font-weight-regular); }
+.health-card { color: inherit; text-decoration: none; transition: background .18s ease, transform .18s ease; }
+a.health-card:active { transform: scale(.99); background: var(--rn-bg-subtle); }
+.health-card__project { font-size: var(--rn-font-size-base); font-weight: var(--rn-font-weight-medium); }
+.health-card__score { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; }
+.health-score__main { display: flex; align-items: baseline; gap: 6px; }
+.health-score__value { font-size: 32px; line-height: 38px; font-weight: var(--rn-font-weight-medium); font-variant-numeric: tabular-nums; }
+.health-score__label { color: var(--tpl-muted); font-size: var(--rn-font-size-sm); }
+.health-delta { text-align: right; }
+.health-delta__value { font-size: var(--rn-font-size-base); font-weight: var(--rn-font-weight-medium); font-variant-numeric: tabular-nums; }
+.health-delta__label { color: var(--tpl-muted); font-size: var(--rn-font-size-sm); }
+.health-up { color: #007a52; }
+.health-down { color: var(--rn-theme-palette-danger-active); }
+.health-chip.is-active, .health-card__read { color: #b54700; }
+.health-card__status { display: flex; gap: 8px; flex-wrap: wrap; }
+.health-inline-status { display: inline-flex; align-items: center; gap: 5px; min-height: 26px; padding: 0 8px; border-radius: 4px; background: var(--rn-bg-subtle); color: var(--rn-text-secondary); font-size: var(--rn-font-size-sm); }
+.health-inline-status::before { content: ''; width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+.health-inline-status.is-danger { background: var(--rn-theme-palette-danger-bg); color: var(--rn-theme-palette-danger-active); }
+.health-inline-status.is-success { background: var(--rn-theme-palette-success-bg); color: var(--rn-theme-palette-success-active); }
+.health-inline-status.is-warning { background: var(--rn-theme-palette-warning-bg); color: var(--rn-text-primary); }
+.health-card__foot { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-top: 10px; border-top: .5px solid var(--rn-border-subtle); color: var(--tpl-muted); font-size: var(--rn-font-size-sm); }
+.health-card__read { display: inline-flex; align-items: center; gap: 2px; color: var(--rn-color-primary-active); }
+.health-card--missing { background: var(--rn-bg-subtle); color: var(--tpl-muted); }
+.health-card--missing .health-card__project { color: var(--rn-text-secondary); }
+.health-missing-copy { line-height: 1.6; }
+.health-load-more { min-height: 40px; border: 0; background: transparent; color: var(--tpl-muted); font-size: var(--rn-font-size-sm); cursor: pointer; }
 .health-skeleton { display: flex; flex-direction: column; gap: 12px; }
-.health-skeleton__item { height: 128px; width: 100%; }
-.health-load-more { text-align: center; padding: 12px 0; color: var(--busy-text-tertiary); font-size: var(--busy-font-size-sm); cursor: pointer; }
-.health-toast { position: fixed; inset: 0; z-index: 3000; display: flex; align-items: center; justify-content: center; pointer-events: none; background: transparent; }
-.health-toast .adm-toast-main { display: inline-block; }
-.health-toast .adm-toast-main-text { display: block; }
+.health-skeleton__card { height: 164px; border-radius: 6px; background: linear-gradient(90deg, var(--rn-bg-subtle) 25%, var(--rn-border-subtle) 50%, var(--rn-bg-subtle) 75%); background-size: 200% 100%; animation: health-shimmer 1.2s infinite; }
+@keyframes health-shimmer { to { background-position: -200% 0; } }
+.health-empty { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 56px 20px; text-align: center; color: var(--tpl-muted); }
+.health-empty strong { color: var(--rn-text-primary); font-size: var(--rn-font-size-base); }
+.health-empty__copy { font-size: var(--rn-font-size-sm); line-height: 1.6; }
+.health-empty button { margin-top: 4px; }
+.health-toast { position: fixed; left: 50%; bottom: 56px; z-index: 100; transform: translateX(-50%); max-width: calc(100vw - 48px); padding: 10px 16px; border-radius: 6px; background: rgb(0 0 0 / 78%); color: #fff; font-size: var(--rn-font-size-md); text-align: center; pointer-events: none; }
+.u-muted, .u-sub { color: var(--tpl-muted); }
+button:focus-visible, a:focus-visible, input:focus-visible { outline: 2px solid var(--rn-color-primary); outline-offset: 2px; }
+@media (prefers-reduced-motion: reduce) { .health-skeleton__card { animation: none; } .health-card { transition: none; } }
 </style>
 </head>
 <body>
 <div class="tpl-app">
-  <div class="busy-navbar"><div class="busy-navbar__bar"><a class="busy-navbar__side" href="#" title="返回工作台（原型占位）"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></a><span class="busy-navbar__title">产品文档健康度报告</span><span class="busy-navbar__side busy-navbar__side--right health-nav-icon" id="searchToggle"><svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span></div></div>
-  <div class="tpl-app__scroll">
-    <div class="busy-searchbar" id="searchbar" hidden><div class="busy-searchbar__row"><div class="busy-searchbar__field"><span class="busy-searchbar__leading"><svg class="busy-searchbar__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span><input class="busy-searchbar__input" placeholder="搜索报告标题" id="searchInput"></div></div></div>
-    <div class="busy-tabs busy-tabs--tag health-chips" id="projectChips"><div class="busy-tabs__list health-chips__list"><span class="busy-tabs__item busy-tabs__item--active health-chip" data-project="all"><span class="busy-tabs__title">全部</span></span><span class="busy-tabs__item health-chip" data-project="product"><span class="busy-tabs__title">商品中心</span></span><span class="busy-tabs__item health-chip" data-project="devops"><span class="busy-tabs__title">产研平台</span></span></div></div>
-    <div class="health-skeleton" id="skeleton" hidden><span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated health-skeleton__item"></span><span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated health-skeleton__item"></span></div>
+  <nav class="rn-navbar"><div class="rn-navbar__bar">
+    <button class="rn-navbar__side" id="backWork" aria-label="返回工作台"><svg class="health-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><path d="m12.5 4.5-5 5.5 5 5.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <span class="rn-navbar__title">文档健康度</span>
+    <button class="rn-navbar__side rn-navbar__side--right" id="searchToggle" aria-label="搜索报告" aria-expanded="false"><svg class="health-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m12.5 12.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></button>
+  </div></nav>
+  <main class="tpl-app__scroll" id="scrollBody">
+    <div class="health-search" id="searchbar" hidden>
+      <div class="health-search__field"><svg width="16" height="16" viewBox="0 0 20 20" fill="none" aria-hidden="true"><circle cx="8.5" cy="8.5" r="5.5" stroke="currentColor" stroke-width="1.5"/><path d="m12.5 12.5 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg><input id="searchInput" placeholder="搜索范围、key 或报告标题" aria-label="搜索报告"></div>
+      <button class="health-search__cancel" id="searchCancel">取消</button>
+    </div>
+    <div class="health-chips" id="projectChips" aria-label="范围筛选">
+      <button class="health-chip is-active" data-project="all">全部</button>
+      <button class="health-chip" data-project="product">商品中心</button>
+      <button class="health-chip" data-project="devops">产研平台</button>
+    </div>
+    <div class="health-skeleton" id="skeleton" hidden><div class="health-skeleton__card"></div><div class="health-skeleton__card"></div></div>
     <div class="health-week-list" id="weekList"></div>
-    <div class="tpl-empty" id="emptyState" hidden><div class="tpl-empty__desc">该条件下暂无报告</div></div>
-    <div class="health-load-more" id="loadMore">上拉加载更早周次（点击演示）</div>
-  </div>
+    <div class="health-empty" id="emptyState" hidden><strong>没有找到相关报告</strong><span class="health-empty__copy">换个关键词试试，或清除筛选查看全部报告。</span><button class="rn-button rn-button--small" id="clearFilters">清除筛选</button></div>
+    <button class="health-load-more" id="loadMore">加载更早周次</button>
+  </main>
 </div>
-<div id="toastHost"></div>
+<div id="toastHost" aria-live="polite"></div>
 <script>
-var PROJECTS = { product: '商品中心', devops: '产研平台' };
-var WEEKS = [{ id: 'w42', label: '第 42 周 · 10-12~10-18' }, { id: 'w41', label: '第 41 周 · 10-05~10-11' }, { id: 'w40', label: '第 40 周 · 09-28~10-04' }];
-var REPORTS = [
-  { week: 'w42', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-18', date: '2026-10-18', score: 87.8, fail: 1, audit: '通过', source: '服务端生成', version: 'v2' },
-  { week: 'w42', project: 'devops', missing: true },
-  { week: 'w41', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-11', date: '2026-10-11', score: 81.2, fail: 2, audit: '通过', source: '服务端生成', version: 'v1' },
-  { week: 'w41', project: 'devops', title: '产品文档健康度报告（产研平台） - 2026-10-11', date: '2026-10-11', score: 82.1, fail: 1, audit: '未通过', source: '推送上报', version: 'v1' },
-  { week: 'w40', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-04', date: '2026-10-04', score: 79.8, fail: 2, audit: '通过', source: '服务端生成', version: 'v1' },
-  { week: 'w40', project: 'devops', title: '产品文档健康度报告（产研平台） - 2026-10-04', date: '2026-10-04', score: 84.7, fail: 0, audit: '通过', source: '服务端生成', version: 'v1' }
+const PROJECTS = { product: '商品中心', devops: '产研平台' };
+const WEEKS = [
+  { id: 'w42', label: '第 42 周', date: '10-12 ~ 10-18' },
+  { id: 'w41', label: '第 41 周', date: '10-05 ~ 10-11' },
+  { id: 'w40', label: '第 40 周', date: '09-28 ~ 10-04' }
 ];
-var state = { project: 'all', keyword: '', loadedWeeks: 2 };
-function toast(text) { var el = document.createElement('div'); el.className = 'adm-toast-mask busy-toast health-toast'; el.innerHTML = '<div class="adm-toast-main"><span class="adm-toast-main-text"></span></div>'; el.querySelector('.adm-toast-main-text').textContent = text; var host = document.getElementById('toastHost'); host.innerHTML = ''; host.appendChild(el); setTimeout(function () { el.remove(); }, 1800); }
-function cardHtml(r) {
-  if (r.missing) return '<div class="tpl-doc-card health-card--missing"><div class="tpl-doc-card__head"><span class="busy-tag busy-tag--default busy-tag--tint"><span class="busy-tag__content">文档健康度</span></span><span class="u-muted health-card__project">' + PROJECTS[r.project] + '</span></div><div class="u-muted">本周报告未入库</div><div class="tpl-doc-card__foot"><span>未入库</span><span class="u-muted">App 仅支持查阅</span></div></div>';
-  return '<a class="tpl-doc-card health-card" href="report-detail.html"><div class="tpl-doc-card__head"><span class="busy-tag busy-tag--primary busy-tag--tint"><span class="busy-tag__content">文档健康度</span></span><span class="u-muted health-card__project">' + PROJECTS[r.project] + '</span></div><div class="u-strong health-card__title">' + r.title + '</div><div class="health-card__metrics"><div><div class="health-metric__label">仓库平均分</div><div class="health-metric__value health-score u-mono">' + r.score.toFixed(1) + '</div></div><div><div class="health-metric__label">模块 FAIL</div><div class="health-metric__value ' + (r.fail ? 'health-fail' : '') + ' u-mono">' + r.fail + '</div></div><div><div class="health-metric__label">全量自校</div><div class="health-metric__value">' + r.audit + '</div></div></div><div class="tpl-doc-card__foot"><span class="health-card__meta u-mono">' + r.date + ' · ' + r.source + ' · ' + r.version + '</span><b>阅读 ›</b></div></a>';
+const REPORTS = [
+  { week: 'w42', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-18', date: '2026-10-18', score: 87.8, delta: 6.6, fail: 1, audit: '通过', source: '服务端生成', version: 'v2' },
+  { week: 'w42', project: 'devops', missing: true },
+  { week: 'w41', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-11', date: '2026-10-11', score: 81.2, delta: 1.4, fail: 2, audit: '通过', source: '服务端生成', version: 'v1' },
+  { week: 'w41', project: 'devops', title: '产品文档健康度报告（产研平台） - 2026-10-11', date: '2026-10-11', score: 82.1, delta: -2.6, fail: 1, audit: '未通过', source: '推送上报', version: 'v1' },
+  { week: 'w40', project: 'product', title: '产品文档健康度报告（商品中心） - 2026-10-04', date: '2026-10-04', score: 79.8, delta: 0, fail: 2, audit: '通过', source: '服务端生成', version: 'v1' },
+  { week: 'w40', project: 'devops', title: '产品文档健康度报告（产研平台） - 2026-10-04', date: '2026-10-04', score: 84.7, delta: 0, fail: 0, audit: '通过', source: '服务端生成', version: 'v1' }
+];
+const state = { project: 'all', keyword: '', loadedWeeks: 2 };
+const arrow = '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="m6 3.5 4.5 4.5L6 12.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+function toast(text) { const el = document.createElement('div'); el.className = 'health-toast'; el.textContent = text; const host = document.getElementById('toastHost'); host.replaceChildren(el); setTimeout(() => el.remove(), 1800); }
+function deltaHtml(value) { if (!value) return '<span class="u-muted">—</span>'; const cls = value >= 5 ? 'health-up' : value <= -5 ? 'health-down' : ''; return `<span class="${cls}">${value > 0 ? '+' : ''}${value.toFixed(1)}</span>`; }
+function cardHtml(report) {
+  if (report.missing) return `<div class="tpl-doc-card health-card--missing"><div class="tpl-doc-card__head"><span class="health-card__project">${PROJECTS[report.project]}</span><span class="tpl-status tpl-status--disabled">未入库</span></div><div class="health-missing-copy">本周报告未入库<br><span class="u-sub">App 仅支持查阅，可在 Web 端创建生成任务</span></div></div>`;
+  return `<a class="tpl-doc-card health-card" href="report-detail.html" aria-label="查看${PROJECTS[report.project]} ${report.date} 报告"><div class="tpl-doc-card__head"><span class="health-card__project">${PROJECTS[report.project]}</span><span class="u-muted u-mono">${report.version}</span></div><div class="health-card__score"><div><div class="health-score__main"><span class="health-score__value">${report.score.toFixed(1)}</span><span class="health-score__label">仓库平均分</span></div></div><div class="health-delta"><div class="health-delta__value">${deltaHtml(report.delta)}</div><div class="health-delta__label">较上期</div></div></div><div class="health-card__status"><span class="health-inline-status ${report.fail ? 'is-danger' : ''}">模块 FAIL ${report.fail}</span><span class="health-inline-status ${report.audit === '通过' ? 'is-success' : 'is-warning'}">自校${report.audit}</span></div><div class="health-card__foot"><span class="u-mono">${report.date}</span><span>${report.source}</span><span class="health-card__read">阅读 ${arrow}</span></div></a>`;
 }
+function filtered() { return REPORTS.filter(report => { const matchesProject = state.project === 'all' || report.project === state.project; const haystack = report.missing ? `${PROJECTS[report.project]} ${report.project}` : `${report.title} ${PROJECTS[report.project]} ${report.project}`; return matchesProject && (!state.keyword || haystack.toLowerCase().includes(state.keyword.toLowerCase())); }); }
 function render() {
-  var data = REPORTS.filter(function (r) { return (state.project === 'all' || r.project === state.project) && (!state.keyword || (!r.missing && r.title.indexOf(state.keyword) >= 0)); });
-  var html = '';
-  WEEKS.slice(0, state.loadedWeeks).forEach(function (w) { var rows = data.filter(function (r) { return r.week === w.id; }); if (!rows.length) return; var got = rows.filter(function (r) { return !r.missing; }).length; html += '<section class="health-week-group"><div class="health-week-head"><span class="u-strong health-week-label">' + w.label + '</span><span class="busy-tag busy-tag--' + (got === 2 ? 'success' : 'warning') + ' busy-tag--tint"><span class="busy-tag__content">' + got + '/2</span></span></div>' + rows.map(cardHtml).join('') + '</section>'; });
-  document.getElementById('weekList').innerHTML = html; document.getElementById('emptyState').hidden = html !== ''; document.getElementById('loadMore').hidden = state.loadedWeeks >= WEEKS.length;
+  const data = filtered();
+  const html = WEEKS.slice(0, state.loadedWeeks).map(week => {
+    const rows = data.filter(report => report.week === week.id);
+    if (!rows.length) return '';
+    const got = rows.filter(report => !report.missing).length;
+    return `<section class="health-week-group"><div class="health-week-head"><div><span class="health-week-title">${week.label}</span><span class="health-week-date">${week.date}</span></div><span class="tpl-status tpl-status--${got === rows.length ? 'success' : 'warning'}">${got}/${rows.length} 已入库</span></div>${rows.map(cardHtml).join('')}</section>`;
+  }).join('');
+  document.getElementById('weekList').innerHTML = html;
+  document.getElementById('emptyState').hidden = html !== '';
+  document.getElementById('loadMore').hidden = state.loadedWeeks >= WEEKS.length || html === '';
 }
-function withSkeleton(fn) { document.getElementById('weekList').hidden = true; document.getElementById('skeleton').hidden = false; setTimeout(function () { document.getElementById('skeleton').hidden = true; document.getElementById('weekList').hidden = false; fn(); }, 350); }
-document.querySelectorAll('#projectChips .busy-tabs__item').forEach(function (chip) { chip.onclick = function () { document.querySelectorAll('#projectChips .busy-tabs__item').forEach(function (x) { x.classList.remove('busy-tabs__item--active'); }); chip.classList.add('busy-tabs__item--active'); state.project = chip.getAttribute('data-project'); withSkeleton(render); }; });
-document.getElementById('searchToggle').onclick = function () { var bar = document.getElementById('searchbar'); bar.hidden = !bar.hidden; if (!bar.hidden) document.getElementById('searchInput').focus(); };
-document.getElementById('searchInput').onkeydown = function (e) { if (e.key === 'Enter') { state.keyword = this.value.trim(); withSkeleton(render); } };
-document.getElementById('searchInput').oninput = function () { if (!this.value.trim()) { state.keyword = ''; withSkeleton(render); } };
-document.getElementById('loadMore').onclick = function () { this.textContent = '加载中…'; var el = this; setTimeout(function () { state.loadedWeeks = WEEKS.length; render(); el.textContent = '上拉加载更早周次'; toast('已加载更早周次'); }, 450); };
-var startY = 0;
-document.querySelector('.tpl-app__scroll').addEventListener('touchstart', function (e) { if (window.scrollY === 0) startY = e.touches[0].clientY; }, { passive: true });
-document.querySelector('.tpl-app__scroll').addEventListener('touchend', function (e) { if (startY && e.changedTouches[0].clientY - startY > 80 && window.scrollY === 0) { withSkeleton(render); toast('已刷新至最新'); } startY = 0; }, { passive: true });
+function withSkeleton(callback) { document.getElementById('weekList').hidden = true; document.getElementById('emptyState').hidden = true; document.getElementById('skeleton').hidden = false; setTimeout(() => { document.getElementById('skeleton').hidden = true; document.getElementById('weekList').hidden = false; callback(); }, 280); }
+function closeSearch(clear = true) { document.getElementById('searchbar').hidden = true; document.getElementById('searchToggle').setAttribute('aria-expanded', 'false'); if (clear) { document.getElementById('searchInput').value = ''; state.keyword = ''; render(); } }
+document.querySelectorAll('#projectChips [data-project]').forEach(chip => { chip.onclick = () => { document.querySelectorAll('#projectChips [data-project]').forEach(item => item.classList.remove('is-active')); chip.classList.add('is-active'); state.project = chip.dataset.project; withSkeleton(render); }; });
+document.getElementById('searchToggle').onclick = () => { const bar = document.getElementById('searchbar'); bar.hidden = !bar.hidden; document.getElementById('searchToggle').setAttribute('aria-expanded', String(!bar.hidden)); if (!bar.hidden) document.getElementById('searchInput').focus(); };
+document.getElementById('searchInput').oninput = event => { state.keyword = event.target.value.trim(); render(); };
+document.getElementById('searchCancel').onclick = () => closeSearch();
+document.getElementById('clearFilters').onclick = () => { state.project = 'all'; state.keyword = ''; document.getElementById('searchInput').value = ''; closeSearch(); document.querySelectorAll('#projectChips [data-project]').forEach(item => item.classList.toggle('is-active', item.dataset.project === 'all')); render(); };
+document.getElementById('loadMore').onclick = event => { const button = event.currentTarget; button.textContent = '正在加载…'; button.disabled = true; setTimeout(() => { state.loadedWeeks = WEEKS.length; button.disabled = false; button.textContent = '加载更早周次'; render(); toast('已加载第 40 周报告'); }, 400); };
+document.getElementById('backWork').onclick = () => toast('返回工作台（原型演示）');
+let startY = 0;
+const scroller = document.getElementById('scrollBody');
+scroller.addEventListener('touchstart', event => { if (scroller.scrollTop === 0) startY = event.touches[0].clientY; }, { passive: true });
+scroller.addEventListener('touchend', event => { if (startY && event.changedTouches[0].clientY - startY > 80 && scroller.scrollTop === 0) { withSkeleton(render); toast('已刷新至最新'); } startY = 0; }, { passive: true });
 render();
 </script>
 </body>
