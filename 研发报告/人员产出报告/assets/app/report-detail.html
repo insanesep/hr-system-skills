@@ -3,233 +3,106 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>研发周报详情 · 人员产出报告 · App</title>
-<!--
-  人员产出报告 · 报告详情（App 查阅端 · 阅读型 · 静态原型，数据为 Mock）
-  页面对象定义：references/mobile-ui.md「报告详情」
-  布局流：busy-navbar（返回 + 标题「研发周报」+ 右侧「大纲」图标 → 底部大纲抽屉）
-    → 元信息折叠卡（默认首行 = 标题 + 发报日；展开含 所属周/统计区间/来源/版本行）
-    → Markdown 渲染正文（WebView 加载服务端渲染产物，GitHub 风格排版注入；原型为渲染产物静态示意，锚点 h-{seq} 口径一致）
-    → 版本行点击 → 底部版本切换浮层（需求描述为 ActionSheet；mobile registry 无 ActionSheet 组件，
-       以已登记 HalfScreenSheet 承接底部弹层语义）→ 正文骨架屏 → 切换。
-  手势返回：允许（大纲抽屉展开时优先关闭抽屉）。
--->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/NavBar.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tag.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Button.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Toast.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/HalfScreenSheet.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Skeleton.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
-<style>
-/* 页面级扩展类（仅定位与尺寸，色值/字号/圆角全部消费 --busy-* token；遮罩 rgba 沿用仓内先例保留在类中） */
-.tpl-meta-title { font-size: var(--busy-font-size-base); }
-.tpl-row-between { display: flex; align-items: center; justify-content: space-between; }
-.tpl-meta-sub { font-size: var(--busy-font-size-sm); }
-.tpl-meta-more { display: flex; flex-direction: column; }
-.tpl-cell--link { cursor: pointer; }
-.tpl-banner--inline { align-self: flex-start; }
-.tpl-col-gap10 { display: flex; flex-direction: column; gap: 10px; }
-.tpl-md-skel__h { height: 20px; width: 40%; }
-.tpl-md-skel__line { height: 12px; width: 100%; }
-.tpl-md-skel__line--60 { height: 12px; width: 60%; }
-.tpl-md-skel__block { height: 96px; width: 100%; }
-.tpl-md-body { font-size: var(--busy-font-size-md); }
-#mdBody { padding-bottom: 100vh; }
-.tpl-md-h2 { margin: 0; font-size: var(--busy-font-size-lg); }
-.tpl-md-h3 { margin: 0; font-size: var(--busy-font-size-base); }
-.tpl-md-p { margin: 0; }
-.tpl-table-scroll { overflow-x: auto; }
-.tpl-md-table { border-collapse: collapse; white-space: nowrap; font-size: var(--busy-font-size-sm); }
-.tpl-md-table th, .tpl-md-table td { border: 1px solid var(--busy-border-subtle); padding: 6px 10px; }
-.tpl-md-th--left { text-align: left; }
-.tpl-md-pre { margin: 0; background: var(--busy-bg-subtle); border-radius: var(--busy-button-radius-large); padding: 10px; overflow-x: auto; font-size: var(--busy-font-size-xs); }
-.tpl-mask { position: fixed; inset: 0; z-index: 2000; display: flex; align-items: flex-end; justify-content: center; background: rgba(0, 0, 0, .45); }
-.tpl-sheet--full { width: 100%; max-width: 420px; }
-.tpl-sheet-body { display: flex; flex-direction: column; }
-.tpl-outline__sub { padding-left: 16px; }
-.tpl-toast-float { position: fixed; top: 48px; left: 50%; transform: translateX(-50%); z-index: 3000; display: inline-flex; padding: 10px 16px; border-radius: var(--busy-button-radius-large); }
-.js-anchor.is-active { color: var(--busy-color-primary); }
-</style>
+<meta name="theme-color" content="#ffffff">
+<title>研发周报详情 · App</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/assets/runtime/prototype/mobile-tokens.css">
+<link rel="stylesheet" href="../prototype.css">
 </head>
 <body>
-<div class="tpl-app">
-  <div class="busy-navbar">
-    <div class="busy-navbar__bar">
-      <a class="busy-navbar__side" href="report-list.html"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></a>
-      <span class="busy-navbar__title">研发周报</span>
-      <span class="busy-navbar__side busy-navbar__side--right" id="navOutline"><svg width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M3 4.5h14v1.6H3zM3 9.2h14v1.6H3zM3 13.9h9v1.6H3z"/></svg></span>
-    </div>
-  </div>
-
-  <div class="tpl-app__scroll">
-    <!-- 元信息折叠卡（默认展开首行：标题 + 发报日） -->
-    <div class="tpl-card">
-      <div class="u-strong tpl-meta-title">研发周报 · 2026 年第 42 周</div>
-      <div class="tpl-row-between">
-        <span class="u-muted tpl-meta-sub">发报日 <span class="u-mono">2026-10-18</span></span>
-        <span class="u-primary tpl-meta-sub" id="metaToggle">展开 ▾</span>
+<svg class="sr-only" aria-hidden="true"><defs>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8"/><circle cx="4.5" cy="12" r=".8"/><circle cx="4.5" cy="18" r=".8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="m5 12 4.5 4.5L19 7"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.2"/></symbol>
+</defs></svg>
+<div class="reading-progress" aria-hidden="true"><div class="reading-progress-bar" id="readingProgress"></div></div>
+<div class="mobile-shell">
+  <header class="mobile-nav"><a class="icon-btn" href="report-list.html" aria-label="返回周报列表"><svg class="svg-icon"><use href="#i-back"/></svg></a><div class="mobile-nav-title">研发周报</div><button class="icon-btn" id="outlineOpen" type="button" aria-label="打开报告大纲"><svg class="svg-icon"><use href="#i-list"/></svg></button></header>
+  <main class="mobile-content">
+    <section class="mobile-meta-card" aria-label="报告元信息">
+      <div class="mobile-meta-head"><div class="mobile-meta-title">研发周报 · 2026 年第 42 周<div class="mobile-meta-date mono">发报日 2026-10-18</div></div><span class="badge badge-accent badge-plain">周报</span></div>
+      <button class="mobile-version-button" id="versionOpen" type="button"><span>版本 <span class="mono" id="versionLabel">v3 · 共 3 版</span></span><svg class="svg-icon"><use href="#i-chevron"/></svg></button>
+      <div class="mobile-meta-details" id="metaDetails" hidden>
+        <div class="mobile-meta-row"><span>所属周</span><span>第 42 周 · 10-12 ~ 10-18</span></div>
+        <div class="mobile-meta-row"><span>统计区间</span><span class="mono">10-12 00:00 ~ 10-18 24:00</span></div>
+        <div class="mobile-meta-row"><span>来源</span><span id="metaSource">服务端生成</span></div>
+        <div class="mobile-meta-row"><span>文件大小</span><span class="mono" id="metaSize">128 KB</span></div>
+        <div class="mobile-meta-row"><span>入库时间</span><span class="mono" id="metaTime">2026-10-18 21:05</span></div>
       </div>
-      <div id="metaMore" hidden class="tpl-meta-more">
-        <div class="tpl-cell"><span class="tpl-cell__label">所属周</span><span class="tpl-cell__value">2026 年第 42 周（10-12 ~ 10-18）</span></div>
-        <div class="tpl-cell"><span class="tpl-cell__label">统计区间</span><span class="tpl-cell__value u-mono">10-12（周一）~ 10-18（周日）</span></div>
-        <div class="tpl-cell"><span class="tpl-cell__label">来源</span><span class="tpl-cell__value"><span class="busy-tag busy-tag--primary busy-tag--tint"><span class="busy-tag__content">服务端生成</span></span></span></div>
-        <div class="tpl-cell tpl-cell--link" id="verRow">
-          <span class="tpl-cell__label">当前版本</span>
-          <span class="tpl-cell__value u-primary"><span class="u-mono" id="verLabel">v3 · 共 3 版</span> ›</span>
-        </div>
+      <button class="btn btn-ghost mobile-meta-toggle" id="metaToggle" type="button" aria-expanded="false">展开报告信息</button>
+    </section>
+    <div class="version-banner" id="versionBanner" hidden><svg class="svg-icon"><use href="#i-info"/></svg><span>当前为历史版本 <strong id="versionBannerText">v2</strong>，内容只读；最新版本为 v3。</span></div>
+    <article class="mobile-reading-card">
+      <div id="versionLoading" hidden><div class="skeleton skeleton-line" style="width:48%;margin-left:0"></div><div class="skeleton skeleton-line" style="margin-left:0"></div><div class="skeleton skeleton-line" style="margin-left:0"></div><div class="skeleton" style="height:130px"></div></div>
+      <div class="prose" id="reportContent">
+        <section id="h-1"><h2>本期概览</h2><p>统计区间 2026-10-12 ~ 2026-10-18，自动报告名单内共 12 人。指标来自 Git 与功能卡事实，不含主观评分。</p><div class="summary-grid"><div class="summary-metric"><span>全仓提交</span><strong>186</strong></div><div class="summary-metric"><span>完成功能卡</span><strong>23</strong></div><div class="summary-metric"><span>延期卡</span><strong>2</strong></div><div class="summary-metric"><span>统计人员</span><strong>12</strong></div></div><p>实施卡完成 9 张，延期率 6.3%。</p></section>
+        <section id="h-2"><h2>提交统计</h2><p>左右滑动可查看完整表格。</p><div class="table-scroll"><table class="report-table"><thead><tr><th>仓库</th><th>提交数</th><th>参与人数</th><th>主力分支</th></tr></thead><tbody><tr><td>busyming-skills-devops</td><td class="mono">74</td><td class="mono">8</td><td class="mono">master</td></tr><tr><td>devhub-server</td><td class="mono">63</td><td class="mono">7</td><td class="mono">release/1.4</td></tr><tr><td>devhub-web</td><td class="mono">49</td><td class="mono">6</td><td class="mono">master</td></tr></tbody></table></div><p>提交人与开发人、领取人采用双口径，避免代提交误记。</p></section>
+        <section id="h-3"><h2>按人员综合分析</h2><h3 id="h-3-1">张倩</h3><p>提交 32 次；完成功能卡 5 张，平均领取到完成 1.8 天；无延期、无回退。</p><h3 id="h-3-2">李维</h3><p>提交 27 次；完成功能卡 4 张、实施卡 2 张；延期卡 1 张，与 DEV-2311 需求变更记录一致。</p><h3 id="h-3-3">陈昊</h3><p>提交 21 次；完成功能卡 3 张；完成回退 1 次，已在当周重新完成。</p><div class="issue-callout"><strong>数据说明</strong><br>名单外人员不计入、不点名；缺失数据标「未取得」，不补零。</div></section>
+        <section id="h-4"><h2>功能进展追踪</h2><p>人员产出报告 Web 列表与详情进入联调，报告配置触发配置页完成验收。项目级数据保持全量，人员姓名按名单快照脱敏。</p></section>
+        <section id="h-5"><h2>口径说明</h2><ul><li>人员范围采用生成时的自动报告名单快照</li><li>NON_FEATURE 旁路态不计入</li><li>缺失数据不补零，周报与日报不直接比较</li></ul><p class="muted">生成时间：2026-10-18 21:05</p></section>
       </div>
-    </div>
-
-    <!-- 历史版本提示（切换历史版本后展示，只读） -->
-    <div class="busy-tag busy-tag--warning busy-tag--tint tpl-banner--inline" id="verBanner" hidden><span class="busy-tag__content">当前查看历史版本 <b id="verBannerText">v2</b>（只读），最新版本为 v3</span></div>
-
-    <!-- Markdown 渲染正文（WebView 消费服务端渲染产物；原型为静态示意） -->
-    <div class="tpl-card" id="mdCard">
-      <div id="mdSkeleton" hidden class="tpl-col-gap10">
-        <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-md-skel__h"></span>
-        <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-md-skel__line"></span>
-        <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-md-skel__line"></span>
-        <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-md-skel__line--60"></span>
-        <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-md-skel__h"></span>
-        <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-md-skel__block"></span>
-      </div>
-      <div id="mdBody" class="tpl-col-gap10 tpl-md-body">
-        <h2 id="h-1" class="tpl-md-h2">一、本期概览</h2>
-        <p class="tpl-md-p">统计区间 2026-10-12 ~ 2026-10-18，名单内研发人员 12 人。本周全仓提交 <b id="verCommits">186</b> 次，完成功能卡 <b id="verCards">23</b> 张、实施卡 9 张；延期卡 2 张，延期率 6.3%。</p>
-        <h2 id="h-2" class="tpl-md-h2">二、提交统计</h2>
-        <div class="tpl-table-scroll">
-          <table class="tpl-md-table">
-            <tr><th class="tpl-md-th--left">仓库</th><th>提交数</th><th>参与人数</th></tr>
-            <tr><td>busyming-skills-devops</td><td class="u-mono">74</td><td class="u-mono">8</td></tr>
-            <tr><td>devhub-server</td><td class="u-mono">63</td><td class="u-mono">7</td></tr>
-            <tr><td>devhub-web</td><td class="u-mono">49</td><td class="u-mono">6</td></tr>
-          </table>
-        </div>
-        <h2 id="h-3" class="tpl-md-h2">三、按人员分析</h2>
-        <h3 id="h-3-1" class="tpl-md-h3">张倩</h3>
-        <p class="tpl-md-p">提交 32 次；完成功能卡 5 张（平均领取 → 完成 1.8 天）；无延期、无回退。</p>
-        <h3 id="h-3-2" class="tpl-md-h3">李维</h3>
-        <p class="tpl-md-p">提交 27 次；完成功能卡 4 张、实施卡 2 张；延期卡 1 张（需求变更导致，见卡片 DEV-2311）。</p>
-        <h2 id="h-4" class="tpl-md-h2">四、口径说明</h2>
-        <pre class="tpl-md-pre">统计人员范围：报告配置 → 统计人员范围（启用名单 12 人）
-旁路态：NON_FEATURE / NON_IMPL 卡片不计入
-[图片已移除]</pre>
-      </div>
-      <!-- 正文空态（md 正文为空或仅标题时展示） -->
-      <div class="tpl-empty" id="mdEmpty" hidden>
-        <div class="tpl-empty__icon">📄</div>
-        <div class="tpl-empty__desc">报告内容为空</div>
-      </div>
-    </div>
-  </div>
+      <div class="empty-state" id="bodyEmpty" hidden><div class="empty-title">报告内容为空</div><p class="empty-copy">请切换版本或返回列表选择其他报告。</p></div>
+    </article>
+  </main>
 </div>
-
-<!-- 大纲抽屉（HalfScreenSheet；手势返回时优先关闭抽屉） -->
-<div id="outlineSheet" hidden class="tpl-mask">
-  <div class="busy-half-screen-sheet tpl-sheet--full">
-    <div class="busy-half-screen-sheet__header">
-      <div class="busy-half-screen-sheet__title">大纲</div>
-      <span class="busy-half-screen-sheet__close" id="outlineClose"><svg class="busy-half-screen-sheet__close-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 0 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/></svg></span>
-    </div>
-    <div class="busy-half-screen-sheet__body tpl-sheet-body">
-      <div class="tpl-cell js-anchor" data-target="h-1"><span>一、本期概览</span></div>
-      <div class="tpl-cell js-anchor" data-target="h-2"><span>二、提交统计</span></div>
-      <div class="tpl-cell js-anchor" data-target="h-3"><span>三、按人员分析</span></div>
-      <div class="tpl-cell js-anchor" data-target="h-3-1"><span class="tpl-outline__sub">张倩</span></div>
-      <div class="tpl-cell js-anchor" data-target="h-3-2"><span class="tpl-outline__sub">李维</span></div>
-      <div class="tpl-cell js-anchor" data-target="h-4"><span>四、口径说明</span></div>
-    </div>
-  </div>
-</div>
-
-<!-- 版本切换浮层（需求描述为 ActionSheet；registry 无该组件，HalfScreenSheet 承接底部弹层语义；历史版本只读） -->
-<div id="verSheet" hidden class="tpl-mask">
-  <div class="busy-half-screen-sheet tpl-sheet--full">
-    <div class="busy-half-screen-sheet__header">
-      <div class="busy-half-screen-sheet__title">切换版本</div>
-      <span class="busy-half-screen-sheet__close" id="verClose"><svg class="busy-half-screen-sheet__close-icon" width="16" height="16" viewBox="0 0 16 16" fill="currentColor"><path d="M3.72 3.72a.75.75 0 0 1 1.06 0L8 6.94l3.22-3.22a.75.75 0 1 1 1.06 1.06L9.06 8l3.22 3.22a.75.75 0 0 1-1.06 1.06L8 9.06l-3.22 3.22a.75.75 0 0 1-1.06-1.06L6.94 8 3.72 4.78a.75.75 0 0 1 0-1.06z"/></svg></span>
-    </div>
-    <div class="busy-half-screen-sheet__body tpl-sheet-body">
-      <div class="tpl-cell js-ver" data-ver="3"><span>v3（当前 · 2026-10-18 21:05 入库）</span><span class="tpl-cell__value u-primary">✓</span></div>
-      <div class="tpl-cell js-ver" data-ver="2"><span>v2（2026-10-15 09:12 补传入库）</span><span class="tpl-cell__value"></span></div>
-      <div class="tpl-cell js-ver" data-ver="1"><span>v1（2026-10-14 08:30 服务端生成）</span><span class="tpl-cell__value"></span></div>
-    </div>
-  </div>
-</div>
-
+<template id="historyBody">
+  <section id="h-1"><h2>本期概览</h2><p>统计区间 2026-10-12 ~ 2026-10-18，自动报告名单内共 12 人。本历史版本仅用于回溯。</p><div class="summary-grid"><div class="summary-metric"><span>全仓提交</span><strong id="historyCommits">181</strong></div><div class="summary-metric"><span>完成功能卡</span><strong id="historyCards">22</strong></div><div class="summary-metric"><span>延期卡</span><strong>2</strong></div><div class="summary-metric"><span>统计人员</span><strong>12</strong></div></div></section>
+  <section id="h-2"><h2>提交统计</h2><p>历史汇总与当前版本的差异来自后续重复入库，归档后不重新计算。</p></section>
+  <section id="h-3"><h2>按人员综合分析</h2><h3 id="h-3-1">张倩</h3><p>提交 31 次；完成功能卡 5 张，无延期。</p><h3 id="h-3-2">李维</h3><p>提交 26 次；完成功能卡 4 张，延期卡 1 张。</p><h3 id="h-3-3">陈昊</h3><p>提交 21 次；完成功能卡 3 张，完成回退 1 次。</p></section>
+  <section id="h-4"><h2>功能进展追踪</h2><p>本版本保留生成时的功能卡快照，不随当前卡片状态变化。</p></section>
+  <section id="h-5"><h2>口径说明</h2><ul><li>采用本版本生成时的人员名单快照</li><li>缺失数据不补零，历史版本只读</li></ul><p class="muted" id="historyTime">生成时间：2026-10-15 09:12</p></section>
+</template>
+<div class="bottom-sheet-backdrop" id="outlineSheet" hidden><section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="outlineTitle"><div class="sheet-handle"></div><div class="sheet-header"><h2 id="outlineTitle">报告大纲</h2><button class="icon-btn" type="button" data-close="outlineSheet" aria-label="关闭"><svg class="svg-icon"><use href="#i-x"/></svg></button></div><button class="sheet-option" type="button" data-target="h-1">本期概览</button><button class="sheet-option" type="button" data-target="h-2">提交统计</button><button class="sheet-option" type="button" data-target="h-3">按人员综合分析</button><button class="sheet-option sub" type="button" data-target="h-3-1">张倩</button><button class="sheet-option sub" type="button" data-target="h-3-2">李维</button><button class="sheet-option sub" type="button" data-target="h-3-3">陈昊</button><button class="sheet-option" type="button" data-target="h-4">功能进展追踪</button><button class="sheet-option" type="button" data-target="h-5">口径说明</button></section></div>
+<div class="bottom-sheet-backdrop" id="versionSheet" hidden><section class="bottom-sheet" role="dialog" aria-modal="true" aria-labelledby="versionTitle"><div class="sheet-handle"></div><div class="sheet-header"><h2 id="versionTitle">切换版本</h2><button class="icon-btn" type="button" data-close="versionSheet" aria-label="关闭"><svg class="svg-icon"><use href="#i-x"/></svg></button></div><button class="sheet-option active" type="button" data-version="3"><span><strong>v3 · 当前版本</strong><small>2026-10-18 21:05 · 服务端生成</small></span><svg class="svg-icon"><use href="#i-check"/></svg></button><button class="sheet-option" type="button" data-version="2"><span><strong>v2 · 历史版本</strong><small>2026-10-15 09:12 · 手动补传</small></span><span>只读</span></button><button class="sheet-option" type="button" data-version="1"><span><strong>v1 · 历史版本</strong><small>2026-10-14 08:30 · 服务端生成</small></span><span>只读</span></button></section></div>
+<div class="toast-stack" id="toastHost" aria-live="polite"></div>
+<script src="../prototype.js"></script>
 <script>
-/* ================= Mock 版本数据 ================= */
-var VERSIONS = {
-  3: { label: 'v3 · 共 3 版', commits: 186, cards: 23, banner: false },
-  2: { label: 'v2 · 共 3 版', commits: 181, cards: 22, banner: true },
-  1: { label: 'v1 · 共 3 版', commits: 179, cards: 21, banner: true }
-};
-var curVer = 3;
-
-function toast(text) {
-  var el = document.createElement('div');
-  el.className = 'busy-toast tpl-toast-float';
-  el.textContent = text;
-  document.body.appendChild(el);
-  setTimeout(function () { el.remove(); }, 1800);
-}
-
-/* ================= 元信息折叠卡 ================= */
-document.getElementById('metaToggle').addEventListener('click', function () {
-  var more = document.getElementById('metaMore');
-  more.hidden = !more.hidden;
-  this.textContent = more.hidden ? '展开 ▾' : '收起 ▴';
-});
-
-/* ================= 大纲抽屉 ================= */
-var outlineSheet = document.getElementById('outlineSheet');
-document.getElementById('navOutline').addEventListener('click', function () { outlineSheet.hidden = false; });
-document.getElementById('outlineClose').addEventListener('click', function () { outlineSheet.hidden = true; });
-outlineSheet.addEventListener('click', function (e) { if (e.target === outlineSheet) outlineSheet.hidden = true; });
-document.querySelectorAll('.js-anchor').forEach(function (a) {
-  a.addEventListener('click', function () {
-    outlineSheet.hidden = true;
-    var t = document.getElementById(a.getAttribute('data-target'));
-    if (t) t.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    document.querySelectorAll('.js-anchor').forEach(function (x) { x.classList.remove('is-active'); });
-    a.classList.add('is-active');
+(function () {
+  var UI = ReportUI;
+  var currentVersion = 3;
+  var latestHtml = document.getElementById('reportContent').innerHTML;
+  var meta = {
+    3: { source: '服务端生成', size: '128 KB', time: '2026-10-18 21:05', commits: 186, cards: 23 },
+    2: { source: '手动补传', size: '121 KB', time: '2026-10-15 09:12', commits: 181, cards: 22 },
+    1: { source: '服务端生成', size: '116 KB', time: '2026-10-14 08:30', commits: 179, cards: 21 }
+  };
+  document.getElementById('metaToggle').addEventListener('click', function () { var details = document.getElementById('metaDetails'); details.hidden = !details.hidden; this.textContent = details.hidden ? '展开报告信息' : '收起报告信息'; this.setAttribute('aria-expanded', details.hidden ? 'false' : 'true'); });
+  document.getElementById('outlineOpen').addEventListener('click', function () { UI.openLayer('outlineSheet'); });
+  document.getElementById('versionOpen').addEventListener('click', function () { UI.openLayer('versionSheet'); });
+  document.querySelectorAll('[data-close]').forEach(function (button) { button.addEventListener('click', function () { UI.closeLayer(button.getAttribute('data-close')); }); });
+  document.querySelectorAll('.bottom-sheet-backdrop').forEach(function (backdrop) { backdrop.addEventListener('click', function (event) { if (event.target === backdrop) UI.closeLayer(backdrop.id); }); });
+  document.querySelectorAll('[data-target]').forEach(function (button) { button.addEventListener('click', function () { var target = document.getElementById(button.getAttribute('data-target')); UI.closeLayer('outlineSheet'); if (target) window.setTimeout(function () { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); }, 60); }); });
+  document.querySelectorAll('[data-version]').forEach(function (button) {
+    button.addEventListener('click', function () {
+      var version = Number(button.getAttribute('data-version'));
+      UI.closeLayer('versionSheet');
+      if (version === currentVersion) return;
+      document.getElementById('reportContent').hidden = true;
+      document.getElementById('versionLoading').hidden = false;
+      window.setTimeout(function () {
+        currentVersion = version;
+        var content = document.getElementById('reportContent');
+        content.innerHTML = version === 3 ? latestHtml : document.getElementById('historyBody').innerHTML;
+        if (version !== 3) { document.getElementById('historyCommits').textContent = meta[version].commits; document.getElementById('historyCards').textContent = meta[version].cards; document.getElementById('historyTime').textContent = '生成时间：' + meta[version].time; }
+        document.getElementById('versionLabel').textContent = 'v' + version + ' · 共 3 版';
+        document.getElementById('metaSource').textContent = meta[version].source;
+        document.getElementById('metaSize').textContent = meta[version].size;
+        document.getElementById('metaTime').textContent = meta[version].time;
+        document.getElementById('versionBanner').hidden = version === 3;
+        document.getElementById('versionBannerText').textContent = 'v' + version;
+        document.querySelectorAll('[data-version]').forEach(function (option) { option.classList.toggle('active', Number(option.getAttribute('data-version')) === version); });
+        document.getElementById('versionLoading').hidden = true;
+        content.hidden = false;
+        UI.toast(version === 3 ? '已切换到当前版本 v3' : '已切换到历史版本 v' + version + '（只读）');
+      }, 520);
+    });
   });
-});
-
-/* ================= 版本切换 ================= */
-var verSheet = document.getElementById('verSheet');
-document.getElementById('verRow').addEventListener('click', function () { verSheet.hidden = false; });
-document.getElementById('verClose').addEventListener('click', function () { verSheet.hidden = true; });
-verSheet.addEventListener('click', function (e) { if (e.target === verSheet) verSheet.hidden = true; });
-document.querySelectorAll('.js-ver').forEach(function (item) {
-  item.addEventListener('click', function () {
-    var v = Number(item.getAttribute('data-ver'));
-    verSheet.hidden = true;
-    if (v === curVer) return;
-    /* 正文骨架屏 → 切换正文与元信息 → Toast；失败路径（生产）：Toast error + 回退当前版本 */
-    document.getElementById('mdBody').hidden = true;
-    document.getElementById('mdSkeleton').hidden = false;
-    setTimeout(function () {
-      curVer = v;
-      var d = VERSIONS[v];
-      document.getElementById('mdSkeleton').hidden = true;
-      document.getElementById('mdBody').hidden = false;
-      document.getElementById('verLabel').textContent = d.label;
-      document.getElementById('verCommits').textContent = d.commits;
-      document.getElementById('verCards').textContent = d.cards;
-      document.getElementById('verBanner').hidden = !d.banner;
-      if (d.banner) document.getElementById('verBannerText').textContent = 'v' + v;
-      document.querySelectorAll('.js-ver').forEach(function (x) {
-        var cur = Number(x.getAttribute('data-ver')) === v;
-        x.querySelector('.tpl-cell__value').textContent = cur ? '✓' : '';
-        x.querySelector('.tpl-cell__value').className = cur ? 'tpl-cell__value u-primary' : 'tpl-cell__value';
-      });
-      toast('已切换到 v' + v);
-    }, 600);
-  });
-});
+  window.addEventListener('scroll', function () { var max = document.documentElement.scrollHeight - window.innerHeight; document.getElementById('readingProgress').style.width = (max > 0 ? Math.min(100, window.scrollY / max * 100) : 0) + '%'; }, { passive: true });
+  document.addEventListener('keydown', function (event) { if (event.key !== 'Escape') return; UI.closeLayer('outlineSheet'); UI.closeLayer('versionSheet'); });
+})();
 </script>
 </body>
 </html>

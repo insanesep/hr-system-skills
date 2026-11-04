@@ -3,155 +3,128 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<title>研发周报 · 人员产出报告 · App</title>
-<!--
-  人员产出报告 · 报告列表（App 查阅端 · 仅研发周报 · 静态原型，数据为 Mock）
-  页面对象定义：references/mobile-ui.md「报告列表」
-  布局流：busy-navbar（返回 + 标题「研发周报」+ 右侧搜索图标，点击展开 SearchBar）
-    → 按所属周倒序的周分组卡片流（周标签 + 齐全度徽标；报告卡 = 标题/发报日/来源/版本号）
-    → 未入库周灰显「未入库」占位卡（不可点）→ 空态 / 上拉加载提示。
-  导航方式：Push（工作台「研发周报」入口进入）；返回 = 导航栏返回 / 手势返回 → 工作台。
-  Mock 日期基准：今天 = 2026-10-21（周三）；本周 W43 周中不展示，最晚展示上周 W42（与 Web 同口径，后端 week-index 收口）。
--->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/mobile/tokens/mobile.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/NavBar.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/SearchBar.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Tag.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Button.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Toast.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/mobile/css/Skeleton.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/templates/mobile/templates.css">
-<style>
-/* 页面级扩展类（仅定位与尺寸，色值/字号/圆角全部消费 --busy-* token） */
-.tpl-col-gap { display: flex; flex-direction: column; gap: 12px; }
-.tpl-skel-line { height: 18px; width: 50%; }
-.tpl-skel-block { height: 96px; width: 100%; }
-.tpl-load-more { text-align: center; font-size: var(--busy-font-size-xs); padding: 4px 0; }
-.tpl-week-head { display: flex; align-items: center; justify-content: space-between; padding: 0 2px; }
-.tpl-week-head__label { font-size: var(--busy-font-size-base); }
-.tpl-doc-card--link { text-decoration: none; color: inherit; }
-.tpl-doc-card__no--clamp { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-.tpl-doc-card--disabled { opacity: .55; }
-.tpl-toast-float { position: fixed; top: 48px; left: 50%; transform: translateX(-50%); z-index: 3000; display: inline-flex; padding: 10px 16px; border-radius: var(--busy-button-radius-large); }
-</style>
+<meta name="theme-color" content="#ffffff">
+<title>研发周报 · App</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/assets/runtime/prototype/mobile-tokens.css">
+<link rel="stylesheet" href="../prototype.css">
 </head>
 <body>
-<div class="tpl-app">
-  <div class="busy-navbar">
-    <div class="busy-navbar__bar">
-      <span class="busy-navbar__side" id="navBack"><svg class="busy-navbar__back" width="20" height="20" viewBox="0 0 20 20" fill="currentColor"><path d="M12.72 4.47a.75.75 0 0 1 0 1.06L8.94 9.5l3.78 3.97a.75.75 0 1 1-1.09 1.03l-4.3-4.5a.75.75 0 0 1 0-1.03l4.3-4.5a.75.75 0 0 1 1.09 0z"/></svg></span>
-      <span class="busy-navbar__title">研发周报</span>
-      <span class="busy-navbar__side busy-navbar__side--right" id="navSearch"><svg width="20" height="20" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
+<svg class="sr-only" aria-hidden="true"><defs>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 7v5h-5M4 17v-5h5"/><path d="M6.1 8a7 7 0 0 1 11.4-2L20 8M4 16l2.5 2a7 7 0 0 0 11.4-2"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="11" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3M12 14v3"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m9 5 7 7-7 7"/></symbol>
+  <symbol id="i-empty" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5M8 10.5h5"/></symbol>
+</defs></svg>
+<div class="reading-progress" aria-hidden="true"><div class="reading-progress-bar" id="readingProgress"></div></div>
+<div class="mobile-shell">
+  <header class="mobile-nav">
+    <button class="icon-btn" id="navBack" type="button" aria-label="返回工作台"><svg class="svg-icon"><use href="#i-back"/></svg></button>
+    <div class="mobile-nav-title">研发周报</div>
+    <button class="icon-btn" id="navRefresh" type="button" aria-label="刷新周报"><svg class="svg-icon"><use href="#i-refresh"/></svg></button>
+  </header>
+  <main class="mobile-content">
+    <div class="mobile-load-end" id="pullIndicator" hidden>继续下拉刷新</div>
+    <section class="mobile-summary" aria-label="周报提示">
+      <div class="mobile-summary-icon"><svg class="svg-icon"><use href="#i-lock"/></svg></div>
+      <div><div class="mobile-summary-title">上周周报已归档</div><div class="mobile-summary-copy">本周报告将于周日发报后展示 · 仅授权人员可见</div></div>
+    </section>
+    <div class="mobile-search">
+      <svg class="svg-icon"><use href="#i-search"/></svg>
+      <input class="input" id="searchInput" type="search" placeholder="搜索报告标题" aria-label="搜索报告标题">
+      <button class="icon-btn mobile-search-clear" id="searchClear" type="button" aria-label="清除搜索" hidden><svg class="svg-icon"><use href="#i-x"/></svg></button>
     </div>
-  </div>
-
-  <div class="tpl-app__scroll">
-    <!-- 搜索（点导航栏搜索图标展开；输入确认 = 标题模糊匹配，跨周分组保留） -->
-    <div id="searchWrap" hidden>
-      <div class="busy-searchbar">
-        <div class="busy-searchbar__row">
-          <div class="busy-searchbar__field">
-            <span class="busy-searchbar__leading"><svg class="busy-searchbar__search-icon" width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.5"/><path d="M11 11l3.2 3.2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg></span>
-            <input class="busy-searchbar__input" id="searchInput" placeholder="按报告标题搜索">
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 骨架屏（搜索 / 下拉刷新 loading） -->
-    <div id="skeleton" hidden class="tpl-col-gap">
-      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-line"></span>
-      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-block"></span>
-      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-line"></span>
-      <span class="busy-skeleton busy-skeleton--rect busy-skeleton--animated tpl-skel-block"></span>
-    </div>
-
-    <div id="groupList" class="tpl-col-gap"></div>
-
-    <div class="tpl-empty" id="emptyState" hidden>
-      <div class="tpl-empty__icon">☁</div>
-      <div class="tpl-empty__desc">该条件下暂无报告<br>可调整搜索关键词</div>
-    </div>
-
-    <div class="u-muted tpl-load-more" id="loadMore">上拉加载更早周次 · 下拉可刷新（Mock）</div>
-  </div>
+    <div id="listSkeleton" hidden><div class="skeleton skeleton-line" style="width:45%;margin-left:0"></div><div class="skeleton" style="height:152px"></div><div class="skeleton skeleton-line" style="width:38%;margin-left:0"></div><div class="skeleton" style="height:152px"></div></div>
+    <div id="reportList"></div>
+    <div class="empty-state" id="emptyState" hidden><div class="empty-icon"><svg class="svg-icon"><use href="#i-empty"/></svg></div><div class="empty-title">没有找到匹配的周报</div><p class="empty-copy">可缩短报告标题关键词，或清除搜索后重试。</p><button class="btn" id="emptyReset" type="button">清除搜索</button></div>
+    <button class="btn mobile-load" id="loadMore" type="button">加载更早周次</button>
+    <div class="mobile-load-end" id="loadEnd" hidden>已加载全部周次</div>
+  </main>
 </div>
-
+<div class="toast-stack" id="toastHost" aria-live="polite"></div>
+<script src="../prototype.js"></script>
 <script>
-/* ================= Mock 数据（App 仅研发周报；周索引口径与 Web 一致） ================= */
-var WEEKS = [
-  { key: 'w42', label: '第 42 周 · 10-12~10-18', badge: '1/1', badgeCls: 'busy-tag--success', report: { title: '研发周报 · 2026 年第 42 周（10-12 ~ 10-18）', date: '2026-10-18', source: '服务端生成', ver: 'v2' } },
-  { key: 'w41', label: '第 41 周 · 10-05~10-11', badge: '1/1', badgeCls: 'busy-tag--success', report: { title: '研发周报 · 2026 年第 41 周（10-05 ~ 10-11）', date: '2026-10-11', source: '服务端生成', ver: 'v1' } },
-  { key: 'w40', label: '第 40 周 · 09-28~10-04', badge: '0/1', badgeCls: 'busy-tag--warning', report: null },
-  { key: 'w39', label: '第 39 周 · 09-21~09-27', badge: '1/1', badgeCls: 'busy-tag--success', report: { title: '研发周报 · 2026 年第 39 周（09-21 ~ 09-27）', date: '2026-09-27', source: '手动补传', ver: 'v3' } }
-];
+(function () {
+  var UI = ReportUI;
+  var weeks = [
+    { key: 'w42', label: '第 42 周', range: '10-12 ~ 10-18', report: { title: '研发周报 · 2026 年第 42 周', date: '2026-10-18', source: '服务端生成', ver: 'v3' } },
+    { key: 'w41', label: '第 41 周', range: '10-05 ~ 10-11', report: { title: '研发周报 · 2026 年第 41 周', date: '2026-10-11', source: '服务端生成', ver: 'v1' } },
+    { key: 'w40', label: '第 40 周', range: '09-28 ~ 10-04', report: null },
+    { key: 'w39', label: '第 39 周', range: '09-21 ~ 09-27', report: { title: '研发周报 · 2026 年第 39 周', date: '2026-09-27', source: '手动补传', ver: 'v3' } }
+  ];
+  var olderWeeks = [{ key: 'w38', label: '第 38 周', range: '09-14 ~ 09-20', report: { title: '研发周报 · 2026 年第 38 周', date: '2026-09-20', source: '服务端生成', ver: 'v1' } }];
+  var state = { kw: '', loadedOld: false };
+  var searchTimer = null;
 
-function toast(text) {
-  var el = document.createElement('div');
-  el.className = 'busy-toast tpl-toast-float';
-  el.textContent = text;
-  document.body.appendChild(el);
-  setTimeout(function () { el.remove(); }, 1800);
-}
-
-function render(kw) {
-  var list = document.getElementById('groupList');
-  var html = '';
-  var hit = 0;
-  WEEKS.forEach(function (w) {
-    var showReport = w.report && (!kw || w.report.title.indexOf(kw) >= 0);
-    var showMissing = !w.report && !kw; /* 搜索时未入库占位卡不参与匹配 */
-    if (!showReport && !showMissing) return;
-    hit++;
-    html += '<div class="tpl-week-head">' +
-      '<span class="u-strong tpl-week-head__label">' + w.label + '</span>' +
-      '<span class="busy-tag ' + w.badgeCls + ' busy-tag--tint"><span class="busy-tag__content">' + w.badge + '</span></span></div>';
-    if (w.report) {
-      var r = w.report;
-      html += '<a class="tpl-doc-card tpl-doc-card--link" href="report-detail.html">' +
-        '<div class="tpl-doc-card__head"><span class="tpl-doc-card__no tpl-doc-card__no--clamp">' + r.title + '</span></div>' +
-        '<div class="tpl-doc-card__body">' +
-          '<div><div class="tpl-doc-card__label">发报日</div><div class="tpl-doc-card__value u-mono">' + r.date + '</div></div>' +
-          '<div><div class="tpl-doc-card__label">版本号</div><div class="tpl-doc-card__value u-mono">' + r.ver + '</div></div>' +
-        '</div>' +
-        '<div class="tpl-doc-card__foot"><span>来源：' + r.source + '</span><b>查看 ›</b></div>' +
-      '</a>';
-    } else {
-      /* 未入库周：灰显占位卡，不可点（App 端不提供立即生成/补传） */
-      html += '<div class="tpl-doc-card tpl-doc-card--disabled">' +
-        '<div class="tpl-doc-card__head"><span class="tpl-doc-card__no u-muted">研发周报</span><span class="busy-tag busy-tag--default"><span class="busy-tag__content">未入库</span></span></div>' +
-        '<div class="tpl-doc-card__foot"><span>该周报告未入库，请在 Web 端处理</span></div>' +
-      '</div>';
-    }
+  function esc(value) { return UI.escapeHtml(value); }
+  function cardHtml(week) {
+    var report = week.report;
+    if (!report) return '<article class="mobile-card missing"><div class="mobile-card-top"><span class="badge badge-neutral badge-plain">研发周报</span><span class="badge badge-warning">未入库</span></div><div class="mobile-card-title">该周报告尚未归档</div><div class="mobile-card-footer"><span>请在 Web 管理端生成或补传</span><span>不可查看</span></div></article>';
+    return '<a class="mobile-card" href="report-detail.html"><div class="mobile-card-top"><span class="badge badge-accent badge-plain">研发周报</span><span class="badge badge-success">已入库</span></div><div class="mobile-card-title">' + esc(report.title) + '</div><div class="mobile-card-meta"><span class="mono">' + esc(report.date) + '</span><span>·</span><span>' + esc(report.source) + '</span></div><div class="mobile-card-footer"><span>当前版本 <span class="mono">' + esc(report.ver) + '</span></span><span class="mobile-card-action">阅读周报<svg class="svg-icon" style="width:15px;height:15px"><use href="#i-chevron"/></svg></span></div></a>';
+  }
+  function render() {
+    var source = state.loadedOld ? weeks.concat(olderWeeks) : weeks;
+    var visible = source.filter(function (week) {
+      if (!state.kw) return true;
+      return !!week.report && week.report.title.toLowerCase().indexOf(state.kw.toLowerCase()) !== -1;
+    });
+    document.getElementById('reportList').innerHTML = visible.map(function (week) {
+      return '<section class="mobile-week"><div class="mobile-week-head"><div><div class="mobile-week-title">' + esc(week.label) + '</div><div class="mobile-week-count mono">' + esc(week.range) + '</div></div><span class="badge ' + (week.report ? 'badge-success' : 'badge-warning') + '">' + (week.report ? '1/1 已入库' : '0/1 待补') + '</span></div>' + cardHtml(week) + '</section>';
+    }).join('');
+    document.getElementById('emptyState').hidden = !!visible.length;
+    document.getElementById('loadMore').hidden = state.loadedOld || !visible.length;
+    document.getElementById('loadEnd').hidden = !state.loadedOld || !visible.length;
+  }
+  function showLoading(callback) {
+    document.getElementById('listSkeleton').hidden = false;
+    document.getElementById('reportList').hidden = true;
+    document.getElementById('emptyState').hidden = true;
+    window.setTimeout(function () { document.getElementById('listSkeleton').hidden = true; document.getElementById('reportList').hidden = false; callback(); }, 280);
+  }
+  document.getElementById('searchInput').addEventListener('input', function () {
+    var value = this.value;
+    document.getElementById('searchClear').hidden = !value;
+    window.clearTimeout(searchTimer);
+    searchTimer = window.setTimeout(function () { state.kw = value.trim(); render(); }, 220);
   });
-  list.innerHTML = html;
-  document.getElementById('emptyState').hidden = hit > 0;
-}
-
-/* 搜索：确认输入 → 骨架屏 → 结果刷新 */
-var searchTimer = null;
-document.getElementById('navSearch').addEventListener('click', function () {
-  var w = document.getElementById('searchWrap');
-  w.hidden = !w.hidden;
-  if (!w.hidden) document.getElementById('searchInput').focus();
-});
-document.getElementById('searchInput').addEventListener('keydown', function (e) {
-  if (e.key !== 'Enter') return;
-  document.getElementById('skeleton').hidden = false;
-  document.getElementById('groupList').hidden = true;
-  var kw = this.value.trim();
-  clearTimeout(searchTimer);
-  searchTimer = setTimeout(function () {
-    document.getElementById('skeleton').hidden = true;
-    document.getElementById('groupList').hidden = false;
-    render(kw);
-  }, 400);
-});
-
-/* 返回工作台（Push 来源页；原型以 toast 声明去向） */
-document.getElementById('navBack').addEventListener('click', function () { toast('返回工作台（Mock）'); });
-
-render('');
+  document.getElementById('searchInput').addEventListener('keydown', function (event) { if (event.key === 'Enter') this.blur(); });
+  document.getElementById('searchClear').addEventListener('click', function () { document.getElementById('searchInput').value = ''; this.hidden = true; state.kw = ''; render(); document.getElementById('searchInput').focus(); });
+  document.getElementById('emptyReset').addEventListener('click', function () { state.kw = ''; document.getElementById('searchInput').value = ''; document.getElementById('searchClear').hidden = true; render(); });
+  document.getElementById('loadMore').addEventListener('click', function () { var button = this; UI.setLoading(button, true); button.textContent = '正在加载更早周次'; window.setTimeout(function () { state.loadedOld = true; UI.setLoading(button, false); button.textContent = '加载更早周次'; render(); }, 450); });
+  document.getElementById('navRefresh').addEventListener('click', function () { var button = this; UI.setLoading(button, true); showLoading(function () { UI.setLoading(button, false); render(); UI.toast('周报列表已更新'); }); });
+  document.getElementById('navBack').addEventListener('click', function () { UI.toast('返回工作台（原型演示）'); });
+  var pullStart = null;
+  document.addEventListener('touchstart', function (event) { if (window.scrollY <= 0 && event.touches.length === 1) pullStart = event.touches[0].clientY; }, { passive: true });
+  document.addEventListener('touchmove', function (event) {
+    if (pullStart === null || window.scrollY > 0) return;
+    var distance = event.touches[0].clientY - pullStart;
+    var indicator = document.getElementById('pullIndicator');
+    indicator.hidden = distance < 18;
+    if (distance >= 18) indicator.textContent = distance > 70 ? '松开即可刷新' : '继续下拉刷新';
+  }, { passive: true });
+  document.addEventListener('touchend', function (event) {
+    if (pullStart === null) return;
+    var distance = event.changedTouches[0].clientY - pullStart;
+    document.getElementById('pullIndicator').hidden = true;
+    pullStart = null;
+    if (distance > 70 && window.scrollY <= 0) document.getElementById('navRefresh').click();
+  }, { passive: true });
+  document.addEventListener('click', function (event) { if (event.target.closest('a[href="report-detail.html"]')) UI.saveState('member-output-mobile-list', { kw: state.kw, loadedOld: state.loadedOld, scroll: window.scrollY }); });
+  window.addEventListener('scroll', function () { var max = document.documentElement.scrollHeight - window.innerHeight; document.getElementById('readingProgress').style.width = (max > 0 ? Math.min(100, window.scrollY / max * 100) : 0) + '%'; }, { passive: true });
+  var saved = UI.readState('member-output-mobile-list');
+  if (saved) {
+    state.kw = saved.kw || '';
+    state.loadedOld = !!saved.loadedOld;
+    document.getElementById('searchInput').value = state.kw;
+    document.getElementById('searchClear').hidden = !state.kw;
+    window.setTimeout(function () { window.scrollTo(0, saved.scroll || 0); }, 0);
+    sessionStorage.removeItem('member-output-mobile-list');
+  }
+  render();
+})();
 </script>
 </body>
 </html>
