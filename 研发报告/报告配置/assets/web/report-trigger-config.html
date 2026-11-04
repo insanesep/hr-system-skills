@@ -159,6 +159,12 @@
           </div>
         </div>
         <div class="busy-form-item">
+          <div class="busy-form-item__label">角色</div>
+          <div class="busy-form-item__content">
+            <div class="busy-select" data-select="staffRole"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
+          </div>
+        </div>
+        <div class="busy-form-item">
           <div class="busy-form-item__label">状态</div>
           <div class="busy-form-item__content">
             <div class="busy-select" data-select="staffStatus"><div class="busy-input"><input readonly value="全部"></div><span class="busy-select__caret">▾</span></div>
@@ -173,7 +179,7 @@
 
     <!-- 名单表格卡 -->
     <div class="tpl-panel">
-      <div class="busy-message busy-message--info">人员范围同时作用于研发周报 / 日报的代码、排期卡片、Qoder 用量统计与 Token 管理看板；名单外人员不计入；别名支持 git 作者名 / 邮箱、Qoder 名称 / 邮箱、排期负责人名。</div>
+      <div class="busy-message busy-message--info">人员范围同时作用于研发周报 / 日报的代码、排期卡片、Qoder 用量统计与 Token 管理看板；名单外人员不计入；角色仅用于人员分类与筛选，不改变统计范围与权限；别名支持 git 作者名 / 邮箱、Qoder 名称 / 邮箱、排期负责人名。</div>
       <div class="tpl-panel__title">统计人员范围</div>
       <div class="tpl-toolbar">
         <div class="tpl-toolbar__left">已启用 <b id="staffEnabled">3</b> / 总数 <b id="staffTotal">4</b> 人 · 不提供删除，停用即保留历史</div>
@@ -187,6 +193,7 @@
         <thead>
           <tr>
             <th>姓名</th>
+            <th>角色</th>
             <th>别名</th>
             <th class="u-center">启停</th>
             <th>操作</th>
@@ -318,6 +325,19 @@
         </div>
       </div>
       <div class="busy-form-item">
+        <div class="busy-form-item__label is-required">角色</div>
+        <div class="busy-form-item__content">
+          <div class="busy-checkbox-group" id="staffRoleGroup">
+            <label class="busy-checkbox" data-staff-role="PRODUCT"><span class="busy-checkbox__inner"></span><span>产品</span></label>
+            <label class="busy-checkbox" data-staff-role="DEVELOPER"><span class="busy-checkbox__inner"></span><span>研发</span></label>
+            <label class="busy-checkbox" data-staff-role="DESIGN"><span class="busy-checkbox__inner"></span><span>UI</span></label>
+            <label class="busy-checkbox" data-staff-role="ARCHITECT"><span class="busy-checkbox__inner"></span><span>架构</span></label>
+          </div>
+          <div class="busy-form-item__error" id="staffRoleError" hidden>请至少选择一个角色</div>
+          <div class="u-sub">至少选择一项，支持多角色；角色不改变统计范围与权限</div>
+        </div>
+      </div>
+      <div class="busy-form-item">
         <div class="busy-form-item__label">别名</div>
         <div class="busy-form-item__content">
           <textarea class="busy-textarea" id="staffAlias" placeholder="git 作者名 / 邮箱、Qoder 名称 / 邮箱、排期负责人名；逗号或换行分隔"></textarea>
@@ -416,14 +436,15 @@ var DEFAULT_RECORDS = [
   { src: 'SCHEDULED', status: 'SUCCESS', window: '2026-09-28 ~ 2026-10-04', start: '2026-10-04 21:00', cost: '41 秒', reason: '' }
 ];
 var RECORDS = JSON.parse(JSON.stringify(DEFAULT_RECORDS));
+var ROLE_TEXT = { PRODUCT: '产品', DEVELOPER: '研发', DESIGN: 'UI', ARCHITECT: '架构' };
 var DEFAULT_STAFF = [
-  { name: '王倩', alias: ['wangqian', 'wangqian@busy.com', '王倩(排期负责人)'], enabled: true },
-  { name: '李强', alias: ['liqiang', 'liqiang@busy.com'], enabled: true },
-  { name: '张敏', alias: [], enabled: true },
-  { name: '刘洋', alias: ['liuyang', 'liuyang@busy.com', 'Qoder:liuyang'], enabled: false }
+  { name: '王倩', roles: ['PRODUCT'], alias: ['wangqian', 'wangqian@busy.com', '王倩(排期负责人)'], enabled: true },
+  { name: '李强', roles: ['DEVELOPER', 'ARCHITECT'], alias: ['liqiang', 'liqiang@busy.com'], enabled: true },
+  { name: '张敏', roles: ['DESIGN'], alias: [], enabled: true },
+  { name: '刘洋', roles: [], alias: ['liuyang', 'liuyang@busy.com', 'Qoder:liuyang'], enabled: false }
 ];
 var STAFF = JSON.parse(JSON.stringify(DEFAULT_STAFF));
-var fType = '全部', fProject = '全部', fStatus = '全部', sKeyword = '', sStatus = '全部';
+var fType = '全部', fProject = '全部', fStatus = '全部', sKeyword = '', sRole = '全部', sStatus = '全部';
 
 /* ===== 通用：轻提示 / 遮罩 ===== */
 function toast(type, text) {
@@ -452,6 +473,7 @@ var SELECT_OPTIONS = {
   type: ['全部', '研发周报', '研发日报', '文档一致性校验', '项目进度报告'],
   project: ['全部', 'store-web（门店系统）', 'supply（供应链中台）', '全部项目汇总（_all）'],
   status: ['全部', '启用', '停用'],
+  staffRole: ['全部', '产品', '研发', 'UI', '架构', '未设置'],
   staffStatus: ['全部', '启用', '停用'],
   weekday: ['周一', '周二', '周三', '周四', '周五', '周六', '周日'],
   monthday: ['1 日', '5 日', '10 日', '15 日', '20 日', '25 日', '月末'],
@@ -478,6 +500,7 @@ document.querySelectorAll('[data-select]').forEach(function (sel) {
         if (key === 'type') fType = opt;
         if (key === 'project') fProject = opt;
         if (key === 'status') fStatus = opt;
+        if (key === 'staffRole') sRole = opt;
         if (key === 'staffStatus') sStatus = opt;
         if (key === 'uploadType') syncUploadProjectRow(opt);
         closeDropdown();
@@ -777,7 +800,10 @@ document.getElementById('btnMockReset').addEventListener('click', function () {
 function renderStaff() {
   var tbody = document.getElementById('staffTbody');
   var rows = STAFF.map(function (r, i) { return { r: r, i: i }; }).filter(function (x) {
+    var roles = x.r.roles || [];
     if (sStatus !== '全部' && (x.r.enabled ? '启用' : '停用') !== sStatus) return false;
+    if (sRole === '未设置' && roles.length) return false;
+    if (sRole !== '全部' && sRole !== '未设置' && !roles.some(function (role) { return ROLE_TEXT[role] === sRole; })) return false;
     if (sKeyword && (x.r.name + ' ' + x.r.alias.join(' ')).toLowerCase().indexOf(sKeyword.toLowerCase()) < 0) return false;
     return true;
   });
@@ -785,9 +811,13 @@ function renderStaff() {
   document.getElementById('staffEnabled').textContent = STAFF.filter(function (x) { return x.enabled; }).length;
   document.getElementById('staffTotal').textContent = STAFF.length;
   tbody.innerHTML = rows.map(function (x) {
-    var r = x.r;
+    var r = x.r, roles = r.roles || [];
+    var roleCell = roles.length
+      ? '<span class="chip-group">' + roles.map(function (role) { return '<span class="busy-tag busy-tag--small is-plain">' + ROLE_TEXT[role] + '</span>'; }).join('') + '</span>'
+      : '<span class="u-muted">未设置</span>';
     return '<tr' + (r.enabled ? '' : ' class="tpl-row-disabled"') + '>' +
       '<td class="u-strong">' + r.name + '</td>' +
+      '<td>' + roleCell + '</td>' +
       '<td>' + (r.alias.length ? r.alias.join('、') : '<span class="u-muted">—</span>') + '</td>' +
       '<td class="u-center"><button class="busy-switch' + (r.enabled ? ' is-checked' : '') + '" data-staff-switch="' + x.i + '" type="button"><span class="busy-switch__core"></span></button></td>' +
       '<td><div class="tpl-row-actions"><button class="busy-button is-link" data-staff-edit="' + x.i + '" type="button"><span>编辑</span></button></div></td>' +
@@ -815,16 +845,27 @@ var staffEditIdx = -1;
 function openStaffDlg(i) {
   staffEditIdx = i;
   var isNew = i < 0;
+  var selectedRoles = isNew ? [] : (STAFF[i].roles || []);
   document.getElementById('staffDlgTitle').textContent = isNew ? '新增人员' : '编辑人员';
   document.getElementById('staffName').value = isNew ? '' : STAFF[i].name;
   document.getElementById('staffAlias').value = isNew ? '' : STAFF[i].alias.join('，');
   document.getElementById('staffEnabledSw').classList.toggle('is-checked', isNew ? true : STAFF[i].enabled);
+  document.querySelectorAll('[data-staff-role]').forEach(function (label) {
+    label.classList.toggle('is-checked', selectedRoles.indexOf(label.getAttribute('data-staff-role')) >= 0);
+  });
   document.getElementById('staffNameError').hidden = true;
+  document.getElementById('staffRoleError').hidden = true;
   document.getElementById('staffAliasError').hidden = true;
   openMask('staffMask');
 }
 document.getElementById('btnStaffAdd').addEventListener('click', function () { openStaffDlg(-1); });
 document.getElementById('staffEnabledSw').addEventListener('click', function () { this.classList.toggle('is-checked'); });
+document.querySelectorAll('[data-staff-role]').forEach(function (label) {
+  label.addEventListener('click', function () {
+    this.classList.toggle('is-checked');
+    if (document.querySelectorAll('[data-staff-role].is-checked').length) document.getElementById('staffRoleError').hidden = true;
+  });
+});
 document.getElementById('staffName').addEventListener('blur', function () {
   var v = this.value.trim(), err = document.getElementById('staffNameError');
   if (!v) { err.textContent = '姓名必填'; err.hidden = false; return; }
@@ -835,6 +876,8 @@ document.getElementById('staffName').addEventListener('blur', function () {
 document.getElementById('staffDlgSave').addEventListener('click', function () {
   var name = document.getElementById('staffName').value.trim();
   var aliasRaw = document.getElementById('staffAlias').value;
+  var roles = [];
+  document.querySelectorAll('[data-staff-role].is-checked').forEach(function (label) { roles.push(label.getAttribute('data-staff-role')); });
   /* 校验失败：toast error + 弹窗保留 */
   if (!name || name.length > 64) {
     document.getElementById('staffNameError').textContent = '姓名必填';
@@ -843,6 +886,10 @@ document.getElementById('staffDlgSave').addEventListener('click', function () {
   }
   if (STAFF.some(function (r, i) { return i !== staffEditIdx && r.name === name; })) {
     toast('error', '人员姓名必填且不可重复'); return;
+  }
+  if (!roles.length) {
+    document.getElementById('staffRoleError').hidden = false;
+    toast('error', '请至少选择一个角色'); return;
   }
   var alias = aliasRaw.split(/[,，\n]/).map(function (x) { return x.trim(); }).filter(Boolean);
   if (alias.some(function (a) { return a.length > 128; }) || alias.length > 50) {
@@ -859,7 +906,7 @@ document.getElementById('staffDlgSave').addEventListener('click', function () {
   setTimeout(function () {
     btn.classList.remove('is-disabled');
     btn.innerHTML = '<span>保 存</span>';
-    var row = { name: name, alias: dedup, enabled: document.getElementById('staffEnabledSw').classList.contains('is-checked') };
+    var row = { name: name, roles: roles, alias: dedup, enabled: document.getElementById('staffEnabledSw').classList.contains('is-checked') };
     if (staffEditIdx < 0) STAFF.push(row); else STAFF[staffEditIdx] = row;
     closeMask('staffMask');
     renderStaff();
@@ -872,8 +919,9 @@ document.getElementById('btnStaffQuery').addEventListener('click', function () {
 });
 document.getElementById('btnStaffReset').addEventListener('click', function () {
   document.getElementById('staffKeyword').value = '';
+  document.querySelector('[data-select="staffRole"] input').value = '全部';
   document.querySelector('[data-select="staffStatus"] input').value = '全部';
-  sKeyword = ''; sStatus = '全部';
+  sKeyword = ''; sRole = '全部'; sStatus = '全部';
   renderStaff();
 });
 document.getElementById('btnStaffRefresh').addEventListener('click', function () {
