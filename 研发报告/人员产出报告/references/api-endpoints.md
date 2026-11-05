@@ -1,6 +1,6 @@
-# 研发周报 用量数据接口
+# 研发报告 用量数据接口
 
-> 本文件为研发周报（人员产出报告）专属的用量类数据源真源。功能排期卡片 MCP 调用、容错口径与报告推送旁路契约见共享真源 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)。
+> 本文件为研发报告共用的用量类数据源真源，供人员产出报告与项目进度报告按各自人员及项目范围引用。功能排期卡片 MCP 调用、容错口径与报告推送旁路契约见共享真源 [`../../报告配置/references/data-source-api.md`](../../报告配置/references/data-source-api.md)。
 >
 > 配置来源按会话类型区分：服务端生成会话由服务端注入基址与令牌；外部会话从生成环境约定的 `config.yaml` 读取（`api.devops_base_url` / `api.foundation_base_url`）。
 >
@@ -8,7 +8,7 @@
 > 接口调用统一设置 30s 超时。响应统一取 `data` 字段（无 `data` 时整体即数据）。
 > 响应可能较大：先将响应落盘为临时文件，再读取分析。
 >
-> 人员范围：周报/日报与外部会话的 Qoder 数据包统一引用 [产研人员管理 #report-scope](../../../研发管理/产研人员管理/references/business-rule.md#report-scope) 的生成名单快照（兼容 `scope=ROSTER`），人员标识裁决见 [#identity](../../../研发管理/产研人员管理/references/business-rule.md#identity)。调用方注入或外部取数均关联同一快照，不以组织全量兜底；名单外不计入，同门户稳定 ID 多角色只计一次，角色不重建名单。无 Qoder 账号、映射或自然日快照未取得标「未取得」，不补 0、不伪造完整团队总量。
+> 人员范围：周报、日报、项目进度报告与外部会话的 Qoder 数据包统一引用 [产研人员管理 #report-scope](../../../研发管理/产研人员管理/references/business-rule.md#report-scope) 的生成名单快照（兼容 `scope=ROSTER`），人员标识裁决见 [#identity](../../../研发管理/产研人员管理/references/business-rule.md#identity)。项目进度报告另按项目组参与关系过滤。调用方注入或外部取数均关联同一快照，不以组织全量兜底；名单外不计入，同门户稳定 ID 多角色只计一次，角色不重建名单。无 Qoder 账号、映射或自然日快照未取得标「未取得」，不补 0、不伪造完整团队总量。
 
 统计区间记为 START ~ END，格式 YYYY-MM-DD。
 

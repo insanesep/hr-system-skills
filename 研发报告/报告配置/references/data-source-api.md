@@ -1,6 +1,6 @@
 # 研发报告 数据源与推送契约（共享）
 
-> 本文件为生成式报告的共享契约真源：功能排期卡片 MCP 调用口径、容错口径、报告推送旁路契约。周报专属的用量类数据源见 [`../人员产出报告/references/api-endpoints.md`](../../人员产出报告/references/api-endpoints.md)。
+> 本文件为生成式报告的共享契约真源：功能排期卡片 MCP 调用口径、容错口径、报告推送旁路契约。研发报告共用的用量类数据源见 [`../人员产出报告/references/api-endpoints.md`](../../人员产出报告/references/api-endpoints.md)。
 >
 > 配置来源按会话类型区分：
 >

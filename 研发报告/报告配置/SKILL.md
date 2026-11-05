@@ -22,18 +22,18 @@ description: 报告配置。Use when 需要查阅研发报告共享规则（类�
 ## 报告范围配置（映射扩展）
 
 - 域/项目基础实体、同步清单与 N:N 执行映射只读引用 [`域及项目管理`](../../研发管理/域及项目管理/SKILL.md)；范围消费见其 [`business-rule.md#consumption`](../../研发管理/域及项目管理/references/business-rule.md#consumption)
-- 扩展以**类型（域/项目）+ 稳定实体引用**关联真源，维护全局唯一且首次保存锁定的 **key**、分支策略与扩展启停；文件名仍使用既有 key 与 `_all`，详见 [`references/business-rule.md` §3](references/business-rule.md#3-报告项目配置)
+- 扩展以**类型（域/项目）+ 稳定实体引用**关联真源，维护全局唯一且首次保存锁定的 **key**、分支策略与扩展启停；范围类报告沿用各组 key，项目进度报告仅使用 `_all` 并按组展示，详见 [`references/business-rule.md` §3](references/business-rule.md#3-报告项目配置)
 - 启用有效域/项目只自动成行，不手工增删基础实体；key、分支策略齐备并启用才联动报告；真源停用或远端确认缺失停止生成，保留归档
 
 ## 报告触发配置
 
-- 每个报告项（报告类型 + 项目标识）一条触发配置：触发方式（定时 / 手动）、定时规则、类型参数、启停，规则真源见 [`references/business-rule.md` §4](references/business-rule.md#4-报告触发配置)
+- 每个报告项（报告类型 + 项目标识）一条触发配置：触发方式（定时 / 手动）、定时规则、类型参数、启停；项目进度报告仅一条 `_all` 配置，不按项目组新增，规则真源见 [`references/business-rule.md` §4](references/business-rule.md#4-报告触发配置)
 - 支持「立即生成」手动触发与生成记录查看、失败重试；生成任务状态机与并发约束见 [`references/business-rule.md` §5.2](references/business-rule.md#52-服务端生成主通道)
 
 ## 统计人员范围
 
 - 唯一真源为 [`产研人员管理`](../../研发管理/产研人员管理/SKILL.md)，自动范围与生成名单快照见 [`#report-scope`](../../研发管理/产研人员管理/references/business-rule.md#report-scope)，身份归一与冲突裁决见 [`#identity`](../../研发管理/产研人员管理/references/business-rule.md#identity)，参与关系见 [`#membership`](../../研发管理/产研人员管理/references/business-rule.md#membership)
-- 周报、日报、外部会话及 Qoder 数据包只读采用同一生成名单快照；名单外不计入、不点名，同人多角色去重，不按角色重建名单或混算职责专项分析
+- 周报、日报、项目进度报告、外部会话及 Qoder 数据包只读采用同一生成名单快照；名单外不计入、不点名，同人多角色去重，项目进度报告按全部启用项目组参与关系分组，不按角色重建名单或混算职责专项分析
 - 空名单仍拒绝生成人员产出报告，提示核验人员真源；无 Qoder 账号或源缺失标「未取得」，不补 0
 
 ## 页面功能概览（仅列职责）
