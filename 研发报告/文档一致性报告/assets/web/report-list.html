@@ -3,671 +3,435 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>报告列表 · 文档一致性报告 · Web 原型</title>
-<!--
-  报告列表页（列表页 · Tab 双视角：按周索引 / 报告明细 · 静态原型，数据为 Mock）
-  路由：/subapp/devhub/report/consistency；权限：路由 devhubConsistencyReport；手动补传 devhubReportUpload；立即生成 devhubReportTrigger（原型按已授权展示，行内注释标注）
-  页面描述：references/web-ui.md「报告列表」；手动补传弹窗共用口径：报告配置 references/web-ui.md「手动补传弹窗（报告模块共用）」
-  编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md（列表页骨架：页头 → 筛选卡 → 表格卡内嵌 KPI → Tabs → busy-table）
-  组件树：BusyTabs / Table(busy-table) / Form(busy-form-item) / BusyInput / Select(el-select 原生 + convert 主题，契约 shared/contracts/select.md §1)
-    / DatePicker(busy-date-editor) / Button / Tag / Empty(busy-empty)
-    / Dialog(busy-dialog，手动补传弹窗) / MessageBox(确认) / Upload(拖拽区) / Message(toast)
-  三态落点：查询/提交按钮 is-loading；Tab2 空态 busy-empty「该条件下暂无报告」；未入库行灰显（.rpt-row--missing）；校验错误 busy-form-item__error；遮罩/浮层定位收进页面级扩展类（<style> 块），不写行内 style
-  表格口径：全部表格不分页（按周索引取近 8 周、报告明细上限 200 条，发报日期区间为前端过滤）；周分组手风琴默认全展开；列不含「文件大小 / 入库时间」
-  Mock 约定：当前日 = 2026-10-18（周日，东八区）——本周（第 42 周）行自周日起展示，周中不展示本周行；项目集合（store / devops）=「报告项目配置」生效数据（Mock）
--->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
-<style>
-/* 页面级模板扩展类（templates.css 未含浮层壳/上传区块；仅定位与尺寸收进类，色值全部消费 --busy-* token，遮罩 rgba 沿用仓内先例） */
-.tpl-kpi__value--date { font-size: 22px; }
-.tpl-acc-head { cursor: pointer; user-select: none; }
-.tpl-acc-meta { margin-left: auto; }
-.rpt-row--missing { background: var(--busy-bg-subtle); }
-.tpl-mask { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .35); }
-.tpl-mask--above { z-index: 210; }
-.tpl-dialog--560 { width: 560px; }
-.tpl-dialog--400 { width: 400px; }
-.tpl-dialog-form { display: flex; flex-direction: column; gap: 4px; }
-.tpl-label--72 { width: 72px; }
-.tpl-pop-anchor { position: relative; }
-.tpl-select-pop { position: absolute; z-index: 300; top: 40px; left: 0; right: 0; background: var(--busy-bg-color-overlay); border: 1px solid var(--busy-border-color-lighter); border-radius: var(--busy-border-radius-base); box-shadow: var(--busy-popper-shadow-light); }
-.tpl-select-pop__item { padding: 8px 12px; cursor: pointer; }
-.upload-drop { border: 1px dashed var(--busy-border-strong); border-radius: 8px; padding: 26px; text-align: center; background: var(--busy-bg-subtle); cursor: pointer; }
-.upload-drop__icon { font-size: 26px; color: var(--busy-text-placeholder); }
-.upload-drop__text { color: var(--busy-text-primary); }
-.upload-drop__link { color: var(--busy-color-primary); font-style: normal; }
-.upload-drop__hint { font-size: var(--busy-font-size-extra-small); color: var(--busy-text-tertiary); margin-top: 4px; }
-.upload-file { display: flex; align-items: center; gap: 8px; padding: 8px 12px; border: 1px solid var(--busy-border-color-light); border-radius: 6px; font-size: var(--busy-font-size-small); color: var(--busy-text-secondary); margin-top: 8px; }
-.upload-file__ok { margin-left: auto; color: var(--busy-color-success); }
-.upload-file__remove { cursor: pointer; }
-.tpl-confirm-body { display: flex; gap: 10px; align-items: flex-start; }
-.tpl-confirm-icon { color: var(--busy-color-warning); flex-shrink: 0; margin-top: 1px; }
-.tpl-toast-fixed { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 400; }
-</style>
+<title>文档一致性报告 · 报告列表</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/assets/runtime/prototype/pc-tokens.css">
+<link rel="stylesheet" href="../prototype.css">
 </head>
 <body>
-<nav class="tpl-nav">
-  <span class="tpl-nav__logo">鸣鸣很忙</span>
-  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / <b>文档一致性报告</b></span>
-  <span class="tpl-nav__spacer"></span>
-  <span class="tpl-nav__crumb">管理员</span>
-</nav>
+<svg class="sr-only" aria-hidden="true"><defs>
+  <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-2a5.5 5.5 0 0 1 11 0v2M16 5.5a3 3 0 0 1 0 5.8M17 14a5 5 0 0 1 3.5 4.8"/></symbol>
+  <symbol id="i-upload" viewBox="0 0 24 24"><path d="M12 16V4m0 0L7.5 8.5M12 4l4.5 4.5M5 14v5h14v-5"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5"/></symbol>
+  <symbol id="i-chevron" viewBox="0 0 24 24"><path d="m7 10 5 5 5-5"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M5 19h14"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-file" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5"/></symbol>
+  <symbol id="i-empty" viewBox="0 0 24 24"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m16 16 4.5 4.5M8 10.5h5"/></symbol>
+</defs></svg>
+<div class="web-shell">
+  <aside class="web-sidebar" aria-label="主导航">
+    <div class="web-brand"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>鸣鸣很忙 · 产研</span></div>
+    <div class="nav-caption">研发报告</div>
+    <nav class="side-nav">
+      <a class="side-link" href="../../../人员产出报告/assets/web/report-list.html"><svg class="svg-icon"><use href="#i-people"/></svg><span>人员产出报告</span></a>
+      <a class="side-link active" href="report-list.html" aria-current="page"><svg class="svg-icon"><use href="#i-report"/></svg><span>文档一致性报告</span></a>
+    </nav>
+    <div class="sidebar-foot">报告配置与生成记录<br>由研发报告子域统一管理</div>
+  </aside>
+  <div class="web-main">
+    <header class="web-topbar">
+      <a class="brand-inline" href="report-list.html"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>鸣鸣很忙</span></a>
+      <div class="breadcrumb"><span>首页</span><span>/</span><span>研发</span><span>/</span><span>研发报告</span><span>/</span><span class="breadcrumb-current">文档一致性报告</span></div>
+      <div class="topbar-user"><span>管理员</span><span class="avatar">管</span></div>
+    </header>
+    <main class="web-content">
+      <div class="page-header">
+        <div class="page-header-main">
+          <h1>文档一致性报告</h1>
+          <p class="page-subtitle">按项目核对文档与代码实现，快速定位偏差、缺失报告和修复方向。</p>
+        </div>
+        <div class="page-actions">
+          <button class="btn btn-primary" id="btnUpload" type="button"><svg class="svg-icon"><use href="#i-upload"/></svg>手动补传</button>
+        </div>
+      </div>
 
-<section class="tpl-page">
-  <div class="tpl-page-head">
-    <div class="tpl-page-head__main">
-      <h1 class="tpl-page-title">文档一致性报告</h1>
-      <div class="tpl-page-subtitle">项目维度文档↔代码一致性检查报告 · 一项目一份，按发报日所在自然周索引（Mock 演示数据，Mock 当前日 2026-10-18 周日）</div>
-    </div>
-  </div>
+      <section class="stats-strip" aria-label="报告概览">
+        <div class="stat"><div class="stat-label">本周已入库</div><div class="stat-value" id="kpiWeek">1/2</div><div class="stat-note" id="kpiWeekNote">第 42 周 · 还有 1 份待补</div></div>
+        <div class="stat"><div class="stat-label">累计报告</div><div class="stat-value" id="kpiTotal">4</div><div class="stat-note">不含历史版本</div></div>
+        <div class="stat"><div class="stat-label">最近发报日</div><div class="stat-value date mono" id="kpiLatest">2026-10-18</div><div class="stat-note">当前筛选范围内</div></div>
+        <div class="stat"><div class="stat-label">历史版本</div><div class="stat-value" id="kpiVersions">1</div><div class="stat-note">旧版本保留，可在详情回溯</div></div>
+      </section>
 
-  <!-- 筛选卡：项目（单选，标签「项目名 · key」）/ 发报日期范围（默认近 90 天）/ 关键词（标题模糊，回车即查） -->
-  <div class="tpl-panel">
-    <div class="tpl-filter">
-      <div class="busy-form-item">
-        <div class="busy-form-item__label">项目</div>
-        <div class="busy-form-item__content">
-          <div class="busy-select" id="filterProject"><div class="busy-input"><input readonly value="全部项目"></div><span class="busy-select__caret">▾</span></div>
+      <section class="panel filter-panel" aria-label="筛选报告">
+        <div class="filter-grid">
+          <div class="field"><label for="filterProject">报告项目</label><select class="select" id="filterProject"><option value="">全部项目</option><option value="store">门店要货 · store</option><option value="devops">产研平台 · devops</option></select></div>
+          <div class="field field-date"><label for="filterStart">发报开始日</label><input class="input mono" id="filterStart" type="date" value="2026-07-20" max="2026-10-18"></div>
+          <div class="field field-date"><label for="filterEnd">发报结束日</label><input class="input mono" id="filterEnd" type="date" value="2026-10-18" max="2026-10-18"></div>
+          <div class="field field-grow"><label for="filterKw">报告标题</label><div class="search-control"><svg class="svg-icon"><use href="#i-search"/></svg><input class="input" id="filterKw" type="search" placeholder="输入关键词，回车查询"></div></div>
+          <div class="filter-actions"><button class="btn btn-primary" id="btnQuery" type="button">查询</button><button class="btn" id="btnReset" type="button">重置</button></div>
         </div>
-      </div>
-      <div class="busy-form-item tpl-filter__item--wide">
-        <div class="busy-form-item__label">发报日期</div>
-        <div class="busy-form-item__content">
-          <div class="busy-date-editor busy-range-editor busy-input"><input readonly placeholder="开始日期 ~ 结束日期" id="filterDate" value="2026-07-20 ~ 2026-10-18"></div>
-        </div>
-      </div>
-      <div class="busy-form-item">
-        <div class="busy-form-item__label">关键词</div>
-        <div class="busy-form-item__content">
-          <div class="busy-input"><input placeholder="报告标题模糊搜索" id="filterKw"></div>
-        </div>
-      </div>
-      <div class="tpl-filter__actions">
-        <button class="busy-button busy-button--primary" type="button" id="btnQuery"><span>查 询</span></button>
-        <button class="busy-button" type="button" id="btnReset"><span>重 置</span></button>
-        <!-- 权限：devhubReportUpload -->
-        <button class="busy-button" type="button" id="btnUpload"><span>手动补传</span></button>
-      </div>
-    </div>
-  </div>
+      </section>
 
-  <!-- 主体区：KPI（筛选后 / 表格前）+ Tab 双视角 -->
-  <div class="tpl-panel">
-    <div class="tpl-kpi-grid tpl-kpi-grid--embedded">
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-primary"></span><span class="tpl-kpi__label">本周已入库</span><span class="tpl-kpi__hint" title="本周启用项目报告项已入库份数 / 启用项目数">?</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiWeek">1/2</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">2026 年第 42 周（10-12 ~ 10-18）</span></div>
-      </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-success"></span><span class="tpl-kpi__label">累计报告</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value" id="kpiTotal">4</span><span class="tpl-kpi__unit">份</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">按报告项 × 发报日计（不含历史版本）</span></div>
-      </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-info"></span><span class="tpl-kpi__label">最近发报日</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value u-mono tpl-kpi__value--date">2026-10-18</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">全部报告项取最大发报日</span></div>
-      </div>
-      <div class="tpl-kpi">
-        <div class="tpl-kpi__head"><span class="tpl-kpi__dot is-warning"></span><span class="tpl-kpi__label">历史版本总数</span><span class="tpl-kpi__hint" title="重复入库版本递增，旧版本保留可查，详情页可回溯">?</span></div>
-        <div class="tpl-kpi__number"><span class="tpl-kpi__value">1</span><span class="tpl-kpi__unit">个</span></div>
-        <div class="tpl-kpi__foot"><span class="tpl-kpi__foot-text">重复入库递增，不覆盖</span></div>
-      </div>
-    </div>
-    <hr class="tpl-divider">
-
-    <div class="busy-tabs" id="viewTabs">
-      <div class="busy-tabs__item is-active" data-tab="week">按周索引</div>
-      <div class="busy-tabs__item" data-tab="flat">报告明细</div>
-    </div>
-
-    <!-- Tab1 按周索引（默认）：周分组手风琴，按所属周倒序；组内按启用项目逐行成行 -->
-    <div data-panel="week">
-      <!-- 第 42 周（本周，周日起展示）：store 已入库 v2 / devops 未入库 -->
-      <div class="tpl-section">
-        <div class="tpl-section__head tpl-acc-head" data-acc>
-          <span class="u-muted" data-acc-arrow>▾</span>
-          <span>2026 年第 42 周（10-12 ~ 10-18）</span>
-          <span class="busy-tag busy-tag--warning is-plain" id="badgeW42">1/2 待补</span>
-          <span class="u-sub tpl-acc-meta">本周 · 启用项目 2 个</span>
-        </div>
-        <div data-acc-body>
-          <table class="busy-table">
-            <thead><tr><th>报告标题</th><th>项目</th><th>发报日</th><th>来源</th><th>版本</th><th>操作</th></tr></thead>
-            <tbody>
-              <tr data-proj="devops" data-title="" id="missW42" class="rpt-row--missing">
-                <td><span class="u-muted">未入库</span></td>
-                <td><span class="busy-tag busy-tag--info is-plain">产研平台 · devops</span></td>
-                <td class="u-mono u-muted">—</td>
-                <td class="u-muted">—</td>
-                <td class="u-mono u-muted">—</td>
-                <td><div class="tpl-row-actions">
-                  <!-- 权限：devhubReportTrigger -->
-                  <button class="busy-button busy-button--primary is-link" type="button" data-trigger="devops"><span>立即生成</span></button>
-                  <!-- 权限：devhubReportUpload -->
-                  <button class="busy-button is-link" type="button" data-upload-prefill="devops"><span>补传</span></button>
-                </div></td>
-              </tr>
-              <tr data-proj="store" data-title="一致性检查报告（门店要货） - 2026-10-18">
-                <td><a href="report-detail.html">一致性检查报告（门店要货） - 2026-10-18</a></td>
-                <td><span class="busy-tag">门店要货 · store</span></td>
-                <td class="u-mono">2026-10-18</td>
-                <td><span class="busy-tag busy-tag--info is-plain">服务端生成</span></td>
-                <td class="u-mono">v2</td>
-                <td><div class="tpl-row-actions">
-                  <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-                  <button class="busy-button is-link" type="button" data-download="consistency_20261018_store.md"><span>获取原件</span></button>
-                </div></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <hr class="tpl-divider">
-      <!-- 第 41 周：两项目均已入库 -->
-      <div class="tpl-section">
-        <div class="tpl-section__head tpl-acc-head" data-acc>
-          <span class="u-muted" data-acc-arrow>▾</span>
-          <span>2026 年第 41 周（10-05 ~ 10-11）</span>
-          <span class="busy-tag busy-tag--success is-plain">2/2</span>
-          <span class="u-sub tpl-acc-meta">启用项目 2 个 · 已齐全</span>
-        </div>
-        <div data-acc-body>
-          <table class="busy-table">
-            <thead><tr><th>报告标题</th><th>项目</th><th>发报日</th><th>来源</th><th>版本</th><th>操作</th></tr></thead>
-            <tbody>
-              <tr data-proj="devops" data-title="一致性检查报告（产研平台） - 2026-10-11">
-                <td><a href="report-detail.html">一致性检查报告（产研平台） - 2026-10-11</a></td>
-                <td><span class="busy-tag busy-tag--info is-plain">产研平台 · devops</span></td>
-                <td class="u-mono">2026-10-11</td>
-                <td><span class="busy-tag busy-tag--info is-plain">服务端生成</span></td>
-                <td class="u-mono">v1</td>
-                <td><div class="tpl-row-actions">
-                  <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-                  <button class="busy-button is-link" type="button" data-download="consistency_20261011_devops.md"><span>获取原件</span></button>
-                </div></td>
-              </tr>
-              <tr data-proj="store" data-title="一致性检查报告（门店要货） - 2026-10-11">
-                <td><a href="report-detail.html">一致性检查报告（门店要货） - 2026-10-11</a></td>
-                <td><span class="busy-tag">门店要货 · store</span></td>
-                <td class="u-mono">2026-10-11</td>
-                <td><span class="busy-tag is-plain">推送上报</span></td>
-                <td class="u-mono">v1</td>
-                <td><div class="tpl-row-actions">
-                  <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-                  <button class="busy-button is-link" type="button" data-download="consistency_20261011_store.md"><span>获取原件</span></button>
-                </div></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-      <hr class="tpl-divider">
-      <!-- 第 40 周：store 手动补传 / devops 未入库 -->
-      <div class="tpl-section">
-        <div class="tpl-section__head tpl-acc-head" data-acc>
-          <span class="u-muted" data-acc-arrow>▾</span>
-          <span>2026 年第 40 周（09-28 ~ 10-04）</span>
-          <span class="busy-tag busy-tag--warning is-plain">1/2 待补</span>
-          <span class="u-sub tpl-acc-meta">启用项目 2 个</span>
-        </div>
-        <div data-acc-body>
-          <table class="busy-table">
-            <thead><tr><th>报告标题</th><th>项目</th><th>发报日</th><th>来源</th><th>版本</th><th>操作</th></tr></thead>
-            <tbody>
-              <tr data-proj="devops" data-title="" class="rpt-row--missing">
-                <td><span class="u-muted">未入库</span></td>
-                <td><span class="busy-tag busy-tag--info is-plain">产研平台 · devops</span></td>
-                <td class="u-mono u-muted">—</td>
-                <td class="u-muted">—</td>
-                <td class="u-mono u-muted">—</td>
-                <td><div class="tpl-row-actions">
-                  <!-- 演示失败路径：无匹配联动触发配置 -->
-                  <button class="busy-button busy-button--primary is-link" type="button" data-trigger="devops" data-noconfig="1"><span>立即生成</span></button>
-                  <button class="busy-button is-link" type="button" data-upload-prefill="devops"><span>补传</span></button>
-                </div></td>
-              </tr>
-              <tr data-proj="store" data-title="一致性检查报告（门店要货） - 2026-10-04">
-                <td><a href="report-detail.html">一致性检查报告（门店要货） - 2026-10-04</a></td>
-                <td><span class="busy-tag">门店要货 · store</span></td>
-                <td class="u-mono">2026-10-04</td>
-                <td><span class="busy-tag busy-tag--warning is-plain">手动补传</span></td>
-                <td class="u-mono">v1</td>
-                <td><div class="tpl-row-actions">
-                  <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-                  <!-- 演示失败路径：该报告无原始 Markdown 内容 -->
-                  <button class="busy-button is-link" type="button" data-download="consistency_20261004_store.md" data-nocontent="1"><span>获取原件</span></button>
-                </div></td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-
-    <!-- Tab2 报告明细：平铺表格（默认展示最新版本；不分页，上限 200 条） -->
-    <div data-panel="flat" hidden>
-      <table class="busy-table">
-        <thead><tr><th>发报日期</th><th>所属周</th><th>项目</th><th>报告标题</th><th>来源</th><th>版本</th><th>操作</th></tr></thead>
-        <tbody id="flatTbody">
-          <tr data-proj="store" data-title="一致性检查报告（门店要货） - 2026-10-18">
-            <td class="u-mono">2026-10-18</td>
-            <td>第 42 周</td>
-            <td><span class="busy-tag">门店要货 · store</span></td>
-            <td><a href="report-detail.html">一致性检查报告（门店要货） - 2026-10-18</a></td>
-            <td><span class="busy-tag busy-tag--info is-plain">服务端生成</span></td>
-            <td class="u-mono">v2</td>
-            <td><div class="tpl-row-actions">
-              <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-              <button class="busy-button is-link" type="button" data-download="consistency_20261018_store.md"><span>获取原件</span></button>
-            </div></td>
-          </tr>
-          <tr data-proj="devops" data-title="一致性检查报告（产研平台） - 2026-10-11">
-            <td class="u-mono">2026-10-11</td>
-            <td>第 41 周</td>
-            <td><span class="busy-tag busy-tag--info is-plain">产研平台 · devops</span></td>
-            <td><a href="report-detail.html">一致性检查报告（产研平台） - 2026-10-11</a></td>
-            <td><span class="busy-tag busy-tag--info is-plain">服务端生成</span></td>
-            <td class="u-mono">v1</td>
-            <td><div class="tpl-row-actions">
-              <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-              <button class="busy-button is-link" type="button" data-download="consistency_20261011_devops.md"><span>获取原件</span></button>
-            </div></td>
-          </tr>
-          <tr data-proj="store" data-title="一致性检查报告（门店要货） - 2026-10-11">
-            <td class="u-mono">2026-10-11</td>
-            <td>第 41 周</td>
-            <td><span class="busy-tag">门店要货 · store</span></td>
-            <td><a href="report-detail.html">一致性检查报告（门店要货） - 2026-10-11</a></td>
-            <td><span class="busy-tag is-plain">推送上报</span></td>
-            <td class="u-mono">v1</td>
-            <td><div class="tpl-row-actions">
-              <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-              <button class="busy-button is-link" type="button" data-download="consistency_20261011_store.md"><span>获取原件</span></button>
-            </div></td>
-          </tr>
-          <tr data-proj="store" data-title="一致性检查报告（门店要货） - 2026-10-04">
-            <td class="u-mono">2026-10-04</td>
-            <td>第 40 周</td>
-            <td><span class="busy-tag">门店要货 · store</span></td>
-            <td><a href="report-detail.html">一致性检查报告（门店要货） - 2026-10-04</a></td>
-            <td><span class="busy-tag busy-tag--warning is-plain">手动补传</span></td>
-            <td class="u-mono">v1</td>
-            <td><div class="tpl-row-actions">
-              <a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a>
-              <button class="busy-button is-link" type="button" data-download="consistency_20261004_store.md" data-nocontent="1"><span>获取原件</span></button>
-            </div></td>
-          </tr>
-        </tbody>
-      </table>
-      <!-- 空态：筛选无结果时展示 -->
-      <div class="busy-empty" id="flatEmpty" hidden>
-        <div class="busy-empty__image">🔍</div>
-        <div>该条件下暂无报告</div>
-      </div>
-      <div class="tpl-table-foot">
-        <span class="u-sub">全部表格不分页：按周索引取近 8 周、报告明细上限 200 条，发报日期区间为前端过滤</span>
-      </div>
-    </div>
-  </div>
-</section>
-
-<!-- 弹窗：手动补传（权限 devhubReportUpload）。遮罩/弹层定位收进页面级扩展类（.tpl-mask/.tpl-dialog--560 等），颜色走 --busy-* 与遮罩约定 -->
-<div id="dlgUpload" hidden class="tpl-mask">
-  <div class="busy-dialog tpl-dialog--560" role="dialog" aria-modal="true">
-    <div class="busy-dialog__header"><span class="busy-dialog__title">手动补传</span><button class="busy-dialog__close" type="button" data-upload-cancel>✕</button></div>
-    <div class="busy-dialog__body tpl-dialog-form">
-      <div class="busy-form-item">
-        <div class="busy-form-item__label tpl-label--72">报告类型</div>
-        <div class="busy-form-item__content">
-          <span class="busy-tag busy-tag--warning is-plain">文档一致性校验</span>
-          <span class="u-sub">进入时按当前类型 Tab 预置；选择文件后按文件名识别结果为准</span>
-        </div>
-      </div>
-      <div class="busy-form-item">
-        <div class="busy-form-item__label is-required tpl-label--72">项目</div>
-        <div class="busy-form-item__content tpl-pop-anchor">
-          <div class="busy-select" id="upProject"><div class="busy-input"><input readonly placeholder="请选择项目" id="upProjectInput"></div><span class="busy-select__caret">▾</span></div>
-          <div id="upProjectPanel" hidden class="tpl-select-pop">
-            <div class="busy-select-dropdown__list">
-              <div class="busy-select-dropdown__item tpl-select-pop__item" data-proj-opt="store">门店要货 · store</div>
-              <div class="busy-select-dropdown__item tpl-select-pop__item" data-proj-opt="devops">产研平台 · devops</div>
-            </div>
+      <section class="panel report-panel" id="reportPanel" aria-label="报告列表">
+        <div class="report-toolbar">
+          <div class="view-switch" role="tablist" aria-label="列表视角">
+            <button class="view-button active" type="button" role="tab" aria-selected="true" data-view="index">按周索引</button>
+            <button class="view-button" type="button" role="tab" aria-selected="false" data-view="flat">报告明细</button>
           </div>
-          <div class="busy-form-item__error" id="errProject" hidden>请选择项目</div>
-          <div class="u-sub">单选启用项目，选项来自「报告项目配置」生效数据；按文件名识别成功时自动带入</div>
+          <span class="toolbar-meta">更新于 2026-10-18 20:10 · 演示数据</span>
         </div>
-      </div>
-      <div class="busy-form-item">
-        <div class="busy-form-item__label is-required tpl-label--72">发报日</div>
-        <div class="busy-form-item__content">
-          <div class="busy-date-editor busy-input" id="upDate"><input readonly placeholder="请选择发报日" id="upDateInput"></div>
-          <div class="busy-form-item__error" id="errDate" hidden>发报日不可晚于今天</div>
-          <div class="u-sub">不可晚于今天（东八区）；从缺失行「补传」进入时预填该项目当周周日</div>
+        <div id="indexView" role="tabpanel"><div class="report-groups" id="reportGroups"></div></div>
+        <div id="flatView" role="tabpanel" hidden><div class="table-scroll"><table class="report-table"><thead><tr><th>发报日期</th><th>所属周</th><th>项目</th><th>报告标题</th><th>来源</th><th>版本</th><th>操作</th></tr></thead><tbody id="flatRows"></tbody></table></div></div>
+        <div class="empty-state" id="emptyState" hidden>
+          <div class="empty-icon"><svg class="svg-icon"><use href="#i-empty"/></svg></div>
+          <div class="empty-title">没有找到匹配的报告</div>
+          <p class="empty-copy">试试缩短关键词、调整日期范围，或清除项目筛选。</p>
+          <button class="btn" id="emptyReset" type="button">清除筛选</button>
         </div>
-      </div>
-      <div class="busy-form-item">
-        <div class="busy-form-item__label is-required tpl-label--72">报告文件</div>
-        <div class="busy-form-item__content">
-          <div id="upDrop" class="upload-drop">
-            <div class="upload-drop__icon">⬆</div>
-            <div class="upload-drop__text">将文件拖到此处，或<em class="upload-drop__link">点击上传</em></div>
-            <div class="upload-drop__hint">仅支持 .md（UTF-8），单文件不超过 2MB</div>
-          </div>
-          <input type="file" id="upFile" accept=".md" hidden>
-          <div id="upFileItem" hidden class="upload-file">
-            📄 <span id="upFileName" class="u-mono"></span><span class="upload-file__ok">✓ 已选择</span><span class="upload-file__remove" id="upFileRemove">✕</span>
-          </div>
-          <div class="busy-form-item__error" id="errFile" hidden>仅支持 Markdown 文件</div>
-        </div>
-      </div>
-      <!-- 识别结果提示条：识别成功 / 无法识别（预填时前缀文案切换为「已从缺口带入」） -->
-      <div class="busy-message busy-message--success" id="recognizeOk" hidden><span id="recogPrefix">已按文件名识别：</span>项目 <b id="recogProj">产研平台</b> · 发报日 <b id="recogDate" class="u-mono">2026-10-18</b></div>
-      <div class="busy-message busy-message--warning" id="recognizeFail" hidden>文件名无法识别，请手动指定项目与发报日（命名规范：consistency_yyyyMMdd_项目key.md）</div>
-    </div>
-    <div class="busy-dialog__footer">
-      <button class="busy-button" type="button" data-upload-cancel><span>取 消</span></button>
-      <button class="busy-button busy-button--primary" type="button" id="upSubmit"><span>确 定</span></button>
-    </div>
+        <div class="table-note" id="tableNote">按周索引展示近 8 周，报告明细最多 200 条，不分页。</div>
+      </section>
+    </main>
   </div>
 </div>
 
-<!-- 确认框：立即生成（MessageBox 形态） -->
-<div id="dlgTrigger" hidden class="tpl-mask">
-  <div class="busy-dialog tpl-dialog--400" role="dialog" aria-modal="true">
-    <div class="busy-dialog__header"><span class="busy-dialog__title">立即生成</span><button class="busy-dialog__close" type="button" data-close="dlgTrigger">✕</button></div>
-    <div class="busy-dialog__body tpl-confirm-body">
-      <svg width="18" height="18" viewBox="0 0 16 16" fill="currentColor" class="tpl-confirm-icon"><path d="M8 1a7 7 0 1 0 0 14A7 7 0 0 0 8 1zm-.75 3.75a.75.75 0 0 1 1.5 0v4a.75.75 0 0 1-1.5 0v-4zM8 11.9a.95.95 0 1 1 0-1.9.95.95 0 0 1 0 1.9z"/></svg>
-      <span>确认为报告项「文档一致性校验 · <b id="triggerProjName">产研平台 · devops</b>」创建生成任务？类型参数：回看 7 天。</span>
+<div class="modal-backdrop" id="uploadModal" hidden>
+  <section class="modal" role="dialog" aria-modal="true" aria-labelledby="uploadTitle">
+    <div class="modal-header"><h2 id="uploadTitle">手动补传报告</h2><button class="icon-btn" type="button" data-upload-close aria-label="关闭"><svg class="svg-icon"><use href="#i-x"/></svg></button></div>
+    <div class="modal-body">
+      <div class="form-field"><span class="form-label">报告类型</span><span class="badge badge-accent badge-plain">文档一致性校验</span></div>
+      <div class="form-field"><label class="form-label" for="uploadProject">报告项目 <span class="danger-text">*</span></label><select class="select" id="uploadProject"><option value="">请选择启用项目</option><option value="store">项目 · 门店要货 · store</option><option value="devops">项目 · 产研平台 · devops</option></select><span class="field-error" id="uploadProjectError" hidden>请选择报告项目</span></div>
+      <div class="form-field"><label class="form-label" for="uploadDate">发报日 <span class="danger-text">*</span></label><input class="input mono" id="uploadDate" type="date" max="2026-10-18"><span class="field-hint">不可晚于 2026-10-18；从缺口进入时会自动带入当周周日。</span><span class="field-error" id="uploadDateError" hidden></span></div>
+      <div class="form-field"><span class="form-label">报告文件 <span class="danger-text">*</span></span>
+        <button class="dropzone" id="dropZone" type="button"><svg class="svg-icon"><use href="#i-upload"/></svg><strong>拖入 Markdown 文件，或点击选择</strong><span>UTF-8 .md · 单文件不超过 2MB</span></button>
+        <input id="uploadFile" type="file" accept=".md,text/markdown" hidden>
+        <div class="file-line" id="fileLine" hidden><svg class="svg-icon"><use href="#i-file"/></svg><span class="file-name mono" id="fileName"></span><button class="btn btn-text" id="removeFile" type="button">移除</button></div>
+        <span class="field-error" id="uploadFileError" hidden></span>
+      </div>
+      <div class="recognition" id="recognition" hidden></div>
     </div>
-    <div class="busy-dialog__footer">
-      <button class="busy-button" type="button" data-close="dlgTrigger"><span>取 消</span></button>
-      <button class="busy-button busy-button--primary" type="button" id="triggerOk"><span>确 定</span></button>
-    </div>
-  </div>
+    <div class="modal-footer"><button class="btn" type="button" data-upload-close>取消</button><button class="btn btn-primary" id="uploadSubmit" type="button">确认补传</button></div>
+  </section>
 </div>
 
-<!-- 确认框：脏离开（已选文件或改动必填项后取消/关闭）。web-ui 写 AcPopconfirm，PC registry 无 Popconfirm，按 interaction-spec §3⑥ 统一以 BusyMessageBox 承载 -->
-<div id="dlgDirty" hidden class="tpl-mask tpl-mask--above">
-  <div class="busy-dialog tpl-dialog--400" role="dialog" aria-modal="true">
-    <div class="busy-dialog__header"><span class="busy-dialog__title">放弃补传</span><button class="busy-dialog__close" type="button" data-close="dlgDirty">✕</button></div>
-    <div class="busy-dialog__body">已选择文件或已填写发报日，放弃本次补传？</div>
-    <div class="busy-dialog__footer">
-      <button class="busy-button" type="button" data-close="dlgDirty"><span>继续填写</span></button>
-      <button class="busy-button busy-button--primary" type="button" id="dirtyOk"><span>放弃补传</span></button>
-    </div>
-  </div>
+<div class="modal-backdrop" id="generateModal" hidden>
+  <section class="modal modal-small" role="dialog" aria-modal="true" aria-labelledby="generateTitle">
+    <div class="modal-header"><h2 id="generateTitle">确认立即生成</h2><button class="icon-btn" type="button" data-generate-close aria-label="关闭"><svg class="svg-icon"><use href="#i-x"/></svg></button></div>
+    <div class="modal-body"><p class="confirm-copy" id="generateCopy"></p><p class="field-hint">创建后可前往「报告配置 › 报告触发配置 · 生成记录」查看进度。</p></div>
+    <div class="modal-footer"><button class="btn" type="button" data-generate-close>取消</button><button class="btn btn-primary" id="generateConfirm" type="button">创建生成任务</button></div>
+  </section>
 </div>
 
-<div id="toastHost"></div>
-
+<div class="modal-backdrop" id="dirtyModal" hidden>
+  <section class="modal modal-small" role="alertdialog" aria-modal="true" aria-labelledby="dirtyTitle">
+    <div class="modal-header"><h2 id="dirtyTitle">放弃本次补传？</h2></div>
+    <div class="modal-body"><p class="confirm-copy">已选择文件或修改补传信息，关闭后这些内容不会保留。</p></div>
+    <div class="modal-footer"><button class="btn" id="dirtyCancel" type="button">继续填写</button><button class="btn btn-danger" id="dirtyConfirm" type="button">放弃补传</button></div>
+  </section>
+</div>
+<div class="toast-stack" id="toastHost" aria-live="polite"></div>
+<script src="../prototype.js"></script>
 <script>
-/* ================= Mock 基座 ================= */
-var PROJECTS = { store: '门店要货', devops: '产研平台' };
-var TODAY = '2026-10-18'; /* Mock 当前日（周日，东八区） */
-function toast(text, type) {
-  var el = document.createElement('div');
-  el.className = 'busy-message tpl-toast-fixed busy-message--' + (type || 'success');
-  el.innerHTML = text;
-  document.getElementById('toastHost').appendChild(el);
-  setTimeout(function () { el.remove(); }, 2400);
-}
-function open(id) { document.getElementById(id).hidden = false; }
-function close(id) { document.getElementById(id).hidden = true; }
-function btnLoading(btn, fn) {
-  btn.classList.add('is-loading'); btn.disabled = true;
-  setTimeout(function () { btn.classList.remove('is-loading'); btn.disabled = false; fn && fn(); }, 700);
-}
-document.querySelectorAll('[data-close]').forEach(function (b) {
-  b.addEventListener('click', function () { close(b.getAttribute('data-close')); });
-});
+(function () {
+  var UI = ReportUI;
+  var TODAY = '2026-10-18';
+  var PROJECTS = { store: { name: '门店要货' }, devops: { name: '产研平台' } };
+  var groups = [
+    { key: 'w42', label: '2026 年第 42 周', range: '10-12 ~ 10-18', date: '2026-10-18', items: [
+      { project: 'devops', report: null },
+      { project: 'store', report: { title: '一致性检查报告（门店要货） - 2026-10-18', date: '2026-10-18', week: '第 42 周', source: '服务端生成', ver: 'v2', file: 'consistency_20261018_store.md' } }
+    ] },
+    { key: 'w41', label: '2026 年第 41 周', range: '10-05 ~ 10-11', date: '2026-10-11', items: [
+      { project: 'devops', report: { title: '一致性检查报告（产研平台） - 2026-10-11', date: '2026-10-11', week: '第 41 周', source: '服务端生成', ver: 'v1', file: 'consistency_20261011_devops.md' } },
+      { project: 'store', report: { title: '一致性检查报告（门店要货） - 2026-10-11', date: '2026-10-11', week: '第 41 周', source: '推送上报', ver: 'v1', file: 'consistency_20261011_store.md' } }
+    ] },
+    { key: 'w40', label: '2026 年第 40 周', range: '09-28 ~ 10-04', date: '2026-10-04', items: [
+      { project: 'devops', report: null, noConfig: true },
+      { project: 'store', report: { title: '一致性检查报告（门店要货） - 2026-10-04', date: '2026-10-04', week: '第 40 周', source: '手动补传', ver: 'v1', file: 'consistency_20261004_store.md', noContent: true } }
+    ] }
+  ];
+  var state = { project: '', start: '2026-07-20', end: TODAY, kw: '', view: 'index' };
+  var saved = UI.readState('consistency-web-list');
+  if (saved) Object.assign(state, saved);
+  var pendingGenerate = null;
+  var uploadState = { file: null, dirty: false, initialProject: '', initialDate: '' };
 
-/* ================= Tab 双视角（切换即表格 loading，页码重置为 1） ================= */
-document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (t) {
-  t.addEventListener('click', function () {
-    document.querySelectorAll('#viewTabs .busy-tabs__item').forEach(function (x) { x.classList.remove('is-active'); });
-    t.classList.add('is-active');
-    var key = t.getAttribute('data-tab');
-    document.querySelectorAll('[data-panel]').forEach(function (p) { p.hidden = p.getAttribute('data-panel') !== key; });
-  });
-});
-
-/* ================= 周分组手风琴 ================= */
-document.querySelectorAll('[data-acc]').forEach(function (head) {
-  head.addEventListener('click', function () {
-    var body = head.parentElement.querySelector('[data-acc-body]');
-    body.hidden = !body.hidden;
-    head.querySelector('[data-acc-arrow]').textContent = body.hidden ? '▸' : '▾';
-  });
-});
-
-/* ================= 筛选：查询 / 重置（成功=列表刷新停留；失败=toast error+按钮恢复，Mock 不演示失败） ================= */
-var queryProject = ''; /* '' = 全部 */
-document.getElementById('filterProject').addEventListener('click', function () {
-  /* Mock：项目单选在「全部 / store / devops」间循环；生产为 el-select 下拉，选项标签「项目名 · key」 */
-  var input = document.querySelector('#filterProject input');
-  var seq = ['', 'store', 'devops'];
-  var idx = (seq.indexOf(queryProject) + 1) % seq.length;
-  queryProject = seq[idx];
-  input.value = queryProject ? PROJECTS[queryProject] + ' · ' + queryProject : '全部项目';
-});
-function applyFilter() {
-  var kw = document.getElementById('filterKw').value.trim();
-  document.querySelectorAll('[data-proj]').forEach(function (tr) {
-    var okProj = !queryProject || tr.getAttribute('data-proj') === queryProject;
-    var title = tr.getAttribute('data-title') || '';
-    var okKw = !kw || title.indexOf(kw) !== -1;
-    tr.hidden = !(okProj && okKw);
-  });
-  /* Tab2 空态 */
-  var flatRows = document.querySelectorAll('#flatTbody tr');
-  var visible = 0;
-  flatRows.forEach(function (tr) { if (!tr.hidden) visible++; });
-  document.getElementById('flatEmpty').hidden = visible > 0;
-}
-document.getElementById('btnQuery').addEventListener('click', function (e) {
-  btnLoading(e.currentTarget, applyFilter);
-});
-document.getElementById('btnReset').addEventListener('click', function () {
-  queryProject = '';
-  document.querySelector('#filterProject input').value = '全部项目';
-  document.getElementById('filterDate').value = '2026-07-20 ~ 2026-10-18';
-  document.getElementById('filterKw').value = '';
-  applyFilter();
-  toast('筛选条件已重置', 'info');
-});
-/* 关键词：报告标题模糊搜索，回车即查 */
-document.getElementById('filterKw').addEventListener('keydown', function (e) {
-  if (e.key === 'Enter') document.getElementById('btnQuery').click();
-});
-
-/* ================= 获取原件（浏览器下载原始 .md，Mock 以 Blob 演示；失败=toast error+按钮恢复） ================= */
-document.querySelectorAll('[data-download]').forEach(function (b) {
-  b.addEventListener('click', function () {
-    /* 无原始 Markdown 内容时 toast error + 按钮恢复 */
-    if (b.getAttribute('data-nocontent')) { toast('该报告无原始 Markdown 内容', 'error'); return; }
-    btnLoading(b, function () {
-      var name = b.getAttribute('data-download');
-      var blob = new Blob(['# 一致性检查报告 - ' + name + '\n\n（Mock 原始 Markdown 文件）\n'], { type: 'text/markdown;charset=utf-8' });
-      var a = document.createElement('a');
-      a.href = URL.createObjectURL(blob);
-      a.download = name;
-      a.click();
-      URL.revokeObjectURL(a.href);
-      toast('已开始下载 ' + name);
+  function esc(value) { return UI.escapeHtml(value); }
+  function projectBadge(key) { return '<span class="badge badge-info badge-plain">' + esc(PROJECTS[key].name) + ' · ' + esc(key) + '</span>'; }
+  function sourceBadge(source) {
+    var cls = source === '服务端生成' ? 'badge-accent' : source === '推送上报' ? 'badge-info' : 'badge-warning';
+    return '<span class="badge ' + cls + ' badge-plain">' + esc(source) + '</span>';
+  }
+  function syncInputs() {
+    document.getElementById('filterProject').value = state.project;
+    document.getElementById('filterStart').value = state.start;
+    document.getElementById('filterEnd').value = state.end;
+    document.getElementById('filterKw').value = state.kw;
+    document.querySelectorAll('[data-view]').forEach(function (button) {
+      var active = button.getAttribute('data-view') === state.view;
+      button.classList.toggle('active', active);
+      button.setAttribute('aria-selected', active ? 'true' : 'false');
     });
-  });
-});
-
-/* ================= 立即生成（二次确认 → loading → toast，停留本页不跳转） ================= */
-var triggerProj = 'devops';
-document.querySelectorAll('[data-trigger]').forEach(function (b) {
-  b.addEventListener('click', function () {
-    /* 失败路径演示：未找到联动触发配置 → toast error + 停留 */
-    if (b.getAttribute('data-noconfig')) { toast('未找到联动触发配置，请先到「报告配置」页检查', 'error'); return; }
-    triggerProj = b.getAttribute('data-trigger');
-    document.getElementById('triggerProjName').textContent = PROJECTS[triggerProj] + ' · ' + triggerProj;
-    open('dlgTrigger');
-  });
-});
-document.getElementById('triggerOk').addEventListener('click', function (e) {
-  btnLoading(e.currentTarget, function () {
-    close('dlgTrigger');
-    /* 成功去向：toast 后停留本页（不跳转），进度前往「报告配置 › 报告触发配置 · 生成记录」查看；失败场景（存在进行中任务 / 无权限）为 toast error + 按钮恢复，Mock 不演示 */
-    toast('已创建生成任务，进度见「报告配置 › 报告触发配置 · 生成记录」');
-  });
-});
-
-/* ================= 手动补传弹窗 ================= */
-var upState = { proj: '', date: '', file: null, dirty: false };
-function resetUpload() {
-  upState = { proj: '', date: '', file: null, dirty: false };
-  document.getElementById('upProjectInput').value = '';
-  document.getElementById('upDateInput').value = '';
-  document.getElementById('upFile').value = '';
-  document.getElementById('upFileItem').hidden = true;
-  document.getElementById('upDrop').hidden = false;
-  document.getElementById('recognizeOk').hidden = true;
-  document.getElementById('recognizeFail').hidden = true;
-  ['errProject', 'errDate', 'errFile'].forEach(function (id) { document.getElementById(id).hidden = true; });
-}
-function openUpload(prefillProj) {
-  resetUpload();
-  if (prefillProj) {
-    /* 从缺失行「补传」进入：预填项目与当周周日，并提示「已从缺口带入：项目 X · 发报日 Y」 */
-    upState.proj = prefillProj;
-    upState.date = TODAY;
-    document.getElementById('upProjectInput').value = PROJECTS[prefillProj] + ' · ' + prefillProj;
-    document.getElementById('upDateInput').value = TODAY;
-    document.getElementById('recogPrefix').textContent = '已从缺口带入：';
-    document.getElementById('recogProj').textContent = PROJECTS[prefillProj];
-    document.getElementById('recogDate').textContent = TODAY;
-    document.getElementById('recognizeOk').hidden = false;
-    upState.dirty = false; /* 预填不计脏 */
-  } else {
-    document.getElementById('recogPrefix').textContent = '已按文件名识别：';
+    document.getElementById('indexView').hidden = state.view !== 'index';
+    document.getElementById('flatView').hidden = state.view !== 'flat';
   }
-  open('dlgUpload');
-}
-document.getElementById('btnUpload').addEventListener('click', function () { openUpload(''); });
-document.querySelectorAll('[data-upload-prefill]').forEach(function (b) {
-  b.addEventListener('click', function () { openUpload(b.getAttribute('data-upload-prefill')); });
-});
-/* 项目单选（change 校验：请选择项目） */
-document.getElementById('upProject').addEventListener('click', function (e) {
-  e.stopPropagation();
-  document.getElementById('upProjectPanel').hidden = !document.getElementById('upProjectPanel').hidden;
-});
-document.querySelectorAll('[data-proj-opt]').forEach(function (opt) {
-  opt.addEventListener('click', function () {
-    upState.proj = opt.getAttribute('data-proj-opt');
-    upState.dirty = true;
-    document.getElementById('upProjectInput').value = PROJECTS[upState.proj] + ' · ' + upState.proj;
-    document.getElementById('upProjectPanel').hidden = true;
-    document.getElementById('errProject').hidden = true;
-  });
-});
-/* 发报日（Mock：点击带入今天；change 校验：不可晚于今天） */
-document.getElementById('upDate').addEventListener('click', function () {
-  document.getElementById('upDateInput').value = TODAY;
-  upState.date = TODAY;
-  upState.dirty = true;
-  document.getElementById('errDate').hidden = true;
-  toast('已选择发报日 ' + TODAY + '（Mock 日历面板）', 'info');
-});
-/* 报告文件：点击/拖拽选择 → 即时校验（.md ≤2MB）→ 按文件名识别自动带入 */
-document.getElementById('upDrop').addEventListener('click', function () { document.getElementById('upFile').click(); });
-document.getElementById('upFile').addEventListener('change', function (e) {
-  var f = e.target.files[0];
-  if (!f) return;
-  var errEl = document.getElementById('errFile');
-  if (!/\.md$/i.test(f.name)) { errEl.textContent = '仅支持 Markdown 文件'; errEl.hidden = false; return; }
-  if (f.size > 2 * 1024 * 1024) { errEl.textContent = '文件不可超过 2MB'; errEl.hidden = false; return; }
-  errEl.hidden = true;
-  upState.file = f;
-  upState.dirty = true;
-  document.getElementById('upFileName').textContent = f.name + '（' + (f.size / 1024).toFixed(1) + ' KB）';
-  document.getElementById('upFileItem').hidden = false;
-  /* 命名识别：consistency_{yyyyMMdd}_{项目key}.md */
-  var m = /^consistency_(\d{4})(\d{2})(\d{2})_([a-z0-9-]+)\.md$/i.exec(f.name);
-  var projOk = m && PROJECTS[m[4]];
-  document.getElementById('recognizeOk').hidden = !!projOk ? false : true;
-  document.getElementById('recognizeFail').hidden = !!projOk;
-  if (projOk) {
-    var d = m[1] + '-' + m[2] + '-' + m[3];
-    upState.proj = m[4];
-    upState.date = d;
-    document.getElementById('upProjectInput').value = PROJECTS[m[4]] + ' · ' + m[4];
-    document.getElementById('upDateInput').value = d;
-    document.getElementById('recogProj').textContent = PROJECTS[m[4]];
-    document.getElementById('recogDate').textContent = d;
-    document.getElementById('errProject').hidden = true;
-    document.getElementById('errDate').hidden = d <= TODAY;
+  function persist() { UI.saveState('consistency-web-list', state); }
+  function matches(item, group) {
+    var report = item.report;
+    if (state.project && item.project !== state.project) return false;
+    if (state.kw && (!report || report.title.toLowerCase().indexOf(state.kw.toLowerCase()) === -1)) return false;
+    var date = report ? report.date : group.date;
+    if (state.start && date < state.start) return false;
+    if (state.end && date > state.end) return false;
+    return true;
   }
-});
-document.getElementById('upFileRemove').addEventListener('click', function () {
-  upState.file = null;
-  document.getElementById('upFile').value = '';
-  document.getElementById('upFileItem').hidden = true;
-});
-/* 取消 / 关闭：脏数据守卫 */
-document.querySelectorAll('[data-upload-cancel]').forEach(function (b) {
-  b.addEventListener('click', function () {
-    if (upState.dirty) { open('dlgDirty'); } else { close('dlgUpload'); }
+  function visibleGroups() {
+    return groups.map(function (group) {
+      return { group: group, items: group.items.filter(function (item) { return matches(item, group); }) };
+    }).filter(function (entry) { return entry.items.length; });
+  }
+  function actionsFor(item, group, flat) {
+    var report = item.report;
+    if (!report) {
+      return '<button class="btn btn-text" type="button" data-action="generate" data-group="' + group.key + '" data-project="' + item.project + '">立即生成</button><button class="btn btn-text" type="button" data-action="upload" data-group="' + group.key + '" data-project="' + item.project + '">补传</button>';
+    }
+    return '<a class="btn btn-text" href="report-detail.html">查看</a><button class="btn btn-text" type="button" data-action="download" data-file="' + esc(report.file) + '"' + (report.noContent ? ' data-no-content="true"' : '') + '>获取原件</button>';
+  }
+  function renderIndex(entries) {
+    var html = entries.map(function (entry) {
+      var group = entry.group;
+      var done = group.items.filter(function (item) { return item.report; }).length;
+      var total = group.items.length;
+      var complete = done === total;
+      var rows = entry.items.map(function (item) {
+        var report = item.report;
+        if (!report) {
+          return '<tr class="missing-row"><td class="title-cell"><span class="missing-title">报告未入库</span><div class="field-hint">可立即生成，或补传外部报告</div></td><td>' + projectBadge(item.project) + '</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="action-cell"><div class="row-actions">' + actionsFor(item, group, false) + '</div></td></tr>';
+        }
+        return '<tr><td class="title-cell"><a class="title-link" href="report-detail.html">' + esc(report.title) + '</a></td><td>' + projectBadge(item.project) + '</td><td class="mono">' + esc(report.date) + '</td><td>' + sourceBadge(report.source) + '</td><td class="mono">' + esc(report.ver) + '</td><td class="action-cell"><div class="row-actions">' + actionsFor(item, group, false) + '</div></td></tr>';
+      }).join('');
+      return '<section class="week-group"><button class="group-toggle" type="button" aria-expanded="true"><svg class="svg-icon"><use href="#i-chevron"/></svg><span class="group-title">' + esc(group.label) + '<span class="muted">（' + esc(group.range) + '）</span></span><span class="badge ' + (complete ? 'badge-success' : 'badge-warning') + '">' + (complete ? '已齐全' : '待补 ' + (total - done)) + ' · ' + done + '/' + total + '</span><span class="group-meta">' + total + ' 个启用项目</span></button><div class="group-body"><div class="table-scroll"><table class="report-table"><thead><tr><th>报告标题</th><th>项目</th><th>发报日</th><th>来源</th><th>版本</th><th>操作</th></tr></thead><tbody>' + rows + '</tbody></table></div></div></section>';
+    }).join('');
+    document.getElementById('reportGroups').innerHTML = html;
+  }
+  function renderFlat(entries) {
+    var rows = [];
+    entries.forEach(function (entry) {
+      entry.items.forEach(function (item) { if (item.report) rows.push({ item: item, group: entry.group }); });
+    });
+    rows.sort(function (a, b) { return b.item.report.date.localeCompare(a.item.report.date) || a.item.project.localeCompare(b.item.project); });
+    document.getElementById('flatRows').innerHTML = rows.map(function (row) {
+      var report = row.item.report;
+      return '<tr><td class="mono">' + esc(report.date) + '</td><td>' + esc(report.week) + '</td><td>' + projectBadge(row.item.project) + '</td><td class="title-cell"><a class="title-link" href="report-detail.html">' + esc(report.title) + '</a></td><td>' + sourceBadge(report.source) + '</td><td class="mono">' + esc(report.ver) + '</td><td class="action-cell"><div class="row-actions">' + actionsFor(row.item, row.group, true) + '</div></td></tr>';
+    }).join('');
+  }
+  function renderStats(entries) {
+    var all = [];
+    entries.forEach(function (entry) { entry.items.forEach(function (item) { all.push({ item: item, group: entry.group }); }); });
+    var currentGroup = groups.filter(function (group) { return group.key === 'w42'; })[0];
+    var current = currentGroup ? currentGroup.items : [];
+    var done = current.filter(function (item) { return item.report; }).length;
+    var reports = all.filter(function (row) { return row.item.report; });
+    var latest = reports.length ? reports.map(function (row) { return row.item.report.date; }).sort().pop() : '—';
+    var versions = reports.reduce(function (sum, row) { return sum + Math.max(0, Number(row.item.report.ver.slice(1)) - 1); }, 0);
+    document.getElementById('kpiWeek').textContent = current.length ? done + '/' + current.length : '0/0';
+    document.getElementById('kpiWeekNote').textContent = current.length ? '第 42 周' + (done < current.length ? ' · 还有 ' + (current.length - done) + ' 份待补' : ' · 报告已齐全') : '当前筛选不含本周';
+    document.getElementById('kpiTotal').textContent = reports.length;
+    document.getElementById('kpiLatest').textContent = latest;
+    document.getElementById('kpiVersions').textContent = versions;
+  }
+  function render() {
+    syncInputs();
+    var entries = visibleGroups();
+    renderIndex(entries);
+    renderFlat(entries);
+    renderStats(entries);
+    var empty = entries.length === 0 || (state.view === 'flat' && !entries.some(function (entry) { return entry.items.some(function (item) { return item.report; }); }));
+    document.getElementById('emptyState').hidden = !empty;
+    document.getElementById('indexView').hidden = empty || state.view !== 'index';
+    document.getElementById('flatView').hidden = empty || state.view !== 'flat';
+    document.getElementById('tableNote').hidden = empty;
+    persist();
+  }
+  function query() {
+    var button = document.getElementById('btnQuery');
+    var next = {
+      project: document.getElementById('filterProject').value,
+      start: document.getElementById('filterStart').value,
+      end: document.getElementById('filterEnd').value,
+      kw: document.getElementById('filterKw').value.trim()
+    };
+    if (next.start && next.end && next.start > next.end) {
+      UI.toast('开始日期不能晚于结束日期，请调整日期范围', 'error');
+      return;
+    }
+    Object.assign(state, next);
+    UI.setLoading(button, true);
+    window.setTimeout(function () { UI.setLoading(button, false); render(); }, 320);
+  }
+  function reset() {
+    state.project = '';
+    state.start = '2026-07-20';
+    state.end = TODAY;
+    state.kw = '';
+    render();
+  }
+
+  document.getElementById('btnQuery').addEventListener('click', query);
+  document.getElementById('filterKw').addEventListener('keydown', function (event) { if (event.key === 'Enter') query(); });
+  document.getElementById('btnReset').addEventListener('click', function () { reset(); UI.toast('筛选条件已重置'); });
+  document.getElementById('emptyReset').addEventListener('click', reset);
+  document.querySelectorAll('[data-view]').forEach(function (button) {
+    button.addEventListener('click', function () { state.view = button.getAttribute('data-view'); render(); });
   });
-});
-document.getElementById('dirtyOk').addEventListener('click', function () {
-  close('dlgDirty');
-  close('dlgUpload');
-  toast('已放弃补传', 'info');
-});
-/* 提交：全字段校验 → 按钮 loading → toast「补传成功，已生成 v{N}」→ 关弹窗并刷新列表 */
-document.getElementById('upSubmit').addEventListener('click', function (e) {
-  var ok = true;
-  if (!upState.proj) { document.getElementById('errProject').hidden = false; ok = false; }
-  if (!upState.date) { document.getElementById('errDate').textContent = '请选择发报日'; document.getElementById('errDate').hidden = false; ok = false; }
-  else if (upState.date > TODAY) { document.getElementById('errDate').textContent = '发报日不可晚于今天'; document.getElementById('errDate').hidden = false; ok = false; }
-  if (!upState.file) { document.getElementById('errFile').textContent = '请上传报告文件'; document.getElementById('errFile').hidden = false; ok = false; }
-  if (!ok) { document.querySelector('#dlgUpload .busy-form-item__error:not([hidden])').scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
-  /* 重复内容演示：项目 + 发报日已有在库版本且内容一致 → 提示不产生新版本 */
-  var dup = upState.proj === 'store' && upState.date === '2026-10-18';
-  btnLoading(e.currentTarget, function () {
-    close('dlgUpload');
-    if (dup) { toast('内容重复，与现有版本一致，未产生新版本', 'warning'); return; }
-    toast('补传成功，已生成 v1');
-    /* Mock 联动：若补齐的是本周 devops 缺口，行转已入库、齐全度与 KPI 同步刷新，报告明细 Tab 同步成行 */
-    if (upState.proj === 'devops' && upState.date === TODAY) {
-      var tr = document.getElementById('missW42');
-      tr.classList.remove('rpt-row--missing');
-      tr.setAttribute('data-title', '一致性检查报告（产研平台） - 2026-10-18');
-      tr.innerHTML = '<td><a href="report-detail.html">一致性检查报告（产研平台） - 2026-10-18</a></td>' +
-        '<td><span class="busy-tag busy-tag--info is-plain">产研平台 · devops</span></td>' +
-        '<td class="u-mono">2026-10-18</td>' +
-        '<td><span class="busy-tag busy-tag--warning is-plain">手动补传</span></td>' +
-        '<td class="u-mono">v1</td>' +
-        '<td><div class="tpl-row-actions"><a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a><button class="busy-button is-link" type="button"><span>获取原件</span></button></div></td>';
-      var flat = document.createElement('tr');
-      flat.setAttribute('data-proj', 'devops');
-      flat.setAttribute('data-title', '一致性检查报告（产研平台） - 2026-10-18');
-      flat.innerHTML = '<td class="u-mono">2026-10-18</td><td>第 42 周</td>' +
-        '<td><span class="busy-tag busy-tag--info is-plain">产研平台 · devops</span></td>' +
-        '<td><a href="report-detail.html">一致性检查报告（产研平台） - 2026-10-18</a></td>' +
-        '<td><span class="busy-tag busy-tag--warning is-plain">手动补传</span></td>' +
-        '<td class="u-mono">v1</td>' +
-        '<td><div class="tpl-row-actions"><a href="report-detail.html"><button class="busy-button is-link" type="button"><span>查看</span></button></a><button class="busy-button is-link" type="button"><span>获取原件</span></button></div></td>';
-      document.getElementById('flatTbody').insertBefore(flat, document.getElementById('flatTbody').firstChild);
-      var badge = document.getElementById('badgeW42');
-      badge.className = 'busy-tag busy-tag--success is-plain';
-      badge.textContent = '2/2';
-      document.getElementById('kpiWeek').textContent = '2/2';
-      document.getElementById('kpiTotal').textContent = '5';
+  document.getElementById('reportPanel').addEventListener('click', function (event) {
+    var toggle = event.target.closest('.group-toggle');
+    if (toggle) {
+      var body = toggle.nextElementSibling;
+      body.hidden = !body.hidden;
+      toggle.classList.toggle('collapsed', body.hidden);
+      toggle.setAttribute('aria-expanded', body.hidden ? 'false' : 'true');
+      return;
+    }
+    var action = event.target.closest('[data-action]');
+    if (!action) return;
+    var type = action.getAttribute('data-action');
+    if (type === 'download') {
+      if (action.getAttribute('data-no-content')) { UI.toast('该报告无原始 Markdown 内容', 'error'); return; }
+      UI.setLoading(action, true);
+      window.setTimeout(function () {
+        UI.setLoading(action, false);
+        UI.download(action.getAttribute('data-file'), '# 一致性检查报告\n\n演示原始 Markdown 文件。\n');
+        UI.toast('已开始下载 ' + action.getAttribute('data-file'));
+      }, 450);
+    }
+    if (type === 'generate') openGenerate(action.getAttribute('data-group'), action.getAttribute('data-project'));
+    if (type === 'upload') {
+      var group = findGroup(action.getAttribute('data-group'));
+      openUpload(action.getAttribute('data-project'), group.date);
     }
   });
-});
+  document.addEventListener('click', function (event) { if (event.target.closest('a[href="report-detail.html"]')) persist(); });
+
+  function findGroup(key) { return groups.filter(function (group) { return group.key === key; })[0]; }
+  function findItem(group, project) { return group.items.filter(function (item) { return item.project === project; })[0]; }
+  function openGenerate(groupKey, project) {
+    var group = findGroup(groupKey);
+    var item = findItem(group, project);
+    if (item.noConfig) { UI.toast('未找到联动触发配置，请先到「报告配置」页检查', 'error'); return; }
+    pendingGenerate = { group: group, item: item };
+    document.getElementById('generateCopy').innerHTML = '将为 <strong>文档一致性校验 · ' + esc(PROJECTS[project].name) + ' · ' + esc(project) + '</strong> 创建生成任务。<br>统计口径：' + esc(group.label) + '（' + esc(group.range) + '），回看 7 天。';
+    UI.openLayer('generateModal');
+  }
+  document.querySelectorAll('[data-generate-close]').forEach(function (button) { button.addEventListener('click', function () { UI.closeLayer('generateModal'); pendingGenerate = null; }); });
+  document.getElementById('generateConfirm').addEventListener('click', function () {
+    var button = this;
+    UI.setLoading(button, true);
+    window.setTimeout(function () {
+      UI.setLoading(button, false);
+      UI.closeLayer('generateModal');
+      UI.toast('已创建生成任务，可在生成记录中查看进度');
+      pendingGenerate = null;
+    }, 650);
+  });
+
+  function setRecognition(message, warning) {
+    var element = document.getElementById('recognition');
+    element.hidden = !message;
+    element.textContent = message || '';
+    element.classList.toggle('warning', !!warning);
+  }
+  function clearUploadErrors() {
+    ['uploadProjectError', 'uploadDateError', 'uploadFileError'].forEach(function (id) { document.getElementById(id).hidden = true; });
+    document.getElementById('uploadProject').removeAttribute('aria-invalid');
+    document.getElementById('uploadDate').removeAttribute('aria-invalid');
+  }
+  function openUpload(project, date) {
+    uploadState = { file: null, dirty: false, initialProject: project || '', initialDate: date || '' };
+    document.getElementById('uploadProject').value = project || '';
+    document.getElementById('uploadDate').value = date || '';
+    document.getElementById('uploadFile').value = '';
+    document.getElementById('fileLine').hidden = true;
+    clearUploadErrors();
+    setRecognition(project ? '已从缺口带入：项目 ' + PROJECTS[project].name + ' · 发报日 ' + date : '', false);
+    UI.openLayer('uploadModal');
+  }
+  function tryCloseUpload() {
+    var changed = uploadState.file || document.getElementById('uploadProject').value !== uploadState.initialProject || document.getElementById('uploadDate').value !== uploadState.initialDate;
+    if (uploadState.dirty || changed) UI.openLayer('dirtyModal');
+    else UI.closeLayer('uploadModal');
+  }
+  document.getElementById('btnUpload').addEventListener('click', function () { openUpload('', ''); });
+  document.querySelectorAll('[data-upload-close]').forEach(function (button) { button.addEventListener('click', tryCloseUpload); });
+  document.getElementById('uploadModal').addEventListener('click', function (event) { if (event.target === this) tryCloseUpload(); });
+  document.getElementById('dirtyCancel').addEventListener('click', function () { UI.closeLayer('dirtyModal'); });
+  document.getElementById('dirtyConfirm').addEventListener('click', function () { UI.closeLayer('dirtyModal'); UI.closeLayer('uploadModal'); UI.toast('已放弃补传'); });
+  document.getElementById('uploadProject').addEventListener('change', function () { uploadState.dirty = true; clearUploadErrors(); });
+  document.getElementById('uploadDate').addEventListener('change', function () { uploadState.dirty = true; clearUploadErrors(); });
+  document.getElementById('dropZone').addEventListener('click', function () { document.getElementById('uploadFile').click(); });
+  ['dragenter', 'dragover'].forEach(function (name) { document.getElementById('dropZone').addEventListener(name, function (event) { event.preventDefault(); this.classList.add('dragging'); }); });
+  ['dragleave', 'drop'].forEach(function (name) { document.getElementById('dropZone').addEventListener(name, function (event) { event.preventDefault(); this.classList.remove('dragging'); }); });
+  document.getElementById('dropZone').addEventListener('drop', function (event) { if (event.dataTransfer.files[0]) handleFile(event.dataTransfer.files[0]); });
+  document.getElementById('uploadFile').addEventListener('change', function () { if (this.files[0]) handleFile(this.files[0]); });
+  function handleFile(file) {
+    clearUploadErrors();
+    var error = document.getElementById('uploadFileError');
+    if (!/\.md$/i.test(file.name) || file.size > 2 * 1024 * 1024) {
+      error.textContent = !/\.md$/i.test(file.name) ? '仅支持 Markdown（.md）文件' : '文件不可超过 2MB';
+      error.hidden = false;
+      return;
+    }
+    uploadState.file = file;
+    uploadState.dirty = true;
+    document.getElementById('fileName').textContent = file.name + ' · ' + Math.max(1, Math.ceil(file.size / 1024)) + ' KB';
+    document.getElementById('fileLine').hidden = false;
+    var match = /^consistency_(\d{4})(\d{2})(\d{2})_([a-z0-9-]+)\.md$/i.exec(file.name);
+    if (match && PROJECTS[match[4]]) {
+      var date = match[1] + '-' + match[2] + '-' + match[3];
+      document.getElementById('uploadProject').value = match[4];
+      document.getElementById('uploadDate').value = date;
+      setRecognition('已按文件名识别：项目 ' + PROJECTS[match[4]].name + ' · 发报日 ' + date, false);
+    } else {
+      setRecognition('文件名无法识别，请手动指定项目与发报日（consistency_yyyyMMdd_项目key.md）', true);
+    }
+  }
+  document.getElementById('removeFile').addEventListener('click', function () {
+    uploadState.file = null;
+    uploadState.dirty = true;
+    document.getElementById('uploadFile').value = '';
+    document.getElementById('fileLine').hidden = true;
+    setRecognition('', false);
+  });
+  document.getElementById('uploadSubmit').addEventListener('click', function () {
+    clearUploadErrors();
+    var project = document.getElementById('uploadProject').value;
+    var date = document.getElementById('uploadDate').value;
+    var valid = true;
+    if (!project) { document.getElementById('uploadProjectError').hidden = false; document.getElementById('uploadProject').setAttribute('aria-invalid', 'true'); valid = false; }
+    if (!date || date > TODAY) {
+      var dateError = document.getElementById('uploadDateError');
+      dateError.textContent = !date ? '请选择发报日' : '发报日不可晚于今天';
+      dateError.hidden = false;
+      document.getElementById('uploadDate').setAttribute('aria-invalid', 'true');
+      valid = false;
+    }
+    if (!uploadState.file) { var fileError = document.getElementById('uploadFileError'); fileError.textContent = '请选择要补传的 Markdown 文件'; fileError.hidden = false; valid = false; }
+    if (!valid) { UI.toast('请补全并检查补传信息', 'error'); return; }
+    if (project === 'store' && date === TODAY) { uploadState.dirty = false; UI.closeLayer('uploadModal'); UI.toast('内容重复，与现有版本一致，未产生新版本', 'warning'); return; }
+    var button = this;
+    UI.setLoading(button, true);
+    window.setTimeout(function () {
+      UI.setLoading(button, false);
+      var target = null;
+      groups.forEach(function (group) { if (group.date === date) target = findItem(group, project); });
+      if (target && !target.report) {
+        target.report = { title: '一致性检查报告（' + PROJECTS[project].name + '） - ' + date, date: date, week: '第 ' + (target === groups[0].items[0] ? '42' : '40') + ' 周', source: '手动补传', ver: 'v1', file: uploadState.file.name };
+      }
+      uploadState.dirty = false;
+      UI.closeLayer('uploadModal');
+      render();
+      UI.toast('补传成功，已生成 v1');
+    }, 700);
+  });
+  document.addEventListener('keydown', function (event) {
+    if (event.key !== 'Escape') return;
+    if (!document.getElementById('dirtyModal').hidden) UI.closeLayer('dirtyModal');
+    else if (!document.getElementById('uploadModal').hidden) tryCloseUpload();
+    else if (!document.getElementById('generateModal').hidden) UI.closeLayer('generateModal');
+  });
+  render();
+})();
 </script>
 </body>
 </html>

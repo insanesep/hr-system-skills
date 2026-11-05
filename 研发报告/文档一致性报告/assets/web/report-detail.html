@@ -3,449 +3,223 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>报告详情 · 文档一致性报告 · Web 原型</title>
-<!--
-  报告详情页（详情页 · 阅读型 · 静态原型，数据为 Mock）
-  路由：/subapp/devhub/report/consistency/detail/:id；权限：路由 devhubConsistencyReport
-  页面描述：references/web-ui.md「报告详情」
-  渲染口径：Web 端展示服务端渲染的 HTML 产物（页内直出，前端仅提供排版样式，不做 Markdown 实时渲染；章节口径：本次检查范围明细 / 统计概览 / 文档三件套对齐表 / 功能覆盖度分析 / 总体摘要）
-  编排依据：busyming-skills-design/shared/page-standards/web-detail.md（页头返回 → 历史版本警示（黄 Alert，仅历史版本）→ 元信息卡 → 内容区）
-  组件树：Descriptions(busy-descriptions) / Select(版本切换，el-select 原生 + convert) / Table(busy-table，横滚容器)
-    / Button / Tag / Drawer(窄屏大纲) / Message(toast) / MessageBox(口径见列表页)
-  布局：tpl-dual--side（左阅读区 + 右大纲 sticky）；≤1024px 按模板媒体查询单栏堆叠，生产窄屏折叠为顶部「大纲」按钮弹 Drawer（本页已内置 Drawer 演示入口）
-  Mock 约定：当前报告 = consistency_20261018_store.md（v2 · 共 2 版）；版本切换演示 v1 回溯（只读，URL 追加 ?v=N）
-  三态落点：版本切换=正文区遮罩 loading（PC registry 暂无 Spin 组件，以遮罩+busy-message 演示，组件缺口已上报）；空正文=「报告内容为空」；大纲当前章节高亮
--->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/demos/pc/css/convert-el-plus.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
-<style>
-/* 页面级模板扩展类（templates.css 未含浮层壳/大纲/正文排版块；仅定位与尺寸收进类，色值全部消费 --busy-* token，遮罩 rgba 沿用仓内先例） */
-.tpl-crumb-link { color: inherit; opacity: .85; }
-.tpl-th--120 { width: 120px; }
-.tpl-pop-anchor { position: relative; display: inline-block; }
-.tpl-select--180 { width: 180px; }
-.tpl-select-pop { position: absolute; z-index: 300; top: 40px; left: 0; width: 240px; background: var(--busy-bg-color-overlay); border: 1px solid var(--busy-border-color-lighter); border-radius: var(--busy-border-radius-base); box-shadow: var(--busy-popper-shadow-light); }
-.tpl-select-pop__item { padding: 8px 12px; cursor: pointer; }
-.tpl-panel--anchor { position: relative; }
-.rpt-read-loading { position: absolute; inset: 0; z-index: 50; display: flex; align-items: flex-start; justify-content: center; padding-top: 120px; background: var(--busy-bg-color-overlay); opacity: .92; }
-.rpt-body { display: flex; flex-direction: column; gap: 16px; }
-#reportBody { padding-bottom: 100vh; }
-.rpt-text { color: var(--busy-text-secondary); font-size: var(--busy-font-size-base); }
-.rpt-list { margin: 0; padding-left: 20px; color: var(--busy-text-secondary); display: flex; flex-direction: column; gap: 6px; }
-.rpt-list--tight { gap: 4px; }
-.rpt-list-plain { margin: 0; padding-left: 20px; color: var(--busy-text-secondary); }
-.tpl-table-scroll { overflow-x: auto; }
-.rpt-code { background: var(--busy-fill-color-light); border-radius: 2px; padding: 1px 4px; }
-.rpt-footnote { color: var(--busy-text-tertiary); font-size: var(--busy-font-size-small); }
-.rpt-italic { font-style: italic; }
-.rpt-outline { display: flex; flex-direction: column; gap: 10px; font-size: var(--busy-font-size-small); }
-.rpt-outline__link { color: var(--busy-text-secondary); }
-.rpt-outline__sub { padding-left: 16px; }
-.tpl-mask { position: fixed; inset: 0; z-index: 200; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, .35); }
-.tpl-mask--drawer { justify-content: flex-end; }
-.rpt-drawer-body { flex: 1; padding: 8px 20px; display: flex; flex-direction: column; gap: 12px; overflow: auto; font-size: var(--busy-font-size-small); }
-.tpl-toast-fixed { position: fixed; top: 64px; left: 50%; transform: translateX(-50%); z-index: 400; }
-</style>
+<title>一致性检查报告（门店要货） · 报告详情</title>
+<link rel="icon" href="data:,">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/assets/runtime/prototype/pc-tokens.css">
+<link rel="stylesheet" href="../prototype.css">
 </head>
 <body>
-<nav class="tpl-nav">
-  <span class="tpl-nav__logo">鸣鸣很忙</span>
-  <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / <a href="report-list.html" class="tpl-crumb-link">文档一致性报告</a> / <b>报告详情</b></span>
-  <span class="tpl-nav__spacer"></span>
-  <span class="tpl-nav__crumb">管理员</span>
-</nav>
-
-<section class="tpl-page">
-  <div class="tpl-page-head">
-    <div class="tpl-page-head__main">
-      <a class="tpl-page-head__back" href="report-list.html">‹ 返回报告列表</a>
-      <h1 class="tpl-page-title" id="pageTitle">一致性检查报告（门店要货） - 2026-10-18</h1>
-      <div class="tpl-page-head__tags">
-        <span class="busy-tag">门店要货 · store</span>
-        <span class="busy-tag busy-tag--info is-plain" id="headSource">服务端生成</span>
-      </div>
-    </div>
-    <div class="tpl-page-head__actions">
-      <button class="busy-button" type="button" id="btnOutline"><span>大纲</span></button>
-      <button class="busy-button" type="button" id="btnDownload"><span>获取原件</span></button>
-      <a href="report-list.html"><button class="busy-button" type="button"><span>返回列表</span></button></a>
-    </div>
-  </div>
-
-  <!-- 元信息头（首个 panel） -->
-  <div class="tpl-panel">
-    <!-- 历史版本警示（仅查看历史版本时展示，黄色警示条） -->
-    <div class="busy-message busy-message--warning" id="verBanner" hidden>⚠ 当前查看历史版本 <b id="verBannerText">v1</b>（只读），最新版本为 v2；切换版本不改变归档内容。</div>
-    <table class="busy-descriptions is-border">
-      <tr>
-        <th class="tpl-th--120">报告标题</th>
-        <td colspan="3" id="metaTitle">一致性检查报告（门店要货） - 2026-10-18</td>
-      </tr>
-      <tr>
-        <th>项目</th>
-        <td><span class="busy-tag">门店要货 · store</span></td>
-        <th class="tpl-th--120">发报日</th>
-        <td class="u-mono">2026-10-18</td>
-      </tr>
-      <tr>
-        <th>所属周</th>
-        <td>2026 年第 42 周（10-12 ~ 10-18）</td>
-        <th>来源</th>
-        <td id="metaSource">服务端生成</td>
-      </tr>
-      <tr>
-        <th>当前版本</th>
-        <td>
-          <div class="tpl-pop-anchor">
-            <div class="busy-select tpl-select--180" id="verSelect"><div class="busy-input"><input readonly value="v2 · 共 2 版" id="verInput"></div><span class="busy-select__caret">▾</span></div>
-            <div id="verPanel" hidden class="tpl-select-pop">
-              <div class="busy-select-dropdown__list">
-                <div class="busy-select-dropdown__item tpl-select-pop__item is-selected" data-ver="2">v2（当前 · 10-18 20:05 入库）</div>
-                <div class="busy-select-dropdown__item tpl-select-pop__item" data-ver="1">v1（10-18 19:02 推送上报）</div>
-              </div>
-            </div>
-          </div>
-          <span class="u-sub">重复入库版本递增，历史版本只读可查，URL 带 ?v=N 可分享</span>
-        </td>
-        <th>文件大小</th>
-        <td class="u-mono" id="metaSize">48.6 KB</td>
-      </tr>
-      <tr>
-        <th>入库时间</th>
-        <td class="u-mono" id="metaTime">2026-10-18 20:05</td>
-        <th>文件名</th>
-        <td class="u-mono">consistency_20261018_store.md</td>
-      </tr>
-    </table>
-  </div>
-
-  <!-- 左阅读区 + 右大纲（≥1200px 侧栏；窄屏经顶部「大纲」按钮弹 Drawer） -->
-  <div class="tpl-dual tpl-dual--side">
-    <div class="tpl-dual__main">
-      <div class="tpl-panel tpl-panel--anchor" id="readPanel">
-        <!-- 版本切换 loading 遮罩 -->
-        <div id="readLoading" hidden class="rpt-read-loading">
-          <div class="busy-message busy-message--info">正在加载所选版本内容…</div>
+<svg class="sr-only" aria-hidden="true"><defs>
+  <symbol id="i-report" viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M9 12h7M9 16h7"/></symbol>
+  <symbol id="i-people" viewBox="0 0 24 24"><circle cx="9" cy="8" r="3"/><path d="M3.5 20v-2a5.5 5.5 0 0 1 11 0v2M16 5.5a3 3 0 0 1 0 5.8M17 14a5 5 0 0 1 3.5 4.8"/></symbol>
+  <symbol id="i-back" viewBox="0 0 24 24"><path d="m15 5-7 7 7 7"/></symbol>
+  <symbol id="i-download" viewBox="0 0 24 24"><path d="M12 4v12m0 0 4.5-4.5M12 16l-4.5-4.5M5 19h14"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r=".8"/><circle cx="4.5" cy="12" r=".8"/><circle cx="4.5" cy="18" r=".8"/></symbol>
+  <symbol id="i-x" viewBox="0 0 24 24"><path d="m6 6 12 12M18 6 6 18"/></symbol>
+  <symbol id="i-info" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 11v6M12 7.5v.2"/></symbol>
+</defs></svg>
+<div class="reading-progress" aria-hidden="true"><div class="reading-progress-bar" id="readingProgress"></div></div>
+<div class="web-shell">
+  <aside class="web-sidebar" aria-label="主导航">
+    <div class="web-brand"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>鸣鸣很忙 · 产研</span></div>
+    <div class="nav-caption">研发报告</div>
+    <nav class="side-nav">
+      <a class="side-link" href="../../../人员产出报告/assets/web/report-list.html"><svg class="svg-icon"><use href="#i-people"/></svg><span>人员产出报告</span></a>
+      <a class="side-link active" href="report-list.html" aria-current="page"><svg class="svg-icon"><use href="#i-report"/></svg><span>文档一致性报告</span></a>
+    </nav>
+    <div class="sidebar-foot">静态归档产物<br>历史版本只读可追溯</div>
+  </aside>
+  <div class="web-main">
+    <header class="web-topbar">
+      <a class="brand-inline" href="report-list.html"><span class="brand-symbol" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span>鸣鸣很忙</span></a>
+      <div class="breadcrumb"><span>首页</span><span>/</span><span>研发报告</span><span>/</span><a href="report-list.html">文档一致性报告</a><span>/</span><span class="breadcrumb-current">报告详情</span></div>
+      <div class="topbar-user"><span>管理员</span><span class="avatar">管</span></div>
+    </header>
+    <main class="web-content">
+      <div class="page-header detail-header">
+        <div class="page-header-main">
+          <a class="back-link" href="report-list.html"><svg class="svg-icon"><use href="#i-back"/></svg>返回报告列表</a>
+          <h1>一致性检查报告（门店要货）</h1>
+          <div class="page-tags"><span class="badge badge-info badge-plain">项目 · 门店要货 · store</span><span class="badge badge-accent badge-plain" id="headSource">服务端生成</span><span class="badge badge-neutral badge-plain mono">2026-10-18</span></div>
         </div>
-        <!-- 正文：服务端渲染的 HTML 产物页内直出（前端仅提供排版样式，不做 Markdown 实时渲染；Mock 为静态产物示意，图片一律替换占位「[图片已移除]」；内容为空时展示「报告内容为空」） -->
-        <div id="reportBody" class="rpt-body">
-
-          <div class="tpl-section" id="h-1">
-            <div class="tpl-section__head">本次检查范围明细</div>
-            <div class="rpt-text">检查模式：全量扫描（lookback_days = 0）。模块清单：共发现 12 个 SKILL 模块，逐模块对齐情况见「文档三件套对齐表」。</div>
-          </div>
-          <hr class="tpl-divider">
-
-          <div class="tpl-section" id="h-2">
-            <div class="tpl-section__head">统计概览</div>
-            <ul class="rpt-list">
-              <li>项目：门店要货（store）· SKILL 仓库 busyming-skills-store · 扫描根目录：仓库根</li>
-              <li>扫描 SKILL 总数：<b class="u-mono">12</b></li>
-              <li>已有 references 文档：<b class="u-mono">10</b></li>
-              <li>缺失 references 文档：<b class="u-mono">2</b></li>
-              <li>覆盖率：<b class="u-mono">83.3%</b></li>
-            </ul>
-          </div>
-          <hr class="tpl-divider">
-
-          <div class="tpl-section" id="h-3">
-            <div class="tpl-section__head">文档三件套对齐表</div>
-            <div class="tpl-table-scroll">
-              <table class="busy-table">
-                <thead><tr><th>模块</th><th class="u-center">SKILL.md</th><th class="u-center">references/</th><th class="u-center">assets/</th><th class="u-center">功能点数</th><th class="u-center">行数</th><th>重复风险</th><th>反向偏差</th><th>缺失文档</th></tr></thead>
-                <tbody>
-                  <tr><td>要货/门店要货单管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">6</td><td class="u-center u-mono">96</td><td>无</td><td>🟡 1 项</td><td>—</td></tr>
-                  <tr><td>要货/退货管理/门店退货管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">5</td><td class="u-center u-mono u-warning">168</td><td>无</td><td>🔴 1 项</td><td class="u-danger">data-model.md</td></tr>
-                  <tr><td>要货/总部配货/总部铺货管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">7</td><td class="u-center u-mono">132</td><td>无</td><td>无</td><td>—</td></tr>
-                  <tr><td>要货/要货单审核</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">4</td><td class="u-center u-mono">88</td><td class="u-warning">SKILL 60-95 行</td><td>🟢 1 项</td><td>—</td></tr>
-                  <tr><td>门店/门店档案</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">5</td><td class="u-center u-mono">76</td><td>无</td><td>无</td><td>—</td></tr>
-                  <tr><td>商品/商品档案</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">8</td><td class="u-center u-mono">142</td><td>无</td><td>🟡 1 项</td><td>—</td></tr>
-                  <tr><td>采购/供应商档案</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">5</td><td class="u-center u-mono">69</td><td>无</td><td>无</td><td>—</td></tr>
-                  <tr><td>会员/会员档案</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">4</td><td class="u-center u-mono">58</td><td>无</td><td>无</td><td>—</td></tr>
-                  <tr><td>加盟商/加盟商档案</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">4</td><td class="u-center u-mono">63</td><td>无</td><td>无</td><td>—</td></tr>
-                  <tr><td>零售/零售单管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">—</td><td class="u-center u-mono">6</td><td class="u-center u-mono">118</td><td>无</td><td>无</td><td>—</td></tr>
-                  <tr><td>POS/POS 收银</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">5</td><td class="u-center u-mono">97</td><td>无</td><td>🟢 1 项</td><td class="u-danger">api-spec.md</td></tr>
-                  <tr><td>客服/客服工单</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center u-mono">3</td><td class="u-center u-mono">54</td><td>无</td><td>无</td><td>—</td></tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-          <hr class="tpl-divider">
-
-          <div class="tpl-section" id="h-4">
-            <div class="tpl-section__head">功能覆盖度分析（AI 判定）</div>
-
-            <div class="tpl-section" id="h-6">
-              <div class="u-strong">模块：门店要货单管理</div>
-              <ul class="rpt-list rpt-list--tight">
-                <li>SKILL.md：OK（96 行） · references/：OK（4 files） · assets/：OK（12 files）</li>
-              </ul>
-              <div class="tpl-table-scroll">
-                <table class="busy-table">
-                  <thead><tr><th>功能点</th><th class="u-center">状态</th><th>说明</th></tr></thead>
-                  <tbody>
-                    <tr><td>门店要货单创建</td><td class="u-center"><span class="tpl-cell-status is-success">完整</span></td><td>OrderController + OrderService 已实现</td></tr>
-                    <tr><td>要货单审批</td><td class="u-center"><span class="tpl-cell-status is-success">完整</span></td><td>ApprovalController 已实现</td></tr>
-                    <tr><td>要货数据导出</td><td class="u-center"><span class="tpl-cell-status is-warning">部分</span></td><td>ExportService 存在但缺少 Excel 格式支持</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="rpt-text">SKILL 与 references 重复检查：无</div>
-              <div class="tpl-table-scroll">
-                <table class="busy-table">
-                  <thead><tr><th>#</th><th>等级</th><th>偏差类型</th><th>偏差位置</th><th>当前实现</th><th>文档期望</th><th>修复方向</th></tr></thead>
-                  <tbody>
-                    <tr>
-                      <td class="u-mono">1</td><td>🟡 中等</td><td>文档超前于代码</td>
-                      <td class="u-mono">references/web-ui.md §批量审批 vs OrderAuditController</td>
-                      <td><code class="rpt-code">audit</code> 接口未实现批量入参</td>
-                      <td>文档描述支持批量审批</td>
-                      <td>改文档回写代码（references/web-ui.md）</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <ul class="rpt-list-plain">
-                <li>☐ 风险项：要货数据导出仅支持 CSV，文档描述含 Excel</li>
-              </ul>
-            </div>
-
-            <div class="tpl-section" id="h-7">
-              <div class="u-strong">模块：门店退货管理</div>
-              <ul class="rpt-list rpt-list--tight">
-                <li>SKILL.md：OK（168 行，&gt;150 行，建议拆分：字段定义 → data-model.md） · references/：缺 data-model.md · assets/：OK（8 files）</li>
-              </ul>
-              <div class="tpl-table-scroll">
-                <table class="busy-table">
-                  <thead><tr><th>功能点</th><th class="u-center">状态</th><th>说明</th></tr></thead>
-                  <tbody>
-                    <tr><td>退货单创建</td><td class="u-center"><span class="tpl-cell-status is-success">完整</span></td><td>ReturnOrderController 已实现</td></tr>
-                    <tr><td>退货审核</td><td class="u-center"><span class="tpl-cell-status is-success">完整</span></td><td>ReturnAuditService 已实现</td></tr>
-                    <tr><td>退货件明细查询</td><td class="u-center"><span class="tpl-cell-status is-warning">部分</span></td><td>缺少按批次号筛选</td></tr>
-                  </tbody>
-                </table>
-              </div>
-              <div class="rpt-text">SKILL 与 references 重复检查：无</div>
-              <div class="tpl-table-scroll">
-                <table class="busy-table">
-                  <thead><tr><th>#</th><th>等级</th><th>偏差类型</th><th>偏差位置</th><th>当前实现</th><th>文档期望</th><th>修复方向</th></tr></thead>
-                  <tbody>
-                    <tr>
-                      <td class="u-mono">1</td><td>🔴 严重</td><td>枚举值不一致</td>
-                      <td class="u-mono">ReturnOrderService.java:88 vs references/business-rule.md §3</td>
-                      <td>状态枚举缺「已驳回」分支</td>
-                      <td>business-rule.md 状态枚举含「已驳回」</td>
-                      <td>改代码对齐文档（ReturnOrderService），并补 data-model.md</td>
-                    </tr>
-                  </tbody>
-                </table>
-              </div>
-              <ul class="rpt-list rpt-list--tight">
-                <li>☐ references/data-model.md 缺失，字段口径无真源</li>
-                <li>☐ 存在 1 项 🔴 严重反向偏差（枚举值不一致），需立即对齐</li>
-                <li>☐ SKILL.md 168 行超阈值，建议按拆分方向迁移</li>
-              </ul>
-            </div>
-
-            <div class="rpt-footnote">其余 10 个模块（紧凑格式，无问题）：总部铺货管理 / 要货单审核 / 门店档案 / 商品档案 / 供应商档案 / 会员档案 / 加盟商档案 / 零售单管理 / POS 收银 / 客服工单 —— 文档对齐 OK，功能覆盖度完整，无反向偏差。</div>
-          </div>
-          <hr class="tpl-divider">
-
-          <div class="tpl-section" id="h-5">
-            <div class="tpl-section__head">总体摘要</div>
-            <ul class="rpt-list">
-              <li>枚举模块总数：<b class="u-mono">12</b> / 报告覆盖模块数：<b class="u-mono">12</b></li>
-              <li>完整：<b class="u-mono">8</b> ｜ 部分：<b class="u-mono">3</b> ｜ 缺失：<b class="u-mono">1</b></li>
-              <li>SKILL 长度超阈值：<b class="u-mono">1</b> 个（&gt;150 行）</li>
-              <li>内容重复风险：<b class="u-mono">1</b> 个</li>
-              <li>反向偏差总数：🔴 <b class="u-mono">1</b> 项 / 🟡 <b class="u-mono">2</b> 项 / 🟢 <b class="u-mono">2</b> 项</li>
-              <li>需立即修复的严重偏差：<b class="u-mono u-danger">1</b> 项</li>
-            </ul>
-            <div class="u-sub rpt-italic">报告生成时间：2026-10-18 20:05（Mock）</div>
-          </div>
+        <div class="page-actions">
+          <button class="btn outline-toggle" id="outlineOpen" type="button"><svg class="svg-icon"><use href="#i-list"/></svg>大纲</button>
+          <button class="btn btn-primary" id="downloadButton" type="button"><svg class="svg-icon"><use href="#i-download"/></svg>获取原件</button>
         </div>
       </div>
-    </div>
-    <div class="tpl-dual__side">
-      <div class="tpl-panel tpl-dual__side--sticky">
-        <div class="tpl-panel__title">大纲</div>
-        <div class="rpt-outline" id="outlineNav">
-          <a href="javascript:void 0" data-anchor="h-1" class="rpt-outline__link u-primary">本次检查范围明细</a>
-          <a href="javascript:void 0" data-anchor="h-2" class="rpt-outline__link">统计概览</a>
-          <a href="javascript:void 0" data-anchor="h-3" class="rpt-outline__link">文档三件套对齐表</a>
-          <a href="javascript:void 0" data-anchor="h-4" class="rpt-outline__link">功能覆盖度分析（AI 判定）</a>
-          <a href="javascript:void 0" data-anchor="h-6" class="rpt-outline__link rpt-outline__sub">模块：门店要货单管理</a>
-          <a href="javascript:void 0" data-anchor="h-7" class="rpt-outline__link rpt-outline__sub">模块：门店退货管理</a>
-          <a href="javascript:void 0" data-anchor="h-5" class="rpt-outline__link">总体摘要</a>
+
+      <div class="version-banner" id="versionBanner" hidden><svg class="svg-icon"><use href="#i-info"/></svg><span>当前查看历史版本 <strong id="versionBannerText">v1</strong>（只读），最新版本为 v2。切换版本不会修改归档内容。</span></div>
+      <section class="panel detail-meta-panel" aria-label="报告元信息">
+        <div class="meta-grid">
+          <div class="meta-item"><div class="meta-label">发报日</div><div class="meta-value mono">2026-10-18</div></div>
+          <div class="meta-item"><div class="meta-label">所属周</div><div class="meta-value">2026 年第 42 周（10-12 ~ 10-18）</div></div>
+          <div class="meta-item"><div class="meta-label">当前版本</div><div class="meta-value"><select class="select" id="versionSelect" aria-label="切换报告版本"><option value="2">v2 · 当前版本</option><option value="1">v1 · 历史版本</option></select></div></div>
+          <div class="meta-item"><div class="meta-label">文件大小</div><div class="meta-value mono" id="metaSize">48.6 KB</div></div>
+          <div class="meta-item"><div class="meta-label">入库时间</div><div class="meta-value mono" id="metaTime">2026-10-18 20:05</div></div>
+          <div class="meta-item"><div class="meta-label">文件名</div><div class="meta-value mono">consistency_20261018_store.md</div></div>
         </div>
-      </div>
-    </div>
-  </div>
-</section>
+      </section>
 
-<!-- v1 历史版本正文（只读回溯；与 v2 同唯一键「CONSISTENCY · store · 2026-10-18」，来源：推送上报） -->
-<template id="bodyV1">
-  <div class="rpt-body">
-    <div class="tpl-section" id="h-1">
-      <div class="tpl-section__head">本次检查范围明细</div>
-      <div class="rpt-text">检查模式：全量扫描（lookback_days = 0）。模块清单：共发现 12 个 SKILL 模块。</div>
-    </div>
-    <hr class="tpl-divider">
-    <div class="tpl-section" id="h-2">
-      <div class="tpl-section__head">统计概览</div>
-      <ul class="rpt-list">
-        <li>项目：门店要货（store）· SKILL 仓库 busyming-skills-store</li>
-        <li>扫描 SKILL 总数：<b class="u-mono">12</b> ｜ 已有 references 文档：<b class="u-mono">9</b> ｜ 缺失：<b class="u-mono">3</b> ｜ 覆盖率：<b class="u-mono">75.0%</b></li>
-      </ul>
-    </div>
-    <hr class="tpl-divider">
-    <div class="tpl-section" id="h-3">
-      <div class="tpl-section__head">文档三件套对齐表</div>
-      <div class="tpl-table-scroll">
-        <table class="busy-table">
-          <thead><tr><th>模块</th><th class="u-center">SKILL.md</th><th class="u-center">references/</th><th class="u-center">assets/</th><th>反向偏差</th><th>缺失文档</th></tr></thead>
-          <tbody>
-            <tr><td>要货/门店要货单管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td>🟡 1 项</td><td>—</td></tr>
-            <tr><td>要货/退货管理/门店退货管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td>🔴 1 项</td><td class="u-danger">data-model.md</td></tr>
-            <tr><td>商品/商品档案</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td>🔴 1 项</td><td>—</td></tr>
-            <tr><td>零售/零售单管理</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">—</td><td>无</td><td class="u-danger">implementation-steps.md</td></tr>
-            <tr><td>POS/POS 收银</td><td class="u-center">OK</td><td class="u-center">OK</td><td class="u-center">OK</td><td>🟢 1 项</td><td class="u-danger">api-spec.md</td></tr>
-          </tbody>
-        </table>
+      <div class="detail-layout">
+        <article class="panel reading-panel" id="readingPanel">
+          <div class="empty-state" id="loadingState" hidden><div class="empty-icon"><svg class="svg-icon"><use href="#i-report"/></svg></div><div class="empty-title">正在加载所选版本</div><p class="empty-copy">正文与元信息将一起更新。</p></div>
+          <div class="prose" id="reportContent">
+            <section id="h-1" data-title="本次检查范围明细">
+              <h2>本次检查范围明细</h2>
+              <p>检查模式：全量扫描（lookback_days = 0）。本次共发现 12 个 SKILL 模块，均已纳入报告；项目边界限定为门店要货及其确认映射。</p>
+            </section>
+            <section id="h-2" data-title="统计概览">
+              <h2>统计概览</h2>
+              <div class="summary-grid" aria-label="检查统计">
+                <div class="summary-metric"><span>扫描模块</span><strong>12</strong></div>
+                <div class="summary-metric"><span>文档覆盖率</span><strong id="coverageMetric">83.3%</strong></div>
+                <div class="summary-metric"><span>反向偏差</span><strong id="issuesMetric">5</strong></div>
+                <div class="summary-metric"><span>需立即修复</span><strong class="danger-text" id="severeMetric">1</strong></div>
+              </div>
+              <ul><li>项目：门店要货（store） · SKILL 仓库 busyming-skills-store</li><li>已有 references 文档 10 个，缺失 2 个</li><li>完整 8 个模块，部分 3 个，缺失 1 个</li></ul>
+            </section>
+            <section id="h-3" data-title="文档三件套对齐表">
+              <h2>文档三件套对齐表</h2>
+              <p>逐模块列出结构、长度与反向偏差，便于先处理严重项。</p>
+              <div class="table-scroll"><table class="report-table"><thead><tr><th>模块</th><th>SKILL</th><th>references</th><th>assets</th><th>行数</th><th>反向偏差</th><th>缺失文档</th></tr></thead><tbody>
+                <tr><td>门店要货单管理</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">96</td><td><span class="badge badge-warning">中等 1</span></td><td>—</td></tr>
+                <tr><td>门店退货管理</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">168</td><td><span class="badge badge-danger">严重 1</span></td><td class="danger-text">data-model.md</td></tr>
+                <tr><td>总部铺货管理</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">132</td><td>无</td><td>—</td></tr>
+                <tr><td>要货单审核</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">88</td><td><span class="badge badge-neutral">轻微 1</span></td><td>—</td></tr>
+                <tr><td>门店档案</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">76</td><td>无</td><td>—</td></tr>
+                <tr><td>商品档案</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">142</td><td><span class="badge badge-warning">中等 1</span></td><td>—</td></tr>
+                <tr><td>供应商档案</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">69</td><td>无</td><td>—</td></tr>
+                <tr><td>会员档案</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">58</td><td>无</td><td>—</td></tr>
+                <tr><td>加盟商档案</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">63</td><td>无</td><td>—</td></tr>
+                <tr><td>零售单管理</td><td>OK</td><td>OK</td><td>—</td><td class="mono">118</td><td>无</td><td>—</td></tr>
+                <tr><td>POS 收银</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">97</td><td><span class="badge badge-neutral">轻微 1</span></td><td class="danger-text">api-spec.md</td></tr>
+                <tr><td>客服工单</td><td>OK</td><td>OK</td><td>OK</td><td class="mono">54</td><td>无</td><td>—</td></tr>
+              </tbody></table></div>
+            </section>
+            <section id="h-4" data-title="功能覆盖度分析">
+              <h2>功能覆盖度分析（AI 判定）</h2>
+              <h3 id="h-6" data-title="门店要货单管理">模块：门店要货单管理</h3>
+              <p>SKILL.md 96 行，references 4 个文件，assets 12 个文件。要货单创建与审批实现完整，数据导出仅部分覆盖。</p>
+              <div class="table-scroll"><table class="report-table"><thead><tr><th>功能点</th><th>状态</th><th>说明</th></tr></thead><tbody><tr><td>门店要货单创建</td><td><span class="badge badge-success">完整</span></td><td>OrderController + OrderService</td></tr><tr><td>要货单审批</td><td><span class="badge badge-success">完整</span></td><td>ApprovalController</td></tr><tr><td>要货数据导出</td><td><span class="badge badge-warning">部分</span></td><td>ExportService 缺少 Excel 格式支持</td></tr></tbody></table></div>
+              <div class="issue-callout"><strong>中等偏差 · 文档超前于代码</strong><br><code>OrderAuditController</code> 未实现批量入参，但 <code>references/web-ui.md</code> 描述了批量审批。建议改文档回写当前实现，或补齐代码后同步验收。</div>
+              <h3 id="h-7" data-title="门店退货管理">模块：门店退货管理</h3>
+              <p>SKILL.md 168 行，超过 150 行阈值；references 缺少 data-model.md。建议先统一状态枚举，再迁移字段定义。</p>
+              <div class="issue-callout danger"><strong>严重偏差 · 状态枚举不一致</strong><br><code>ReturnOrderService.java:88</code> 缺少「已驳回」分支，而 <code>references/business-rule.md §3</code> 已定义该状态。建议改代码对齐文档，并补充 data-model.md。</div>
+              <ul><li>退货单创建与审核实现完整</li><li>退货件明细查询缺少按批次号筛选</li><li>SKILL 长度超阈值，建议拆分字段定义</li></ul>
+            </section>
+            <section id="h-5" data-title="总体摘要">
+              <h2>总体摘要</h2>
+              <ul><li>枚举模块总数 12 / 报告覆盖模块数 12</li><li>内容重复风险 1 个，SKILL 长度超阈值 1 个</li><li>反向偏差：严重 1 项 / 中等 2 项 / 轻微 2 项</li><li>优先处理门店退货管理的状态枚举与缺失数据模型</li></ul>
+              <p class="muted">报告生成时间：2026-10-18 20:05 · 静态归档内容</p>
+            </section>
+          </div>
+          <div class="empty-state" id="bodyEmpty" hidden><div class="empty-title">报告内容为空</div><p class="empty-copy">可获取原始 Markdown，或返回列表选择其他版本。</p></div>
+        </article>
+        <aside class="panel outline-panel outline-side" aria-label="报告大纲">
+          <div class="outline-title">报告大纲</div>
+          <nav class="outline-nav" id="outlineNav">
+            <a class="outline-link active" href="#h-1" data-target="h-1">本次检查范围明细</a>
+            <a class="outline-link" href="#h-2" data-target="h-2">统计概览</a>
+            <a class="outline-link" href="#h-3" data-target="h-3">文档三件套对齐表</a>
+            <a class="outline-link" href="#h-4" data-target="h-4">功能覆盖度分析</a>
+            <a class="outline-link sub" href="#h-6" data-target="h-6">门店要货单管理</a>
+            <a class="outline-link sub" href="#h-7" data-target="h-7">门店退货管理</a>
+            <a class="outline-link" href="#h-5" data-target="h-5">总体摘要</a>
+          </nav>
+        </aside>
       </div>
-      <div class="u-sub">（v1 为历史版本 · Mock 仅保留关键差异行；v2 已修复商品档案 🔴 偏差）</div>
-    </div>
-    <hr class="tpl-divider">
-    <div class="tpl-section" id="h-4">
-      <div class="tpl-section__head">功能覆盖度分析（AI 判定）</div>
-      <div class="rpt-text">v1 判定：完整 <b class="u-mono">7</b> ｜ 部分 <b class="u-mono">3</b> ｜ 缺失 <b class="u-mono">2</b>（商品档案规格查询、要货数据导出 Excel）。</div>
-    </div>
-    <hr class="tpl-divider">
-    <div class="tpl-section" id="h-5">
-      <div class="tpl-section__head">总体摘要</div>
-      <ul class="rpt-list">
-        <li>枚举模块总数：<b class="u-mono">12</b> / 报告覆盖模块数：<b class="u-mono">12</b></li>
-        <li>反向偏差总数：🔴 <b class="u-mono">2</b> 项 / 🟡 <b class="u-mono">1</b> 项 / 🟢 <b class="u-mono">2</b> 项</li>
-        <li>需立即修复的严重偏差：<b class="u-mono u-danger">2</b> 项</li>
-      </ul>
-      <div class="u-sub rpt-italic">报告生成时间：2026-10-18 19:02（Mock · v1 推送上报）</div>
-    </div>
-  </div>
-</template>
-
-<!-- 窄屏大纲 Drawer（生产：≥1200px 侧栏常驻，窄屏顶部「大纲」按钮弹出） -->
-<div id="drawerOutline" hidden class="tpl-mask tpl-mask--drawer">
-  <div class="busy-drawer">
-    <div class="busy-dialog__header"><span class="busy-dialog__title">大纲</span><button class="busy-dialog__close" type="button" data-close="drawerOutline">✕</button></div>
-    <div class="rpt-drawer-body" id="drawerNav">
-      <a href="javascript:void 0" data-anchor="h-1">本次检查范围明细</a>
-      <a href="javascript:void 0" data-anchor="h-2">统计概览</a>
-      <a href="javascript:void 0" data-anchor="h-3">文档三件套对齐表</a>
-      <a href="javascript:void 0" data-anchor="h-4">功能覆盖度分析（AI 判定）</a>
-      <a href="javascript:void 0" data-anchor="h-6" class="rpt-outline__sub">模块：门店要货单管理</a>
-      <a href="javascript:void 0" data-anchor="h-7" class="rpt-outline__sub">模块：门店退货管理</a>
-      <a href="javascript:void 0" data-anchor="h-5">总体摘要</a>
-    </div>
+    </main>
   </div>
 </div>
 
-<div id="toastHost"></div>
+<template id="versionOne">
+  <section id="h-1" data-title="本次检查范围明细"><h2>本次检查范围明细</h2><p>检查模式：全量扫描（lookback_days = 0）。本次共发现 12 个 SKILL 模块，均已纳入报告。</p></section>
+  <section id="h-2" data-title="统计概览"><h2>统计概览</h2><div class="summary-grid"><div class="summary-metric"><span>扫描模块</span><strong>12</strong></div><div class="summary-metric"><span>文档覆盖率</span><strong>75.0%</strong></div><div class="summary-metric"><span>反向偏差</span><strong>5</strong></div><div class="summary-metric"><span>需立即修复</span><strong class="danger-text">2</strong></div></div><ul><li>已有 references 文档 9 个，缺失 3 个</li><li>完整 7 个模块，部分 3 个，缺失 2 个</li></ul></section>
+  <section id="h-3" data-title="文档三件套对齐表"><h2>文档三件套对齐表</h2><p>v1 中商品档案尚有 1 项严重偏差，零售单管理缺少 implementation-steps.md；其余 10 个模块结构检查已完成。</p><div class="table-scroll"><table class="report-table"><thead><tr><th>模块</th><th>SKILL</th><th>references</th><th>反向偏差</th><th>缺失文档</th></tr></thead><tbody><tr><td>门店要货单管理</td><td>OK</td><td>OK</td><td><span class="badge badge-warning">中等 1</span></td><td>—</td></tr><tr><td>门店退货管理</td><td>OK</td><td>OK</td><td><span class="badge badge-danger">严重 1</span></td><td>data-model.md</td></tr><tr><td>商品档案</td><td>OK</td><td>OK</td><td><span class="badge badge-danger">严重 1</span></td><td>—</td></tr><tr><td>零售单管理</td><td>OK</td><td>OK</td><td>无</td><td>implementation-steps.md</td></tr><tr><td>其余 8 个模块</td><td>OK</td><td>OK</td><td>轻微 2 项</td><td>api-spec.md</td></tr></tbody></table></div></section>
+  <section id="h-4" data-title="功能覆盖度分析"><h2>功能覆盖度分析（AI 判定）</h2><h3 id="h-6" data-title="门店要货单管理">模块：门店要货单管理</h3><p>要货数据导出缺少 Excel 格式，批量审批文档超前于代码。</p><h3 id="h-7" data-title="门店退货管理">模块：门店退货管理</h3><div class="issue-callout danger"><strong>严重偏差 · 状态枚举不一致</strong><br>当前版本同样缺少「已驳回」分支，需改代码对齐文档。</div></section>
+  <section id="h-5" data-title="总体摘要"><h2>总体摘要</h2><ul><li>枚举模块总数 12 / 报告覆盖模块数 12</li><li>反向偏差：严重 2 项 / 中等 1 项 / 轻微 2 项</li><li>v2 已修复商品档案的 1 项严重偏差</li></ul><p class="muted">报告生成时间：2026-10-18 19:02 · v1 推送上报</p></section>
+</template>
 
+<div class="drawer-backdrop" id="outlineDrawer" hidden>
+  <aside class="drawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle">
+    <div class="drawer-header"><h2 id="drawerTitle">报告大纲</h2><button class="icon-btn" id="outlineClose" type="button" aria-label="关闭大纲"><svg class="svg-icon"><use href="#i-x"/></svg></button></div>
+    <nav class="outline-nav">
+      <a class="outline-link active" href="#h-1" data-target="h-1">本次检查范围明细</a><a class="outline-link" href="#h-2" data-target="h-2">统计概览</a><a class="outline-link" href="#h-3" data-target="h-3">文档三件套对齐表</a><a class="outline-link" href="#h-4" data-target="h-4">功能覆盖度分析</a><a class="outline-link sub" href="#h-6" data-target="h-6">门店要货单管理</a><a class="outline-link sub" href="#h-7" data-target="h-7">门店退货管理</a><a class="outline-link" href="#h-5" data-target="h-5">总体摘要</a>
+    </nav>
+  </aside>
+</div>
+<div class="toast-stack" id="toastHost" aria-live="polite"></div>
+<script src="../prototype.js"></script>
 <script>
-/* ================= Mock 基座 ================= */
-function toast(text, type) {
-  var el = document.createElement('div');
-  el.className = 'busy-message tpl-toast-fixed busy-message--' + (type || 'success');
-  el.textContent = text;
-  document.getElementById('toastHost').appendChild(el);
-  setTimeout(function () { el.remove(); }, 2400);
-}
-function open(id) { document.getElementById(id).hidden = false; }
-function close(id) { document.getElementById(id).hidden = true; }
-document.querySelectorAll('[data-close]').forEach(function (b) {
-  b.addEventListener('click', function () { close(b.getAttribute('data-close')); });
-});
-
-/* ================= 大纲锚点定位（侧栏 + 窄屏 Drawer 同一锚点集） ================= */
-function bindOutline(container) {
-  container.querySelectorAll('[data-anchor]').forEach(function (a) {
-    a.addEventListener('click', function () {
-      close('drawerOutline');
-      var target = document.getElementById(a.getAttribute('data-anchor'));
-      if (!target) return;
-      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      document.querySelectorAll('#outlineNav [data-anchor]').forEach(function (x) {
-        x.classList.remove('u-primary');
-      });
-      var side = document.querySelector('#outlineNav [data-anchor="' + a.getAttribute('data-anchor') + '"]');
-      if (side) { side.classList.add('u-primary'); }
+(function () {
+  var UI = ReportUI;
+  var currentVersion = 2;
+  var latestHtml = document.getElementById('reportContent').innerHTML;
+  var meta = {
+    2: { source: '服务端生成', size: '48.6 KB', time: '2026-10-18 20:05' },
+    1: { source: '推送上报', size: '38.4 KB', time: '2026-10-18 19:02' }
+  };
+  function applyVersion(version, notify) {
+    currentVersion = version;
+    document.getElementById('reportContent').innerHTML = version === 1 ? document.getElementById('versionOne').innerHTML : latestHtml;
+    document.getElementById('versionSelect').value = String(version);
+    document.getElementById('headSource').textContent = meta[version].source;
+    document.getElementById('metaSize').textContent = meta[version].size;
+    document.getElementById('metaTime').textContent = meta[version].time;
+    document.getElementById('versionBanner').hidden = version === 2;
+    document.getElementById('versionBannerText').textContent = 'v' + version;
+    try { history.replaceState(null, '', 'report-detail.html?v=' + version); } catch (error) { }
+    updateOutline();
+    if (notify) UI.toast(version === 2 ? '已切换到 v2（当前版本）' : '已切换到 v1（历史版本，只读）');
+  }
+  document.getElementById('versionSelect').addEventListener('change', function () {
+    var version = Number(this.value);
+    if (version === currentVersion) return;
+    document.getElementById('reportContent').hidden = true;
+    document.getElementById('loadingState').hidden = false;
+    window.setTimeout(function () {
+      applyVersion(version, true);
+      document.getElementById('loadingState').hidden = true;
+      document.getElementById('reportContent').hidden = false;
+      document.getElementById('readingPanel').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 520);
+  });
+  document.getElementById('downloadButton').addEventListener('click', function () {
+    var button = this;
+    UI.setLoading(button, true);
+    window.setTimeout(function () {
+      UI.setLoading(button, false);
+      if (currentVersion === 1) { UI.toast('该版本无原始 Markdown 内容', 'error'); return; }
+      UI.download('consistency_20261018_store.md', '# 一致性检查报告（门店要货） - 2026-10-18\n\n当前版本：v2\n');
+      UI.toast('已开始下载 consistency_20261018_store.md');
+    }, 450);
+  });
+  function updateOutline() {
+    var sections = Array.prototype.slice.call(document.querySelectorAll('#reportContent section[id], #reportContent h3[id]'));
+    var activeId = sections.length ? sections[0].id : 'h-1';
+    sections.forEach(function (section) { if (section.getBoundingClientRect().top <= 160) activeId = section.id; });
+    if (window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 4 && sections.length) activeId = sections[sections.length - 1].id;
+    document.querySelectorAll('.outline-link').forEach(function (link) { link.classList.toggle('active', link.getAttribute('data-target') === activeId); });
+    var max = document.documentElement.scrollHeight - window.innerHeight;
+    document.getElementById('readingProgress').style.width = (max > 0 ? Math.min(100, window.scrollY / max * 100) : 0) + '%';
+  }
+  document.querySelectorAll('.outline-link').forEach(function (link) {
+    link.addEventListener('click', function (event) {
+      event.preventDefault();
+      var target = document.getElementById(link.getAttribute('data-target'));
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      UI.closeLayer('outlineDrawer');
+      document.querySelectorAll('.outline-link').forEach(function (item) { item.classList.toggle('active', item.getAttribute('data-target') === link.getAttribute('data-target')); });
     });
   });
-}
-bindOutline(document.getElementById('outlineNav'));
-bindOutline(document.getElementById('drawerNav'));
-document.getElementById('btnOutline').addEventListener('click', function () { open('drawerOutline'); });
-
-/* ================= 版本切换（下拉 → 正文遮罩 loading → 正文/元信息切换 → URL 追加 ?v=N；失败=toast error+回退当前版本，Mock 不演示失败） ================= */
-var bodyV2Html = document.getElementById('reportBody').innerHTML;
-var currentVer = 2;
-var VER_META = {
-  2: { source: '服务端生成', size: '48.6 KB', time: '2026-10-18 20:05', label: 'v2 · 共 2 版' },
-  1: { source: '推送上报', size: '38.4 KB', time: '2026-10-18 19:02', label: 'v1 · 共 2 版' }
-};
-document.getElementById('verSelect').addEventListener('click', function (e) {
-  e.stopPropagation();
-  document.getElementById('verPanel').hidden = !document.getElementById('verPanel').hidden;
-});
-document.querySelectorAll('[data-ver]').forEach(function (opt) {
-  opt.addEventListener('click', function () {
-    var v = Number(opt.getAttribute('data-ver'));
-    document.getElementById('verPanel').hidden = true;
-    if (v === currentVer) return;
-    document.querySelectorAll('[data-ver]').forEach(function (x) { x.classList.toggle('is-selected', x === opt); });
-    document.getElementById('readLoading').hidden = false;
-    setTimeout(function () {
-      currentVer = v;
-      document.getElementById('reportBody').innerHTML = v === 1 ? document.getElementById('bodyV1').innerHTML : bodyV2Html;
-      document.getElementById('metaSource').textContent = VER_META[v].source;
-      document.getElementById('headSource').textContent = VER_META[v].source;
-      document.getElementById('metaSize').textContent = VER_META[v].size;
-      document.getElementById('metaTime').textContent = VER_META[v].time;
-      document.getElementById('verInput').value = VER_META[v].label;
-      document.getElementById('verBanner').hidden = v !== 1;
-      document.getElementById('readLoading').hidden = true;
-      history.replaceState(null, '', 'report-detail.html?v=' + v);
-      document.getElementById('readPanel').scrollIntoView({ behavior: 'smooth' });
-      toast(v === 1 ? '已切换到 v1（历史版本，只读）' : '已切换到 v2（当前版本）');
-    }, 700);
-  });
-});
-
-/* ================= 获取原件（下载当前展示版本原始 .md，Mock Blob；无内容时 toast「该版本无原始 Markdown 内容」+ 按钮恢复，v1 演示失败路径） ================= */
-document.getElementById('btnDownload').addEventListener('click', function (e) {
-  var btn = e.currentTarget;
-  btn.classList.add('is-loading'); btn.disabled = true;
-  setTimeout(function () {
-    btn.classList.remove('is-loading'); btn.disabled = false;
-    if (currentVer === 1) { toast('该版本无原始 Markdown 内容', 'error'); return; }
-    var blob = new Blob(['# 一致性检查报告（门店要货） - 2026-10-18\n\n（Mock 原始 Markdown · v' + currentVer + '）\n'], { type: 'text/markdown;charset=utf-8' });
-    var a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = 'consistency_20261018_store.md';
-    a.click();
-    URL.revokeObjectURL(a.href);
-    toast('已开始下载 consistency_20261018_store.md');
-  }, 600);
-});
-
-/* URL ?v=1 直达历史版本（可分享） */
-(function () {
-  var m = /[?&]v=(\d)/.exec(location.search);
-  if (m && m[1] === '1') {
-    document.querySelector('[data-ver="1"]').click();
-  }
+  window.addEventListener('scroll', updateOutline, { passive: true });
+  document.getElementById('outlineOpen').addEventListener('click', function () { UI.openLayer('outlineDrawer'); });
+  document.getElementById('outlineClose').addEventListener('click', function () { UI.closeLayer('outlineDrawer'); });
+  document.getElementById('outlineDrawer').addEventListener('click', function (event) { if (event.target === this) UI.closeLayer('outlineDrawer'); });
+  document.addEventListener('keydown', function (event) { if (event.key === 'Escape') UI.closeLayer('outlineDrawer'); });
+  var initial = new URLSearchParams(location.search).get('v');
+  if (initial === '1') applyVersion(1, false);
+  updateOutline();
 })();
 </script>
 </body>
