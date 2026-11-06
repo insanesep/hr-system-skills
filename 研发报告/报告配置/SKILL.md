@@ -27,7 +27,7 @@ description: 报告配置。Use when 需要查阅研发报告共享规则（类�
 
 ## 报告触发配置
 
-- 每个报告项（报告类型 + 项目标识）一条触发配置：触发方式（定时 / 手动）、定时规则、类型参数、启停；项目进度报告仅一条 `_all` 配置，不按项目组新增，规则真源见 [`references/business-rule.md` §4](references/business-rule.md#4-报告触发配置)
+- 每个报告项（报告类型 + 项目标识）一条触发配置：触发方式（定时 / 手动）、定时规则、类型参数、启停；项目进度报告的周报与月报各一条独立 `_all` 配置，可同时调度，不按项目组新增，规则真源见 [`references/business-rule.md` §4](references/business-rule.md#4-报告触发配置)
 - 支持「立即生成」手动触发与生成记录查看、失败重试；生成任务状态机与并发约束见 [`references/business-rule.md` §5.2](references/business-rule.md#52-服务端生成主通道)
 
 ## 统计人员范围
