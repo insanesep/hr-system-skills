@@ -66,7 +66,7 @@
 | 用户 ID、姓名、角色、手机号、所属组织 | 接入系统从自身登录态取值，经 SDK 随事件上报 | 采信接入系统传值；身份真实性由接入系统负责，DevHub 不回查用户中心 |
 | 客户端 IP、操作系统、浏览器 / 容器 | 服务端从请求中解析 | 以服务端为准，前端不传 |
 
-产研身份对照只读引用[产研人员管理 · 身份](../../产研人员管理/references/business-rule.md#identity)及[权限边界](../../产研人员管理/references/permission-rules.md#boundaries)；已核对基础归属引用[域及项目管理 · 清单](../../域及项目管理/references/business-rule.md#source)与[执行映射](../../域及项目管理/references/business-rule.md#execution-mapping)。不将菜单业务分类、功能编码或路由名称直接当作仓域 / 项目；无项目证据不把共享实现仓全部归某项目。全部业务用户的行为采集范围、门户 RBAC、账套、角色偏好与事件当时身份快照不变，不用当前产研名单或责任关系裁剪、回写历史行为。
+产研身份对照只读引用[项目管理 · 身份](../../项目管理/references/business-rule.md#identity)及[权限边界](../../项目管理/references/permission-rules.md#boundaries)；已核对基础归属引用[项目管理 · 清单](../../项目管理/references/business-rule.md#source)与[执行映射](../../项目管理/references/business-rule.md#execution-mapping)。不将菜单业务分类、功能编码或路由名称直接当作仓域 / 项目；无项目证据不把共享实现仓全部归某项目。全部业务用户的行为采集范围、门户 RBAC、账套、角色偏好与事件当时身份快照不变，不用当前产研名单或责任关系裁剪、回写历史行为。
 
 - 接入系统隔离：流水、目录、打标与报表查询必须限定在所选接入系统内。
 - 页面地址与来源页入库前去除查询串，避免带出令牌等参数；自定义属性不得包含令牌、密码、证件号等敏感信息。

@@ -28,7 +28,7 @@ description: "生成 SKILL↔代码一致性检查报告（由模型直接执行
 
 **配置来源**：
 
-- **服务端生成会话**：工作区与连接配置由服务端注入；基础范围只读来自 [域及项目管理](../../../研发管理/域及项目管理/SKILL.md)，包含类型（域/项目）、稳定实体引用与确认 N:N 执行映射快照，范围及根文件消费遵守 [#consumption](../../../研发管理/域及项目管理/references/business-rule.md#consumption)。key / 分支策略归报告范围配置
+- **服务端生成会话**：工作区与连接配置由服务端注入；基础范围只读来自 [项目管理](../../../研发管理/项目管理/SKILL.md)，包含类型（域/项目）、稳定实体引用与确认 N:N 执行映射快照，范围及根文件消费遵守 [#consumption](../../../研发管理/项目管理/references/business-rule.md#consumption)。key / 分支策略归报告范围配置
 - **共同约束**：域=整个主仓及确认映射，项目=主仓一级目录及该项目确认映射；外部配置仅传递同真源引用与快照，不另建实体。真源停用或远端确认缺失停止生成、不删归档；新范围配置齐备启用才报告，历史旧整体项目只显式核对到对应域，不复制到各项目，key / 文件名不变。以上为已确认产品目标，不表示生产已上线
 - **外部会话**：用 Read 读取生成环境约定的 `config.yaml` 并提取：`workspace_dir`、`output.dir`、`projects`（各项目 SKILL 仓库 / skill_roots / 代码仓库清单 / code_branch_policy）、`api.devops_base_url`、`dev_report.ingest_token`、`codeup`（clone 凭证，仅仓库缺失时使用）
 

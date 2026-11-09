@@ -8,7 +8,7 @@
 > 接口调用统一设置 30s 超时。响应统一取 `data` 字段（无 `data` 时整体即数据）。
 > 响应可能较大：先将响应落盘为临时文件，再读取分析。
 >
-> 人员范围：周报、日报、项目进度报告与外部会话的 Qoder 数据包统一引用 [产研人员管理 #report-scope](../../../研发管理/产研人员管理/references/business-rule.md#report-scope) 的生成名单快照（兼容 `scope=ROSTER`），人员标识裁决见 [#identity](../../../研发管理/产研人员管理/references/business-rule.md#identity)。项目进度报告另按项目组参与关系过滤。调用方注入或外部取数均关联同一快照，不以组织全量兜底；名单外不计入，同门户稳定 ID 多角色只计一次，角色不重建名单。无 Qoder 账号、映射或自然日快照未取得标「未取得」，不补 0、不伪造完整团队总量。
+> 人员范围：周报、日报、项目进度报告与外部会话的 Qoder 数据包统一引用 [项目管理 #report-scope](../../../研发管理/项目管理/references/business-rule.md#report-scope) 的生成名单快照（兼容 `scope=ROSTER`），人员标识裁决见 [#identity](../../../研发管理/项目管理/references/business-rule.md#identity)。项目进度报告另按项目组参与关系过滤。调用方注入或外部取数均关联同一快照，不以组织全量兜底；名单外不计入，同门户稳定 ID 多角色只计一次，角色不重建名单。无 Qoder 账号、映射或自然日快照未取得标「未取得」，不补 0、不伪造完整团队总量。
 
 统计区间记为 START ~ END，格式 YYYY-MM-DD。
 

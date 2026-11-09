@@ -31,7 +31,7 @@
 
 ### 容错口径
 
-源缺失、失败或未取得标「未取得」，不补零、不编造数字；成功返回明确空集合或零值须与未取得区分。卡片统计先按稳定卡片 ID 去重，跨域/项目和 `_all` 不叠加重复事实，排期卡片与流水仍由 [功能排期管理](../../../研发管理/功能排期管理/SKILL.md) 维护。人员归属只读采用 [产研人员管理 #identity](../../../研发管理/产研人员管理/references/business-rule.md#identity) 与 [#report-scope](../../../研发管理/产研人员管理/references/business-rule.md#report-scope) 的生成名单快照；基础范围与执行映射只读采用 [域及项目管理 #consumption](../../../研发管理/域及项目管理/references/business-rule.md#consumption)。外部配置只承载真源引用和快照，不维护平行人员或范围清单。
+源缺失、失败或未取得标「未取得」，不补零、不编造数字；成功返回明确空集合或零值须与未取得区分。卡片统计先按稳定卡片 ID 去重，跨域/项目和 `_all` 不叠加重复事实，排期卡片与流水仍由 [功能排期管理](../../../研发管理/功能排期管理/SKILL.md) 维护。人员归属只读采用 [项目管理 #identity](../../../研发管理/项目管理/references/business-rule.md#identity) 与 [#report-scope](../../../研发管理/项目管理/references/business-rule.md#report-scope) 的生成名单快照；基础范围与执行映射只读采用 [项目管理 #consumption](../../../研发管理/项目管理/references/business-rule.md#consumption)。外部配置只承载真源引用和快照，不维护平行人员或范围清单。
 
 ## 报告推送（旁路通道）
 

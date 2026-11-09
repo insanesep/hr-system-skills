@@ -28,8 +28,8 @@ metadata:
 
 ## Prerequisites
 
-- [产研人员管理](../../研发管理/产研人员管理/SKILL.md) · [身份](../../研发管理/产研人员管理/references/business-rule.md#identity) · [参与关系](../../研发管理/产研人员管理/references/business-rule.md#membership)：产研候选与身份只读消费。
-- [域及项目管理](../../研发管理/域及项目管理/SKILL.md) · [清单](../../研发管理/域及项目管理/references/business-rule.md#source) · [执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：归属引用与开发会话范围。
+- [项目管理](../../研发管理/项目管理/SKILL.md) · [身份](../../研发管理/项目管理/references/business-rule.md#identity) · [参与关系](../../研发管理/项目管理/references/business-rule.md#membership)：产研候选与身份只读消费。
+- [项目管理](../../研发管理/项目管理/SKILL.md) · [清单](../../研发管理/项目管理/references/business-rule.md#source) · [执行映射](../../研发管理/项目管理/references/business-rule.md#execution-mapping)：归属引用与开发会话范围。
 
 ## 资料与资产
 

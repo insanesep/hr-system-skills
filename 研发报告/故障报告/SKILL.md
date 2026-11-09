@@ -29,7 +29,7 @@ metadata:
 |---------|------|------|---------|
 | 业务规则 | [references/business-rule.md](references/business-rule.md) | 名词约定、业务流程、定级、状态机、复盘时限与高亮、删除与证据约束、权限编码 | 本模块 |
 | 数据定义 | [references/data.md](references/data.md) | 故障单、运维证据关联、复盘记录、改进措施的字段口径与实体关系 | 本模块 |
-| 域及项目真源 | [域及项目管理](../../研发管理/域及项目管理/SKILL.md) | 关联范围只读引用类型+稳定实体；清单、责任与实现映射不在故障报告维护 | busyming-skills-devops |
+| 域及项目真源 | [项目管理](../../研发管理/项目管理/SKILL.md) | 关联范围只读引用类型+稳定实体；清单、责任与实现映射不在故障报告维护 | busyming-skills-devops |
 | Web 页面 | [references/web-ui.md](references/web-ui.md) | 故障列表、登记 / 编辑弹窗、故障详情的区块元素、导航关系、操作反馈与表单校验 | 本模块 |
 | 页面编排标准 | [web-operation-list.md](../../../busyming-skills-design/shared/page-standards/web-operation-list.md) | 故障列表的区域编排 | busyming-skills-design |
 | 页面编排标准 | [web-detail.md](../../../busyming-skills-design/shared/page-standards/web-detail.md) | 故障详情的区域编排 | busyming-skills-design |

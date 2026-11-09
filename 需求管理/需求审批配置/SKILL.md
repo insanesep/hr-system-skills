@@ -23,7 +23,7 @@ metadata:
 
 ## Prerequisites
 
-- [产研人员管理](../../研发管理/产研人员管理/SKILL.md) · [身份](../../研发管理/产研人员管理/references/business-rule.md#identity) · [权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：产研职责候选；非产研审批人仍引用公共用户，既有链与快照不自动改写。
+- [项目管理](../../研发管理/项目管理/SKILL.md) · [身份](../../研发管理/项目管理/references/business-rule.md#identity) · [权限边界](../../研发管理/项目管理/references/permission-rules.md#boundaries)：产研职责候选；非产研审批人仍引用公共用户，既有链与快照不自动改写。
 
 ## 资料与资产
 

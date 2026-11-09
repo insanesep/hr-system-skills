@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-native-manual>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -10,20 +10,19 @@
   编排依据：busyming-skills-design/shared/page-standards/web-operation-list.md ｜ 状态机：../../references/state-machine.md ｜ 需求澄清：../../references/business-rule.md §11
   区块：指挥栏 A1–A10（池展开/时间导航/本月进度（单选快捷筛选，再点取消）/搜索/视图切换/待澄清 N（视图切换与筛选之间，N>0 警示样式）/筛选/新建/更多）
     → 待排期池 B1–B6（编号位=创建时间+相对时间标签、超 7 天警示色；服务端分页 10/20/50（总数与每页一行、页码一行，不横向溢出）、批量多选、空态）
-    → 月视图 C（卡片仅落在排期截止日所在格，区间卡不逐日铺开；+N 日详情弹层按排期区间覆盖当日取卡）
+    → 月视图 C（卡片仅落在排期截止日所在格，区间卡不逐日铺开；+N 日详情弹层仅取截止日为当日的卡片）
     → 周视图 D（负责人=开发人→提交人→「未指定」，行按拼音排序，卡片落在本周内截止日所在列）→ 列表视图 E（当月已排期全部，无分页；行内 领取/完成/回退 + 待开发·开发中「澄清」）
-    → 浮层 G1–G14（筛选抽屉、日详情、年月选择、右键菜单（含移入非需求改动、转待澄清）、合并、新建卡片、非需求改动、项目配置、二次确认、全局提示、
+    → 浮层 G1–G14（筛选抽屉、日详情、年月选择、右键菜单（含移入非需求改动、转待澄清）、合并、新建卡片、非需求改动、二次确认、全局提示、
       待澄清列表 G13（全部/我负责的/我发起的，发起时间正序，等待超 2 天警示，完成澄清/撤回，10/20/50 分页）、澄清弹窗 G14（转待澄清/完成澄清/撤回澄清，与详情页 M7–M9 同一实现）
   演示基准日 2026-10-21（周三，演示当前时间 10:30）；当前登录人演示为「陈默」（PM，全权限）。
-  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → shared/prototype/web/templates.css（不加载 native.js / interactions.js）。
+  样式链：tokens/web.css → docs-site/web/runtime.css → shared/prototype/web/templates.css；原生输入适配使用公共 native.js，保留排期业务交互。
   演示约定：卡片 DOM 仅用 busy-*/.tpl-*/.u-* 类，JS 定位一律 data-* 属性；
     拖拽/右键/快捷键 (←/→/T/Esc) 均已实现；浮层以 busy-overlay-demo host 承载并叠加 runtime.css 的 busy-overlay（fixed 全屏遮罩，内容可滚动），
     打开时 host 移到 body 末尾保证后开的在上层；Esc 按打开顺序逐层关闭，无浮层时退出多选态。
     待澄清列表固定 720×640（不足视口时收缩），原生布局效果保持 header/footer 与列表内部滚动；不写 style 属性或私有样式表，问题摘要以 JS 截断为 2 行。
 -->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/web.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/web/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 </head>
 <body>
@@ -162,17 +161,18 @@
 <div class="busy-overlay-demo busy-overlay" id="ovMerge" hidden></div>
 <div class="busy-overlay-demo busy-overlay" id="ovCreate" hidden></div>
 <div class="busy-overlay-demo busy-overlay" id="ovNonFeature" hidden></div>
-<div class="busy-overlay-demo busy-overlay" id="ovProject" hidden></div>
 <div class="busy-overlay-demo busy-overlay" id="ovProgress" hidden></div>
 <div class="busy-overlay-demo busy-overlay" id="ovMore" hidden></div>
 <!-- G13 待澄清列表弹层 / G14 澄清弹窗（转待澄清 / 完成澄清 / 撤回澄清；在列表之上打开时，关闭后回到列表） -->
 <div class="busy-overlay-demo busy-overlay" id="ovClarifyList" hidden></div>
 <div class="busy-overlay-demo busy-overlay" id="ovClarify" hidden></div>
 
+<script src="../../../../../busyming-skills-design/shared/prototype/web/native.js"></script>
 <script src="./feature-schedule-data.js"></script>
 <script>
 /* ==================== 状态与通用 ==================== */
 var D = FS_DATA, P = FS_PROTO;
+BusyNative.inputs(document);
 var S = {
   year: 2026, month: 9,                 /* 0-based：2026-10 */
   view: localStorage.getItem('fs_view') || 'month',
@@ -402,10 +402,6 @@ function monthGridDates() {
 /* C3：格内卡片仅显示在排期截止日所在日期格（区间卡不逐日铺开） */
 function cardsDueOn(dateStr) {
   return visibleScheduled().filter(function (c) { return c.end === dateStr; });
-}
-/* G3：日详情弹层按排期区间覆盖当日取全量 */
-function cardsCovering(dateStr) {
-  return visibleScheduled().filter(function (c) { return c.start <= dateStr && c.end >= dateStr; });
 }
 function renderMonth() {
   var dates = monthGridDates();
@@ -943,7 +939,7 @@ function renderClarifyList(loading) {
 
 /* ==================== G3 日详情弹层（按排期区间覆盖当日取卡，标题「{日期} · N 张卡片」） ==================== */
 function openDay(ds) {
-  var cards = cardsCovering(ds).filter(matchSearch);
+  var cards = cardsDueOn(ds).filter(matchSearch);
   $('ovDay').innerHTML =
     '<div class="busy-dialog">' +
       '<div class="busy-dialog__header"><span class="busy-dialog__title">' + ds + ' · ' + cards.length + ' 张卡片</span>' +
@@ -1134,7 +1130,6 @@ function openMore() {
           '<button class="busy-button is-text' + (S.density === 'compact' ? ' busy-button--primary' : '') + '" type="button" data-x="density-compact"><span>紧凑' + (S.density === 'compact' ? ' ✓' : '') + '</span></button>' +
         '</div>' +
         '<button class="busy-button is-text" type="button" data-x="nonfeature"><span>非需求改动（共 ' + D.nonFeature.total + ' 条）</span></button>' +
-        '<button class="busy-button is-text" type="button" data-x="project"><span>项目配置</span></button>' +
       '</div></div>' +
     '</div>';
   P.openOverlay('ovMore');
@@ -1148,7 +1143,6 @@ function openMore() {
   $('ovMore').querySelector('[data-x="density-standard"]').onclick = function () { S.density = 'standard'; localStorage.setItem('fs_density', 'standard'); P.closeOverlay('ovMore'); renderAll(); };
   $('ovMore').querySelector('[data-x="density-compact"]').onclick = function () { S.density = 'compact'; localStorage.setItem('fs_density', 'compact'); P.closeOverlay('ovMore'); renderAll(); };
   $('ovMore').querySelector('[data-x="nonfeature"]').onclick = function () { P.closeOverlay('ovMore'); openNonFeature(); };
-  $('ovMore').querySelector('[data-x="project"]').onclick = function () { P.closeOverlay('ovMore'); openProject(); };
 }
 
 /* ==================== G6/G7 合并多选态与合并标题弹窗 ==================== */
@@ -1356,175 +1350,6 @@ function openNonFeature() {
   P.openOverlay('ovNonFeature');
   $('ovNonFeature').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovNonFeature'); };
   bindCards($('ovNonFeature'));
-}
-
-/* ==================== G10 项目配置弹层（列表 ↔ 项目表单双态） ==================== */
-var projectForm = null; /* {mode:'new'|'edit', name, harness, repos[], status, remark, dirty} */
-function openProject() { renderProjectList(); P.openOverlay('ovProject'); }
-function renderProjectList() {
-  $('ovProject').innerHTML =
-    '<div class="busy-dialog">' +
-      '<div class="busy-dialog__header"><span class="busy-dialog__title">项目配置</span>' +
-      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
-      '<div class="busy-dialog__body"><div class="tpl-section">' +
-        '<div class="u-sub">项目 ↔ harness 工程 / 代码服务仓映射的唯一真源；标识色由系统按调色板（蓝/青/紫/金/品红/橙红循环）分配，不可编辑。</div>' +
-        '<table class="busy-table busy-table--border"><thead><tr><th>项目 / 标识色</th><th>harness 工程</th><th>代码服务仓</th><th>状态</th><th>操作</th></tr></thead><tbody>' +
-        D.projects.map(function (p, i) {
-          return '<tr><td>' + P.projectTag(p.key, true) + ' <span class="u-sub">' + p.colorName + '</span></td>' +
-            '<td class="u-mono">' + p.harness + '</td>' +
-            '<td class="u-mono">' + (p.repos.join('、') || '—') + '</td>' +
-            '<td>' + (p.status === '启用' ? '<span class="tpl-cell-status is-success">启用</span>' : '<span class="tpl-cell-status">停用</span>') + '</td>' +
-            '<td><span class="tpl-row-actions">' +
-              '<button class="busy-button is-link" type="button" data-edit="' + i + '"><span>编辑</span></button>' +
-              (p.status === '启用'
-                ? '<button class="busy-button is-link busy-button--warning" type="button" data-stop="' + i + '"><span>停用</span></button>'
-                : '<button class="busy-button is-link busy-button--success" type="button" data-start="' + i + '"><span>启用</span></button>') +
-            '</span></td></tr>';
-        }).join('') +
-        '</tbody></table>' +
-        '<div><button class="busy-button busy-button--primary" type="button" data-x="new"><span>新建项目</span></button></div>' +
-      '</div></div>' +
-    '</div>';
-  $('ovProject').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovProject'); };
-  $('ovProject').querySelector('[data-x="new"]').onclick = function () {
-    projectForm = { mode: 'new', name: '', harness: '', repos: [], status: '启用', remark: '', dirty: false };
-    renderProjectForm();
-  };
-  $('ovProject').querySelectorAll('[data-edit]').forEach(function (b) {
-    b.onclick = function () {
-      var p = D.projects[+b.getAttribute('data-edit')];
-      projectForm = { mode: 'edit', idx: +b.getAttribute('data-edit'), name: p.name, harness: p.harness, repos: p.repos.slice(), status: p.status, remark: p.remark || '', dirty: false };
-      renderProjectForm();
-    };
-  });
-  $('ovProject').querySelectorAll('[data-stop]').forEach(function (b) {
-    b.onclick = function () {
-      var p = D.projects[+b.getAttribute('data-stop')];
-      P.confirmBox({
-        title: '停用项目',
-        message: '停用后「' + p.name + '」退出筛选选项集，其 harness 工程仓的卡片回落「未归属项目」。确认停用？',
-        onOk: function () { p.status = '停用'; P.toast('项目已停用', 'success'); renderProjectList(); }
-      });
-    };
-  });
-  $('ovProject').querySelectorAll('[data-start]').forEach(function (b) {
-    b.onclick = function () {
-      var p = D.projects[+b.getAttribute('data-start')];
-      P.btnLoading(b, function () { p.status = '启用'; P.toast('项目已启用', 'success'); renderProjectList(); });
-    };
-  });
-}
-function renderProjectForm() {
-  var f = projectForm;
-  $('ovProject').innerHTML =
-    '<div class="busy-dialog">' +
-      '<div class="busy-dialog__header"><span class="busy-dialog__title">' + (f.mode === 'new' ? '新建项目' : '编辑项目') + '</span>' +
-      '<button class="busy-dialog__close" type="button" data-x="close">✕</button></div>' +
-      '<div class="busy-dialog__body"><div class="tpl-section">' +
-        P.alertHtml('error', '', '', 'projErr', true) +
-        '<div class="busy-form-item"><div class="busy-form-item__label is-required">项目名称</div>' +
-        '<div class="busy-form-item__content"><div class="busy-input"><input id="projName" maxlength="12" value="' + f.name + '" placeholder="1-12 字，启用中项目之间唯一"></div>' +
-        '<div class="busy-form-item__error" id="projNameErr" hidden></div></div></div>' +
-        '<div class="busy-form-item"><div class="busy-form-item__label">标识色</div>' +
-        '<div class="busy-form-item__content">' + (f.mode === 'edit' ? P.projectTag(D.projects[f.idx].key, true) + ' <span class="u-sub">' + D.projects[f.idx].colorName + ' · 系统分配，不可编辑</span>' : '<span class="u-sub">创建时按调色板顺序自动分配</span>') + '</div></div>' +
-        '<div class="busy-form-item"><div class="busy-form-item__label is-required">harness 工程</div>' +
-        '<div class="busy-form-item__content"><div class="busy-select"><div class="busy-input"><input id="projHarness" placeholder="搜索并选择云效研发仓" value="' + f.harness + '"></div><span class="busy-select__caret">▾</span></div>' +
-        '<div class="busy-select-dropdown" id="projHarnessDd" hidden>' +
-          D.repos.map(function (r) {
-            var dis = r.stale || (r.owner && r.name.indexOf('harness-') === 0 && (f.mode === 'new' || D.projects[f.idx].harness !== r.name));
-            var note = r.stale ? '（云效侧已失效）' : (dis ? '（已被 ' + r.owner + ' 占用）' : '');
-            return '<div class="busy-select-dropdown__item' + (dis ? ' is-disabled' : '') + (f.harness === r.name ? ' is-selected' : '') + '" data-r="' + r.name + '">' + r.name + ' <span class="u-sub">' + note + '</span></div>';
-          }).join('') +
-        '</div>' +
-        '<div class="busy-form-item__error" id="projHarnessErr" hidden>请选择 harness 工程</div></div></div>' +
-        '<div class="busy-form-item"><div class="busy-form-item__label">代码服务仓</div>' +
-        '<div class="busy-form-item__content"><div class="busy-checkbox-group">' +
-          D.repos.filter(function (r) { return r.name.indexOf('harness-') !== 0; }).map(function (r) {
-            var dis = r.stale || (r.owner && f.repos.indexOf(r.name) < 0 && (f.mode === 'new' || D.projects[f.idx].repos.indexOf(r.name) < 0) && r.owner !== f.name);
-            var note = r.stale ? '（云效侧已失效）' : (dis ? '（已被 ' + r.owner + ' 占用）' : '');
-            return '<label class="busy-checkbox' + (f.repos.indexOf(r.name) >= 0 ? ' is-checked' : '') + (dis ? ' is-disabled' : '') + '" data-r="' + r.name + '"' + (dis ? ' data-dis="1"' : '') + '><span class="busy-checkbox__inner"></span><span class="u-mono">' + r.name + '</span> <span class="u-sub">' + note + '</span></label>';
-          }).join('') +
-        '</div></div></div>' +
-        '<div class="busy-form-item"><div class="busy-form-item__label is-required">状态</div>' +
-        '<div class="busy-form-item__content"><div class="busy-radio-group">' +
-          ['启用', '停用'].map(function (s) { return '<label class="busy-radio' + (f.status === s ? ' is-checked' : '') + '" data-s="' + s + '"><span class="busy-radio__inner"></span><span>' + s + '</span></label>'; }).join('') +
-        '</div></div></div>' +
-        '<div class="busy-form-item"><div class="busy-form-item__label">备注</div>' +
-        '<div class="busy-form-item__content"><textarea class="busy-textarea" id="projRemark" placeholder="选填">' + f.remark + '</textarea></div></div>' +
-      '</div></div>' +
-      '<div class="busy-dialog__footer">' +
-        '<button class="busy-button" type="button" data-x="back"><span>返回列表</span></button>' +
-        '<button class="busy-button busy-button--primary" type="button" data-x="save"><span>保 存</span></button>' +
-      '</div>' +
-    '</div>';
-  var nameInput = $('projName');
-  nameInput.addEventListener('blur', function () {
-    var v = nameInput.value.trim(), err = $('projNameErr');
-    if (!v) { err.textContent = '请填写项目名称'; err.hidden = false; return; }
-    if (v.length > 12) { err.textContent = '项目名称最长 12 字'; err.hidden = false; return; }
-    var dup = D.projects.filter(function (p, i) { return p.status === '启用' && p.name === v && (f.mode === 'new' || i !== f.idx); })[0];
-    if (dup) { err.textContent = '项目名称「' + v + '」已被启用中项目占用'; err.hidden = false; return; }
-    err.hidden = true; f.name = v; f.dirty = true;
-  });
-  nameInput.addEventListener('input', function () { f.dirty = true; });
-  var hInput = $('projHarness'), hDd = $('projHarnessDd');
-  hInput.addEventListener('input', function () {
-    f.dirty = true;
-    var kw = hInput.value.trim();
-    hDd.hidden = false;
-    hDd.querySelectorAll('[data-r]').forEach(function (it) { it.hidden = kw && it.textContent.indexOf(kw) < 0; });
-  });
-  hInput.closest('.busy-select').addEventListener('click', function () { hDd.hidden = !hDd.hidden; });
-  hDd.querySelectorAll('[data-r]').forEach(function (it) {
-    it.addEventListener('click', function () {
-      if (it.classList.contains('is-disabled')) return;
-      f.harness = it.getAttribute('data-r'); f.dirty = true;
-      hInput.value = f.harness; hDd.hidden = true;
-      $('projHarnessErr').hidden = true;
-    });
-  });
-  $('ovProject').querySelectorAll('.busy-checkbox[data-r]').forEach(function (lb) {
-    lb.addEventListener('click', function () {
-      if (lb.getAttribute('data-dis')) return;
-      var r = lb.getAttribute('data-r'), i = f.repos.indexOf(r);
-      if (i >= 0) f.repos.splice(i, 1); else f.repos.push(r);
-      f.dirty = true;
-      lb.classList.toggle('is-checked');
-    });
-  });
-  $('ovProject').querySelectorAll('.busy-radio[data-s]').forEach(function (lb) {
-    lb.addEventListener('click', function () {
-      f.status = lb.getAttribute('data-s'); f.dirty = true;
-      $('ovProject').querySelectorAll('.busy-radio[data-s]').forEach(function (x) { x.classList.remove('is-checked'); });
-      lb.classList.add('is-checked');
-    });
-  });
-  $('projRemark').addEventListener('input', function () { f.remark = this.value; f.dirty = true; });
-  $('ovProject').querySelector('[data-x="close"]').onclick = function () { P.closeOverlay('ovProject'); };
-  $('ovProject').querySelector('[data-x="back"]').onclick = function () {
-    if (f.dirty) {
-      P.confirmBox({ title: '放弃修改', message: '项目信息尚未保存，确认放弃？', onOk: function () { renderProjectList(); } });
-    } else renderProjectList();
-  };
-  $('ovProject').querySelector('[data-x="save"]').onclick = function () {
-    nameInput.dispatchEvent(new Event('blur'));
-    if (!$('projNameErr').hidden) { nameInput.focus(); return; }
-    if (!f.name) { $('projNameErr').textContent = '请填写项目名称'; $('projNameErr').hidden = false; nameInput.focus(); return; }
-    if (!f.harness) { $('projHarnessErr').hidden = false; return; }
-    var btn = this;
-    P.btnLoading(btn, function () {
-      if (f.mode === 'new') {
-        var palette = [['蓝', ''], ['青', 'busy-tag--success'], ['紫', 'busy-tag--danger'], ['金', 'busy-tag--warning'], ['品红', 'busy-tag--danger is-plain'], ['橙红', 'busy-tag--warning is-plain']];
-        var ci = D.projects.length % 6;
-        D.projects.push({ key: 'p' + Date.now(), name: f.name, colorName: palette[ci][0], cls: palette[ci][1], harness: f.harness, repos: f.repos.slice(), status: f.status, remark: f.remark });
-      } else {
-        var p = D.projects[f.idx];
-        p.name = f.name; p.harness = f.harness; p.repos = f.repos.slice(); p.status = f.status; p.remark = f.remark;
-      }
-      P.toast('项目已保存，卡片归属已按新映射重新解析', 'success');
-      renderProjectList(); renderAll();
-    });
-  };
 }
 
 /* ==================== 行内操作（气泡确认 = BubbleCard 的 busy-popover is-light DOM） ==================== */

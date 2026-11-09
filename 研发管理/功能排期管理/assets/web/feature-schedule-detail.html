@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="zh-CN">
+<html lang="zh-CN" data-native-manual>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -24,12 +24,11 @@
   导航栏「原型页面」可切换页面、演示卡片（合并卡 / 延期卡 / 完成卡 / 子卡只读 / 非需求改动卡 / 待澄清卡（澄清前开发中，保留开发人）/
     澄清合并卡（FS-20261013-004 经两轮澄清并入，含澄清来源与两条已澄清记录；?no=FS-20261014-009 演示中间合并卡跳转））与整页状态（正常 / 加载失败 / 不存在）。
   演示基准日 2026-10-21（周三，演示当前时间 10:30）；当前登录人演示为「陈默」（PM，全权限）。
-  样式链：tokens/pc.css → docs-site/pc/runtime.css → docs-site/ep-base-shim.css → shared/prototype/web/templates.css；
+  样式链：tokens/web.css → docs-site/web/runtime.css → shared/prototype/web/templates.css；
     浮层以 busy-overlay-demo + busy-overlay（fixed 遮罩）承载，打开时移至 body 末尾，Esc 按打开顺序逐层关闭。
 -->
-<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/pc.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/pc/runtime.css">
-<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/ep-base-shim.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/web.css">
+<link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/web/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
 </head>
 <body>
@@ -57,10 +56,12 @@
 <!-- M7 转待澄清 / M8 完成澄清 / M9 撤回澄清 -->
 <div class="busy-overlay-demo busy-overlay" id="ovClarify" hidden></div>
 
+<script src="../../../../../busyming-skills-design/shared/prototype/web/native.js"></script>
 <script src="./feature-schedule-data.js"></script>
 <script>
 /* ==================== 演示卡片装配（数据真源 feature-schedule-data.js） ==================== */
 var D = FS_DATA, P = FS_PROTO;
+BusyNative.inputs(document);
 var PERM = { edit: true, del: true, markDone: true }; /* 演示账号陈默持有全部按钮权限（permission-rules §1） */
 function byNo(no) { return D.scheduled.filter(function (c) { return c.no === no; })[0]; }
 function clarifyItem(no) { return D.clarifying.items.filter(function (i) { return i.no === no; })[0]; }

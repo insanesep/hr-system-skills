@@ -22,7 +22,7 @@ metadata:
 
 ## Prerequisites
 
-- [产研人员管理 · 参与关系](../../研发管理/产研人员管理/references/business-rule.md#membership)与[域及项目管理 · 责任关系](../../研发管理/域及项目管理/references/business-rule.md#responsibility)：仅供已有明确项目的产研审批人升级取数，其他情况及实施兜底沿用共享 SLA 规则。
+- [项目管理 · 参与关系](../../研发管理/项目管理/references/business-rule.md#membership)与[项目管理 · 责任关系](../../研发管理/项目管理/references/permission-rules.md#boundaries)：仅供已有明确项目的产研审批人升级取数，其他情况及实施兜底沿用共享 SLA 规则。
 
 ## 资料与资产
 

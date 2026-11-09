@@ -22,7 +22,7 @@ window.FS_DATA = {
   month: '2026-10',
   user: '陈默',
 
-  /* 项目台账（本模块为项目映射唯一真源；标识色按创建顺序循环分配） */
+  /* 只读项目演示投影（真源为项目管理；供排期标签、筛选与仓候选使用，不提供配置写操作） */
   projects: [
     { key: 'main',   name: '鸣鸣很忙主站', colorName: '蓝',   cls: '',                     harness: 'harness-main',   repos: ['busyming-web', 'busyming-server'], status: '启用' },
     { key: 'supply', name: '供应链中台',   colorName: '青',   cls: 'busy-tag--success',    harness: 'harness-supply', repos: ['supply-api'],                      status: '启用' },
@@ -250,7 +250,7 @@ window.FS_DATA = {
     { hash: '7d20e8b', msg: 'fix(store): 导出任务取消时释放连接', repo: 'busyming-server', author: '刘洋', time: '2026-10-14 17:15', url: 'https://codeup.aliyun.com/busyming/busyming-server/commit/7d20e8b' }
   ],
 
-  /* 云效研发仓列表（新建卡片选仓、项目配置点选、完成 commit 候选仓的真源；occupied=被启用中项目占用） */
+  /* 只读云效研发仓演示候选（新建卡片选仓与完成 commit 使用；映射维护归项目管理） */
   repos: [
     { name: 'harness-main',   id: 'repo-1024', owner: '鸣鸣很忙主站' },
     { name: 'harness-supply', id: 'repo-2048', owner: '供应链中台' },
@@ -352,6 +352,7 @@ window.FS_PROTO = (function () {
     if (!el) return;
     el.hidden = false;
     document.body.appendChild(el);
+    BusyNative.inputs(el);
     var close = onClose || function () { el.hidden = true; };
     el.onclick = function (e) { if (e.target === el) close(); };
     pushEsc(el, close);

@@ -18,7 +18,7 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 - 按项目与代码仓名称关键词查询、重置和分页；列表显示项目、研发代码仓、云效仓 ID、门户映射人数 / 云效有效研发成员数以及同步状态和最近同步时间。
 - 异步同步项目代码服务仓与云效研发成员，立即返回 taskId；已有活动任务时复用同一任务，展示当前仓、读取与保存计数、失败清单，页面刷新可恢复进度。
 - 用日志关键字 MCP_REPO_SYNC 按 taskId 查看阶段与每 15 秒运行心跳。同步不访问 SLS / ARMS，不改变工具分配或令牌选择。
-- 基础仓、域、项目及项目到实现仓与确认路径的关系引用[域及项目管理](../../研发管理/域及项目管理/SKILL.md)及其[执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)；本页只消费映射并维护云效真实成员快照、同步任务与日志，无项目维护表单、开放开关、业务域枚举或观测分组配置。
+- 基础仓、域、项目及项目到实现仓与确认路径的关系引用[项目管理](../../研发管理/项目管理/SKILL.md)及其[执行映射](../../研发管理/项目管理/references/business-rule.md#execution-mapping)；本页只消费映射并维护云效真实成员快照、同步任务与日志，无项目维护表单、开放开关、业务域枚举或观测分组配置。
 - 仓成员事实只派生动态查询范围，不自动授予 SLS / ARMS 工具许可；范围与能力边界引用 [研发工具规则](references/devtool-rules.md)与[共享授权判定](../references/permission-rules.md#3-调用时授权判定)。
 
 ## 页内与非菜单边界
@@ -27,8 +27,8 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 ## Prerequisites
 
-- [域及项目管理](../../研发管理/域及项目管理/SKILL.md) · [清单真源](../../研发管理/域及项目管理/references/business-rule.md#source) · [执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：基础范围只读引用。
-- [产研人员管理](../../研发管理/产研人员管理/SKILL.md) · [身份](../../研发管理/产研人员管理/references/business-rule.md#identity) · [权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：业务身份不替代云效成员快照或观测授权。
+- [项目管理](../../研发管理/项目管理/SKILL.md) · [清单真源](../../研发管理/项目管理/references/business-rule.md#source) · [执行映射](../../研发管理/项目管理/references/business-rule.md#execution-mapping)：基础范围只读引用。
+- [项目管理](../../研发管理/项目管理/SKILL.md) · [身份](../../研发管理/项目管理/references/business-rule.md#identity) · [权限边界](../../研发管理/项目管理/references/permission-rules.md#boundaries)：业务身份不替代云效成员快照或观测授权。
 
 ## 规则、页面与资产
 

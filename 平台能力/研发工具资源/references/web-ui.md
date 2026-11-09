@@ -23,9 +23,9 @@
     - 研发成员：显示「门户已映射人数 / 云效有效研发成员数」，只读展示；未映射成员不获查询范围
     - 项目列展示该仓全部有效关联项目，按仓稳定 ID 一行分页与计数，不因多项目关联重复仓行、快照或同步任务
     - 同步状态：已无任何有效项目执行映射显示「已移除」；同名不同稳定 ID 的有效仓显示「仓映射冲突」，同仓多项目引用不是冲突；无同步时间显示「待同步」，其余显示「正常」并展示最近同步时间
-  - 配置边界：基础仓、域及项目清单引用[域及项目管理 · 清单](../../../研发管理/域及项目管理/references/business-rule.md#source)，项目与实现仓、确认路径引用其[执行映射](../../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)；项目不维护观测分组
+  - 配置边界：基础仓、域及项目清单引用[项目管理 · 清单](../../../研发管理/项目管理/references/business-rule.md#source)，项目与实现仓、确认路径引用其[执行映射](../../../研发管理/项目管理/references/business-rule.md#execution-mapping)；项目不维护观测分组
   - 访问边界：每次查询复核有效令牌、有效用户、工具分配与令牌勾选、仓成员及项目仓关系、仓名唯一性、Skills 提供的 group 配置和 appName 环境后缀；同步成功不等于取得工具许可
-  - 空态：Empty「暂无研发代码仓，请先到「域及项目管理」核对项目执行映射后同步」
+  - 空态：Empty「暂无研发代码仓，请先到「项目管理」核对项目执行映射后同步」
 - **布局引用**：实际页面见 [研发工具资源页](../../../../code/02-devops/busyming-devhub-web/src/views/mcp/DevtoolResourceView.vue)；列表视觉规范见 `busyming-skills-design/shared/page-standards/web-operation-list.md`。[列表资产](../assets/web/devtool-resources.html)仅作只读视觉参考，不作为当前字段或能力依据
 
 #### 导航关系

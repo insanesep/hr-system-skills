@@ -26,8 +26,8 @@ description: 错误日志管理（日志异常报表）。Use when 需要每日�
 
 ## Prerequisites
 
-- [产研人员管理 · 身份](../../../研发管理/产研人员管理/references/business-rule.md#identity)及[权限边界](../../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：产研职责身份只读引用，不替代菜单及标记、重跑、导出权限，不改写处理人与历史经办快照。
-- [域及项目管理 · 清单](../../../研发管理/域及项目管理/references/business-rule.md#source)及[执行映射](../../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：仅已确认基础归属，无项目证据只域级；应用、环境、日志库与 SLS Project 仍是原日志配置，SLS Project 不是业务项目，不由参与关系自动授权。
+- [项目管理 · 身份](../../研发管理/项目管理/references/business-rule.md#identity)及[权限边界](../../研发管理/项目管理/references/permission-rules.md#boundaries)：产研职责身份只读引用，不替代菜单及标记、重跑、导出权限，不改写处理人与历史经办快照。
+- [项目管理 · 清单](../../研发管理/项目管理/references/business-rule.md#source)及[执行映射](../../研发管理/项目管理/references/business-rule.md#execution-mapping)：仅已确认基础归属，无项目证据只域级；应用、环境、日志库与 SLS Project 仍是原日志配置，SLS Project 不是业务项目，不由参与关系自动授权。
 
 ## 名词约定
 

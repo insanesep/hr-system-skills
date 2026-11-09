@@ -25,7 +25,7 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 ## Prerequisites
 
-- [域及项目管理 · 执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)与[产研人员管理 · 权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：核对当前基础引用，不改写历史调用、授权与经办人证据。
+- [项目管理 · 执行映射](../../研发管理/项目管理/references/business-rule.md#execution-mapping)与[项目管理 · 权限边界](../../研发管理/项目管理/references/permission-rules.md#boundaries)：核对当前基础引用，不改写历史调用、授权与经办人证据。
 
 ## 规则、页面与资产
 

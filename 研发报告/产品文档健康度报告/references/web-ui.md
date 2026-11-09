@@ -1,7 +1,7 @@
 # Web 端 UI 描述 · 产品文档健康度报告
 
 > 归档、版本、渲染与异常口径以 [`../../报告配置/references/business-rule.md`](../../报告配置/references/business-rule.md) 为真源；报告内容章节以 [`health-report.md`](health-report.md) 输出模板为真源。
-> 范围类型、名称与 key 只读消费 [域及项目管理](../../../研发管理/域及项目管理/references/business-rule.md#consumption)。域整仓、项目一级目录及各自确认映射参与评估，根文件不计项目，固定排除 common/design；跨范围指标按稳定标识去重，不重复相加。
+> 范围类型、名称与 key 只读消费 [项目管理](../../../研发管理/项目管理/references/business-rule.md#consumption)。域整仓、项目一级目录及各自确认映射参与评估，根文件不计项目，固定排除 common/design；跨范围指标按稳定标识去重，不重复相加。
 
 ## 使用原则
 

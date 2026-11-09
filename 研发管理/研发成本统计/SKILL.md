@@ -32,5 +32,5 @@ metadata:
 | 依赖 | 路径 | 用途 |
 |---|---|---|
 | 前端页面规范 | ../../../依赖文档/研发规范/前端/前端页面规范/SKILL.md | Web 页面与原型硬约束 |
-| 产研人员基础引用 | [产研人员管理](../产研人员管理/SKILL.md) · [身份](../产研人员管理/references/business-rule.md#identity) · [权限边界](../产研人员管理/references/permission-rules.md#boundaries) | 产研职责身份只读引用，不替代制单、审核授权或历史经办快照 |
-| 域、项目基础引用 | [域及项目管理](../域及项目管理/SKILL.md) · [清单](../域及项目管理/references/business-rule.md#source) | 仅基础归属对照，不将品牌、费用科目或年月改作仓域 / 项目维度 |
+| 产研人员基础引用 | [项目管理](../项目管理/SKILL.md) · [身份](../项目管理/references/business-rule.md#identity) · [权限边界](../项目管理/references/permission-rules.md#boundaries) | 产研职责身份只读引用，不替代制单、审核授权或历史经办快照 |
+| 域、项目基础引用 | [项目管理](../项目管理/SKILL.md) · [清单](../项目管理/references/business-rule.md#source) | 仅基础归属对照，不将品牌、费用科目或年月改作仓域 / 项目维度 |

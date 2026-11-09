@@ -31,7 +31,7 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 ## Prerequisites
 
-- [产研人员管理 · 权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：产研业务身份与门户、MCP 生命周期边界只读引用。
+- [项目管理 · 权限边界](../../研发管理/项目管理/references/permission-rules.md#boundaries)：产研业务身份与门户、MCP 生命周期边界只读引用。
 
 ## 规则、页面与资产
 

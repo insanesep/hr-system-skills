@@ -31,8 +31,8 @@ metadata: {"domain":"产研","subdomain":"平台能力","platform":["web"]}
 
 ## Prerequisites
 
-- [产研人员管理 · 身份](../../研发管理/产研人员管理/references/business-rule.md#identity)及[权限边界](../../研发管理/产研人员管理/references/permission-rules.md#boundaries)：仅用于产研业务身份对照，不将分配对象限制为产研人员或自动授予权限。
-- [域及项目管理 · 执行映射](../../研发管理/域及项目管理/references/business-rule.md#execution-mapping)：观测范围只读消费，工具 grant、令牌与真实成员快照仍独立校验。
+- [项目管理 · 身份](../../研发管理/项目管理/references/business-rule.md#identity)及[权限边界](../../研发管理/项目管理/references/permission-rules.md#boundaries)：仅用于产研业务身份对照，不将分配对象限制为产研人员或自动授予权限。
+- [项目管理 · 执行映射](../../研发管理/项目管理/references/business-rule.md#execution-mapping)：观测范围只读消费，工具 grant、令牌与真实成员快照仍独立校验。
 
 ## 规则、页面与资产
 

@@ -1,6 +1,6 @@
 ---
 name: Qoder用量分析
-description: Use when 需要查询产研团队 Qoder Credits 用量总额与周环比、按部门/成员或模型等级分析消耗结构、查看日消耗趋势对比上周同期、或查看成员×日期 / 成员×模型等级透视表做成本复盘。数据来源为 Qoder Teams OpenAPI，按组织→成员维度每日同步 Credits 日快照后聚合；统计范围默认产研团队人员范围（产研人员管理真源），可切换组织全部成员，支持按部门（全部/数字化中心/创新业务部）筛选；Web+App 双端只读仪表盘。
+description: Use when 需要查询产研团队 Qoder Credits 用量总额与周环比、按部门/成员或模型等级分析消耗结构、查看日消耗趋势对比上周同期、或查看成员×日期 / 成员×模型等级透视表做成本复盘。数据来源为 Qoder Teams OpenAPI，按组织→成员维度每日同步 Credits 日快照后聚合；统计范围默认产研团队人员范围（项目管理真源），可切换组织全部成员，支持按部门（全部/数字化中心/创新业务部）筛选；Web+App 双端只读仪表盘。
 metadata:
   domain: 研发
   clients: web,app
@@ -10,7 +10,7 @@ metadata:
 
 ## 模块概述
 
-数据来源为 Qoder Teams OpenAPI，按组织 → 成员维度每日同步 Credits 日快照后展示用量：KPI 汇总、日消耗堆叠柱形图（按接口返回的模型分类分段堆叠，未识别的归入其他）、成员×日期透视表、成员×模型等级透视表。统计范围默认产研团队人员范围（与研发周报/日报共用，只读引用产研人员管理），可切换组织全部成员；支持按部门（全部 / 数字化中心 / 创新业务部，默认全部）筛选成员。纯只读分析页，无单据与写操作。
+数据来源为 Qoder Teams OpenAPI，按组织 → 成员维度每日同步 Credits 日快照后展示用量：KPI 汇总、日消耗堆叠柱形图（按接口返回的模型分类分段堆叠，未识别的归入其他）、成员×日期透视表、成员×模型等级透视表。统计范围默认产研团队人员范围（与研发周报/日报共用，只读引用项目管理），可切换组织全部成员；支持按部门（全部 / 数字化中心 / 创新业务部，默认全部）筛选成员。纯只读分析页，无单据与写操作。
 
 ## 端
 
@@ -36,7 +36,7 @@ metadata:
 | 页面编排标准 | [page-standards](../../../busyming-skills-design/shared/page-standards/README.md) | 页面类型取值与区域编排 | busyming-skills-design |
 | 原型样式入口 | Web：[pc.css](../../../busyming-skills-design/components/web/tokens/pc.css) → convert-el-plus.css → ep-base-shim.css → [templates.css](../../../busyming-skills-design/shared/prototype/web/templates.css)；App：[mobile.css](../../../busyming-skills-design/components/mobile/tokens/mobile.css) → docs-site/demos/mobile/css 组件 CSS → [templates.css](../../../busyming-skills-design/templates/mobile/templates.css) | 原型样式链与组件类 | busyming-skills-design |
 | Qoder Teams OpenAPI | 公共仓未迁入真源 | 用量数据来源与时间范围硬约束 | busyming-skills-common |
-| 统计人员范围与身份 | [产研人员管理](../产研人员管理/SKILL.md) · [报告范围](../产研人员管理/references/business-rule.md#report-scope) · [身份](../产研人员管理/references/business-rule.md#identity) | 原 ROSTER 范围只读消费；组织全部成员仍沿 Qoder 源范围 | busyming-skills-devops |
+| 统计人员范围与身份 | [项目管理](../项目管理/SKILL.md) · [报告范围](../项目管理/references/business-rule.md#report-scope) · [身份](../项目管理/references/business-rule.md#identity) | 原 ROSTER 范围只读消费；组织全部成员仍沿 Qoder 源范围 | busyming-skills-devops |
 
 ## 页面功能概览
 

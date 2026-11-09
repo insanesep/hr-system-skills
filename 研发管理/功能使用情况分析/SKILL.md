@@ -26,5 +26,5 @@ description: 研发管理下的功能使用情况分析分组索引。Use when �
 - [共享布局与页面索引](references/page-structure.md)：通用页面约束与各叶子 Web UI、原型的导航。
 - [登记一致性](references/business-rule.md#数据模型)与[功能编码命名](references/business-rule.md#14-功能编码命名规范)：跨业务菜单、路由与埋点登记的共用约束；[功能排期管理](../../研发管理/功能排期管理/SKILL.md)的埋点登记同样引用本真源。
 - [身份信息信任边界](references/business-rule.md#13-信息来源与信任边界)与[权限及接入系统隔离](references/business-rule.md#7-权限与可见性)：用户、角色与权限体系协作的共用规则。
-- [产研人员管理 · 身份](../产研人员管理/references/business-rule.md#identity)及[权限边界](../产研人员管理/references/permission-rules.md#boundaries)：仅产研身份对照，不能替代门户 RBAC 或裁剪全部业务用户行为。
-- [域及项目管理 · 清单](../域及项目管理/references/business-rule.md#source)及[执行映射](../域及项目管理/references/business-rule.md#execution-mapping)：仅已确认基础归属引用，不将功能目录、菜单业务分类或路由前缀直接当作仓域 / 项目。
+- [项目管理 · 身份](../项目管理/references/business-rule.md#identity)及[权限边界](../项目管理/references/permission-rules.md#boundaries)：仅产研身份对照，不能替代门户 RBAC 或裁剪全部业务用户行为。
+- [项目管理 · 清单](../项目管理/references/business-rule.md#source)及[执行映射](../项目管理/references/business-rule.md#execution-mapping)：仅已确认基础归属引用，不将功能目录、菜单业务分类或路由前缀直接当作仓域 / 项目。
