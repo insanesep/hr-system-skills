@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="prototype-components" content="Button,PageableSelect,Descriptions,Tag,Message">
+  <meta name="prototype-components" content="Button,PageableSelect,Descriptions,Tag,Message,Dialog">
   <meta name="prototype-gap-components" content="MarkdownViewer,Outline">
   <title>报告详情 · 项目进度报告 · 静态 Mock</title>
   <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/web.css">
@@ -23,6 +23,9 @@
     .gap-markdown-viewer__content th { padding: 10px 12px; border-bottom: 1px solid var(--busy-border-color); background: var(--busy-fill-color-light); color: var(--busy-text-primary); font-weight: 600; text-align: left; white-space: nowrap; }
     .gap-markdown-viewer__content td { padding: 10px 12px; border-bottom: 1px solid var(--busy-border-color-lighter); color: var(--busy-text-secondary); text-align: left; vertical-align: top; }
     .gap-markdown-viewer__content tfoot td { background: var(--busy-fill-color-light); color: var(--busy-text-primary); font-weight: 600; }
+    .gap-person-weekly { appearance: none; margin: 0; padding: 0; border: 0; background: transparent; color: var(--busy-color-primary); font: inherit; line-height: inherit; cursor: pointer; }
+    .gap-person-weekly:hover { text-decoration: underline; }
+    .gap-person-weekly:focus-visible { outline: 2px solid var(--busy-color-primary); outline-offset: 2px; }
     .gap-markdown-viewer__loading { position: absolute; inset: 0; z-index: 2; display: flex; align-items: flex-start; justify-content: center; min-height: 240px; padding-top: 64px; background: var(--busy-bg-color-overlay); color: var(--busy-text-secondary); font-size: var(--busy-font-size-small); }
     .gap-markdown-viewer__loading[hidden] { display: none; }
     .gap-markdown-viewer__empty { padding: 64px 16px; color: var(--busy-text-tertiary); font-size: var(--busy-font-size-small); text-align: center; }
@@ -83,6 +86,20 @@
       </aside>
     </div>
   </main>
+  <div class="busy-overlay" id="personWeeklyDialog" hidden>
+    <div class="busy-overlay-dialog">
+      <div class="busy-dialog" data-size="large" role="dialog" aria-modal="true" aria-labelledby="personWeeklyTitle">
+        <div class="busy-dialog__header"><div class="dialog-header"><div class="dialog-title" id="personWeeklyTitle">本周研发周报</div></div><button class="busy-button is-link busy-dialog__close" type="button" data-dialog-close aria-label="关闭"><span>✕</span></button></div>
+        <div class="busy-dialog__body"><div class="dialog-content">
+          <div class="u-sub" id="personWeeklyMeta"></div>
+          <div class="u-sub" id="personWeeklyLoading" role="status" hidden>正在加载本周研发周报…</div>
+          <div class="u-sub" id="personWeeklyEmpty" hidden>未取得该人员本周研发周报内容</div>
+          <article class="gap-markdown-viewer__content" id="personWeeklyContent"></article>
+        </div></div>
+        <div class="busy-dialog__footer"><a class="busy-button" id="personWeeklyFull" href="../../../人员产出报告/assets/web/report-detail.html"><span>查看完整周报</span></a><button class="busy-button busy-button--primary" type="button" data-dialog-close><span>关 闭</span></button></div>
+      </div>
+    </div>
+  </div>
   <script src="../../../../../busyming-skills-design/shared/prototype/web/native.js"></script>
   <script>
     (function () {
@@ -112,61 +129,106 @@
         for (var index = 0; index < id.length; index++) hash = (hash * 31 + id.charCodeAt(index)) % 997;
         var total = 18 + hash % 5, doing = hash % 3 + 1, todo = hash % 2, delayed = hash % 3;
         var done = total - doing - todo - delayed, developers = 6 + hash % 4, active = Math.max(1, developers - 1);
+        var product = 2 + hash % 2, architecture = 1 + hash % 2, productActive = Math.max(1, product - 1);
         var added = 2400 + hash * 37 + version * 100, removed = 700 + hash * 19;
+        var productAdded = 320 + hash * 11 + version * 20, productRemoved = 90 + hash * 5;
         var qoderTotal = 12000 + hash * 83, requests = 900 + hash * 13;
+        var productQoderTotal = 1800 + hash * 17, productRequests = 120 + hash * 7;
         return {
           total: total, nonFeature: hash % 4, done: done, delayed: delayed,
           rate: (done * 100 / total).toFixed(1), delayedRate: (delayed * 100 / total).toFixed(1),
-          developers: developers, product: 2 + hash % 2, perFeatures: (total / developers).toFixed(1),
+          developers: developers, product: product, architecture: architecture, perFeatures: (total / developers).toFixed(1),
+          productNames: ['王芳', '陈晨', '周洁'].slice(0, product),
+          developerNames: ['李雷', '韩梅', '赵强', '孙磊', '周敏', '吴迪', '郑凯', '林雪', '何俊'].slice(0, developers),
+          architectureNames: ['张远', '刘洋'].slice(0, architecture),
           commits: 32 + hash % 37 + version, added: added, removed: removed,
           perLines: ((added + removed) / developers).toFixed(1),
+          productCommits: 4 + hash % 8 + version, productAdded: productAdded, productRemoved: productRemoved,
+          productPerLines: ((productAdded + productRemoved) / product).toFixed(1),
           qoderTotal: qoderTotal, qoderAverage: Math.round(qoderTotal / active),
-          requests: requests, requestAverage: (requests / active).toFixed(1)
+          requests: requests, requestAverage: (requests / active).toFixed(1),
+          productQoderTotal: productQoderTotal, productQoderAverage: Math.round(productQoderTotal / productActive),
+          productRequests: productRequests, productRequestAverage: (productRequests / productActive).toFixed(1)
         };
       }
       function aggregateMetrics(groups, version) {
         var base = metricsFor('_all', version);
         function sum(key) { return groups.reduce(function (total, group) { return total + group.metrics[key]; }, 0); }
-        var total = sum('total'), done = sum('done'), delayed = sum('delayed'), active = Math.max(1, base.developers - 1);
+        var total = sum('total'), done = sum('done'), delayed = sum('delayed'), active = Math.max(1, base.developers - 1), productActive = Math.max(1, base.product - 1);
         var added = sum('added'), removed = sum('removed'), qoderTotal = sum('qoderTotal'), requests = sum('requests');
+        var productAdded = sum('productAdded'), productRemoved = sum('productRemoved'), productQoderTotal = sum('productQoderTotal'), productRequests = sum('productRequests');
         return Object.assign({}, base, {
           total: total, nonFeature: sum('nonFeature'), done: done, delayed: delayed,
           rate: (done * 100 / total).toFixed(1), delayedRate: (delayed * 100 / total).toFixed(1),
           perFeatures: (total / base.developers).toFixed(1), commits: sum('commits'), added: added, removed: removed,
           perLines: ((added + removed) / base.developers).toFixed(1), qoderTotal: qoderTotal,
-          qoderAverage: Math.round(qoderTotal / active), requests: requests, requestAverage: (requests / active).toFixed(1)
+          qoderAverage: Math.round(qoderTotal / active), requests: requests, requestAverage: (requests / active).toFixed(1),
+          productCommits: sum('productCommits'), productAdded: productAdded, productRemoved: productRemoved,
+          productPerLines: ((productAdded + productRemoved) / base.product).toFixed(1),
+          productQoderTotal: productQoderTotal, productQoderAverage: Math.round(productQoderTotal / productActive),
+          productRequests: productRequests, productRequestAverage: (productRequests / productActive).toFixed(1)
         });
       }
+      function isSummaryLabel(value) { return value === '全量汇总' || value === '全量汇总(去重)'; }
       function tableHtml(headers, rows) {
-        var hasSummary = rows.length && rows[rows.length - 1][0] === '全量汇总', summary = hasSummary ? rows[rows.length - 1] : null;
+        var hasSummary = rows.length && isSummaryLabel(rows[rows.length - 1][0]), summary = hasSummary ? rows[rows.length - 1] : null;
         var bodyRows = hasSummary ? rows.slice(0, -1) : rows;
         return '<div class="gap-markdown-viewer__table"><table><thead><tr>' + headers.map(function (header) { return '<th>' + header + '</th>'; }).join('') + '</tr></thead><tbody>' + bodyRows.map(function (values) { return '<tr>' + values.map(function (value) { return '<td>' + value + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>' + (hasSummary ? '<tfoot><tr>' + summary.map(function (value) { return '<td>' + value + '</td>'; }).join('') + '</tr></tfoot>' : '') + '</table></div>';
       }
       function tableMarkdown(headers, rows) {
-        var hasSummary = rows.length && rows[rows.length - 1][0] === '全量汇总', summary = hasSummary ? rows[rows.length - 1].map(function (value) { return '**' + value + '**'; }) : null;
+        var hasSummary = rows.length && isSummaryLabel(rows[rows.length - 1][0]), summary = hasSummary ? rows[rows.length - 1].map(function (value) { return '**' + value + '**'; }) : null;
         var bodyRows = hasSummary ? rows.slice(0, -1) : rows;
         return '| ' + headers.join(' | ') + ' |\n| ' + headers.map(function () { return '---'; }).join(' | ') + ' |\n' + bodyRows.map(function (values) { return '| ' + values.join(' | ') + ' |'; }).join('\n') + (hasSummary ? '\n| ' + summary.join(' | ') + ' |' : '');
       }
+      function personnelNames(names, format) {
+        return names.map(function (name) {
+          return format === 'html' ? '<button type="button" class="busy-button is-link gap-person-weekly" data-person-id="mock-person-' + name + '" data-person-name="' + name + '" aria-label="查看' + name + '本周研发周报"><span>' + name + '</span></button>' : name;
+        }).join('、');
+      }
+      function personnelDetail(m, format) {
+        return '产品：' + personnelNames(m.productNames, format) + '<br>研发：' + personnelNames(m.developerNames, format) + '<br>架构：' + personnelNames(m.architectureNames, format);
+      }
+      var HEALTH_REPOS = [
+        { name: 'busyming-skills-devops', previous: 82.4, current: 86.1, reportId: 'devops-20261101' },
+        { name: 'busyming-skills-operations', previous: 79.8, current: 81.3, reportId: 'operations-20261101' },
+        { name: 'busyming-skills-product', previous: 88.2, current: 86.7, reportId: 'product-20261101' },
+        { name: 'busyming-skills-store', previous: 84.5, current: 84.5, reportId: 'store-20261101' },
+        { name: 'busyming-skills-support', previous: 77.6, current: 80.2, reportId: 'support-20261101' }
+      ];
+      function healthRows(format) {
+        return HEALTH_REPOS.map(function (repo) {
+          var delta = (repo.current - repo.previous).toFixed(1), deltaText = delta > 0 ? '+' + delta : String(delta);
+          var operation = format === 'html'
+            ? '<a href="../../../产品文档健康度报告/assets/web/report-detail.html">查看报告</a>'
+            : '[查看报告](/subapp/devhub/report/doc-health/detail/' + repo.reportId + ')';
+          return [repo.name, repo.previous.toFixed(1), repo.current.toFixed(1), deltaText, operation];
+        });
+      }
       function reportSections(version) {
         var groups = PROJECT_GROUPS.map(function (scope) { return { name: scope.name, key: scope.key, metrics: metricsFor(scope.value, version) }; });
-        var chapters = [
-          { id: 'schedule', title: '功能排期', headers: ['项目组', '功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数'], values: function (name, m) { return [name, m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate + '%', m.delayed + ' 个', m.delayedRate + '%', m.perFeatures + ' 个/人']; } },
-          { id: 'commits', title: '代码提交', headers: ['项目组', '提交次数', '提交行数（新增 / 删除）', '人均提交行数'], values: function (name, m) { return [name, m.commits + ' 次', '+' + m.added + ' / -' + m.removed, m.perLines + ' 行/人']; } },
-          { id: 'members', title: '团队人员', headers: ['项目组', '产品人数', '研发人数'], values: function (name, m) { return [name, m.product + ' 人', m.developers + ' 人']; } },
-          { id: 'qoder', title: 'Qoder 使用', headers: ['项目组', '总使用量（Credits）', '人均使用量（Credits）', '总请求次数', '人均请求次数'], values: function (name, m) { return [name, String(m.qoderTotal), String(m.qoderAverage), m.requests + ' 次', m.requestAverage + ' 次/人']; } }
-        ];
-        var html = '', raw = '';
-        chapters.forEach(function (chapter) {
-          var rows = groups.map(function (group) { return chapter.values(group.name, group.metrics); });
-          rows.push(chapter.values('全量汇总', aggregateMetrics(groups, version)));
-          html += '<h2 id="v' + version + '-' + chapter.id + '">' + chapter.title + '</h2>' + tableHtml(chapter.headers, rows);
-          raw += '\n\n## ' + chapter.title + '\n\n' + tableMarkdown(chapter.headers, rows) + '\n';
-        });
         var progressRows = groups.map(function (group) {
           return [group.name, group.name + '完成本期核心功能迭代，交付内容已纳入研发周报。<br>' + group.name + '持续推进排期、提交与 Qoder 使用协同分析。'];
         });
-        html += '<h2 id="v' + version + '-progress">项目核心进展</h2>' + tableHtml(['项目组', '核心进展'], progressRows);
-        raw += '\n\n## 项目核心进展\n\n' + tableMarkdown(['项目组', '核心进展'], progressRows) + '\n';
+        var html = '<h2 id="v' + version + '-progress">项目核心进展</h2>' + tableHtml(['项目组', '核心进展'], progressRows);
+        var raw = '\n\n## 项目核心进展\n\n' + tableMarkdown(['项目组', '核心进展'], progressRows) + '\n';
+        var chapters = [
+          { id: 'members', title: '团队人员', summaryLabel: '全量汇总(去重)', headers: ['项目组', '产品人数', '研发人数', '架构人数', '人员明细'], values: function (name, m, format) { return [name, m.product + ' 人', m.developers + ' 人', m.architecture + ' 人', personnelDetail(m, format)]; } },
+          { id: 'schedule', title: '功能排期', headers: ['项目组', '功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数'], values: function (name, m) { return [name, m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate + '%', m.delayed + ' 个', m.delayedRate + '%', m.perFeatures + ' 个/人']; } },
+          { id: 'commits', title: '代码提交', headers: ['项目组', '产品提交次数', '研发提交次数', '产品提交行数（新增 / 删除）', '研发提交行数（新增 / 删除）', '产品人均提交行数', '研发人均提交行数'], values: function (name, m) { return [name, m.productCommits + ' 次', m.commits + ' 次', '+' + m.productAdded + ' / -' + m.productRemoved, '+' + m.added + ' / -' + m.removed, m.productPerLines + ' 行/人', m.perLines + ' 行/人']; } },
+          { id: 'qoder', title: 'Qoder 使用', headers: ['项目组', '产品总使用量（Credits）', '研发总使用量（Credits）', '产品人均使用量（Credits）', '研发人均使用量（Credits）', '产品总请求次数', '研发总请求次数', '产品人均请求次数', '研发人均请求次数'], values: function (name, m) { return [name, String(m.productQoderTotal), String(m.qoderTotal), String(m.productQoderAverage), String(m.qoderAverage), m.productRequests + ' 次', m.requests + ' 次', m.productRequestAverage + ' 次/人', m.requestAverage + ' 次/人']; } }
+        ];
+        chapters.forEach(function (chapter) {
+          var htmlRows = groups.map(function (group) { return chapter.values(group.name, group.metrics, 'html'); });
+          var markdownRows = groups.map(function (group) { return chapter.values(group.name, group.metrics, 'markdown'); });
+          var summary = aggregateMetrics(groups, version);
+          htmlRows.push(chapter.values(chapter.summaryLabel || '全量汇总', summary, 'html'));
+          markdownRows.push(chapter.values(chapter.summaryLabel || '全量汇总', summary, 'markdown'));
+          html += '<h2 id="v' + version + '-' + chapter.id + '">' + chapter.title + '</h2>' + tableHtml(chapter.headers, htmlRows);
+          raw += '\n\n## ' + chapter.title + '\n\n' + tableMarkdown(chapter.headers, markdownRows) + '\n';
+        });
+        var healthHeaders = ['仓库', '上周健康度得分', '本周健康度得分', '较上期', '操作'];
+        html += '<h2 id="v' + version + '-health">harness文档健康度</h2>' + tableHtml(healthHeaders, healthRows('html'));
+        raw += '\n\n## harness文档健康度\n\n' + tableMarkdown(healthHeaders, healthRows('markdown')) + '\n';
         return { html: html, raw: raw };
       }
       function contentFor(report, version) {
@@ -209,6 +271,35 @@
         VERSIONS[version] = { source: version === latestVersion ? report.source : version % 2 ? '服务端生成' : '手动补传', size: (new Blob([content.raw]).size / 1024).toFixed(1) + ' KB', archivedAt: report.end + ' ' + (version === latestVersion ? '21:10:24' : '19:42:08'), html: content.html, raw: content.raw };
       }
       function message(text, type) { window.BusyNative.message(text, type || 'success'); }
+      function weeklyContentFor(name) {
+        var hash = 0;
+        for (var index = 0; index < name.length; index++) hash += name.charCodeAt(index) * (index + 1);
+        var commits = 5 + hash % 18, added = 260 + hash % 480, removed = 40 + hash % 130, cards = 1 + hash % 4, credits = 800 + hash % 2400, requests = 60 + hash % 220;
+        return '<p><strong>代码产出</strong>：本周合计 ' + commits + ' 次提交（新增 ' + added + ' 行 / 删除 ' + removed + ' 行）</p>' +
+          '<p><strong>主要工作</strong>：完成项目进度报告、研发报告数据口径与页面联动优化。</p>' +
+          '<p><strong>功能排期任务</strong>：共 ' + cards + ' 个，已完成 ' + Math.max(0, cards - 1) + ' 个，进行中 1 个。</p>' +
+          '<p><strong>Qoder 用量</strong>：' + credits + ' Credits / 请求 ' + requests + ' 次；模型分布：旗舰 80% / 标准 20%。</p>' +
+          '<p><strong>综合评价</strong>：本周交付节奏稳定，下周继续跟进健康度问题修复与报告联调。</p>';
+      }
+      var weeklyRequest = 0;
+      function openPersonWeekly(trigger) {
+        var name = trigger.dataset.personName, request = ++weeklyRequest;
+        $('personWeeklyTitle').textContent = name + ' · 本周研发周报';
+        $('personWeeklyMeta').textContent = '统计区间：' + report.start + ' ~ ' + report.end + ' · 来源：研发周报 - ' + report.end + ' · v2（Mock）';
+        $('personWeeklyContent').replaceChildren(); $('personWeeklyContent').hidden = true;
+        $('personWeeklyEmpty').hidden = true; $('personWeeklyLoading').hidden = false;
+        window.BusyNative.openDialog($('personWeeklyDialog'), trigger);
+        setTimeout(function () {
+          if (request !== weeklyRequest) return;
+          $('personWeeklyLoading').hidden = true;
+          $('personWeeklyContent').innerHTML = weeklyContentFor(name);
+          $('personWeeklyContent').hidden = false;
+        }, 350);
+      }
+      $('reportBody').addEventListener('click', function (event) {
+        var trigger = event.target.closest('.gap-person-weekly');
+        if (trigger) openPersonWeekly(trigger);
+      });
       function setActive(id) { $('outline').querySelectorAll('.gap-outline__link').forEach(function (link) { var active = link.dataset.target === id; link.classList.toggle('is-active', active); if (active) link.setAttribute('aria-current', 'location'); else link.removeAttribute('aria-current'); }); }
       function buildOutline() {
         var outline = $('outline'); outline.replaceChildren();
@@ -223,6 +314,7 @@
       function restoreSelect() { restoring = true; $('versionSelect')._setValue(String(currentVersion)); restoring = false; }
       function applyVersion(number) {
         var version = VERSIONS[number]; currentVersion = number;
+        weeklyRequest++; window.BusyNative.closeDialog($('personWeeklyDialog'));
         $('metaSource').textContent = version.source; $('metaSize').textContent = version.size; $('metaArchivedAt').textContent = version.archivedAt;
         $('reportBody').innerHTML = version.html;
         $('reportBody').hidden = !version.html.trim(); $('emptyState').hidden = !!version.html.trim();
@@ -318,9 +410,9 @@
             } else if (block.type === 'table') {
               var count = block.rows[0].length, firstWidth = count === 2 ? 190 : 160, otherWidth = (contentWidth - firstWidth) / (count - 1);
               block.rows.forEach(function (row, rowIndex) {
-                var summary = row[0].replace(/\*\*/g, '') === '全量汇总';
+                var summary = isSummaryLabel(row[0].replace(/\*\*/g, ''));
                 var header = rowIndex === 0 || summary, font = (header ? '600' : '400') + ' 14px ' + fontFamily;
-                var lines = row.map(function (cell, index) { return wrap(cell.replace(/\*\*/g, ''), (index === 0 ? firstWidth : otherWidth) - 24, font); });
+                var lines = row.map(function (cell, index) { return wrap(cell.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\*\*/g, ''), (index === 0 ? firstWidth : otherWidth) - 24, font); });
                 var height = Math.max.apply(null, lines.map(function (items) { return items.length; })) * 22 + 20;
                 if (draw && header) { context.fillStyle = colors.fill; context.fillRect(padding, y, contentWidth, height); }
                 var x = padding;

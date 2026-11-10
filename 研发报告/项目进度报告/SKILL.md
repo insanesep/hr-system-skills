@@ -1,6 +1,6 @@
 ---
 name: 项目进度报告
-description: 项目进度报告。Use when 需要每个周期仅生成一份进度总报告，在报告内按项目组查阅功能排期、代码提交、团队人员、Qoder 使用与核心进展，或补齐缺失报告并回溯历史版本。端型：Web 管理端。
+description: 项目进度报告。Use when 需要每个周期仅生成一份进度总报告，在报告内按项目组查阅项目核心进展、团队人员、功能排期、代码提交与 Qoder 使用，按仓库查阅 harness 文档健康度，点击查看个人本周周报，或补齐缺失报告并回溯历史版本。端型：Web 管理端。
 metadata:
   domain: 产研
   sub_domain: 研发报告
@@ -10,7 +10,7 @@ metadata:
 
 # 项目进度报告
 
-面向管理层、PM 与项目负责人的周期性进度总报告：每个自然周或自然月仅生成一份，在全量汇总后按项目组展示功能排期、代码提交、团队人员、Qoder 使用与项目核心进展，不按组拆分报告。
+面向管理层、PM 与项目负责人的周期性进度总报告：每个自然周或自然月仅生成一份，在全量汇总后按项目组展示项目核心进展、团队人员、功能排期、代码提交与 Qoder 使用，按仓库展示 harness 文档健康度，并支持点击人员姓名查看本周个人研发周报，不按组拆分报告。
 
 ## 服务对象与端
 
@@ -19,7 +19,8 @@ metadata:
 
 ## When to Use
 
-- 在一份周 / 月总报告中按项目组查阅功能排期、代码提交、团队人员、Qoder 使用或项目核心进展
+- 在一份周 / 月总报告中按项目组查阅项目核心进展、团队人员、功能排期、代码提交或 Qoder 使用，按仓库查阅 harness 文档健康度
+- 点击团队人员明细中的姓名，查看该人员本周研发周报内容
 - 对缺失报告发起立即生成或手动补传
 - 查看同报告项的历史归档版本或获取当前版本原始 Markdown
 
@@ -39,7 +40,8 @@ metadata:
 | [报告配置 · 数据定义](../报告配置/references/data.md) | 报告、版本与生成任务的数据语义 | busyming-skills-devops |
 | [功能排期管理](../../研发管理/功能排期管理/SKILL.md) | 排期卡片、非需求改动、完成与延期事实来源 | busyming-skills-devops |
 | [Qoder 用量分析](../../研发管理/Qoder用量分析/references/business-rule.md) | Credits、请求次数、活跃成员与人均指标口径 | busyming-skills-devops |
-| [人员产出报告 · 研发周报](../人员产出报告/references/weekly-report.md) | 项目核心进展内容来源 | busyming-skills-devops |
+| [人员产出报告 · 研发周报](../人员产出报告/references/weekly-report.md) | 项目核心进展与点击姓名后的个人周报内容来源 | busyming-skills-devops |
+| [产品文档健康度报告](../产品文档健康度报告/references/health-report.md) | 仓库健康度两周评分、较上期与查看报告链接来源 | busyming-skills-devops |
 
 ## 页面功能概览
 

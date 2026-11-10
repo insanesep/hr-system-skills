@@ -224,61 +224,98 @@
     for (var index = 0; index < id.length; index++) hash = (hash * 31 + id.charCodeAt(index)) % 997;
     var total = 18 + hash % 5, doing = hash % 3 + 1, todo = hash % 2, delayed = hash % 3;
     var done = total - doing - todo - delayed, developers = 6 + hash % 4, active = Math.max(1, developers - 1);
+    var product = 2 + hash % 2, architecture = 1 + hash % 2, productActive = Math.max(1, product - 1);
     var added = 2400 + hash * 37 + version * 100, removed = 700 + hash * 19;
+    var productAdded = 320 + hash * 11 + version * 20, productRemoved = 90 + hash * 5;
     var qoderTotal = 12000 + hash * 83, requests = 900 + hash * 13;
+    var productQoderTotal = 1800 + hash * 17, productRequests = 120 + hash * 7;
     return {
       total: total, nonFeature: hash % 4, done: done, delayed: delayed,
       rate: (done * 100 / total).toFixed(1), delayedRate: (delayed * 100 / total).toFixed(1),
-      developers: developers, product: 2 + hash % 2, perFeatures: (total / developers).toFixed(1),
+      developers: developers, product: product, architecture: architecture, perFeatures: (total / developers).toFixed(1),
+      productNames: ['王芳', '陈晨', '周洁'].slice(0, product),
+      developerNames: ['李雷', '韩梅', '赵强', '孙磊', '周敏', '吴迪', '郑凯', '林雪', '何俊'].slice(0, developers),
+      architectureNames: ['张远', '刘洋'].slice(0, architecture),
       commits: 32 + hash % 37 + version, added: added, removed: removed,
       perLines: ((added + removed) / developers).toFixed(1),
+      productCommits: 4 + hash % 8 + version, productAdded: productAdded, productRemoved: productRemoved,
+      productPerLines: ((productAdded + productRemoved) / product).toFixed(1),
       qoderTotal: qoderTotal, qoderAverage: Math.round(qoderTotal / active),
-      requests: requests, requestAverage: (requests / active).toFixed(1)
+      requests: requests, requestAverage: (requests / active).toFixed(1),
+      productQoderTotal: productQoderTotal, productQoderAverage: Math.round(productQoderTotal / productActive),
+      productRequests: productRequests, productRequestAverage: (productRequests / productActive).toFixed(1)
     };
   }
   function aggregateMetrics(groups, version) {
     var base = metricsFor('_all', version);
     function sum(key) { return groups.reduce(function (total, group) { return total + group.metrics[key]; }, 0); }
-    var total = sum('total'), done = sum('done'), delayed = sum('delayed'), active = Math.max(1, base.developers - 1);
+    var total = sum('total'), done = sum('done'), delayed = sum('delayed'), active = Math.max(1, base.developers - 1), productActive = Math.max(1, base.product - 1);
     var added = sum('added'), removed = sum('removed'), qoderTotal = sum('qoderTotal'), requests = sum('requests');
+    var productAdded = sum('productAdded'), productRemoved = sum('productRemoved'), productQoderTotal = sum('productQoderTotal'), productRequests = sum('productRequests');
     return Object.assign({}, base, {
       total: total, nonFeature: sum('nonFeature'), done: done, delayed: delayed,
       rate: (done * 100 / total).toFixed(1), delayedRate: (delayed * 100 / total).toFixed(1),
       perFeatures: (total / base.developers).toFixed(1), commits: sum('commits'), added: added, removed: removed,
       perLines: ((added + removed) / base.developers).toFixed(1), qoderTotal: qoderTotal,
-      qoderAverage: Math.round(qoderTotal / active), requests: requests, requestAverage: (requests / active).toFixed(1)
+      qoderAverage: Math.round(qoderTotal / active), requests: requests, requestAverage: (requests / active).toFixed(1),
+      productCommits: sum('productCommits'), productAdded: productAdded, productRemoved: productRemoved,
+      productPerLines: ((productAdded + productRemoved) / base.product).toFixed(1),
+      productQoderTotal: productQoderTotal, productQoderAverage: Math.round(productQoderTotal / productActive),
+      productRequests: productRequests, productRequestAverage: (productRequests / productActive).toFixed(1)
     });
   }
+  function isSummaryLabel(value) { return value === '全量汇总' || value === '全量汇总(去重)'; }
   function tableHtml(headers, rows) {
-    var hasSummary = rows.length && rows[rows.length - 1][0] === '全量汇总', summary = hasSummary ? rows[rows.length - 1] : null;
+    var hasSummary = rows.length && isSummaryLabel(rows[rows.length - 1][0]), summary = hasSummary ? rows[rows.length - 1] : null;
     var bodyRows = hasSummary ? rows.slice(0, -1) : rows;
     return '<div class="gap-markdown-viewer__table"><table><thead><tr>' + headers.map(function (header) { return '<th>' + header + '</th>'; }).join('') + '</tr></thead><tbody>' + bodyRows.map(function (values) { return '<tr>' + values.map(function (value) { return '<td>' + value + '</td>'; }).join('') + '</tr>'; }).join('') + '</tbody>' + (hasSummary ? '<tfoot><tr>' + summary.map(function (value) { return '<td>' + value + '</td>'; }).join('') + '</tr></tfoot>' : '') + '</table></div>';
   }
   function tableMarkdown(headers, rows) {
-    var hasSummary = rows.length && rows[rows.length - 1][0] === '全量汇总', summary = hasSummary ? rows[rows.length - 1].map(function (value) { return '**' + value + '**'; }) : null;
+    var hasSummary = rows.length && isSummaryLabel(rows[rows.length - 1][0]), summary = hasSummary ? rows[rows.length - 1].map(function (value) { return '**' + value + '**'; }) : null;
     var bodyRows = hasSummary ? rows.slice(0, -1) : rows;
     return '| ' + headers.join(' | ') + ' |\n| ' + headers.map(function () { return '---'; }).join(' | ') + ' |\n' + bodyRows.map(function (values) { return '| ' + values.join(' | ') + ' |'; }).join('\n') + (hasSummary ? '\n| ' + summary.join(' | ') + ' |' : '');
   }
+  function personnelDetail(m) {
+    return '产品：' + m.productNames.join('、') + '<br>研发：' + m.developerNames.join('、') + '<br>架构：' + m.architectureNames.join('、');
+  }
+  var HEALTH_REPOS = [
+    { name: 'busyming-skills-devops', previous: 82.4, current: 86.1, reportId: 'devops-20261101' },
+    { name: 'busyming-skills-operations', previous: 79.8, current: 81.3, reportId: 'operations-20261101' },
+    { name: 'busyming-skills-product', previous: 88.2, current: 86.7, reportId: 'product-20261101' },
+    { name: 'busyming-skills-store', previous: 84.5, current: 84.5, reportId: 'store-20261101' },
+    { name: 'busyming-skills-support', previous: 77.6, current: 80.2, reportId: 'support-20261101' }
+  ];
+  function healthRows(format) {
+    return HEALTH_REPOS.map(function (repo) {
+      var delta = (repo.current - repo.previous).toFixed(1), deltaText = delta > 0 ? '+' + delta : String(delta);
+      var operation = format === 'html'
+        ? '<a href="../../../产品文档健康度报告/assets/web/report-detail.html">查看报告</a>'
+        : '[查看报告](/subapp/devhub/report/doc-health/detail/' + repo.reportId + ')';
+      return [repo.name, repo.previous.toFixed(1), repo.current.toFixed(1), deltaText, operation];
+    });
+  }
   function reportSections(version) {
     var groups = PROJECT_GROUPS.map(function (scope) { return { name: scope.name, key: scope.key, metrics: metricsFor(scope.value, version) }; });
-    var chapters = [
-      { id: 'schedule', title: '功能排期', headers: ['项目组', '功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数'], values: function (name, m) { return [name, m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate + '%', m.delayed + ' 个', m.delayedRate + '%', m.perFeatures + ' 个/人']; } },
-      { id: 'commits', title: '代码提交', headers: ['项目组', '提交次数', '提交行数（新增 / 删除）', '人均提交行数'], values: function (name, m) { return [name, m.commits + ' 次', '+' + m.added + ' / -' + m.removed, m.perLines + ' 行/人']; } },
-      { id: 'members', title: '团队人员', headers: ['项目组', '产品人数', '研发人数'], values: function (name, m) { return [name, m.product + ' 人', m.developers + ' 人']; } },
-      { id: 'qoder', title: 'Qoder 使用', headers: ['项目组', '总使用量（Credits）', '人均使用量（Credits）', '总请求次数', '人均请求次数'], values: function (name, m) { return [name, String(m.qoderTotal), String(m.qoderAverage), m.requests + ' 次', m.requestAverage + ' 次/人']; } }
-    ];
-    var html = '', raw = '';
-    chapters.forEach(function (chapter) {
-      var rows = groups.map(function (group) { return chapter.values(group.name, group.metrics); });
-      rows.push(chapter.values('全量汇总', aggregateMetrics(groups, version)));
-      html += '<h2 id="v' + version + '-' + chapter.id + '">' + chapter.title + '</h2>' + tableHtml(chapter.headers, rows);
-      raw += '\n\n## ' + chapter.title + '\n\n' + tableMarkdown(chapter.headers, rows) + '\n';
-    });
     var progressRows = groups.map(function (group) {
       return [group.name, group.name + '完成本期核心功能迭代，交付内容已纳入研发周报。<br>' + group.name + '持续推进排期、提交与 Qoder 使用协同分析。'];
     });
-    html += '<h2 id="v' + version + '-progress">项目核心进展</h2>' + tableHtml(['项目组', '核心进展'], progressRows);
-    raw += '\n\n## 项目核心进展\n\n' + tableMarkdown(['项目组', '核心进展'], progressRows) + '\n';
+    var html = '<h2 id="v' + version + '-progress">项目核心进展</h2>' + tableHtml(['项目组', '核心进展'], progressRows);
+    var raw = '\n\n## 项目核心进展\n\n' + tableMarkdown(['项目组', '核心进展'], progressRows) + '\n';
+    var chapters = [
+      { id: 'members', title: '团队人员', summaryLabel: '全量汇总(去重)', headers: ['项目组', '产品人数', '研发人数', '架构人数', '人员明细'], values: function (name, m) { return [name, m.product + ' 人', m.developers + ' 人', m.architecture + ' 人', personnelDetail(m)]; } },
+      { id: 'schedule', title: '功能排期', headers: ['项目组', '功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数'], values: function (name, m) { return [name, m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate + '%', m.delayed + ' 个', m.delayedRate + '%', m.perFeatures + ' 个/人']; } },
+      { id: 'commits', title: '代码提交', headers: ['项目组', '产品提交次数', '研发提交次数', '产品提交行数（新增 / 删除）', '研发提交行数（新增 / 删除）', '产品人均提交行数', '研发人均提交行数'], values: function (name, m) { return [name, m.productCommits + ' 次', m.commits + ' 次', '+' + m.productAdded + ' / -' + m.productRemoved, '+' + m.added + ' / -' + m.removed, m.productPerLines + ' 行/人', m.perLines + ' 行/人']; } },
+      { id: 'qoder', title: 'Qoder 使用', headers: ['项目组', '产品总使用量（Credits）', '研发总使用量（Credits）', '产品人均使用量（Credits）', '研发人均使用量（Credits）', '产品总请求次数', '研发总请求次数', '产品人均请求次数', '研发人均请求次数'], values: function (name, m) { return [name, String(m.productQoderTotal), String(m.qoderTotal), String(m.productQoderAverage), String(m.qoderAverage), m.productRequests + ' 次', m.requests + ' 次', m.productRequestAverage + ' 次/人', m.requestAverage + ' 次/人']; } }
+    ];
+    chapters.forEach(function (chapter) {
+      var rows = groups.map(function (group) { return chapter.values(group.name, group.metrics); });
+      rows.push(chapter.values(chapter.summaryLabel || '全量汇总', aggregateMetrics(groups, version)));
+      html += '<h2 id="v' + version + '-' + chapter.id + '">' + chapter.title + '</h2>' + tableHtml(chapter.headers, rows);
+      raw += '\n\n## ' + chapter.title + '\n\n' + tableMarkdown(chapter.headers, rows) + '\n';
+    });
+    var healthHeaders = ['仓库', '上周健康度得分', '本周健康度得分', '较上期', '操作'];
+    html += '<h2 id="v' + version + '-health">harness文档健康度</h2>' + tableHtml(healthHeaders, healthRows('html'));
+    raw += '\n\n## harness文档健康度\n\n' + tableMarkdown(healthHeaders, healthRows('markdown')) + '\n';
     return { html: html, raw: raw };
   }
   function rawFor(report, version) {
