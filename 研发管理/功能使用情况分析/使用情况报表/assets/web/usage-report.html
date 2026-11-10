@@ -2,7 +2,7 @@
 <!--
   原型：UsageReport（使用情况报表）
   路由：/portal/usage-report
-  permCode：MENU:RND:MANAGE:USAGE_REPORT
+  permCode：devhubUsageReport
   类型：dashboard（对齐 .agents/skills/page-blueprint/skeletons/web/dashboard-multi.vue.tpl + list-page.vue.tpl 路由聚合 Card）
   生成依据：page-blueprint v3.4.0 / page-gen.prompt.md
   外壳：不带（业务页只放 <section class="tpl-page">）
@@ -444,7 +444,7 @@
             <span class="ac-switch__track"><span class="ac-switch__thumb"></span></span>
             <span class="ac-switch__label">仅未触发</span>
           </label>
-          <!-- v-permission="'BTN:RND:MANAGE:USAGE_REPORT:EXPORT'" -->
+          <!-- v-permission="'devhubUsageReportExport'" -->
           <button class="ac-button">
             <svg class="ac-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2M8 2v8M5 7l3 3 3-3"/></svg>
             导出报表

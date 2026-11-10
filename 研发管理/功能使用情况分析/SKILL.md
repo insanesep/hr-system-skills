@@ -15,9 +15,9 @@ description: 研发管理下的功能使用情况分析分组索引。Use when �
 
 | 菜单功能 | 入口 | 路由 | 菜单权限 | 职责 |
 |------|------|------|------|------|
-| 事务流水明细 | [SKILL.md](事务流水明细/SKILL.md) | `/portal/usage-events` | `MENU:RND:MANAGE:USAGE_EVENTS` | 原始事件流水查询、抽屉详情、CSV 导出 |
-| 使用情况报表 | [SKILL.md](使用情况报表/SKILL.md) | `/portal/usage-report` | `MENU:RND:MANAGE:USAGE_REPORT` | KPI、趋势、TOP10、角色偏好、路由聚合下钻 |
-| 功能目录管理 | [SKILL.md](功能目录管理/SKILL.md) | `/portal/usage-catalog` | `MENU:RND:MANAGE:USAGE_CATALOG` | 自动注册表查询、元数据编辑与启停；接入系统登记与 AppKey 管理 |
+| 事务流水明细 | [SKILL.md](事务流水明细/SKILL.md) | `/portal/usage-events` | `devhubUsageEvents` | 原始事件流水查询、抽屉详情、CSV 导出 |
+| 使用情况报表 | [SKILL.md](使用情况报表/SKILL.md) | `/portal/usage-report` | `devhubUsageReport` | KPI、趋势、TOP10、角色偏好、路由聚合下钻 |
+| 功能目录管理 | [SKILL.md](功能目录管理/SKILL.md) | `/portal/usage-catalog` | `devhubUsageCatalog` | 自动注册表查询、元数据编辑与启停；接入系统登记与 AppKey 管理 |
 
 ## 共享资料与跨业务规则
 

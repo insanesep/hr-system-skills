@@ -76,13 +76,13 @@
 ### 1.4 功能编码命名规范
 
 - **格式**：功能编码采用「模块.页面.动作」三段式，全大写、点号分隔；需定位到组件时可扩展为「模块.页面.子区域.动作」四段
-- **模块段选取原则**：与菜单权限同源。以本模块为例，父权限 `MENU:RND:MANAGE` 对应编码前两段 `RND.MANAGE`；其他模块（如 `INVENTORY.REPORT.*`、`ANALYSIS.NEG_GP.*`）的模块段为业务域名，与菜单树上一级节点一一对应
+- **模块段选取原则**：与菜单权限同源。以本模块为例，父权限 `devhubRndManage` 对应编码前两段 `RND.MANAGE`；其他模块（如 `INVENTORY.REPORT.*`、`ANALYSIS.NEG_GP.*`）的模块段为业务域名，与菜单树上一级节点一一对应
 - **页面主功能**：每个菜单页面声明一个以 `.VIEW` 结尾的页面主功能编码，浏览与停留事件归入该功能
 - **App 端前缀**：App 端上报的功能编码统一加 `APP` 前缀（**硬性约束，未加整批拒绝**），用于区分 Web/App 来源；Web 端不加前缀，加了同样整批拒绝
 - **本模块编码（三条）**：
-  - `RND.MANAGE.USAGE_EVENTS.<动作>` —— 事务流水明细页（路由 `/portal/usage-events`，权限 `MENU:RND:MANAGE:USAGE_EVENTS`）
-  - `RND.MANAGE.USAGE_REPORT.<动作>` —— 使用情况报表页（路由 `/portal/usage-report`，权限 `MENU:RND:MANAGE:USAGE_REPORT`）
-  - `RND.MANAGE.USAGE_CATALOG.<动作>` —— 功能目录管理页（路由 `/portal/usage-catalog`，权限 `MENU:RND:MANAGE:USAGE_CATALOG`）
+  - `RND.MANAGE.USAGE_EVENTS.<动作>` —— 事务流水明细页（路由 `/portal/usage-events`，权限 `devhubUsageEvents`）
+  - `RND.MANAGE.USAGE_REPORT.<动作>` —— 使用情况报表页（路由 `/portal/usage-report`，权限 `devhubUsageReport`）
+  - `RND.MANAGE.USAGE_CATALOG.<动作>` —— 功能目录管理页（路由 `/portal/usage-catalog`，权限 `devhubUsageCatalog`）
 - **其他模块示例**：
   - Web：`INVENTORY.REPORT.EXPORT`、`ANALYSIS.NEG_GP.QUERY`、`PRODUCT_APPLY.LIST.CREATE_NEW`
   - App：`APP.STORE_REQUEST.PRODUCT.ADD_TO_CART`、`APP.HARDWARE.MANAGE.BATCH_SEND`、`APP.WORKBENCH.NAV.CLICK`
@@ -240,13 +240,13 @@
 | 能力 | 权限编码 |
 |------|---------|
 | 埋点批量上报 | 免登录，凭接入系统 AppKey；网关放行上报路径 |
-| 流水查询 / 详情 / 用户联想 | `MENU:RND:MANAGE:USAGE_EVENTS` |
-| 流水导出（直接下载与离线导出） | `BTN:RND:MANAGE:USAGE_EVENTS:EXPORT` |
-| 使用情况报表 / 路由下钻 / 打标清单 | `MENU:RND:MANAGE:USAGE_REPORT` |
-| 报表导出 | `BTN:RND:MANAGE:USAGE_REPORT:EXPORT` |
-| 功能目录查询、接入系统查询 | `MENU:RND:MANAGE:USAGE_CATALOG` |
-| 功能元数据编辑 / 启停 | `BTN:RND:MANAGE:USAGE_CATALOG:EDIT` / `BTN:RND:MANAGE:USAGE_CATALOG:TOGGLE` |
-| 接入系统新增、编辑、启停、重置 AppKey | `BTN:RND:MANAGE:USAGE_CATALOG:APP` |
+| 流水查询 / 详情 / 用户联想 | `devhubUsageEvents` |
+| 流水导出（直接下载与离线导出） | `devhubUsageEventsExport` |
+| 使用情况报表 / 路由下钻 / 打标清单 | `devhubUsageReport` |
+| 报表导出 | `devhubUsageReportExport` |
+| 功能目录查询、接入系统查询 | `devhubUsageCatalog` |
+| 功能元数据编辑 / 启停 | `devhubUsageCatalogEdit` / `devhubUsageCatalogToggle` |
+| 接入系统新增、编辑、启停、重置 AppKey | `devhubUsageCatalogAppManage` |
 | 接入系统 / 功能 / 角色下拉 | 持有三个菜单权限任一 |
 | 打标手动补数 | 平台管理员 |
 
