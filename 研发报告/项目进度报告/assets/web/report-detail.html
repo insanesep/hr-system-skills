@@ -271,15 +271,32 @@
         VERSIONS[version] = { source: version === latestVersion ? report.source : version % 2 ? '服务端生成' : '手动补传', size: (new Blob([content.raw]).size / 1024).toFixed(1) + ' KB', archivedAt: report.end + ' ' + (version === latestVersion ? '21:10:24' : '19:42:08'), html: content.html, raw: content.raw };
       }
       function message(text, type) { window.BusyNative.message(text, type || 'success'); }
-      function weeklyContentFor(name) {
+      function weeklyMetricsFor(name) {
         var hash = 0;
         for (var index = 0; index < name.length; index++) hash += name.charCodeAt(index) * (index + 1);
-        var commits = 5 + hash % 18, added = 260 + hash % 480, removed = 40 + hash % 130, cards = 1 + hash % 4, credits = 800 + hash % 2400, requests = 60 + hash % 220;
-        return '<p><strong>代码产出</strong>：本周合计 ' + commits + ' 次提交（新增 ' + added + ' 行 / 删除 ' + removed + ' 行）</p>' +
+        return { commits: 5 + hash % 18, added: 260 + hash % 480, removed: 40 + hash % 130, cards: 1 + hash % 4, credits: 800 + hash % 2400, requests: 60 + hash % 220 };
+      }
+      function weeklyContentFor(name) {
+        var m = weeklyMetricsFor(name);
+        return '<p><strong>代码产出</strong>：本周合计 ' + m.commits + ' 次提交（新增 ' + m.added + ' 行 / 删除 ' + m.removed + ' 行）</p>' +
           '<p><strong>主要工作</strong>：完成项目进度报告、研发报告数据口径与页面联动优化。</p>' +
-          '<p><strong>功能排期任务</strong>：共 ' + cards + ' 个，已完成 ' + Math.max(0, cards - 1) + ' 个，进行中 1 个。</p>' +
-          '<p><strong>Qoder 用量</strong>：' + credits + ' Credits / 请求 ' + requests + ' 次；模型分布：旗舰 80% / 标准 20%。</p>' +
+          '<p><strong>功能排期任务</strong>：共 ' + m.cards + ' 个，已完成 ' + Math.max(0, m.cards - 1) + ' 个，进行中 1 个。</p>' +
+          '<p><strong>Qoder 用量</strong>：' + m.credits + ' Credits / 请求 ' + m.requests + ' 次；模型分布：旗舰 80% / 标准 20%。</p>' +
           '<p><strong>综合评价</strong>：本周交付节奏稳定，下周继续跟进健康度问题修复与报告联调。</p>';
+      }
+      function weeklyMarkdownFor(name) {
+        var m = weeklyMetricsFor(name);
+        return '### ' + name + '\n\n| 工作项 | 明细 |\n| --- | --- |\n' +
+          '| 代码产出 | 本周合计 ' + m.commits + ' 次提交（新增 ' + m.added + ' 行 / 删除 ' + m.removed + ' 行） |\n' +
+          '| 主要工作 | 完成项目进度报告、研发报告数据口径与页面联动优化。 |\n' +
+          '| 功能排期任务 | 共 ' + m.cards + ' 个，已完成 ' + Math.max(0, m.cards - 1) + ' 个，进行中 1 个。 |\n' +
+          '| Qoder 用量 | ' + m.credits + ' Credits / 请求 ' + m.requests + ' 次；模型分布：旗舰 80% / 标准 20%。 |\n' +
+          '| 综合评价 | 本周交付节奏稳定，下周继续跟进健康度问题修复与报告联调。 |';
+      }
+      function pngRawFor() {
+        var people = metricsFor('_all', currentVersion), names = people.productNames.concat(people.developerNames, people.architectureNames);
+        var details = names.map(weeklyMarkdownFor).join('\n\n');
+        return VERSIONS[currentVersion].raw.replace('\n---\n*报告生成时间', '\n\n## 人员工作明细\n\n' + details + '\n\n---\n*报告生成时间');
       }
       var weeklyRequest = 0;
       function openPersonWeekly(trigger) {
@@ -364,7 +381,8 @@
               index--;
               if (rows.length > 1 && rows[1].every(function (cell) { return /^:?-+:?$/.test(cell); })) rows.splice(1, 1);
               blocks.push({ type: 'table', rows: rows });
-            } else if (line.indexOf('## ') === 0) blocks.push({ type: 'section', text: line.slice(3) });
+            } else if (line.indexOf('### ') === 0) blocks.push({ type: 'subsection', text: line.slice(4) });
+            else if (line.indexOf('## ') === 0) blocks.push({ type: 'section', text: line.slice(3) });
             else if (line.indexOf('# ') === 0) blocks.push({ type: 'title', text: line.slice(2) });
             else if (line.indexOf('> ') === 0) blocks.push({ type: 'quote', text: line.slice(2) });
             else if (line === '---') blocks.push({ type: 'rule' });
@@ -405,6 +423,8 @@
               if (draw) { context.fillStyle = colors.quote; context.fillRect(padding, y, contentWidth, quoteHeight); context.fillStyle = colors.primary; context.fillRect(padding, y, 4, quoteHeight); }
               quoteLines.forEach(function (value, index) { text(value, padding + 16, y + 26 + index * 22, '14px ' + fontFamily, colors.secondary); });
               y += quoteHeight + 16;
+            } else if (block.type === 'subsection') {
+              y += 12; text(block.text, padding, y + 20, '600 16px ' + fontFamily, colors.text); y += 30;
             } else if (block.type === 'section') {
               y += 20; text(block.text, padding, y + 24, '600 22px ' + fontFamily, colors.text); y += 38; line(padding, y, width - padding, y); y += 14;
             } else if (block.type === 'table') {
@@ -440,7 +460,7 @@
         if (loading) return;
         if (!VERSIONS[currentVersion].html.trim()) { message('报告内容为空，无法导出图片', 'error'); return; }
         var button = $('exportPngButton'); setButtonLoading(button, true);
-        rasterize(VERSIONS[currentVersion].raw).then(function (blob) {
+        rasterize(pngRawFor()).then(function (blob) {
           var url = URL.createObjectURL(blob), anchor = document.createElement('a');
           anchor.href = url; anchor.download = report.file.replace(/\.md$/i, '_v' + currentVersion + '.png'); anchor.hidden = true;
           document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
@@ -485,7 +505,8 @@
       window.ReportDetailMock = {
         setState: function (state) { if (state === 'empty') { VERSIONS[currentVersion].html = ''; VERSIONS[currentVersion].raw = ''; applyVersion(currentVersion); } },
         getReport: function () { return report; },
-        getRaw: function () { return VERSIONS[currentVersion].raw; }
+        getRaw: function () { return VERSIONS[currentVersion].raw; },
+        getPngRaw: pngRawFor
       };
     })();
   </script>
