@@ -3,7 +3,7 @@
   'use strict';
   var Store = window.ProjectPrototypeStore;
   var state = Store.read(), tab = 'projects', mode = 'normal', readonly = false;
-  var selectedProject = null, drawerOpener = null, editor = null, projectDraft = null, editorTransition = false, editorClosing = false, busy = false;
+  var selectedProject = null, memberOpener = null, editor = null, projectDraft = null, editorTransition = false, editorClosing = false, busy = false;
   var roles = { PRODUCT: '产品', DEVELOPER: '研发', DESIGN: 'UI', ARCHITECT: '架构' };
   var palette = ['blue', 'cyan', 'purple', 'gold', 'magenta', 'volcano'];
   var colors = ['蓝', '青', '紫', '金', '品红', '橙红'];
@@ -213,14 +213,22 @@
     await transact(function (s) { var target = project(id, s); if (!enabled) validateProject(Object.assign({}, target, { status: 'ENABLED' }), s); target.status = enabled ? 'DISABLED' : 'ENABLED'; }, enabled ? '项目已停用，历史资料保留' : '项目已启用；报告扩展及触发须在报告配置核验后另行启用', baseline, rowButton('data-project-id', id, enabled ? '停用' : '启用'));
   }
   function openMembers(id) {
+    if (editor || busy || editorTransition || editorClosing || !$('memberDrawer').hidden) return;
     var p = project(id); if (!p) { result('项目不存在，请返回项目列表', true); return; }
-    drawerOpener = document.activeElement; selectedProject = p.id; memberFilter = {};
+    memberOpener = document.activeElement; selectedProject = p.id; memberFilter = {};
     $('memberKeyword').value = ''; ['memberRole', 'memberStatus', 'relationStatus'].forEach(function (key) { $(key)._setValue(''); });
-    $('memberDrawer').hidden = false; $('memberNotice').textContent = '';
+    // 保留 memberDrawer 稳定入口 ID；成员界面使用公共居中 Dialog，而非 Drawer。
+    $('memberDrawer')._requestClose = closeMembers;
+    BusyNative.openDialog($('memberDrawer'), memberOpener); $('memberNotice').textContent = '';
     render(true); BusyNative.proTableSearch($('memberList')).measureLabels(); BusyNative.proTableSearch($('memberList')).apply();
     $('memberClose').focus();
   }
-  function closeMembers() { if (editor || busy) return; BusyNative.closePopup(); $('memberDrawer').hidden = true; selectedProject = null; if (drawerOpener && drawerOpener.isConnected) drawerOpener.focus(); }
+  function closeMembers() {
+    if (editor || busy || editorTransition || editorClosing) return false;
+    BusyNative.closePopup(); BusyNative.closeDialog($('memberDrawer')); selectedProject = null;
+    if (memberOpener && memberOpener.isConnected) memberOpener.focus();
+    return true;
+  }
   async function toggleRelation(mid) {
     if (readonly || busy) return;
     var pid = selectedProject, r = relation(pid, mid), enabled = r.status === 'ENABLED', baseline = JSON.stringify(Store.read());
@@ -515,7 +523,17 @@
     else closeEditor();
   }
   function highlightMember(id) { var tr = $('memberRows').querySelector('[data-member-id="' + Number(id) + '"]'); if (!tr) { memberFilter = {}; render(true); tr = $('memberRows').querySelector('[data-member-id="' + Number(id) + '"]'); } if (tr) { tr.tabIndex = -1; tr.focus(); } }
-  function closeEditor() { if (!editor) return; var secret = $('edit-password'); if (secret) secret.value = ''; editor = null; BusyNative.closeDialog(overlay); form.replaceChildren(); draftButton(); }
+  function closeEditor() {
+    if (!editor) return;
+    var current = editor, memberEditor = ['member', 'new-member', 'link'].includes(current.kind);
+    var secret = $('edit-password'); if (secret) secret.value = '';
+    editor = null; BusyNative.closeDialog(overlay); form.replaceChildren(); draftButton();
+    // 成员行刷新后原触发按钮可能已移除；子弹窗仍返回同一项目成员列表。
+    if (memberEditor && !$('memberDrawer').hidden && !$('memberDrawer').contains(document.activeElement)) {
+      var target = current.kind === 'member' ? rowButton('data-member-id', current.id, '编辑共享资料') : $(current.kind === 'link' ? 'memberLink' : 'memberNew');
+      (target && target.isConnected && !target.hidden ? target : $('memberClose')).focus();
+    }
+  }
   async function requestClose() {
     if (busy || editorClosing) return false;
     if (!editor) return true;
@@ -556,8 +574,8 @@
   $('memberNew').addEventListener('click', function () { openMember(); }); $('memberLink').addEventListener('click', openLink);
   $('memberQuery').addEventListener('click', function () { memberFilter = { keyword: $('memberKeyword').value.trim().toLowerCase(), role: $('memberRole').dataset.value || '', status: $('memberStatus').dataset.value || '', relation: $('relationStatus').dataset.value || '' }; beginLoad(); });
   $('memberReset').addEventListener('click', function () { $('memberKeyword').value = ''; ['memberRole', 'memberStatus', 'relationStatus'].forEach(function (id) { $(id)._setValue(''); }); memberFilter = {}; beginLoad(); });
-  $('memberRefresh').addEventListener('click', function () { beginLoad('当前项目成员'); }); $('memberClose').addEventListener('click', closeMembers); $('memberDone').addEventListener('click', closeMembers);
-  $('memberDrawer').addEventListener('click', function (e) { if (e.target === $('memberDrawer')) closeMembers(); });
+  $('memberRefresh').addEventListener('click', function () { beginLoad('当前项目成员'); });
+  // memberClose、memberDone 和遮罩关闭由公共 data-dialog-close / _requestClose 接入。
   $('editorSave').addEventListener('click', saveEditor); $('connectionTest').addEventListener('click', testConnection); $('environmentReload').addEventListener('click', reloadEnvironment);
   form.addEventListener('submit', function (e) { e.preventDefault(); saveEditor(); });
   form.addEventListener('input', function () { if (editor) editor.dirty = true; });

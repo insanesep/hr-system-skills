@@ -5,18 +5,23 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Content-Security-Policy" content="connect-src 'none'; form-action 'none'">
 <meta name="prototype-components" content="Button,BusyInput,PageableSelect,Checkbox,BusyTabs,Form,Searcher,ProTable,Pagination,Tag,Message,MessageBox,Dialog">
-<meta name="prototype-gap-components" content="Drawer">
 <title>项目管理 · 鸣鸣很忙</title>
 <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/web.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/web/runtime.css">
 <link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
-<!-- Drawer 暂无公共原生适配；只补自身容器，不覆盖公共组件。尺寸档位参照 Drawer spec xlarge。 -->
-<style data-gap-component="Drawer">
-.gap-drawer { position: fixed; inset: 0; z-index: 1990; background: var(--busy-overlay-color-lighter); }
-.gap-drawer__panel { position: absolute; inset-block: 0; right: 0; width: 67.5rem; max-width: 100%; display: flex; flex-direction: column; background: var(--busy-bg-color); box-shadow: var(--busy-box-shadow-dark); }
-.gap-drawer__header { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.25rem; border-bottom: thin solid var(--busy-border-color-lighter); }
-.gap-drawer__body { flex: 1; min-height: 0; overflow: auto; padding: 1.25rem; }
-.gap-drawer__footer { display: flex; justify-content: flex-end; padding: 1.25rem; border-top: thin solid var(--busy-border-color-lighter); }
+<!-- 仅调整本页页签留白和成员弹窗布局；弹层结构与交互复用公共 Dialog 原生适配。 -->
+<style>
+#moduleTabs .busy-tabs__nav { align-items: baseline; }
+#moduleTabs .busy-tabs__item { height: auto; min-height: var(--busy-tabs-header-height); padding: 8px 20px; align-items: baseline; }
+.project-members-dialog { z-index: 1990; overflow: hidden; }
+.project-members-dialog .busy-overlay-dialog { display: flex; align-items: center; justify-content: center; overflow: hidden; }
+/* 公共适配写入固定档位的行内宽度，本页成员列表以视口内宽弹窗为准。 */
+.project-members-dialog .busy-dialog { width: min(1280px, calc(100vw - 48px)) !important; max-width: calc(100vw - 48px) !important; max-height: calc(100vh - 96px); margin: 0; display: flex; flex-direction: column; min-width: 0; }
+.project-members-dialog .busy-dialog__header, .project-members-dialog .busy-dialog__footer { flex-shrink: 0; }
+.project-members-dialog .busy-dialog__body { min-height: 0; overflow: auto; padding: 0 16px; }
+@media (max-width: 768px) {
+  .project-members-dialog .busy-dialog { width: calc(100vw - 24px) !important; max-width: calc(100vw - 24px) !important; max-height: calc(100vh - 48px); }
+}
 </style>
 </head>
 <body>
@@ -67,10 +72,11 @@
     </div>
   </div>
 </main>
-<div id="memberDrawer" class="gap-drawer" data-gap-component="Drawer" hidden data-requirement="project-members">
-  <section class="gap-drawer__panel" data-gap-component="Drawer" role="dialog" aria-modal="true" aria-labelledby="memberTitle" tabindex="-1">
-    <header class="gap-drawer__header" data-gap-component="Drawer"><span class="tpl-section__head" id="memberTitle">成员管理</span><button class="busy-button is-link" type="button" id="memberClose"><span>关闭</span></button></header>
-    <div class="gap-drawer__body" data-gap-component="Drawer">
+<div id="memberDrawer" class="busy-overlay project-members-dialog" hidden data-requirement="project-members">
+  <div class="busy-overlay-dialog">
+  <section class="busy-dialog is-align-center" data-size="xlarge" role="dialog" aria-modal="true" aria-labelledby="memberTitle">
+    <header class="busy-dialog__header"><div class="dialog-header"><div class="dialog-title" id="memberTitle">成员管理</div><button class="busy-button is-link busy-dialog__close" type="button" id="memberClose" data-dialog-close aria-label="关闭成员管理弹窗"><span>关闭</span></button></div></header>
+    <div class="busy-dialog__body">
       <div class="tpl-section"><p id="memberContext" class="u-muted"></p><p id="memberNotice" class="u-muted" role="status" aria-live="polite"></p>
         <div id="memberList" class="pro-table pro-table--embedded pro-table--fixed-actions">
           <div class="tpl-panel pro-table__search-card"><div class="tpl-filter">
@@ -86,8 +92,9 @@
         </div>
       </div>
     </div>
-    <footer class="gap-drawer__footer" data-gap-component="Drawer"><button class="busy-button" type="button" id="memberDone"><span>返回项目列表</span></button></footer>
+    <footer class="busy-dialog__footer"><div class="busy-dialog__actions"><button class="busy-button" type="button" id="memberDone" data-dialog-close><span>返回项目列表</span></button></div></footer>
   </section>
+  </div>
 </div>
 <div class="busy-overlay tpl-form-page" id="editorOverlay" hidden>
   <div class="busy-overlay-dialog">
