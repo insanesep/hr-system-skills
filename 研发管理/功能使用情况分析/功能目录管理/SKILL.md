@@ -11,7 +11,7 @@ description: 研发管理下的功能目录管理。Use when 需要查询埋点�
 
 - **菜单归属**：研发管理 → 功能使用情况分析 → 功能目录管理。
 - **路由**：`/portal/usage-catalog`。
-- **菜单权限**：`MENU:RND:MANAGE:USAGE_CATALOG`。
+- **菜单权限**：`devhubUsageCatalog`。
 - **按钮权限**：见 [Web UI §按钮权限码](references/web-ui.md#按钮权限码)；授权范围与账套隔离见[共享权限规则](../references/business-rule.md#7-权限与可见性)。
 
 ## 资料指针

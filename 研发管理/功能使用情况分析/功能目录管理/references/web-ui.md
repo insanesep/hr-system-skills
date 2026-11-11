@@ -5,7 +5,7 @@
 ## 3. 功能目录管理
 
 - **路由**：`/portal/usage-catalog`
-- **权限码**：`MENU:RND:MANAGE:USAGE_CATALOG`
+- **权限码**：`devhubUsageCatalog`
 - **页面类型**：列表页
 
 面向运营 / 管理员的功能注册表与接入系统管理界面，页面分「功能目录」「接入系统」两个页签。功能目录**不提供新增 / 物理删除**（避免与埋点自动注册冲突），仅开放查询、编辑元数据、启停。
@@ -33,6 +33,6 @@
 
 ### 按钮权限码
 
-- 编辑：`BTN:RND:MANAGE:USAGE_CATALOG:EDIT`
-- 启停：`BTN:RND:MANAGE:USAGE_CATALOG:TOGGLE`
-- 接入系统管理（新增 / 编辑 / 重置密钥 / 启停）：`BTN:RND:MANAGE:USAGE_CATALOG:APP`
+- 编辑：`devhubUsageCatalogEdit`
+- 启停：`devhubUsageCatalogToggle`
+- 接入系统管理（新增 / 编辑 / 重置密钥 / 启停）：`devhubUsageCatalogAppManage`

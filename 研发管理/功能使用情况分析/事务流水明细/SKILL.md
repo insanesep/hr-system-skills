@@ -11,7 +11,7 @@ description: 研发管理下的事务流水明细。Use when 需要按接入系�
 
 - **菜单归属**：研发管理 → 功能使用情况分析 → 事务流水明细。
 - **路由**：`/portal/usage-events`。
-- **菜单权限**：`MENU:RND:MANAGE:USAGE_EVENTS`。
+- **菜单权限**：`devhubUsageEvents`。
 - **按钮权限**：见 [Web UI §按钮权限码](references/web-ui.md#按钮权限码)；授权范围与账套隔离见[共享权限规则](../references/business-rule.md#7-权限与可见性)。
 
 ## 资料指针

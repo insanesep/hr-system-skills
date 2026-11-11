@@ -2,7 +2,7 @@
 <!--
   原型：UsageEvents（事务流水明细）
   路由：/portal/usage-events
-  permCode：MENU:RND:MANAGE:USAGE_EVENTS
+  permCode：devhubUsageEvents
   类型：list（对齐 .agents/skills/page-blueprint/skeletons/web/list-page.vue.tpl）
   生成依据：page-blueprint v3.4.0 / page-gen.prompt.md（7 段分析见 SKILL.md 同目录提交记录）
   外壳：不带（业务页只放 <section class="tpl-page">；面包屑 / 顶栏 / 侧边由 Layout 承载）
@@ -277,7 +277,7 @@
             <svg class="ac-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M13.5 8a5.5 5.5 0 1 1-1.6-3.9M13.5 3v3h-3"/></svg>
             刷新
           </button>
-          <!-- v-permission="'BTN:RND:MANAGE:USAGE_EVENTS:EXPORT'" -->
+          <!-- v-permission="'devhubUsageEventsExport'" -->
           <button class="ac-button" title="导出 CSV（最多 5 万行，超量引导离线导出）">
             <svg class="ac-icon" width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 11v2a1 1 0 0 0 1 1h10a1 1 0 0 0 1-1v-2M8 2v8M5 7l3 3 3-3"/></svg>
             导出 CSV

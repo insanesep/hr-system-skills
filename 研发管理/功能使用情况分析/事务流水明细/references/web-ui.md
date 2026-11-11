@@ -5,7 +5,7 @@
 ## 1. 事务流水明细（usage-events.html）
 
 - **路由**：`/portal/usage-events`
-- **权限码**：`MENU:RND:MANAGE:USAGE_EVENTS`
+- **权限码**：`devhubUsageEvents`
 - **页面类型**：列表页
 
 ### 区块职责
@@ -20,5 +20,5 @@
 
 ### 按钮权限码
 
-- 导出 CSV：`BTN:RND:MANAGE:USAGE_EVENTS:EXPORT`
-- 查看详情：受 `MENU:RND:MANAGE:USAGE_EVENTS` 进入页即授予，无独立按钮码
+- 导出 CSV：`devhubUsageEventsExport`
+- 查看详情：受 `devhubUsageEvents` 进入页即授予，无独立按钮码

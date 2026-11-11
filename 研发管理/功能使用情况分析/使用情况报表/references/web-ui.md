@@ -5,7 +5,7 @@
 ## 2. 使用情况报表（usage-report.html）
 
 - **路由**：`/portal/usage-report`
-- **权限码**：`MENU:RND:MANAGE:USAGE_REPORT`
+- **权限码**：`devhubUsageReport`
 - **页面类型**：看板页
 
 > 页面级形态、KPI 卡类型、主显示文本、路由层级、三 Chart 排布、0 触发路由的产品向硬约束见 [SKILL.md §使用情况报表（产品向硬约束）](../SKILL.md#使用情况报表产品向硬约束)；视觉与组件硬约束以前端页面规范为准。原型见 [../assets/web/usage-report.html](../assets/web/usage-report.html)。
@@ -24,4 +24,4 @@
 
 ### 按钮权限码
 
-- 导出报表：`BTN:RND:MANAGE:USAGE_REPORT:EXPORT`
+- 导出报表：`devhubUsageReportExport`
