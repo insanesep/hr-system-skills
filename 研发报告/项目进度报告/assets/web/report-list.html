@@ -85,21 +85,18 @@
     </div>
   </div>
 </div>
+<script src="../../../../研发管理/项目管理/assets/web/project-management-data.js"></script>
 <script src="../../../../../busyming-skills-design/shared/prototype/web/native.js"></script>
 <script>
 (function () {
   'use strict';
   BusyNative.inputs(document.body);
   var SCOPES = [
-    { value: '_all', type: '全部', name: '全部项目组', key: '_all' }
+    { value: '_all', type: '全部', name: '全部域', key: '_all' }
   ];
-  var PROJECT_GROUPS = [
-    { value: 'devhub-web', name: '研发门户', key: 'devhub-web' },
-    { value: 'devops', name: '产研', key: 'devops' },
-    { value: 'feature-schedule', name: '功能排期管理', key: 'feature-schedule' },
-    { value: 'member-output', name: '人员产出报告', key: 'member-output' },
-    { value: 'report-center', name: '研发报告', key: 'report-center' }
-  ];
+  var PROJECT_GROUPS = window.ProjectPrototypeStore.read().projects.filter(function (project) { return project.status === 'ENABLED'; }).map(function (project) {
+    return { value: String(project.id), name: project.name, key: String(project.id) };
+  });
   var INITIAL_WEEKS = [
     { id: 'W44', label: '2026 年第 44 周（10-26 ~ 11-01）', short: '第 44 周', start: '2026-10-26', end: '2026-11-01', archived: { '_all': ['服务端生成', 3] } },
     { id: 'W43', label: '2026 年第 43 周（10-19 ~ 10-25）', short: '第 43 周', start: '2026-10-19', end: '2026-10-25', archived: { '_all': ['服务端生成', 2] } },
@@ -361,12 +358,12 @@
     var progressRows = groups.map(function (group) {
       return [group.name, '<ul><li>' + group.name + '完成本期核心功能迭代，交付内容已纳入研发周报。</li><li>' + group.name + '持续推进排期、提交与 Qoder 使用协同分析。</li></ul>'];
     });
-    var html = '<h2 id="v' + version + '-progress">项目核心进展</h2>' + tableHtml(['项目组', '核心进展'], progressRows);
-    var raw = '\n\n## 项目核心进展\n\n' + tableMarkdown(['项目组', '核心进展'], progressRows) + '\n';
+    var html = '<h2 id="v' + version + '-progress">项目核心进展</h2>' + tableHtml(['域', '核心进展'], progressRows);
+    var raw = '\n\n## 项目核心进展\n\n' + tableMarkdown(['域', '核心进展'], progressRows) + '\n';
     var chapters = [
-      { id: 'members', title: '团队人员', description: '以本周期有提交记录的人员为准', summaryLabel: '全量汇总(去重)', headers: ['项目组', '产品人数', '研发人数', '架构人数', '人员明细'], values: function (name, m) { return [name, m.product + ' 人', m.developers + ' 人', m.architecture + ' 人', personnelDetail(m)]; } },
-      { id: 'schedule', title: '功能排期', headers: ['项目组', '功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数'], values: function (name, m) { return [name, m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate + '%', m.delayed + ' 个', m.delayedRate + '%', m.perFeatures + ' 个/人']; } },
-      { id: 'commits', title: '代码提交', headers: ['项目组', '产品提交次数', '产品提交行数（新增 / 删除）', '产品人均提交行数', '研发提交次数', '研发提交行数（新增 / 删除）', '研发人均提交行数', '架构提交次数', '架构提交行数（新增 / 删除）', '架构人均提交行数'], values: function (name, m) { return [name, m.productCommits + ' 次', '+' + m.productAdded + ' / -' + m.productRemoved, m.productPerLines + ' 行/人', m.commits + ' 次', '+' + m.added + ' / -' + m.removed, m.perLines + ' 行/人', Math.max(1, Math.round(m.commits / 3)) + ' 次', '+' + Math.round(m.added / 3) + ' / -' + Math.round(m.removed / 3), ((m.added + m.removed) / 3 / m.architecture).toFixed(1) + ' 行/人']; } },
+      { id: 'members', title: '团队人员', description: '以本周期有提交记录的人员为准', summaryLabel: '全量汇总(去重)', headers: ['域', '产品人数', '研发人数', '架构人数', '人员明细'], values: function (name, m) { return [name, m.product + ' 人', m.developers + ' 人', m.architecture + ' 人', personnelDetail(m)]; } },
+      { id: 'schedule', title: '功能排期', headers: ['域', '功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数'], values: function (name, m) { return [name, m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate + '%', m.delayed + ' 个', m.delayedRate + '%', m.perFeatures + ' 个/人']; } },
+      { id: 'commits', title: '代码提交', headers: ['域', '产品提交次数', '产品提交行数（新增 / 删除）', '产品人均提交行数', '研发提交次数', '研发提交行数（新增 / 删除）', '研发人均提交行数', '架构提交次数', '架构提交行数（新增 / 删除）', '架构人均提交行数'], values: function (name, m) { return [name, m.productCommits + ' 次', '+' + m.productAdded + ' / -' + m.productRemoved, m.productPerLines + ' 行/人', m.commits + ' 次', '+' + m.added + ' / -' + m.removed, m.perLines + ' 行/人', Math.max(1, Math.round(m.commits / 3)) + ' 次', '+' + Math.round(m.added / 3) + ' / -' + Math.round(m.removed / 3), ((m.added + m.removed) / 3 / m.architecture).toFixed(1) + ' 行/人']; } },
     ];
     chapters.forEach(function (chapter) {
       var rows = groups.map(function (group) { return chapter.values(group.name, group.metrics); });
@@ -375,8 +372,8 @@
       raw += '\n\n## ' + chapter.title + '\n\n' + (chapter.description ? chapter.description + '\n\n' : '') + tableMarkdown(chapter.headers, rows) + '\n';
     });
     var qoderTables = [
-      { id: 'qoder-product-development', title: '产品与研发', headers: ['项目组', '产品总使用量（Credits）', '产品人均使用量（Credits）', '产品总请求次数', '产品人均请求次数', '产品平均单次请求 Credits', '研发总使用量（Credits）', '研发人均使用量（Credits）', '研发总请求次数', '研发人均请求次数', '研发平均单次请求 Credits'], values: function (name, m) { return [name, String(m.productQoderTotal), String(m.productQoderAverage), m.productRequests + ' 次', m.productRequestAverage + ' 次/人', m.productQoderPerRequest, String(m.qoderTotal), String(m.qoderAverage), m.requests + ' 次', m.requestAverage + ' 次/人', m.qoderPerRequest]; } },
-      { id: 'qoder-architecture', title: '架构', headers: ['项目组', '架构总使用量（Credits）', '架构人均使用量（Credits）', '架构总请求次数', '架构人均请求次数', '架构平均单次请求 Credits'], values: function (name, m) { return [name, String(m.architectureQoderTotal), String(m.architectureQoderAverage), m.architectureRequests + ' 次', m.architectureRequestAverage + ' 次/人', m.architectureQoderPerRequest]; } }
+      { id: 'qoder-product-development', title: '产品与研发', headers: ['域', '产品总使用量（Credits）', '产品人均使用量（Credits）', '产品总请求次数', '产品人均请求次数', '产品平均单次请求 Credits', '研发总使用量（Credits）', '研发人均使用量（Credits）', '研发总请求次数', '研发人均请求次数', '研发平均单次请求 Credits'], values: function (name, m) { return [name, String(m.productQoderTotal), String(m.productQoderAverage), m.productRequests + ' 次', m.productRequestAverage + ' 次/人', m.productQoderPerRequest, String(m.qoderTotal), String(m.qoderAverage), m.requests + ' 次', m.requestAverage + ' 次/人', m.qoderPerRequest]; } },
+      { id: 'qoder-architecture', title: '架构', headers: ['域', '架构总使用量（Credits）', '架构人均使用量（Credits）', '架构总请求次数', '架构人均请求次数', '架构平均单次请求 Credits'], values: function (name, m) { return [name, String(m.architectureQoderTotal), String(m.architectureQoderAverage), m.architectureRequests + ' 次', m.architectureRequestAverage + ' 次/人', m.architectureQoderPerRequest]; } }
     ];
     html += '<h2 id="v' + version + '-qoder">Qoder 使用</h2>';
     raw += '\n\n## Qoder 使用\n';
@@ -427,7 +424,7 @@
     document.getElementById('uploadFileName').hidden = true;
     setUploadDate(date || '');
     ['uploadDateError', 'uploadFileError'].forEach(function (id) { document.getElementById(id).hidden = true; });
-    if (scope && date) setUploadAlert('uploadRecognized', '已从缺口带入：全部项目组 · 发报日 ' + date); else setUploadAlert(null);
+    if (scope && date) setUploadAlert('uploadRecognized', '已从缺口带入：全部域 · 发报日 ' + date); else setUploadAlert(null);
     BusyNative.openDialog(document.getElementById('uploadDialog'), uploadOpener);
   }
   function closeUpload(force) {
@@ -444,7 +441,7 @@
     if (!match) { setUploadAlert('uploadUnrecognized'); return; }
     var date = match[1] + '-' + match[2] + '-' + match[3];
     setUploadDate(date);
-    setUploadAlert('uploadRecognized', '已按文件名识别：全部项目组 · 发报日 ' + date);
+    setUploadAlert('uploadRecognized', '已按文件名识别：全部域 · 发报日 ' + date);
   }
   function receiveFile(file) {
     if (!file) return;
