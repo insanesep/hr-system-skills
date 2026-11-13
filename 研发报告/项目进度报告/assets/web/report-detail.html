@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="prototype-components" content="Button,PageableSelect,Tag,Message,Dialog">
   <meta name="prototype-gap-components" content="MarkdownViewer">
-  <title>报告详情 · 项目进度报告 · 静态 Mock</title>
+  <title>报告详情 · 项目进度报告（完整版） · 静态 Mock</title>
   <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/web.css">
   <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/web/runtime.css">
   <link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
@@ -52,8 +52,9 @@
     <div class="tpl-page-head">
       <div class="tpl-page-head__main">
         <a class="tpl-page-head__back" href="report-list.html">‹ 返回报告列表</a>
-        <h1 class="tpl-page-title" id="reportTitle">项目进度报告</h1>
-        <div class="tpl-page-head__tags"><span class="busy-tag busy-tag--primary">项目进度报告</span><span class="busy-tag busy-tag--info is-plain" id="reportScopeTag"></span></div>
+        <h1 class="tpl-page-title" id="reportTitle">项目进度报告（完整版）</h1>
+        <div class="tpl-page-head__tags"><span class="busy-tag busy-tag--primary">项目进度报告</span><span class="busy-tag busy-tag--success is-plain">完整版</span><span class="busy-tag busy-tag--info is-plain" id="reportScopeTag"></span></div>
+        <nav aria-label="报告形态" class="tpl-row-actions"><a class="busy-button is-link" id="fullLink" href="report-detail.html" aria-current="page"><span>完整版</span></a><a class="busy-button is-link" id="simpleLink" href="report-detail-simple.html"><span>简化版</span></a></nav>
       </div>
       <div class="tpl-page-head__actions">
         <button class="busy-button" type="button" id="exportPngButton"><span>导出为图片（分页 PNG）</span></button>
@@ -72,7 +73,7 @@
           <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">当前版本</span><div class="busy-select" id="versionSelect" aria-label="切换报告版本"><input class="busy-select__input" readonly placeholder="请选择版本"></div></div>
           <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">来源</span><span class="tpl-overview__meta-value" id="metaSource"></span></div>
         </div>
-        <div class="tpl-overview__codes"><span>文件大小 <b id="metaSize"></b></span><span>入库时间 <b id="metaArchivedAt"></b></span><span>历史版本只读可查，URL 带 ?v=N 可分享</span></div>
+        <div class="tpl-overview__codes"><span>生成批次 <b id="metaBatch"></b></span><span>文件大小 <b id="metaSize"></b></span><span>入库时间 <b id="metaArchivedAt"></b></span><span>形态独立版本；切换形态查看该周期该形态最新版本</span></div>
       </div>
     </section>
     <section class="tpl-panel" aria-label="报告正文">
@@ -103,11 +104,14 @@
     (function () {
       'use strict';
       var $ = function (id) { return document.getElementById(id); };
-      var SCOPES = [{ value: '_all', type: '全部', name: '全部域', key: '_all' }].concat(
-        window.ProjectPrototypeStore.read().projects.filter(function (project) { return project.status === 'ENABLED'; }).map(function (project) {
-          return { value: String(project.id), type: '域', name: project.name, reportName: project.name, key: String(project.id) };
-        })
-      );
+      function configuredDomains() {
+        return window.ProjectPrototypeStore.read().projects.filter(function (project) { return project.status === 'ENABLED'; }).map(function (project) {
+          return { projectId: project.id, value: String(project.id), type: '域', name: project.name, reportName: project.name, key: String(project.id) };
+        });
+      }
+      function copy(value) { return JSON.parse(JSON.stringify(value)); }
+      function esc(value) { return String(value).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+      var SCOPES = [{ value: '_all', type: '全部', name: '全部域', key: '_all' }].concat(configuredDomains());
       var PROJECT_GROUPS = SCOPES.filter(function (scope) { return scope.value !== '_all'; }).sort(function (a, b) { return a.key.localeCompare(b.key); });
       var WEEKS = [
         { id: 'W44', label: '2026 年第 44 周（10-26 ~ 11-01）', short: '第 44 周', start: '2026-10-26', end: '2026-11-01', archived: { '_all': ['服务端生成', 3] } },
@@ -118,7 +122,27 @@
         { id: 'W39', label: '2026 年第 39 周（09-21 ~ 09-27）', short: '第 39 周', start: '2026-09-21', end: '2026-09-27', archived: { '_all': ['服务端生成', 1] } },
         { id: 'W38', label: '2026 年第 38 周（09-14 ~ 09-20）', short: '第 38 周', start: '2026-09-14', end: '2026-09-20', archived: { '_all': ['服务端生成', 1] } }
       ];
-      try { WEEKS = JSON.parse(sessionStorage.getItem('projectProgressReportWeeks') || 'null') || WEEKS; } catch (ignore) {}
+      WEEKS.forEach(function (week) { var archived = week.archived._all; week.forms = { full: week.id === 'W42' ? null : { source: archived[0], version: archived[1] }, simple: week.id === 'W44' ? { source: '服务端生成', version: 2 } : null }; });
+      try {
+        var dual = JSON.parse(sessionStorage.getItem('projectProgressReportDualWeeks-v1') || 'null'), legacy = JSON.parse(sessionStorage.getItem('projectProgressReportWeeks') || 'null');
+        if (dual) WEEKS = dual;
+        else if (legacy) WEEKS = legacy.map(function (week) { var archived = week.archived && week.archived._all; return Object.assign({}, week, { forms: { full: archived ? { source: archived[0], version: archived[1], date: archived[2] || week.end } : null, simple: null } }); });
+      } catch (ignore) {}
+      WEEKS.forEach(function (item) { item.period = item.period || 'weekly'; if (item.id === 'W44' && item.forms.full && item.forms.simple) item.batch = item.batch || { id: 'mock-W44-pair', versions: { full: 3, simple: 2 } }; });
+      if (!WEEKS.some(function (item) { return item.id === 'M2026-10'; })) WEEKS.push({ id: 'M2026-10', period: 'monthly', label: '2026 年 10 月（10-01 ~ 10-31）', short: '2026 年 10 月', start: '2026-10-01', end: '2026-10-31', forms: { full: { source: '服务端生成', version: 1 }, simple: { source: '服务端生成', version: 1 } }, batch: { id: 'mock-M2026-10-pair', versions: { full: 1, simple: 1 } } });
+
+      function saveCycles() { try { sessionStorage.setItem('projectProgressReportDualWeeks-v1', JSON.stringify(WEEKS)); } catch (ignore) {} }
+      WEEKS.forEach(function (week) {
+        week.forms = week.forms || { full: null, simple: null };
+        ['full', 'simple'].forEach(function (shape) {
+          var entry = week.forms[shape]; if (!entry) return;
+          entry.history = entry.history || {};
+          for (var v = 1; v <= entry.version; v++) {
+            if (!entry.history[v]) entry.history[v] = { projects: copy(configuredDomains()), date: entry.date || week.end, source: v === entry.version ? entry.source : v % 2 ? '服务端生成' : '手动补传', batch: week.batch && week.batch.versions[shape] === v ? week.batch.id : null };
+          }
+        });
+      });
+      saveCycles();
       function averagePerRequest(credits, requests) { return requests > 0 ? (credits / requests).toFixed(1) + ' Credits/次' : '—'; }
       function newContributorNames(id, role, names) {
         return names.filter(function (name) {
@@ -176,6 +200,7 @@
         m.newProductNames = Array.from(newProducts); m.newDeveloperNames = Array.from(newDevelopers); m.newArchitectureNames = Array.from(newArchitectures);
         return m;
       }
+
       function isSummaryLabel(value) { return value === '全量汇总' || value === '全量汇总(去重)'; }
       var TEXT_COLUMNS = ['核心进展', '人员明细', '操作', '补充说明'];
       function columnAlign(headers) { return headers.map(function (header, index) { return index > 0 && TEXT_COLUMNS.indexOf(header) < 0 ? 'right' : ''; }); }
@@ -304,14 +329,12 @@
       function healthRows(format) {
         return HEALTH_REPOS.map(function (repo) {
           var delta = (repo.current - repo.previous).toFixed(1), deltaText = delta > 0 ? '↑ +' + delta : delta < 0 ? '↓ ' + delta : '0.0';
-          var operation = format === 'html'
-            ? '<a href="../../../产品文档健康度报告/assets/web/report-detail.html">查看报告</a>'
-            : '[查看报告](/subapp/devhub/report/doc-health/detail/' + repo.reportId + ')';
+          var operation = format === 'html' ? '<a href="../../../产品文档健康度报告/assets/web/report-detail.html">查看报告</a>' : '[查看报告](/subapp/devhub/report/doc-health/detail/' + repo.reportId + ')';
           return [repo.name, repo.previous.toFixed(1), repo.current.toFixed(1), deltaText, operation];
         });
       }
       function reportSections(version) {
-        var groups = PROJECT_GROUPS.map(function (scope) { return { name: scope.name, key: scope.key, metrics: metricsFor(scope.value, version) }; });
+        var groups = PROJECT_GROUPS.map(function (scope) { return { name: esc(scope.name), key: scope.key, metrics: metricsFor(scope.value, version) }; });
         var progressRows = groups.map(function (group) {
           return [group.name, '<ul><li>' + group.name + '完成本期核心功能迭代，交付内容已纳入研发周报。</li><li>' + group.name + '持续推进排期、提交与 Qoder 使用协同分析。</li></ul>'];
         });
@@ -352,42 +375,61 @@
         return { html: html, raw: raw };
       }
       function contentFor(report, version) {
-        var period = report.start + '（周一）~ ' + report.end + '（周日）';
+        var period = report.period === 'monthly' ? report.start + ' ~ ' + report.end : report.start + '（周一）~ ' + report.end + '（周日）';
         var body = reportSections(version), overview = overviewFor(version);
         var html = '<blockquote><p><strong>统计区间：' + period + '</strong>（Mock 示例，非生产数据）</p></blockquote>' + overview.html + body.html + '<hr><p>报告生成时间：' + report.end + ' 21:10:24（Mock）</p>';
         var raw = '# ' + report.title + '\n\n> 统计区间：' + period + overview.raw + body.raw + '\n---\n*报告生成时间：' + report.end + ' 21:10:24（Mock）*\n';
         return { html: html, raw: raw };
       }
+      var cycleId = (new URLSearchParams(location.search).get('id') || 'W44-_all').replace(/-\d{4}-\d{2}-\d{2}$/, '');
+      $('fullLink').href = 'report-detail.html?id=' + encodeURIComponent(cycleId);
+      $('simpleLink').href = 'report-detail-simple.html?id=' + encodeURIComponent(cycleId);
+      var cycle = WEEKS.find(function (item) { return item.id + '-_all' === cycleId; });
+      function setShapeBusy(busy) {
+        ['full', 'simple'].forEach(function (shape) {
+          var link = $(shape + 'Link'), missing = !cycle || !cycle.forms[shape];
+          link.setAttribute('aria-disabled', String(busy || missing));
+          link.classList.toggle('is-disabled', busy || missing);
+          link.tabIndex = busy || missing ? -1 : 0;
+          link.title = missing ? '本周期该形态未入库' : busy ? '当前正在加载或导出，请稍候' : '';
+        });
+      }
+      ['fullLink', 'simpleLink'].forEach(function (id) { $(id).addEventListener('click', function (event) { if (this.getAttribute('aria-disabled') === 'true') event.preventDefault(); }); });
+      setShapeBusy(false);
+      function batchText(number) {
+        if (VERSIONS[number] && VERSIONS[number].batch) return VERSIONS[number].batch + (cycle.batch && cycle.batch.id === VERSIONS[number].batch ? ' · 完整版 v' + cycle.batch.versions.full + ' / 简化版 v' + cycle.batch.versions.simple : ' · 历史配对批次');
+        return report.uploaded[number] ? '手动补传，无配对批次' : '历史归档，无配对批次';
+      }
+
       function resolveReport() {
-        var params = new URLSearchParams(window.location.search), id = params.get('id') || 'W44-_all';
-        var scope = SCOPES.find(function (item) { return id.indexOf('-' + item.value) > 0; });
-        if (!scope) return null;
-        var marker = '-' + scope.value, position = id.indexOf(marker);
-        var week = WEEKS.find(function (item) { return item.id === id.slice(0, position); });
-        if (!week) return null;
-        var date = id.slice(position + marker.length).replace(/^-/, '');
-        var archived = date ? (week.extra || []).find(function (entry) { return entry.scope === scope.value && entry.date === date; }) : week.archived[scope.value];
-        if (!archived) return null;
-        var actualDate = archived[2] || archived.date || week.end;
-        var source = archived[0] || archived.source, latest = archived[1] || archived.version;
-        return { id: week.id + '-' + scope.value + (actualDate !== week.end ? '-' + actualDate : ''), scope: scope, title: '项目进度报告 - ' + actualDate, date: actualDate, week: week.label, start: week.start, end: week.end, source: source, latest: latest, file: 'progress_' + actualDate.replace(/-/g, '') + '_' + scope.key + '.md' };
+        var week = WEEKS.find(function (item) { return item.id + '-_all' === cycleId; }), entry = week && week.forms && week.forms.full;
+        if (!entry) return null;
+        var actualDate = entry.date || week.end;
+        return { id: cycleId, shape: 'full', scope: SCOPES[0], title: '项目进度报告（完整版） - ' + actualDate, date: actualDate, week: week.label, start: week.start, end: week.end, source: entry.source, latest: entry.version, file: 'progress_' + actualDate.replace(/-/g, '') + '__all.md', period: week.period, uploaded: entry.uploaded || {} };
       }
       var report = resolveReport();
       if (!report) {
-        $('reportTitle').textContent = '报告不可用';
-        $('reportScopeTag').textContent = '未入库或不存在';
+        $('reportTitle').textContent = '项目进度报告（完整版） · 未入库';
+        $('reportScopeTag').textContent = '全部域';
         ['metaScope', 'metaDate', 'metaWeek', 'metaPeriod', 'metaSource', 'metaSize', 'metaArchivedAt'].forEach(function (id) { $(id).textContent = '—'; });
         $('versionSelect').hidden = true; $('downloadButton').disabled = true; $('exportPngButton').disabled = true; $('exportHtmlButton').disabled = true;
-        $('reportBody').hidden = true; $('emptyState').textContent = '报告不存在或尚未入库'; $('emptyState').hidden = false;
+        $('reportBody').hidden = true; $('emptyState').textContent = '本周期完整版尚未入库；请返回列表一次生成两份或单文件补传。'; $('emptyState').hidden = false;
         window.BusyNative.enhance(document);
+        window.ReportDetailMock = { getReport: function () { return null; }, getRaw: function () { return ''; }, getFile: function () { return ''; }, getCycles: function () { return copy(WEEKS); } };
         return;
       }
       var latestVersion = report.latest, currentVersion = latestVersion, loading = false, restoring = false, exporting = false;
       var VERSIONS = {};
       for (var version = 1; version <= latestVersion; version++) {
-        var content = contentFor(report, version);
-        VERSIONS[version] = { source: version === latestVersion ? report.source : version % 2 ? '服务端生成' : '手动补传', size: (new Blob([content.raw]).size / 1024).toFixed(1) + ' KB', archivedAt: report.end + ' ' + (version === latestVersion ? '21:10:24' : '19:42:08'), html: content.html, raw: content.raw };
+        var snapshot = cycle.forms.full.history[version], upload = report.uploaded[version];
+        PROJECT_GROUPS = copy(snapshot.projects).sort(function (a, b) { return a.key.localeCompare(b.key); });
+        var versionReport = Object.assign({}, report, { date: snapshot.date, title: '项目进度报告（完整版） - ' + snapshot.date });
+        var content = snapshot.content || contentFor(versionReport, version);
+        if (upload) content = { raw: upload.raw, html: '<pre style="white-space:pre-wrap;overflow-wrap:anywhere">' + esc(upload.raw) + '</pre>' };
+        snapshot.content = copy(content);
+        VERSIONS[version] = { projects: copy(snapshot.projects), title: versionReport.title, date: snapshot.date, batch: snapshot.batch, file: upload ? upload.file : 'progress_' + snapshot.date.replace(/-/g, '') + '__all.md', source: upload ? '手动补传' : snapshot.source, size: (new Blob([content.raw]).size / 1024).toFixed(1) + ' KB', archivedAt: upload ? upload.archivedAt : snapshot.date + ' ' + (version === latestVersion ? '21:10:24' : '19:42:08'), html: content.html, raw: content.raw, appendix: snapshot.appendix || null };
       }
+      saveCycles();
       function message(text, type) { window.BusyNative.message(text, type || 'success'); }
       function weeklyMetricsFor(name) {
         var hash = 0;
@@ -411,23 +453,48 @@
           '| Qoder 用量 | ' + numberText(m.credits) + ' Credits / 请求 ' + m.requests + ' 次；模型分布：旗舰 80% / 标准 20%。 |\n' +
           '| 综合评价 | 本周交付节奏稳定，下周继续跟进健康度问题修复与报告联调。 |';
       }
-      function pngRawFor() {
-        var people = metricsFor('_all', currentVersion), names = people.productNames.concat(people.developerNames, people.architectureNames);
-        var details = names.map(weeklyMarkdownFor).join('\n\n');
-        return VERSIONS[currentVersion].raw.replace('\n---\n*报告生成时间', '\n\n## 人员工作明细\n\n' + details + '\n\n---\n*报告生成时间');
+      var permissions = { canViewPeople: new URLSearchParams(location.search).get('people') !== 'denied', deniedPersonIds: [] };
+      var appendixMonday = new Date(report.end + 'T12:00:00'); appendixMonday.setDate(appendixMonday.getDate() - (appendixMonday.getDay() + 6) % 7);
+      var appendixSunday = new Date(appendixMonday); appendixSunday.setDate(appendixSunday.getDate() + 6);
+      function localDate(date) { return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0'); }
+      Object.keys(VERSIONS).forEach(function (v) {
+        var item = VERSIONS[v];
+        if (!item.appendix) {
+          var names = [], article = document.createElement('article'); article.innerHTML = item.html;
+          article.querySelectorAll('[data-person-name]').forEach(function (button) { if (names.indexOf(button.dataset.personName) < 0) names.push(button.dataset.personName); });
+          item.appendix = report.uploaded[v] ? [] : names.map(function (name) { return { id: 'mock-person-' + name, name: name, start: localDate(appendixMonday), end: localDate(appendixSunday), version: 2, html: weeklyContentFor(name), raw: weeklyMarkdownFor(name) }; });
+          cycle.forms.full.history[v].appendix = copy(item.appendix);
+        }
+      });
+      saveCycles();
+      function exportSnapshot() {
+        var snapshot = copy(VERSIONS[currentVersion]); snapshot.version = currentVersion; snapshot.shape = 'full'; snapshot.start = report.start; snapshot.end = report.end;
+        snapshot.appendix = snapshot.appendix.filter(function (person) { return permissions.canViewPeople && permissions.deniedPersonIds.indexOf(person.id) < 0; });
+        return snapshot;
+      }
+      function pngRawFor(snapshot) {
+        snapshot = snapshot && snapshot.shape ? snapshot : exportSnapshot();
+        if (!snapshot.appendix.length) return snapshot.raw;
+        var details = snapshot.appendix.map(function (person) { return person.raw; }).join('\n\n');
+        var appendix = '\n\n## 人员工作明细\n\n同周研发周报：' + snapshot.appendix[0].start + ' ~ ' + snapshot.appendix[0].end + '（权限内归档快照）\n\n' + details + '\n';
+        return snapshot.raw.indexOf('\n---\n*报告生成时间') >= 0 ? snapshot.raw.replace('\n---\n*报告生成时间', appendix + '\n---\n*报告生成时间') : snapshot.raw + appendix;
       }
       var weeklyRequest = 0;
       function openPersonWeekly(trigger) {
-        var name = trigger.dataset.personName, request = ++weeklyRequest;
+        if (loading || exporting) return;
+        var person = exportSnapshot().appendix.find(function (item) { return item.id === trigger.dataset.personId; });
+        if (!person) { message('无权限查看该人员周报，或同周归档未取得', 'warning'); return; }
+        var name = person.name, request = ++weeklyRequest;
         $('personWeeklyTitle').textContent = name + ' · 本周研发周报';
-        $('personWeeklyMeta').textContent = '统计区间：' + report.start + ' ~ ' + report.end + ' · 来源：研发周报 - ' + report.end + ' · v2（Mock）';
+        $('personWeeklyMeta').textContent = '统计区间：' + person.start + ' ~ ' + person.end + ' · 来源：研发周报 - ' + person.end + ' · v' + person.version + '（Mock）';
+        $('personWeeklyFull').href = '../../../人员产出报告/assets/web/report-detail.html?personId=' + encodeURIComponent(person.id) + '&date=' + person.end + '&v=' + person.version;
         $('personWeeklyContent').replaceChildren(); $('personWeeklyContent').hidden = true;
         $('personWeeklyEmpty').hidden = true; $('personWeeklyLoading').hidden = false;
         window.BusyNative.openDialog($('personWeeklyDialog'), trigger);
         setTimeout(function () {
           if (request !== weeklyRequest) return;
           $('personWeeklyLoading').hidden = true;
-          $('personWeeklyContent').innerHTML = weeklyContentFor(name);
+          $('personWeeklyContent').innerHTML = person.html;
           $('personWeeklyContent').hidden = false;
         }, 350);
       }
@@ -438,19 +505,21 @@
       function restoreSelect() { restoring = true; $('versionSelect')._setValue(String(currentVersion)); restoring = false; }
       function applyVersion(number) {
         var version = VERSIONS[number]; currentVersion = number;
+        report.title = version.title; report.date = version.date; report.file = version.file; report.source = version.source; report.version = number; report.projects = copy(version.projects);
+        $('reportTitle').textContent = version.title; $('metaDate').textContent = version.date; $('metaScope').textContent = '全部域（' + version.projects.length + ' 域）';
         weeklyRequest++; window.BusyNative.closeDialog($('personWeeklyDialog'));
-        $('metaSource').textContent = version.source; $('metaSize').textContent = version.size; $('metaArchivedAt').textContent = version.archivedAt;
+        $('metaBatch').textContent = batchText(number); $('metaSource').textContent = version.source; $('metaSize').textContent = version.size; $('metaArchivedAt').textContent = version.archivedAt;
         $('reportBody').innerHTML = version.html;
         $('reportBody').hidden = !version.html.trim(); $('emptyState').hidden = !!version.html.trim();
         $('historyAlert').hidden = number === latestVersion;
-        $('historyAlertText').textContent = '当前查看历史版本 v' + number + '（只读），最新版本为 v' + latestVersion + '；切换版本不改变归档内容。';
+        $('historyAlertText').textContent = '当前查看完整版历史版本 v' + number + '（只读），完整版最新为 v' + latestVersion + '；形态之间不沿用历史版本。';
       }
-      function finishLoading() { loading = false; $('versionLoading').hidden = true; $('reader').setAttribute('aria-busy', 'false'); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportPngButton').disabled = false; $('exportHtmlButton').disabled = false; }
+      function finishLoading() { loading = false; setShapeBusy(false); $('versionLoading').hidden = true; $('reader').setAttribute('aria-busy', 'false'); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportPngButton').disabled = false; $('exportHtmlButton').disabled = false; }
       function loadVersion(number, silent) {
         if (exporting) { restoreSelect(); return; }
         if (loading || number === currentVersion) { if (number !== currentVersion) restoreSelect(); return; }
         if (!VERSIONS[number]) { message('版本加载失败', 'error'); restoreSelect(); return; }
-        loading = true; $('versionLoading').hidden = false; $('reader').setAttribute('aria-busy', 'true'); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportPngButton').disabled = true; $('exportHtmlButton').disabled = true;
+        loading = true; setShapeBusy(true); $('versionLoading').hidden = false; $('reader').setAttribute('aria-busy', 'true'); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportPngButton').disabled = true; $('exportHtmlButton').disabled = true;
         setTimeout(function () {
           try {
             applyVersion(number);
@@ -466,7 +535,8 @@
         if (active && !spinner) button.insertBefore(window.BusyNative.node('span', 'busy-button__loading'), button.firstChild);
         if (!active && spinner) spinner.remove();
       }
-      async function rasterize(raw) {
+      async function rasterize(raw, snapshot) {
+        snapshot = snapshot || exportSnapshot();
         var width = 1600, height = 2000, padding = 32, bottom = height - 64, contentWidth = width - padding * 2;
         var rootStyle = getComputedStyle(document.documentElement), fontFamily = getComputedStyle($('reportBody')).fontFamily;
         function token(name) { return rootStyle.getPropertyValue(name).trim(); }
@@ -482,8 +552,8 @@
         function newPage() {
           canvas = document.createElement('canvas'); canvas.width = width; canvas.height = height; context = canvas.getContext('2d');
           context.fillStyle = colors.white; context.fillRect(0, 0, width, height); pages.push(canvas);
-          text(report.title, padding, 56, '600 22px');
-          text('统计区间：' + report.start + ' ~ ' + report.end + ' · v' + currentVersion, padding, 86, '14px', colors.secondary);
+          text(snapshot.title, padding, 56, '600 22px');
+          text('统计区间：' + snapshot.start + ' ~ ' + snapshot.end + ' · v' + snapshot.version, padding, 86, '14px', colors.secondary);
           line(padding, width - padding, 102); y = 124;
         }
         function plain(value) {
@@ -586,7 +656,7 @@
         for (var page = 0; page < pages.length; page++) {
           canvas = pages[page]; context = canvas.getContext('2d'); text('第 ' + (page + 1) + ' 页 / 共 ' + pages.length + ' 页', width - padding, height - 28, '14px', colors.secondary, 'right');
           var blob = await new Promise(function (resolve, reject) { canvas.toBlob(function (result) { result ? resolve(result) : reject(new Error('PNG 生成失败')); }, 'image/png'); });
-          files.push({ name: report.file.replace(/\.md$/i, '_v' + currentVersion + '_p' + String(page + 1).padStart(Math.max(2, String(pages.length).length), '0') + '.png'), blob: blob });
+          files.push({ name: snapshot.file.replace(/\.md$/i, '_v' + snapshot.version + '_p' + String(page + 1).padStart(Math.max(2, String(pages.length).length), '0') + '.png'), blob: blob });
         }
         return files;
       }
@@ -610,77 +680,71 @@
         view.setUint32(0, 0x06054b50, true); view.setUint16(8, files.length, true); view.setUint16(10, files.length, true); view.setUint32(12, directorySize, true); view.setUint32(16, offset, true);
         return new Blob(parts.concat(directory, [end]), { type: 'application/zip' });
       }
-      function exportHtmlText() {
+      function exportHtmlText(snapshot) {
+        snapshot = snapshot || exportSnapshot();
+        if (!snapshot.html.trim()) throw new Error('报告内容为空，无法导出 HTML');
+        /* 离线导出只保留内联计算样式与本次权限内的静态内容。 */
         function computedStyle(element) {
-          var style = getComputedStyle(element), properties = ['align-content', 'align-items', 'align-self', 'background', 'background-color', 'background-image', 'border', 'border-collapse', 'border-color', 'border-radius', 'border-spacing', 'border-style', 'border-width', 'bottom', 'box-shadow', 'box-sizing', 'color', 'column-gap', 'cursor', 'display', 'flex', 'flex-basis', 'flex-direction', 'flex-grow', 'flex-shrink', 'flex-wrap', 'float', 'font', 'font-family', 'font-feature-settings', 'font-size', 'font-style', 'font-variant', 'font-weight', 'gap', 'grid-auto-flow', 'grid-column', 'grid-row', 'grid-template-columns', 'grid-template-rows', 'height', 'justify-content', 'justify-items', 'justify-self', 'left', 'letter-spacing', 'line-height', 'list-style', 'list-style-position', 'list-style-type', 'margin', 'margin-bottom', 'margin-left', 'margin-right', 'margin-top', 'max-height', 'max-width', 'min-height', 'min-width', 'opacity', 'overflow', 'overflow-wrap', 'overflow-x', 'overflow-y', 'padding', 'padding-bottom', 'padding-left', 'padding-right', 'padding-top', 'pointer-events', 'position', 'right', 'row-gap', 'table-layout', 'text-align', 'text-decoration', 'text-overflow', 'text-transform', 'top', 'transform', 'transition', 'vertical-align', 'visibility', 'white-space', 'width', 'word-break', 'z-index'];
-          return properties.map(function (property) { return property + ':' + style.getPropertyValue(property); }).join(';').replace(/url\((?!data:)[^)]+\)/g, 'none');
+          var style = getComputedStyle(element), properties = ['align-items', 'background-color', 'border-collapse', 'border-color', 'border-radius', 'border-spacing', 'border-style', 'border-width', 'box-sizing', 'color', 'display', 'flex-direction', 'flex-wrap', 'font-family', 'font-size', 'font-style', 'font-weight', 'gap', 'grid-template-columns', 'justify-content', 'letter-spacing', 'line-height', 'list-style-position', 'list-style-type', 'margin', 'min-width', 'padding', 'text-align', 'text-decoration', 'vertical-align', 'white-space', 'word-break', 'overflow-wrap'];
+          return properties.map(function (property) { return property + ':' + style.getPropertyValue(property); }).join(';').replace(/url\([^)]*\)/g, 'none') + ';position:static;overflow:visible;height:auto;max-height:none';
         }
-        var clone = document.documentElement.cloneNode(true), originals = Array.from(document.querySelectorAll('*')), copies = [clone].concat(Array.from(clone.querySelectorAll('*')));
-        copies.forEach(function (element, index) { element.setAttribute('style', computedStyle(originals[index])); });
-        clone.removeAttribute('data-native-manual');
-        clone.querySelectorAll('script, link[rel="stylesheet"], style, meta[name^="prototype-"], #personWeeklyDialog, .tpl-page-head__actions, #versionLoading, #emptyState').forEach(function (element) { element.remove(); });
-        clone.querySelectorAll('.gap-person-weekly').forEach(function (button) {
-          var name = document.createElement('span'); name.textContent = button.textContent; name.setAttribute('style', (button.getAttribute('style') || '') + ';cursor:default'); button.replaceWith(name);
-        });
-        clone.querySelectorAll('a').forEach(function (link) {
-          var text = document.createElement('span'); text.textContent = link.textContent; text.setAttribute('style', (link.getAttribute('style') || '') + ';cursor:default'); link.replaceWith(text);
-        });
-        var version = clone.querySelector('#versionSelect'), versionText = document.createElement('span');
-        versionText.textContent = 'v' + currentVersion; versionText.setAttribute('style', version.getAttribute('style') || ''); version.replaceWith(versionText);
-        var people = metricsFor('_all', currentVersion), names = Array.from(new Set(people.productNames.concat(people.developerNames, people.architectureNames)));
-        var appendix = document.createElement('section'), body = clone.querySelector('#reportBody');
-        appendix.innerHTML = '<h2>人员工作明细</h2>' + names.map(function (name) { return '<section><h3>' + name + '</h3>' + weeklyContentFor(name) + '</section>'; }).join('');
-        appendix.querySelector('h2').setAttribute('style', computedStyle(document.querySelector('#reportBody h2')));
-        appendix.querySelectorAll('h3').forEach(function (heading) { heading.setAttribute('style', computedStyle(document.querySelector('#reportBody h3'))); });
-        appendix.querySelectorAll('p').forEach(function (paragraph) { paragraph.setAttribute('style', computedStyle(document.querySelector('#reportBody p'))); });
-        body.insertBefore(appendix, body.querySelector('hr'));
-        clone.querySelector('title').textContent = report.title + ' · v' + currentVersion;
-        return '<!doctype html>\n' + clone.outerHTML;
+        var appendix = document.createElement('section');
+        if (snapshot.appendix.length) appendix.innerHTML = '<h2>人员工作明细</h2><p>同周研发周报：' + snapshot.appendix[0].start + ' ~ ' + snapshot.appendix[0].end + ' · 权限内归档快照</p>' + snapshot.appendix.map(function (person) { return '<section><h3>' + esc(person.name) + ' · v' + person.version + '</h3>' + person.html + '</section>'; }).join('');
+        var article = $('reportBody'), footer = article.querySelector('hr'); article.insertBefore(appendix, footer);
+        try {
+          var original = $('reportPage'), clone = original.cloneNode(true), originals = [original].concat(Array.from(original.querySelectorAll('*'))), copies = [clone].concat(Array.from(clone.querySelectorAll('*')));
+          copies.forEach(function (element, index) { element.setAttribute('style', computedStyle(originals[index])); });
+          clone.querySelectorAll('script,style,link,iframe,object,embed,svg,video,audio,img,.tpl-page-head__actions,.tpl-page-head__back,nav,#versionLoading,#emptyState').forEach(function (element) { element.remove(); });
+          var select = clone.querySelector('#versionSelect'), versionText = document.createElement('span'); versionText.textContent = 'v' + snapshot.version; select.replaceWith(versionText);
+          clone.querySelectorAll('a,button,input,select,textarea').forEach(function (element) { var text = document.createElement('span'); text.textContent = element.textContent || element.value || ''; text.setAttribute('style', (element.getAttribute('style') || '') + ';cursor:default;pointer-events:none'); element.replaceWith(text); });
+          clone.querySelectorAll('*').forEach(function (element) { Array.from(element.attributes).forEach(function (attribute) { if (/^(?:on|data-)/i.test(attribute.name) || /^(?:href|src|srcset|action|tabindex|contenteditable)$/i.test(attribute.name)) element.removeAttribute(attribute.name); }); });
+          return '<!doctype html>\n<html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1"><title>' + esc(snapshot.title) + ' · v' + snapshot.version + '</title><style>html,body{margin:0;background:#fff}body{padding:24px;font-family:system-ui,sans-serif}table{width:100%}th,td{overflow-wrap:anywhere}section,article{max-width:100%}[hidden]{display:none!important}</style></head><body>' + clone.outerHTML + '</body></html>';
+        } finally { appendix.remove(); }
       }
       async function exportHtml() {
         if (loading || exporting) return;
-        if (!VERSIONS[currentVersion].html.trim()) { message('报告内容为空，无法导出 HTML', 'error'); return; }
-        var button = $('exportHtmlButton'); exporting = true; setButtonLoading(button, true);
-        $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportPngButton').disabled = true;
+        var snapshot = exportSnapshot();
+        if (!snapshot.html.trim()) { message('报告内容为空，无法导出 HTML', 'error'); return; }
+        var button = $('exportHtmlButton'); exporting = true; setShapeBusy(true); setButtonLoading(button, true); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportPngButton').disabled = true; $('exportHtmlButton').disabled = true;
         try {
-          var blob = new Blob([exportHtmlText()], { type: 'text/html;charset=utf-8' }), url = URL.createObjectURL(blob), anchor = document.createElement('a');
-          anchor.href = url; anchor.download = report.file.replace(/\.md$/i, '_v' + currentVersion + '.html'); anchor.hidden = true;
-          document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-          message('已导出 ' + anchor.download);
+          var html = exportHtmlText(snapshot), url = URL.createObjectURL(new Blob([html], { type: 'text/html;charset=utf-8' })), anchor = document.createElement('a');
+          anchor.href = url; anchor.download = snapshot.file.replace(/\.md$/i, '_v' + snapshot.version + '.html'); anchor.hidden = true; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); message('已导出 ' + anchor.download);
         } catch (error) { message(error.message || 'HTML 导出失败，请重试', 'error'); }
-        finally { exporting = false; setButtonLoading(button, false); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportPngButton').disabled = false; }
+        finally { exporting = false; setShapeBusy(false); setButtonLoading(button, false); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportPngButton').disabled = false; $('exportHtmlButton').disabled = false; }
       }
       async function exportPng() {
         if (loading || exporting) return;
         if (!VERSIONS[currentVersion].html.trim()) { message('报告内容为空，无法导出图片', 'error'); return; }
-        var button = $('exportPngButton'); exporting = true; setButtonLoading(button, true); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportHtmlButton').disabled = true;
+        var button = $('exportPngButton'), snapshot = exportSnapshot(), raw = pngRawFor(snapshot); exporting = true; setShapeBusy(true); setButtonLoading(button, true); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportHtmlButton').disabled = true;
         try {
           await document.fonts.ready;
-          var files = await rasterize(pngRawFor()), blob = await pngZip(files), url = URL.createObjectURL(blob), anchor = document.createElement('a');
-          anchor.href = url; anchor.download = report.file.replace(/\.md$/i, '_v' + currentVersion + '_png.zip'); anchor.hidden = true;
+          var files = await rasterize(raw, snapshot), blob = await pngZip(files), url = URL.createObjectURL(blob), anchor = document.createElement('a');
+          anchor.href = url; anchor.download = snapshot.file.replace(/\.md$/i, '_v' + snapshot.version + '_png.zip'); anchor.hidden = true;
           document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
           message('已导出 ' + files.length + ' 页 PNG：' + anchor.download);
         } catch (error) { message(error.message || '图片导出失败，请重试', 'error'); }
-        finally { exporting = false; setButtonLoading(button, false); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportHtmlButton').disabled = false; }
+        finally { exporting = false; setShapeBusy(false); setButtonLoading(button, false); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportHtmlButton').disabled = false; }
       }
       function download() {
         if (loading) return;
-        var button = $('downloadButton'); setButtonLoading(button, true);
+        if (exporting) return;
+        var button = $('downloadButton'), snapshot = copy(VERSIONS[currentVersion]); exporting = true; setShapeBusy(true); $('versionSelect').classList.add('is-disabled'); $('exportPngButton').disabled = true; $('exportHtmlButton').disabled = true; setButtonLoading(button, true);
         setTimeout(function () {
           try {
-            var raw = VERSIONS[currentVersion].raw;
+            var raw = snapshot.raw;
             if (!raw) throw new Error('该版本无原始 Markdown 内容');
             var url = URL.createObjectURL(new Blob([raw], { type: 'text/markdown;charset=utf-8' }));
-            var anchor = document.createElement('a'); anchor.href = url; anchor.download = report.file; anchor.hidden = true;
+            var anchor = document.createElement('a'); anchor.href = url; anchor.download = snapshot.file; anchor.hidden = true;
             document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
-            message('已开始下载 ' + report.file);
+            message('已开始下载 ' + anchor.download);
           } catch (error) { message(error.message || '下载失败，请重试', 'error'); }
-          setButtonLoading(button, false);
+          exporting = false; setShapeBusy(false); $('versionSelect').classList.remove('is-disabled'); $('exportPngButton').disabled = false; $('exportHtmlButton').disabled = false; setButtonLoading(button, false);
         }, 300);
       }
       $('reportTitle').textContent = report.title;
       $('reportScopeTag').textContent = '全部域';
       $('metaScope').textContent = '全部域（' + PROJECT_GROUPS.length + ' 组）';
+      $('metaWeek').previousElementSibling.textContent = report.period === 'monthly' ? '所属月' : '所属周';
       $('metaDate').textContent = report.date; $('metaWeek').textContent = report.week.split('（')[0].trim(); $('metaPeriod').textContent = report.start + ' ~ ' + report.end;
       $('reportPage').dataset.reportId = report.id;
       var options = [];
@@ -696,9 +760,19 @@
       window.ReportDetailMock = {
         setState: function (state) { if (state === 'empty') { VERSIONS[currentVersion].html = ''; VERSIONS[currentVersion].raw = ''; applyVersion(currentVersion); } },
         getReport: function () { return report; },
-        getRaw: function () { return VERSIONS[currentVersion].raw; },
+        getRaw: function (version) { return VERSIONS[version || currentVersion].raw; },
+        getFile: function (version) { return VERSIONS[version || currentVersion].file; },
         getPngRaw: pngRawFor,
-        getHtml: exportHtmlText
+        getHtml: function () { return exportHtmlText(exportSnapshot()); },
+        getSnapshot: exportSnapshot,
+        getVersion: function () { return currentVersion; },
+        loadVersion: function (v) { loadVersion(Number(v), true); },
+        getCycles: function () { return copy(WEEKS); },
+        setPermissions: function (value) { if (loading || exporting) return; permissions = Object.assign({}, permissions, copy(value)); weeklyRequest++; window.BusyNative.closeDialog($('personWeeklyDialog')); },
+        renderPng: async function () { var snapshot = exportSnapshot(); return rasterize(pngRawFor(snapshot), snapshot); },
+        renderPngZip: async function () { var snapshot = exportSnapshot(); return pngZip(await rasterize(pngRawFor(snapshot), snapshot)); },
+        exportHtml: exportHtml,
+        exportPng: exportPng
       };
     })();
   </script>

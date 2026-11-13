@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="zh-CN" data-native-manual>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,PageableSelect,Tag,Message">
+  <meta name="prototype-gap-components" content="MarkdownViewer">
+  <title>报告详情 · 项目进度报告（简化版） · 静态 Mock</title>
+  <link rel="stylesheet" href="../../../../../busyming-skills-design/components/web/tokens/web.css">
+  <link rel="stylesheet" href="../../../../../busyming-skills-design/docs-site/web/runtime.css">
+  <link rel="stylesheet" href="../../../../../busyming-skills-design/shared/prototype/web/templates.css">
+  <style data-gap-component="MarkdownViewer">
+    .gap-markdown-viewer { position: relative; min-width: 0; min-height: 240px; color: var(--busy-text-secondary); font-size: var(--busy-font-size-base); line-height: 1.75; }
+    .gap-markdown-viewer__content { min-width: 0; }
+    .gap-markdown-viewer__content p { margin: 0 0 16px; }
+    .gap-markdown-viewer__content blockquote { margin: 0 0 24px; padding: 12px 16px; border-left: 4px solid var(--busy-color-primary); background: var(--busy-color-primary-bg); color: var(--busy-text-secondary); }
+    .gap-markdown-viewer__content blockquote p:last-child { margin-bottom: 0; }
+    .gap-markdown-viewer__content h2 { margin: 32px 0 16px; padding-top: 24px; border-top: 1px solid var(--busy-border-color-lighter); color: var(--busy-text-primary); font-size: calc(var(--busy-font-size-base) + 4px); line-height: 1.4; scroll-margin-top: 64px; }
+    .gap-markdown-viewer__content h3 { margin: 24px 0 12px; color: var(--busy-text-primary); font-size: calc(var(--busy-font-size-base) + 2px); line-height: 1.4; scroll-margin-top: 64px; }
+    .gap-markdown-viewer__content ul { margin: 0; padding-left: 20px; }
+    .gap-markdown-viewer__content li + li { margin-top: 8px; }
+    .gap-markdown-viewer__content > ul { margin: 0 0 16px; }
+    .gap-markdown-viewer__content .gap-block-title { margin: 20px 0 8px; color: var(--busy-text-primary); font-weight: 600; }
+    .gap-markdown-viewer__content td ul { padding-left: 16px; }
+    .gap-markdown-viewer__content td li + li { margin-top: 4px; }
+    .gap-markdown-viewer__trend { font-variant-numeric: tabular-nums; }
+    .gap-markdown-viewer__trend.is-up { color: var(--busy-color-success); }
+    .gap-markdown-viewer__trend.is-down { color: var(--busy-color-danger); }
+    .gap-markdown-viewer__content hr { margin: 32px 0 16px; border: 0; border-top: 1px solid var(--busy-border-color-lighter); }
+    .gap-markdown-viewer__table { width: 100%; margin-bottom: 16px; overflow-x: auto; }
+    .gap-markdown-viewer__content table { width: 100%; min-width: 560px; border-collapse: separate; border-spacing: 0; font-size: var(--busy-font-size-base); }
+    .gap-markdown-viewer__content th { padding: 10px 12px; border-bottom: 1px solid var(--busy-border-color); background: var(--busy-fill-color-light); color: var(--busy-text-primary); font-weight: 600; text-align: left; word-break: keep-all; }
+    .gap-markdown-viewer__content td { padding: 10px 12px; border-bottom: 1px solid var(--busy-border-color-lighter); color: var(--busy-text-secondary); text-align: left; vertical-align: top; }
+    .gap-markdown-viewer__content tfoot td { background: var(--busy-fill-color-light); color: var(--busy-text-primary); font-weight: 600; }
+    .gap-markdown-viewer__content thead tr:first-child th:first-child, .gap-markdown-viewer__content td:first-child { position: sticky; left: 0; z-index: 1; border-right: 1px solid var(--busy-border-color-lighter); }
+    .gap-markdown-viewer__content tbody td:first-child { background: var(--busy-bg-color); }
+    .gap-markdown-viewer__content th[align="right"] { text-align: right; }
+    .gap-markdown-viewer__content td[align="right"] { text-align: right; font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .gap-markdown-viewer__loading { position: absolute; inset: 0; z-index: 2; display: flex; align-items: flex-start; justify-content: center; min-height: 240px; padding-top: 64px; background: var(--busy-bg-color-overlay); color: var(--busy-text-secondary); font-size: var(--busy-font-size-small); }
+    .gap-markdown-viewer__loading[hidden] { display: none; }
+    .gap-markdown-viewer__empty { padding: 64px 16px; color: var(--busy-text-tertiary); font-size: var(--busy-font-size-small); text-align: center; }
+  </style>
+</head>
+<body>
+  <nav class="tpl-nav" aria-label="原型导航">
+    <span class="tpl-nav__logo">鸣鸣很忙 · 研发报告</span>
+    <span class="tpl-nav__crumb">首页 / 研发 / 研发报告 / <a href="report-list.html">项目进度报告</a> / <b>报告详情</b></span>
+    <span class="tpl-nav__spacer"></span>
+    <span class="tpl-nav__crumb">静态 Mock · 非生产数据</span>
+  </nav>
+  <main class="tpl-page" data-route="/report/progress/detail/:id" id="reportPage">
+    <div class="tpl-page-head">
+      <div class="tpl-page-head__main">
+        <a class="tpl-page-head__back" href="report-list.html">‹ 返回报告列表</a>
+        <h1 class="tpl-page-title" id="reportTitle">项目进度报告（简化版）</h1>
+        <div class="tpl-page-head__tags"><span class="busy-tag busy-tag--primary">项目进度报告</span><span class="busy-tag busy-tag--warning is-plain">简化版</span><span class="busy-tag busy-tag--info is-plain" id="reportScopeTag"></span></div>
+        <nav aria-label="报告形态" class="tpl-row-actions"><a class="busy-button is-link" id="fullLink" href="report-detail.html"><span>完整版</span></a><a class="busy-button is-link" id="simpleLink" href="report-detail-simple.html" aria-current="page"><span>简化版</span></a></nav>
+      </div>
+      <div class="tpl-page-head__actions">
+        <button class="busy-button" type="button" id="exportPngButton"><span>导出为图片（整张 PNG）</span></button>
+        <button class="busy-button busy-button--primary" type="button" id="downloadButton"><span>获取原件</span></button>
+      </div>
+    </div>
+    <div class="u-warning" id="historyAlert" role="alert" hidden><span id="historyAlertText"></span></div>
+    <section class="tpl-panel" aria-label="报告元信息">
+      <div class="tpl-overview__main">
+        <div class="tpl-overview__meta">
+          <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">报告范围</span><span class="tpl-overview__meta-value" id="metaScope"></span></div>
+          <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">发报日</span><span class="tpl-overview__meta-value u-mono" id="metaDate"></span></div>
+          <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">统计区间</span><span class="tpl-overview__meta-value u-mono" id="metaPeriod"></span></div>
+          <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">所属周</span><span class="tpl-overview__meta-value" id="metaWeek"></span></div>
+          <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">当前版本</span><div class="busy-select" id="versionSelect" aria-label="切换报告版本"><input class="busy-select__input" readonly placeholder="请选择版本"></div></div>
+          <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">来源</span><span class="tpl-overview__meta-value" id="metaSource"></span></div>
+        </div>
+        <div class="tpl-overview__codes"><span>生成批次 <b id="metaBatch"></b></span><span>文件大小 <b id="metaSize"></b></span><span>入库时间 <b id="metaArchivedAt"></b></span><span>形态独立版本；切换形态查看该周期该形态最新版本</span></div>
+      </div>
+    </section>
+    <section class="tpl-panel" aria-label="报告正文">
+      <div class="gap-markdown-viewer" data-gap-component="MarkdownViewer" id="reader" aria-busy="false">
+        <div class="gap-markdown-viewer__loading" id="versionLoading" role="status" hidden>正在加载所选版本内容…</div>
+        <article class="gap-markdown-viewer__content" id="reportBody"></article>
+        <div class="gap-markdown-viewer__empty" data-gap-component="MarkdownViewer" id="emptyState" role="status" hidden>报告内容为空</div>
+      </div>
+    </section>
+  </main>
+  <script src="../../../../研发管理/项目管理/assets/web/project-management-data.js"></script>
+  <script src="../../../../../busyming-skills-design/shared/prototype/web/native.js"></script>
+  <script>
+    (function () {
+      'use strict';
+      var $ = function (id) { return document.getElementById(id); };
+      function configuredDomains() { return window.ProjectPrototypeStore.read().projects.filter(function (project) { return project.status === 'ENABLED'; }).map(function (project) { return { projectId: project.id, value: String(project.id), name: project.name, key: String(project.id) }; }); }
+      function copy(value) { return JSON.parse(JSON.stringify(value)); }
+      function esc(value) { return String(value).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+      var SCOPES = [{ value: '_all', name: '全部域', key: '_all' }];
+      var WEEKS = [
+        { id: 'W44', label: '2026 年第 44 周（10-26 ~ 11-01）', short: '第 44 周', start: '2026-10-26', end: '2026-11-01', archived: { '_all': ['服务端生成', 3] }, forms: { full: { source: '服务端生成', version: 3 }, simple: { source: '服务端生成', version: 2 } } },
+        { id: 'W43', label: '2026 年第 43 周（10-19 ~ 10-25）', short: '第 43 周', start: '2026-10-19', end: '2026-10-25', archived: { '_all': ['服务端生成', 2] }, forms: { full: { source: '服务端生成', version: 2 }, simple: null } },
+        { id: 'W42', label: '2026 年第 42 周（10-12 ~ 10-18）', short: '第 42 周', start: '2026-10-12', end: '2026-10-18', archived: { '_all': ['服务端生成', 1] }, forms: { full: null, simple: null } },
+        { id: 'W41', label: '2026 年第 41 周（10-05 ~ 10-11）', short: '第 41 周', start: '2026-10-05', end: '2026-10-11', archived: { '_all': ['服务端生成', 1] }, forms: { full: { source: '服务端生成', version: 1 }, simple: null } },
+        { id: 'W40', label: '2026 年第 40 周（09-28 ~ 10-04）', short: '第 40 周', start: '2026-09-28', end: '2026-10-04', archived: { '_all': ['服务端生成', 1] }, forms: { full: { source: '服务端生成', version: 1 }, simple: null } },
+        { id: 'W39', label: '2026 年第 39 周（09-21 ~ 09-27）', short: '第 39 周', start: '2026-09-21', end: '2026-09-27', archived: { '_all': ['服务端生成', 1] }, forms: { full: { source: '服务端生成', version: 1 }, simple: null } },
+        { id: 'W38', label: '2026 年第 38 周（09-14 ~ 09-20）', short: '第 38 周', start: '2026-09-14', end: '2026-09-20', archived: { '_all': ['服务端生成', 1] }, forms: { full: { source: '服务端生成', version: 1 }, simple: null } }
+      ];
+      try {
+        var dual = JSON.parse(sessionStorage.getItem('projectProgressReportDualWeeks-v1') || 'null'), legacy = JSON.parse(sessionStorage.getItem('projectProgressReportWeeks') || 'null');
+        if (dual) WEEKS = dual;
+        else if (legacy) WEEKS = legacy.map(function (week) { var archived = week.archived && week.archived._all; return Object.assign({}, week, { forms: { full: archived ? { source: archived[0], version: archived[1], date: archived[2] || week.end } : null, simple: null } }); });
+      } catch (ignore) {}
+      WEEKS.forEach(function (item) { item.period = item.period || 'weekly'; if (item.id === 'W44' && item.forms.full && item.forms.simple) item.batch = item.batch || { id: 'mock-W44-pair', versions: { full: 3, simple: 2 } }; });
+      if (!WEEKS.some(function (item) { return item.id === 'M2026-10'; })) WEEKS.push({ id: 'M2026-10', period: 'monthly', label: '2026 年 10 月（10-01 ~ 10-31）', short: '2026 年 10 月', start: '2026-10-01', end: '2026-10-31', forms: { full: { source: '服务端生成', version: 1 }, simple: { source: '服务端生成', version: 1 } }, batch: { id: 'mock-M2026-10-pair', versions: { full: 1, simple: 1 } } });
+
+      function saveCycles() { try { sessionStorage.setItem('projectProgressReportDualWeeks-v1', JSON.stringify(WEEKS)); } catch (ignore) {} }
+      WEEKS.forEach(function (week) {
+        week.forms = week.forms || { full: null, simple: null };
+        ['full', 'simple'].forEach(function (shape) {
+          var entry = week.forms[shape]; if (!entry) return;
+          entry.history = entry.history || {};
+          for (var v = 1; v <= entry.version; v++) {
+            if (!entry.history[v]) entry.history[v] = { projects: copy(configuredDomains()), date: entry.date || week.end, source: v === entry.version ? entry.source : v % 2 ? '服务端生成' : '手动补传', batch: week.batch && week.batch.versions[shape] === v ? week.batch.id : null };
+          }
+        });
+      });
+      saveCycles();
+      /* Mock：人员为成员档案快照（稳定 ID → 姓名 / 角色集合 / 个人周期 Qoder Credits，null 表示未取得） */
+      var ROLE_ORDER = ['产品', '研发', 'UI', '架构'], STAT_ROLES = ['产品', '研发', '架构'];
+      var PEOPLE = {
+        'p-wangfang': { name: '王芳', roles: ['产品'], qoder: 2860 },
+        'p-chenchen': { name: '陈晨', roles: ['产品'], qoder: 1940 },
+        'p-lilei': { name: '李雷', roles: ['研发'], qoder: 6120 },
+        'p-hanmei': { name: '韩梅', roles: ['研发'], qoder: null },
+        'p-zhaoqiang': { name: '赵强', roles: ['研发', '架构'], qoder: 8350 },
+        'p-sunlei': { name: '孙磊', roles: ['研发'], qoder: 4410 },
+        'p-zhoumin': { name: '周敏', roles: ['研发'], qoder: 3980 },
+        'p-zhangyuan': { name: '张远', roles: ['架构'], qoder: 5230 },
+        'p-wudi': { name: '吴迪', roles: ['研发'], qoder: 0 }
+      };
+      /* Mock：项目名称取项目管理配置；人员按窗口内本项目映射仓提交挂靠，含未配置为本项目成员者与身份待核对作者 */
+      var PROJECTS = [
+        { projectId: 2, id: 'fixture-2', summary: '要货审批流上线直营门店，补货建议进入联调，导出功能因 WMS 字段延期', nonFeature: 1,
+          conclusions: ['要货单多级审批流已完成并上线直营门店', '补货建议算法完成开发与单测，进入与库存服务联调', '要货规则 SKILL 文档补充审批节点与例外场景说明', '要货单导出依赖 WMS 出库字段，延期至下周'],
+          risks: ['WMS 出库接口字段变更未同步，影响要货单导出等 2 个功能'],
+          cards: [
+            { title: '要货单多级审批', status: 'done', dev: '李雷', deadline: '2026-10-28', doneAt: '2026-10-28' },
+            { title: '审批节点企微通知', status: 'done', dev: '李雷', deadline: '2026-10-30', doneAt: '2026-10-29' },
+            { title: '补货建议算法', status: 'doing', dev: '韩梅', deadline: '2026-11-05', doneAt: '' },
+            { title: '要货单导出', status: 'delayed', dev: '孙磊', deadline: '2026-10-31', doneAt: '' },
+            { title: '要货单批量撤回', status: 'delayed', dev: '孙磊', deadline: '2026-11-01', doneAt: '' },
+            { title: '门店要货额度校验', status: 'done', dev: '韩梅', deadline: '2026-10-27', doneAt: '2026-10-27' }
+          ],
+          contributors: [
+            { person: 'p-wangfang', commits: 6, added: 820, removed: 120, works: ['补充要货审批节点与例外场景规则文档'] },
+            { person: 'p-lilei', commits: 18, added: 3200, removed: 640, works: ['完成要货单多级审批流与状态机', '接入审批节点企微通知'] },
+            { person: 'p-hanmei', commits: 12, added: 2900, removed: 510, isNew: true, works: ['实现补货建议算法与单元测试', '完成门店要货额度校验'] },
+            { person: 'p-sunlei', commits: 5, added: 460, removed: 90, works: ['要货单导出字段映射，待 WMS 字段确认'] },
+            { author: 'xiaoliu', email: 'xiaoliu@dev.local', commits: 3, added: 120, removed: 20, works: ['修复要货列表分页参数'] }
+          ] },
+        { projectId: 3, id: 'fixture-3', summary: '盘点单重构推进中，WMS 接口阻塞导致 3 个功能延期', nonFeature: 2,
+          conclusions: ['盘点单数据模型重构完成，旧数据迁移脚本已验证', '库存流水查询改为按仓分片，列表响应明显提速', 'harness 补充盘点差异处理方案与审批规则', '盘点差异自动调账受 WMS 接口阻塞，未完成联调'],
+          risks: ['WMS 盘点回传接口未提供测试环境，3 个功能延期', '盘点单重构涉及历史数据迁移，需安排灰度窗口'],
+          cards: [
+            { title: '盘点单模型重构', status: 'done', dev: '赵强', deadline: '2026-10-29', doneAt: '2026-10-29' },
+            { title: '库存流水按仓分片查询', status: 'done', dev: '周敏', deadline: '2026-10-30', doneAt: '2026-10-31' },
+            { title: '盘点差异自动调账', status: 'delayed', dev: '周敏', deadline: '2026-10-31', doneAt: '' },
+            { title: '盘点任务派发', status: 'delayed', dev: '吴迪', deadline: '2026-10-30', doneAt: '' },
+            { title: '盘点结果回传', status: 'delayed', dev: '吴迪', deadline: '2026-11-01', doneAt: '' }
+          ],
+          contributors: [
+            { person: 'p-chenchen', commits: 4, added: 610, removed: 85, works: ['补充盘点差异处理方案与审批规则'] },
+            { person: 'p-zhaoqiang', commits: 14, added: 2650, removed: 1320, works: ['完成盘点单数据模型重构与迁移脚本'] },
+            { person: 'p-zhoumin', commits: 9, added: 1180, removed: 420, works: ['库存流水查询按仓分片改造', '盘点差异调账接口开发'] },
+            { person: 'p-wudi', commits: 2, added: 140, removed: 30, isNew: true, works: ['盘点任务派发接口骨架'] }
+          ] },
+        { projectId: 1, id: 'fixture-1', summary: '项目进度报告改为项目视角，门户菜单埋点完成接入', nonFeature: 0,
+          conclusions: ['项目进度报告改为按项目组织，优化进展阅读结构', '门户菜单与报告页完成功能使用埋点接入', 'harness 更新项目管理成员与身份匹配规则'],
+          risks: [],
+          cards: [
+            { title: '项目进度报告项目视角改版', status: 'doing', dev: '李雷', deadline: '2026-11-04', doneAt: '' },
+            { title: '门户菜单使用埋点', status: 'done', dev: '张远', deadline: '2026-10-30', doneAt: '2026-10-30' },
+            { title: '报告整张图片导出', status: 'done', dev: '李雷', deadline: '2026-10-31', doneAt: '2026-10-31' }
+          ],
+          contributors: [
+            { person: 'p-lilei', commits: 7, added: 1260, removed: 380, works: ['项目进度报告按项目组织正文', '报告整张 PNG 导出'] },
+            { person: 'p-zhaoqiang', commits: 3, added: 210, removed: 60, works: ['评审报告挂靠口径与身份匹配方案'] },
+            { person: 'p-zhangyuan', commits: 8, added: 940, removed: 150, works: ['门户菜单与报告页埋点接入', '项目管理身份匹配规则文档'] }
+          ] }
+      ];
+      var STATUS = { delayed: { label: '延期', order: 0, cls: 'u-danger' }, doing: { label: '进行中', order: 1, cls: '' }, done: { label: '已完成', order: 2, cls: 'u-success' } };
+      /* 演示交付按稳定 projectId 挂靠；标题只取本版本冻结的项目管理 name，不从 key 或功能名推断。 */
+      function projectsFor(version, domains) {
+        return domains.map(function (domain) {
+          var fixture = PROJECTS.find(function (item) { return item.projectId === domain.projectId; });
+          var project = fixture ? copy(fixture) : { projectId: domain.projectId, conclusions: [], risks: [], cards: [], contributors: [], nonFeature: 0, summary: '' };
+          project.id = String(domain.projectId); project.name = esc(domain.name);
+          if (project.contributors.length) project.contributors[0].commits += version - 1;
+          return project;
+        }).sort(function (a, b) { return a.name.localeCompare(b.name, 'zh-CN') || a.id.localeCompare(b.id); });
+      }
+      function firstRoleIndex(roles) { return Math.min.apply(null, roles.map(function (role) { return ROLE_ORDER.indexOf(role); })); }
+      function rowsOf(project) {
+        return project.contributors.map(function (item) {
+          var person = item.person ? PEOPLE[item.person] : null, owned = person ? project.cards.filter(function (card) { return card.dev === person.name; }) : [];
+          return { id: item.person || 'git:' + item.email, person: person, name: person ? person.name : item.author, roles: person ? person.roles.slice().sort(function (a, b) { return ROLE_ORDER.indexOf(a) - ROLE_ORDER.indexOf(b); }) : [], isNew: !!item.isNew, unverified: !person, works: item.works, commits: item.commits, added: item.added, removed: item.removed, cardsDone: owned.filter(function (card) { return card.status === 'done'; }).length, cardsOwned: owned.length, qoder: person ? person.qoder : null };
+        }).sort(function (a, b) { if (a.unverified !== b.unverified) return a.unverified ? 1 : -1; if (a.unverified) return a.name.localeCompare(b.name); return firstRoleIndex(a.roles) - firstRoleIndex(b.roles) || a.name.localeCompare(b.name, 'zh-CN') || a.id.localeCompare(b.id); });
+      }
+      function rate(part, total) { return total ? (part * 100 / total).toFixed(1) + '%' : '-'; }
+      function metricsOf(project) {
+        var rows = rowsOf(project), roleCount = { '产品': 0, '研发': 0, '架构': 0 };
+        rows.forEach(function (row) { row.roles.forEach(function (role) { if (role in roleCount) roleCount[role]++; }); });
+        var total = project.cards.length, done = project.cards.filter(function (card) { return card.status === 'done'; }).length, delayed = project.cards.filter(function (card) { return card.status === 'delayed'; }).length;
+        return { rows: rows, roleCount: roleCount, unverified: rows.filter(function (row) { return row.unverified; }).length, active: rows.length, total: total, nonFeature: project.nonFeature, done: done, delayed: delayed, rate: rate(done, total), delayedRate: rate(delayed, total), perFeatures: roleCount['研发'] ? (total / roleCount['研发']).toFixed(1) + ' 个/人' : '-', commits: rows.reduce(function (sum, row) { return sum + row.commits; }, 0), added: rows.reduce(function (sum, row) { return sum + row.added; }, 0), removed: rows.reduce(function (sum, row) { return sum + row.removed; }, 0) };
+      }
+      function aggregateOf(projects) {
+        var people = new Map(), unverified = new Set(), cards = 0, done = 0, delayed = 0, commits = 0, added = 0, removed = 0;
+        var lines = {}; STAT_ROLES.forEach(function (role) { lines[role] = { added: 0, removed: 0 }; });
+        projects.forEach(function (project) { var m = metricsOf(project); cards += m.total; done += m.done; delayed += m.delayed; commits += m.commits; added += m.added; removed += m.removed; m.rows.forEach(function (row) { if (row.unverified) { unverified.add(row.id); return; } people.set(row.id, row); row.roles.forEach(function (role) { if (lines[role]) { lines[role].added += row.added; lines[role].removed += row.removed; } }); }); });
+        var roles = {};
+        STAT_ROLES.forEach(function (role) { var members = Array.from(people.values()).filter(function (row) { return row.roles.indexOf(role) >= 0; }), matched = members.filter(function (row) { return row.qoder !== null; }); roles[role] = { count: members.length, qoder: matched.reduce(function (sum, row) { return sum + row.qoder; }, 0), matched: matched.length, added: lines[role].added, removed: lines[role].removed }; });
+        return { total: cards, done: done, delayed: delayed, rateValue: cards ? done * 100 / cards : 0, delayedValue: cards ? delayed * 100 / cards : 0, rate: rate(done, cards), active: people.size + unverified.size, unverified: unverified.size, commits: commits, added: added, removed: removed, roles: roles };
+      }
+      function previousOf(m) { var roles = {}; STAT_ROLES.forEach(function (role, index) { var r = m.roles[role]; roles[role] = { count: Math.max(0, r.count - (index === 1 ? 1 : 0)), qoder: Math.round(r.qoder * 0.88), matched: r.matched, added: Math.round(r.added * 0.9), removed: Math.round(r.removed * 1.1) }; }); return { rateValue: m.rateValue - 6.3, delayedValue: m.delayedValue + 2.1, roles: roles }; }
+      var TEXT_COLUMNS = ['域', '本期结论', '功能', '状态', '开发人', '排期截止日', '完成时间', '人员', '角色', '本项目主要工作', '仓库', '操作', '指标', '补充说明'];
+      var WIDE_COLUMNS = ['本期结论', '本项目主要工作', '功能', '归档值', '补充说明', '较上期增减值', '较上期增减百分比'];
+      function isSummaryLabel(value) { return /全量汇总/.test(value); }
+      function columnAlign(headers) { return headers.map(function (header) { return TEXT_COLUMNS.indexOf(header) >= 0 ? '' : 'right'; }); }
+      function numberText(value) { return String(value).replace(/[+-]?\d+(?:\.\d+)?/g, function (number) { return number.replace(/\B(?=(\d{3})+(?!\d))/g, ','); }); }
+      function formattedRows(headers, rows) { var align = columnAlign(headers); return rows.map(function (row) { return row.map(function (value, index) { return align[index] ? numberText(value) : value; }); }); }
+      function cellHtml(tag, value, align) { return '<' + tag + (align ? ' align="' + align + '"' : '') + '>' + value + '</' + tag + '>'; }
+      function tableHtml(headers, sourceRows) {
+        var align = columnAlign(headers), rows = formattedRows(headers, sourceRows), hasSummary = rows.length && isSummaryLabel(rows[rows.length - 1][0]), summary = hasSummary ? rows[rows.length - 1] : null, bodyRows = hasSummary ? rows.slice(0, -1) : rows;
+        function rowHtml(values) { return '<tr>' + values.map(function (value, index) { if (headers[index] === '较上期' && /^[↑↓]/.test(value)) value = '<span class="gap-markdown-viewer__trend ' + (value.charAt(0) === '↑' ? 'is-up' : 'is-down') + '">' + value + '</span>'; return cellHtml('td', value, align[index]); }).join('') + '</tr>'; }
+        var head = '<tr>' + headers.map(function (header, index) { return cellHtml('th', header, align[index]); }).join('') + '</tr>';
+        return '<div class="gap-markdown-viewer__table"><table><thead>' + head + '</thead><tbody>' + bodyRows.map(rowHtml).join('') + '</tbody>' + (hasSummary ? '<tfoot>' + rowHtml(summary) + '</tfoot>' : '') + '</table></div>';
+      }
+      function tableMarkdown(headers, sourceRows) { var align = columnAlign(headers), rows = formattedRows(headers, sourceRows), hasSummary = rows.length && isSummaryLabel(rows[rows.length - 1][0]); var summary = hasSummary ? rows[rows.length - 1].map(function (value) { return value === '-' ? value : '**' + value + '**'; }) : null, bodyRows = hasSummary ? rows.slice(0, -1) : rows; return '| ' + headers.join(' | ') + ' |\n| ' + align.map(function (value) { return value ? '---:' : '---'; }).join(' | ') + ' |\n' + bodyRows.map(function (values) { return '| ' + values.join(' | ') + ' |'; }).join('\n') + (hasSummary ? '\n| ' + summary.join(' | ') + ' |' : ''); }
+      function listHtml(items) { return items.length ? '<ul>' + items.map(function (item) { return '<li>' + item + '</li>'; }).join('') + '</ul>' : '<p>-</p>'; }
+      function listMarkdown(items) { return items.length ? items.map(function (item) { return '- ' + item; }).join('\n') : '-'; }
+      function comparisonFor(current, previous, unit, digits) { var difference = current - previous, arrow = difference > 0 ? '↑' : difference < 0 ? '↓' : '—'; var value = difference.toFixed(digits), percent = previous === 0 ? (difference === 0 ? '0.0%' : '-') : (difference * 100 / Math.abs(previous)).toFixed(1) + '%'; if (difference > 0) { value = '+' + value; if (percent !== '-') percent = '+' + percent; } var change = difference === 0 ? '—' : arrow + ' ' + value + unit; return { change: change, percent: percent, comparison: change + '（' + percent + '）' }; }
+      function overviewFor(projects) {
+        var m = aggregateOf(projects), previous = previousOf(m), unverifiedNote = m.unverified ? '；另有 ' + m.unverified + ' 名身份待核对' : '';
+        var cards = [
+          { label: '功能排期（完成率 / 延期率）', note: '完成 ' + m.done + ' / ' + m.total + ' 个功能；延期 ' + m.delayed + ' / ' + m.total + ' 个功能', items: [Object.assign({ role: '完成率', value: m.rateValue.toFixed(1) + '%' }, comparisonFor(Number(m.rateValue.toFixed(1)), Number(previous.rateValue.toFixed(1)), ' 个百分点', 1)), Object.assign({ role: '延期率', value: m.delayedValue.toFixed(1) + '%' }, comparisonFor(Number(m.delayedValue.toFixed(1)), Number(previous.delayedValue.toFixed(1)), ' 个百分点', 1))] },
+          { label: '活跃人数', note: '按提交挂靠，按角色分别展示' + unverifiedNote, items: STAT_ROLES.map(function (role) { return Object.assign({ role: role, value: m.roles[role].count + ' 人' }, comparisonFor(m.roles[role].count, previous.roles[role].count, ' 人', 0)); }) },
+          { label: 'Qoder 用量', note: '已匹配：' + STAT_ROLES.map(function (role) { var r = m.roles[role]; return role + ' ' + r.matched + '/' + r.count + ' 人' + (r.matched < r.count ? '（非全量）' : ''); }).join('；'), items: STAT_ROLES.map(function (role) { return Object.assign({ role: role, value: m.roles[role].qoder + ' Credits' }, comparisonFor(m.roles[role].qoder, previous.roles[role].qoder, ' Credits', 0)); }) },
+          { label: '代码提交行数（+ / -）', note: '新增 / 删除，按角色分别展示' + (m.unverified ? '；身份待核对作者不计入角色' : ''), items: STAT_ROLES.map(function (role) { var r = m.roles[role], p = previous.roles[role], add = comparisonFor(r.added, p.added, ' 行', 0), deletion = comparisonFor(r.removed, p.removed, ' 行', 0); return { role: role, value: '+' + r.added + ' / -' + r.removed, change: '新增 ' + add.change + '；删除 ' + deletion.change, percent: '新增 ' + add.percent + '；删除 ' + deletion.percent, comparison: '新增 ' + add.comparison + '；删除 ' + deletion.comparison }; }) }
+        ];
+        function valueHtml(value) { value = numberText(value); var unit = value.slice(-8) === ' Credits' ? ' Credits' : value.slice(-2) === ' 人' ? ' 人' : '', number = unit ? value.slice(0, -unit.length) : value; return '<div class="tpl-kpi__number"><span class="tpl-kpi__value">' + number + '</span>' + (unit ? '<span class="tpl-kpi__unit">' + unit.trim() + '</span>' : '') + '</div>'; }
+        function comparisonHtml(comparison) { var content = numberText(comparison).split('；').map(function (part) { var type = part.indexOf('↑') >= 0 ? 'is-up' : part.indexOf('↓') >= 0 ? 'is-down' : ''; return '<span class="tpl-kpi__delta' + (type ? ' ' + type : '') + '">' + part + '</span>'; }).join('；'); return '<div class="tpl-kpi__foot"><span class="tpl-kpi__label">较上期</span>' + content + '</div>'; }
+        function cardHtml(card) { var values = card.items.map(function (item) { return '<div class="tpl-kpi__foot"><span class="tpl-kpi__label">' + item.role + '</span>' + valueHtml(item.value) + '</div>' + comparisonHtml(item.comparison); }).join(''); return '<div class="tpl-kpi"><div class="tpl-kpi__head"><span class="tpl-kpi__label">' + card.label + '</span></div>' + values + '<div class="tpl-kpi__foot">' + card.note + '</div></div>'; }
+        var html = '<section class="tpl-section" aria-label="本期概览"><div class="tpl-section__head">本期概览</div><div class="tpl-kpi-grid">' + cards.map(cardHtml).join('') + '</div></section>';
+        var rows = cards.map(function (card) { function joined(key) { return card.items.map(function (item) { return item.role + '：' + item[key]; }).join('<br>'); } return [card.label, joined('value'), card.note, joined('change'), joined('percent')].map(numberText); });
+        return { html: html, raw: '\n\n**本期概览**\n\n' + tableMarkdown(['指标', '归档值', '补充说明', '较上期增减值', '较上期增减百分比'], rows) + '\n' };
+      }
+      function projectSection(project, format) {
+        var m = metricsOf(project), html = format === 'html';
+        var roleText = STAT_ROLES.map(function (role) { return m.roleCount[role]; }).join(' / ') + ' 人' + (m.unverified ? '；另有 ' + m.unverified + ' 名身份待核对' : '');
+        var keyHeaders = ['功能排期数', '非需求功能数', '完成功能数', '完成率', '延期功能数', '延期率', '人均功能数', '活跃人数（产品 / 研发 / 架构）', '提交次数', '提交行数（新增 / 删除）'];
+        var keyRows = [[m.total + ' 个', m.nonFeature + ' 个', m.done + ' 个', m.rate, m.delayed + ' 个', m.delayedRate, m.perFeatures, roleText, m.commits + ' 次', '+' + m.added + ' / -' + m.removed]];
+        var deliveryHeaders = ['功能', '状态', '开发人', '排期截止日', '完成时间'];
+        var deliveryRows = project.cards.slice().sort(function (a, b) { return STATUS[a.status].order - STATUS[b.status].order || a.deadline.localeCompare(b.deadline); }).map(function (card) { var status = STATUS[card.status]; return [card.title, html && status.cls ? '<span class="' + status.cls + '">' + status.label + '</span>' : status.label, card.dev || '-', card.deadline, card.doneAt || '-']; });
+        function block(title) { return html ? '<p class="gap-block-title">' + title + '</p>' : '\n**' + title + '**\n\n'; }
+        function table(headers, rows, emptyText) { return rows.length ? (html ? tableHtml(headers, rows) : tableMarkdown(headers, rows) + '\n') : (html ? '<p>' + emptyText + '</p>' : emptyText + '\n'); }
+        function list(items) { return html ? listHtml(items) : listMarkdown(items) + '\n'; }
+        return (html ? '<h3>' + project.name + '</h3>' : '\n### ' + project.name + '\n') + block('项目结论') + list(project.conclusions) + block('关键指标') + table(keyHeaders, keyRows) + block('本期交付') + table(deliveryHeaders, deliveryRows, '本期无功能排期') + block('风险与阻塞') + list(project.risks);
+      }
+      var HEALTH_REPOS = [
+        { name: 'busyming-skills-devops', previous: 82.4, current: 86.1, reportId: 'devops-20261101' },
+        { name: 'busyming-skills-inventory', previous: 79.8, current: 81.3, reportId: 'inventory-20261101' },
+        { name: 'busyming-skills-requirement', previous: 88.2, current: 86.7, reportId: 'requirement-20261101' }
+      ];
+      function healthRows(format) { return HEALTH_REPOS.map(function (repo) { var delta = (repo.current - repo.previous).toFixed(1), deltaText = delta > 0 ? '↑ +' + delta : delta < 0 ? '↓ ' + delta : '0.0'; var operation = format === 'html' ? '<a href="../../../产品文档健康度报告/assets/web/report-detail.html">查看报告</a>' : '[查看报告](/subapp/devhub/report/doc-health/detail/' + repo.reportId + ')'; return [repo.name, repo.previous.toFixed(1), repo.current.toFixed(1), deltaText, operation]; }); }
+      function reportSections(projects) {
+        var overviewHeaders = ['域', '本期结论', '功能排期数', '完成率', '延期功能数', '活跃人数', '提交次数', '提交行数（新增 / 删除）'];
+        var overviewRows = projects.map(function (project) { var m = metricsOf(project); return [project.name, project.summary || '-', m.total + ' 个', m.rate, m.delayed + ' 个', m.active + ' 人', m.commits + ' 次', '+' + m.added + ' / -' + m.removed]; });
+        var all = aggregateOf(projects);
+        overviewRows.push(['全量汇总(去重)', '-', all.total + ' 个', all.rate, all.delayed + ' 个', all.active + ' 人', all.commits + ' 次', '+' + all.added + ' / -' + all.removed]);
+        var healthHeaders = ['仓库', '上周健康度得分', '本周健康度得分', '较上期', '操作'];
+        return { html: '<h2>项目总览</h2>' + tableHtml(overviewHeaders, overviewRows) + '<h2>项目进展</h2>' + projects.map(function (project) { return projectSection(project, 'html'); }).join('') + '<h2>harness文档健康度</h2>' + tableHtml(healthHeaders, healthRows('html')), raw: '\n\n## 项目总览\n\n' + tableMarkdown(overviewHeaders, overviewRows) + '\n' + '\n## 项目进展\n' + projects.map(function (project) { return projectSection(project, 'markdown'); }).join('') + '\n## harness文档健康度\n\n' + tableMarkdown(healthHeaders, healthRows('markdown')) + '\n' };
+      }
+      function contentFor(report, version) { var projects = projectsFor(version, report.projects), period = report.period === 'monthly' ? report.start + ' ~ ' + report.end : report.start + '（周一）~ ' + report.end + '（周日）'; var body = reportSections(projects), overview = overviewFor(projects); var html = '<blockquote><p><strong>统计区间：' + period + '</strong>（Mock 示例，非生产数据）</p></blockquote>' + overview.html + body.html + '<hr><p>报告生成时间：' + report.end + ' 21:10:24（Mock）</p>'; var raw = '# ' + report.title + '\n\n> 统计区间：' + period + overview.raw + body.raw + '\n---\n*报告生成时间：' + report.end + ' 21:10:24（Mock）*\n'; return { html: html, raw: raw }; }
+      var cycleId = (new URLSearchParams(location.search).get('id') || 'W44-_all').replace(/-\d{4}-\d{2}-\d{2}$/, '');
+      $('fullLink').href = 'report-detail.html?id=' + encodeURIComponent(cycleId);
+      $('simpleLink').href = 'report-detail-simple.html?id=' + encodeURIComponent(cycleId);
+      var cycle = WEEKS.find(function (item) { return item.id + '-_all' === cycleId; });
+      function setShapeBusy(busy) {
+        ['full', 'simple'].forEach(function (shape) {
+          var link = $(shape + 'Link'), missing = !cycle || !cycle.forms[shape];
+          link.setAttribute('aria-disabled', String(busy || missing));
+          link.classList.toggle('is-disabled', busy || missing);
+          link.tabIndex = busy || missing ? -1 : 0;
+          link.title = missing ? '本周期该形态未入库' : busy ? '当前正在加载或导出，请稍候' : '';
+        });
+      }
+      ['fullLink', 'simpleLink'].forEach(function (id) { $(id).addEventListener('click', function (event) { if (this.getAttribute('aria-disabled') === 'true') event.preventDefault(); }); });
+      setShapeBusy(false);
+      function batchText(number) {
+        if (VERSIONS[number] && VERSIONS[number].batch) return VERSIONS[number].batch + (cycle.batch && cycle.batch.id === VERSIONS[number].batch ? ' · 完整版 v' + cycle.batch.versions.full + ' / 简化版 v' + cycle.batch.versions.simple : ' · 历史配对批次');
+        return report.uploaded[number] ? '手动补传，无配对批次' : '历史归档，无配对批次';
+      }
+
+      function resolveReport() {
+        var week = WEEKS.find(function (item) { return item.id + '-_all' === cycleId; }), entry = week && week.forms && week.forms.simple;
+        if (!entry) return null;
+        var actualDate = entry.date || week.end;
+        return { id: cycleId, shape: 'simple', scope: SCOPES[0], title: '项目进度报告（简化版） - ' + actualDate, date: actualDate, week: week.label, start: week.start, end: week.end, source: entry.source, latest: entry.version, file: 'progress_' + actualDate.replace(/-/g, '') + '__all_simple.md', period: week.period, uploaded: entry.uploaded || {} };
+      }
+      var report = resolveReport();
+      if (!report) { $('reportTitle').textContent = '项目进度报告（简化版） · 未入库'; $('reportScopeTag').textContent = '全部域'; ['metaScope', 'metaDate', 'metaWeek', 'metaPeriod', 'metaSource', 'metaSize', 'metaArchivedAt'].forEach(function (id) { $(id).textContent = '—'; }); $('versionSelect').hidden = true; $('downloadButton').disabled = true; $('exportPngButton').disabled = true; $('reportBody').hidden = true; $('emptyState').textContent = '本周期简化版尚未入库；请返回列表一次生成两份或单文件补传。'; $('emptyState').hidden = false; window.BusyNative.enhance(document); window.ReportDetailMock = { getReport: function () { return null; }, getRaw: function () { return ''; }, getFile: function () { return ''; }, getCycles: function () { return copy(WEEKS); } }; return; }
+      var latestVersion = report.latest, currentVersion = latestVersion, loading = false, restoring = false, exporting = false;
+      var VERSIONS = {};
+      for (var version = 1; version <= latestVersion; version++) {
+        var snapshot = cycle.forms.simple.history[version], upload = report.uploaded[version];
+        var versionReport = Object.assign({}, report, { projects: copy(snapshot.projects), date: snapshot.date, title: '项目进度报告（简化版） - ' + snapshot.date });
+        var content = snapshot.content || contentFor(versionReport, version);
+        if (upload) content = { raw: upload.raw, html: '<pre style="white-space:pre-wrap;overflow-wrap:anywhere">' + esc(upload.raw) + '</pre>' };
+        snapshot.content = copy(content);
+        VERSIONS[version] = { projects: copy(snapshot.projects), title: versionReport.title, date: snapshot.date, batch: snapshot.batch, file: upload ? upload.file : 'progress_' + snapshot.date.replace(/-/g, '') + '__all_simple.md', source: upload ? '手动补传' : snapshot.source, size: (new Blob([content.raw]).size / 1024).toFixed(1) + ' KB', archivedAt: upload ? upload.archivedAt : snapshot.date + ' ' + (version === latestVersion ? '21:10:24' : '19:42:08'), html: content.html, raw: content.raw };
+      }
+      saveCycles();
+      function message(text, type) { window.BusyNative.message(text, type || 'success'); }
+      function restoreSelect() { restoring = true; $('versionSelect')._setValue(String(currentVersion)); restoring = false; }
+      function applyVersion(number) { var version = VERSIONS[number]; currentVersion = number; report.title = version.title; report.date = version.date; report.file = version.file; report.source = version.source; report.version = number; report.projects = copy(version.projects); $('reportTitle').textContent = version.title; $('metaDate').textContent = version.date; $('metaScope').textContent = '全部域（' + version.projects.length + ' 域）'; $('metaBatch').textContent = batchText(number); $('metaSource').textContent = version.source; $('metaSize').textContent = version.size; $('metaArchivedAt').textContent = version.archivedAt; $('reportBody').innerHTML = version.html; $('reportBody').hidden = !version.html.trim(); $('emptyState').hidden = !!version.html.trim(); $('historyAlert').hidden = number === latestVersion; $('historyAlertText').textContent = '当前查看简化版历史版本 v' + number + '（只读），简化版最新为 v' + latestVersion + '；形态之间不沿用历史版本。'; }
+      function finishLoading() { loading = false; setShapeBusy(false); $('versionLoading').hidden = true; $('reader').setAttribute('aria-busy', 'false'); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; $('exportPngButton').disabled = false; }
+      function loadVersion(number, silent) { if (exporting) { restoreSelect(); return; } if (loading || number === currentVersion) { if (number !== currentVersion) restoreSelect(); return; } if (!VERSIONS[number]) { message('版本加载失败', 'error'); restoreSelect(); return; } loading = true; setShapeBusy(true); $('versionLoading').hidden = false; $('reader').setAttribute('aria-busy', 'true'); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; $('exportPngButton').disabled = true; setTimeout(function () { try { applyVersion(number); try { history.replaceState(null, '', '?id=' + report.id + '&v=' + number); } catch (ignore) {} finishLoading(); restoreSelect(); if (!silent) message('已切换到 v' + number + (number === latestVersion ? '（当前版本）' : '（历史版本，只读）')); } catch (error) { finishLoading(); restoreSelect(); message('版本加载失败', 'error'); } }, 450); }
+      function setButtonLoading(button, active) { button.disabled = active; button.classList.toggle('is-loading', active); var spinner = button.querySelector('.busy-button__loading'); if (active && !spinner) button.insertBefore(window.BusyNative.node('span', 'busy-button__loading'), button.firstChild); if (!active && spinner) spinner.remove(); }
+      /* 单张 PNG：先测量完整高度再一次绘制；超出浏览器单图上限时整体降低像素密度，不拆分 */
+      async function rasterize(raw, version) {
+        var width = 1600, padding = 40, contentWidth = width - padding * 2, MAX_SIDE = 32000, MAX_AREA = 250000000;
+        var rootStyle = getComputedStyle(document.documentElement), fontFamily = getComputedStyle($('reportBody')).fontFamily;
+        function token(name) { return rootStyle.getPropertyValue(name).trim(); }
+        var colors = { text: token('--busy-text-primary'), secondary: token('--busy-text-secondary'), border: token('--busy-border-color-lighter'), fill: token('--busy-fill-color-light'), white: token('--busy-bg-color'), success: token('--busy-color-success'), danger: token('--busy-color-danger') };
+        var context = document.createElement('canvas').getContext('2d'), drawing = false, y = 0;
+        function text(value, x, baseline, font, color, align) { context.font = font + ' ' + fontFamily; if (!drawing) return; context.fillStyle = color || colors.text; context.textBaseline = 'alphabetic'; context.textAlign = align || 'left'; context.fillText(value, x, baseline); }
+        function line(x1, x2, top) { if (!drawing) return; context.strokeStyle = colors.border; context.lineWidth = 1; context.beginPath(); context.moveTo(x1, top + 0.5); context.lineTo(x2, top + 0.5); context.stroke(); }
+        function fill(x, top, w, h) { if (!drawing) return; context.fillStyle = colors.fill; context.fillRect(x, top, w, h); }
+        function plain(value) { return String(value).replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/\*\*/g, '').replace(/<li>/gi, '• ').replace(/<\/li>/gi, '\n').replace(/<br\s*\/?>/gi, '\n').replace(/<[^>]+>/g, '').trim(); }
+        function wrap(value, maxWidth, font) { context.font = font + ' ' + fontFamily; var result = []; plain(value).split('\n').forEach(function (part) { var bullet = part.indexOf('• ') === 0, indent = bullet ? 16 : 0, current = '', first = true; Array.from(bullet ? part.slice(2) : part).forEach(function (character) { if (current && context.measureText(current + character).width > maxWidth - indent) { result.push({ text: current, indent: indent, bullet: bullet && first }); current = character; first = false; } else current += character; }); result.push({ text: current, indent: indent, bullet: bullet && first }); }); return result; }
+        function drawLines(items, x, top, font, color, right) { items.forEach(function (item, index) { if (item.bullet) text('•', x, top + index * 22, font, color); text(item.text, right ? x : x + item.indent, top + index * 22, font, color, right ? 'right' : 'left'); }); }
+        function cellColor(header, source, summary) { if (header === '较上期' && source.charAt(0) === '↑') return colors.success; if (header === '较上期' && source.charAt(0) === '↓') return colors.danger; if (header === '状态' && source === '延期') return colors.danger; if (header === '状态' && source === '已完成') return colors.success; return summary ? colors.text : colors.secondary; }
+        function renderTable(rows, align) {
+          var headers = rows[0], weights = headers.map(function (header) { return WIDE_COLUMNS.indexOf(plain(header)) >= 0 ? 2.4 : 1; });
+          var totalWeight = weights.reduce(function (sum, value) { return sum + value; }, 0), widths = weights.map(function (value) { return contentWidth * value / totalWeight; });
+          function drawRow(cells, top, font, colorOf, background) { var cellLines = cells.map(function (cell, index) { return wrap(cell, widths[index] - 24, font); }); var rowHeight = Math.max.apply(null, cellLines.map(function (items) { return items.length; })) * 22 + 20, x = padding; if (background) fill(padding, top, contentWidth, rowHeight); cellLines.forEach(function (items, index) { var right = align[index] === 'right'; drawLines(items, right ? x + widths[index] - 12 : x + 12, top + 24, font, colorOf(index), right); x += widths[index]; }); line(padding, width - padding, top + rowHeight); return rowHeight; }
+          y += drawRow(headers, y, '600 14px', function () { return colors.text; }, true);
+          rows.slice(1).forEach(function (row) { var summary = isSummaryLabel(plain(row[0])); y += drawRow(row, y, (summary ? '600' : '400') + ' 14px', function (index) { return cellColor(headers[index], plain(row[index]), summary); }, summary); });
+          y += 16;
+        }
+        function run() {
+          y = 0; text(report.title, padding, 64, '600 26px'); text('统计区间：' + report.start + ' ~ ' + report.end + ' · v' + version, padding, 96, '14px', colors.secondary); line(padding, width - padding, 116); y = 136;
+          var lines = raw.split('\n');
+          for (var index = 0; index < lines.length; index++) {
+            var value = lines[index].trim();
+            if (!value || value.indexOf('# ') === 0 || value.indexOf('> ') === 0) continue;
+            if (value.charAt(0) === '|') { var rows = [], align = []; while (index < lines.length && lines[index].trim().charAt(0) === '|') { rows.push(lines[index].trim().replace(/^\||\|$/g, '').split('|').map(function (cell) { return cell.trim(); })); index++; } index--; if (rows.length > 1 && rows[1].every(function (cell) { return /^:?-+:?$/.test(cell); })) align = rows.splice(1, 1)[0].map(function (cell) { return /-:$/.test(cell) ? 'right' : 'left'; }); renderTable(rows, align); }
+            else if (value.indexOf('### ') === 0) { y += 8; text(value.slice(4), padding, y + 24, '600 19px'); y += 40; }
+            else if (value.indexOf('## ') === 0) { y += 16; line(padding, width - padding, y); text(value.slice(3), padding, y + 40, '600 22px'); y += 60; }
+            else if (/^\*\*[^*]+\*\*$/.test(value)) { text(value.slice(2, -2), padding, y + 22, '600 15px'); y += 34; }
+            else if (value === '---') { line(padding, width - padding, y); y += 20; }
+            else { var items = wrap(value.indexOf('- ') === 0 ? '• ' + value.slice(2) : value, contentWidth, '14px'); drawLines(items, padding, y + 18, '14px', colors.secondary, false); y += items.length * 22 + 6; }
+          }
+          return y + padding;
+        }
+        var height = Math.ceil(run()), scale = Math.min(1, MAX_SIDE / height, Math.sqrt(MAX_AREA / (width * height))), canvas = document.createElement('canvas');
+        canvas.width = Math.floor(width * scale); canvas.height = Math.floor(height * scale); context = canvas.getContext('2d'); context.scale(scale, scale); context.fillStyle = colors.white; context.fillRect(0, 0, width, height); drawing = true; run();
+        return new Promise(function (resolve, reject) { canvas.toBlob(function (result) { result ? resolve(result) : reject(new Error('图片导出失败，请重试')); }, 'image/png'); });
+      }
+      async function exportPng() { if (loading || exporting) return; if (!VERSIONS[currentVersion].html.trim()) { message('报告内容为空，无法导出图片', 'error'); return; } var button = $('exportPngButton'), version = currentVersion, raw = VERSIONS[version].raw; exporting = true; setShapeBusy(true); setButtonLoading(button, true); $('versionSelect').classList.add('is-disabled'); $('downloadButton').disabled = true; try { await document.fonts.ready; var blob = await rasterize(raw, version), url = URL.createObjectURL(blob), anchor = document.createElement('a'); anchor.href = url; anchor.download = report.file.replace(/\.md$/i, '_v' + version + '.png'); anchor.hidden = true; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); message('已导出 ' + anchor.download); } catch (error) { message(error.message || '图片导出失败，请重试', 'error'); } finally { exporting = false; setShapeBusy(false); setButtonLoading(button, false); $('versionSelect').classList.remove('is-disabled'); $('downloadButton').disabled = false; } }
+      function download() { if (loading || exporting) return; var snapshot = copy(VERSIONS[currentVersion]), button = $('downloadButton'); exporting = true; setShapeBusy(true); $('versionSelect').classList.add('is-disabled'); $('exportPngButton').disabled = true; setButtonLoading(button, true); setTimeout(function () { try { var raw = snapshot.raw; if (!raw) throw new Error('该版本无原始 Markdown 内容'); var url = URL.createObjectURL(new Blob([raw], { type: 'text/markdown;charset=utf-8' })); var anchor = document.createElement('a'); anchor.href = url; anchor.download = snapshot.file; anchor.hidden = true; document.body.append(anchor); anchor.click(); anchor.remove(); setTimeout(function () { URL.revokeObjectURL(url); }, 1000); message('已开始下载 ' + anchor.download); } catch (error) { message(error.message || '下载失败，请重试', 'error'); } exporting = false; setShapeBusy(false); $('versionSelect').classList.remove('is-disabled'); $('exportPngButton').disabled = false; setButtonLoading(button, false); }, 300); }
+      $('reportTitle').textContent = report.title;
+      $('reportScopeTag').textContent = '全部域';
+      $('metaScope').textContent = '全部域（' + PROJECTS.length + ' 组）';
+      $('metaWeek').previousElementSibling.textContent = report.period === 'monthly' ? '所属月' : '所属周';
+      $('metaDate').textContent = report.date; $('metaWeek').textContent = report.week.split('（')[0].trim(); $('metaPeriod').textContent = report.start + ' ~ ' + report.end;
+      $('reportPage').dataset.reportId = report.id;
+      var options = [];
+      for (var number = latestVersion; number >= 1; number--) options.push({ value: String(number), label: 'v' + number + (number === latestVersion ? '（当前版本）' : '（历史版本）') });
+      window.BusyNative.select($('versionSelect'), options, String(latestVersion), function (value) { if (!restoring) loadVersion(Number(value), false); });
+      window.BusyNative.enhance(document); $('downloadButton').addEventListener('click', download); $('exportPngButton').addEventListener('click', exportPng); applyVersion(latestVersion); restoreSelect();
+      var requested = Number(new URLSearchParams(window.location.search).get('v') || latestVersion);
+      if (requested !== latestVersion) loadVersion(requested, true);
+      window.ReportDetailMock = { setState: function (state) { if (state === 'empty') { VERSIONS[currentVersion].html = ''; VERSIONS[currentVersion].raw = ''; applyVersion(currentVersion); } }, getReport: function () { return report; }, getRaw: function (version) { return VERSIONS[version || currentVersion].raw; }, getFile: function (version) { return VERSIONS[version || currentVersion].file; }, getVersion: function () { return currentVersion; }, getSnapshot: function () { return copy(VERSIONS[currentVersion]); }, loadVersion: function (v) { loadVersion(Number(v), true); }, renderPng: function () { return rasterize(VERSIONS[currentVersion].raw, currentVersion); }, exportPng: exportPng };
+    })();
+  </script>
+</body>
+</html>
