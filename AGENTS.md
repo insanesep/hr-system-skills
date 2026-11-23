@@ -31,6 +31,7 @@ busyming-skills-devops/
 │   ├── 项目管理/
 │   ├── 功能排期管理/
 │   ├── Qoder用量分析/
+│   ├── 人员活跃看板/
 │   ├── 研发成本统计/
 │   │   ├── SKILL.md
 │   │   ├── references/
@@ -140,6 +141,7 @@ busyming-skills-devops/
 | 项目管理 | [SKILL.md](研发管理/项目管理/SKILL.md) | `/rnd/projects`（产品页面约定） | 项目配置、harness 与代码服务仓映射、通用 Git 仓库及连接测试、项目内成员管理；同人可参与多项目，提供报告范围 |
 | 功能排期管理 | [SKILL.md](研发管理/功能排期管理/SKILL.md) | `/feature-schedule` | commit 出卡、排期、领取与完成、延期、需求澄清与合并；项目、Git 仓库与成员统计范围只读引用项目管理；排期账号与操作权限沿用公共身份；卡片详情不单独占菜单 |
 | Qoder 用量分析 | [SKILL.md](研发管理/Qoder用量分析/SKILL.md) | `/rnd/qoder-usage` | Credits 只读分析；人员范围引用项目管理，保留部门、日期与模型等级维度；不是 MCP 接入令牌管理 |
+| 人员活跃看板 | [SKILL.md](研发管理/人员活跃看板/SKILL.md) | `/rnd/member-activity`（产品页面约定） | 按职能域组织查看提交与 Qoder 用量的绿 / 黄 / 红活跃甘特，考勤作背景；开发 / 产品 / 测试角色指标只读引用外部效能平台；个人下钻排期卡片与用量；只读 |
 | 研发成本统计 / 费用列表 | [SKILL.md](研发管理/研发成本统计/费用列表/SKILL.md) | `/rnd/dev-cost/list` | 研发费用制单、查询、审核、作废与品牌分摊；费用明细为本功能的非菜单页面 |
 | 研发成本统计 / 品牌成本报表 | [SKILL.md](研发管理/研发成本统计/品牌成本报表/SKILL.md) | `/rnd/dev-cost/report` | 品牌、费用科目与年月维度的已审核费用分摊透视 |
 | 功能使用情况分析 / 事务流水明细 | [SKILL.md](研发管理/功能使用情况分析/事务流水明细/SKILL.md) | `/portal/usage-events` | 按接入系统查询事件流水、详情、相邻事件及导出 |
