@@ -1,0 +1,128 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>人资管理工作台 · 待办、预警、日程与数据概览</title>
+  <link rel="stylesheet" href="../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ 工作台</span>
+    <span class="spacer">静态 Mock · 按角色与数据权限聚合</span>
+  </nav>
+
+  <main class="page" id="workbench">
+    <section class="hero">
+      <div>
+        <h1>早上好，李静怡</h1>
+        <p>今天是 2026-11-24 周一 · 你当前负责技术中心的人资管理工作</p>
+      </div>
+      <div class="hero-actions">
+        <label class="field">组织范围 <select><option>技术中心（全部）</option><option>产品研发部</option><option>基础平台部</option><option>信息安全部</option></select></label>
+        <button class="btn" type="button" data-toast="工作台已刷新">刷新</button>
+        <button class="btn" type="button" data-toast="已按当前范围导出工作台数据">导出</button>
+      </div>
+    </section>
+
+    <div class="stats" id="overview">
+      <div class="stat"><div class="num">842</div><div class="label">在编人数</div><div class="hint">含待编制确认 18 人</div></div>
+      <div class="stat"><div class="num">37</div><div class="label">可用缺额</div><div class="hint">编制数 − 在编 − 招聘占用</div></div>
+      <div class="stat"><div class="num">28</div><div class="label">在招需求</div><div class="hint">招聘中需求</div></div>
+      <div class="stat"><div class="num">16</div><div class="label">待入职</div><div class="hint">Offer 已接受且未到岗</div></div>
+      <div class="stat"><div class="num">12</div><div class="label">本月入职</div><div class="hint">已确认入职</div></div>
+      <div class="stat"><div class="num">18</div><div class="label">本月离职</div><div class="hint">已确认离职</div></div>
+      <div class="stat"><div class="num">23</div><div class="label">本月转正</div><div class="hint">已生效</div></div>
+      <div class="stat"><div class="num">332</div><div class="label">待切换岗位映射</div><div class="hint">命名不一致 + 职级错配</div></div>
+    </div>
+
+    <div class="split-2" style="margin-bottom:14px">
+      <div class="card section-card" id="todos">
+        <div class="card-head">
+          <div><h2 class="card-title">待办</h2><p class="card-sub">按来源模块汇总当前用户可处理记录，点击卡片进入对应台账</p></div>
+          <span class="tag tag-primary">10 个模块</span>
+        </div>
+        <div class="todo-grid">
+          <div class="todo-card" data-toast="进入招聘过程工作台：待处理简历 12 · 待安排初试 4 · 待发 Offer 2"><div class="todo-top"><span class="tag tag-neutral">招聘</span><span class="todo-num">18</span></div><div class="todo-label">招聘待办</div><div class="todo-sub">待处理简历 12 · 待安排初试 4 · 待发 Offer 2</div></div>
+          <div class="todo-card" data-toast="进入入职台账：今日待入职 4 · 待确认入职 2"><div class="todo-top"><span class="tag tag-neutral">入职</span><span class="todo-num">6</span></div><div class="todo-label">入职待办</div><div class="todo-sub">今日待入职 4 · 待确认 2</div></div>
+          <div class="todo-card" data-toast="进入转正台账：待评估 12 · 已延期 3 · 待审批 7"><div class="todo-top"><span class="tag tag-neutral">转正</span><span class="todo-num">22</span></div><div class="todo-label">转正待办</div><div class="todo-sub">待评估 12 · 已延期 3 · 待审批 7</div></div>
+          <div class="todo-card" data-toast="进入离职台账：待审批 6 · 待确认 4"><div class="todo-top"><span class="tag tag-neutral">离职</span><span class="todo-num">10</span></div><div class="todo-label">离职待办</div><div class="todo-sub">待审批 6 · 待确认 4</div></div>
+          <div class="todo-card" data-toast="进入异动台账：待审批 5 · 待生效 3"><div class="todo-top"><span class="tag tag-neutral">异动</span><span class="todo-num">8</span></div><div class="todo-label">调岗晋升待办</div><div class="todo-sub">待审批 5 · 待生效 3</div></div>
+          <div class="todo-card" data-toast="进入绩效评价：待自评 3 · 待评价 6 · 待通晒 2"><div class="todo-top"><span class="tag tag-neutral">绩效</span><span class="todo-num">11</span></div><div class="todo-label">绩效待办</div><div class="todo-sub">待自评 3 · 待评价 6 · 待通晒 2</div></div>
+          <div class="todo-card" data-toast="进入编制台账：待审批 2 · 待编制确认 18"><div class="todo-top"><span class="tag tag-neutral">编制</span><span class="todo-num">20</span></div><div class="todo-label">编制待办</div><div class="todo-sub">待审批 2 · 待编制确认 18</div></div>
+          <div class="todo-card" data-toast="进入岗位映射：待切换 332 条，其中可切换 186 条"><div class="todo-top"><span class="tag tag-neutral">岗位</span><span class="todo-num">332</span></div><div class="todo-label">岗位映射待办</div><div class="todo-sub">命名不一致 186 · 职级错配 74</div></div>
+          <div class="todo-card" data-toast="进入合同台账：待签订 5 · 即将到期 6 · 待解除 2"><div class="todo-top"><span class="tag tag-neutral">合同</span><span class="todo-num">13</span></div><div class="todo-label">合同待办</div><div class="todo-sub">待签订 5 · 即将到期 6 · 待解除 2</div></div>
+          <div class="todo-card" data-toast="进入考勤台账：待审批假勤 7 · 异常待处理 27"><div class="todo-top"><span class="tag tag-neutral">考勤</span><span class="todo-num">34</span></div><div class="todo-label">考勤待办</div><div class="todo-sub">假勤审批 7 · 异常待处理 27</div></div>
+        </div>
+      </div>
+
+      <div class="card section-card" id="alerts">
+        <div class="card-head">
+          <div><h2 class="card-title">预警</h2><p class="card-sub">按严重程度排序，点击进入来源模块处理</p></div>
+          <span class="tag tag-danger">3 条高风险</span>
+        </div>
+        <div class="alert-list">
+          <div class="alert-item is-high" data-toast="进入招聘需求管理：3 条需求招聘天数 ≥150 天"><div class="alert-icon">!</div><div class="alert-main"><div class="alert-title">招聘超期 · 3 条需求</div><div class="alert-sub">关键岗位 2 条、S1 岗位 1 条，最长 186 天</div></div><span class="tag tag-danger">高</span></div>
+          <div class="alert-item is-high" data-toast="进入转正台账：2 条试用期 7 天内到期"><div class="alert-icon">!</div><div class="alert-main"><div class="alert-title">试用期到期 · 2 人</div><div class="alert-sub">张嘉 12-10、张伟 12-05，待评估</div></div><span class="tag tag-danger">高</span></div>
+          <div class="alert-item" data-toast="进入离职台账：1 条离职交接逾期"><div class="alert-icon">·</div><div class="alert-main"><div class="alert-title">离职交接逾期 · 1 条</div><div class="alert-sub">李欣最后工作日 11-28，合同文件未完成</div></div><span class="tag tag-warn">中</span></div>
+          <div class="alert-item" data-toast="进入异动台账：1 条异动生效冲突"><div class="alert-icon">·</div><div class="alert-main"><div class="alert-title">异动生效冲突 · 1 条</div><div class="alert-sub">目标编制缺额被占用，需调整或撤销</div></div><span class="tag tag-warn">中</span></div>
+          <div class="alert-item" data-toast="进入编制台账：可用缺额为负的编制行 2 条"><div class="alert-icon">·</div><div class="alert-main"><div class="alert-title">编制超编 · 2 行</div><div class="alert-sub">外包超编 1 行，内部编制 1 行</div></div><span class="tag tag-warn">中</span></div>
+          <div class="alert-item is-high" data-toast="进入合同管理：2 条合同 7 天内到期"><div class="alert-icon">!</div><div class="alert-main"><div class="alert-title">合同到期 · 2 条</div><div class="alert-sub">王杰 11-30、王强 12-01，建议续签</div></div><span class="tag tag-danger">高</span></div>
+          <div class="alert-item" data-toast="进入考勤管理：27 条考勤异常待处理"><div class="alert-icon">·</div><div class="alert-main"><div class="alert-title">考勤异常 · 27 条</div><div class="alert-sub">迟到 12、缺卡 9、旷工 6</div></div><span class="tag tag-warn">中</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid-2">
+      <div class="card section-card" id="schedule">
+        <div class="card-head">
+          <div><h2 class="card-title">未来七天日程</h2><p class="card-sub">面试、入职、离职、转正、异动与绩效节点</p></div>
+          <div class="filter-row"><label class="field"><input type="checkbox"> 仅看与我相关</label></div>
+        </div>
+        <div class="schedule-list">
+          <div class="schedule-item"><div class="schedule-date"><b>11-24</b>今天</div><div class="schedule-main"><div class="title">面试 · 产品经理终试</div><div class="sub">14:00 · 产品研发部 · 面试官 王婷</div></div><span class="tag tag-primary">面试</span></div>
+          <div class="schedule-item"><div class="schedule-date"><b>11-25</b>周二</div><div class="schedule-main"><div class="title">入职 · 张嘉</div><div class="sub">09:00 · 产品研发部 / 用户研发组 · 产品经理 P5</div></div><span class="tag tag-success">入职</span></div>
+          <div class="schedule-item"><div class="schedule-date"><b>11-28</b>周五</div><div class="schedule-main"><div class="title">离职最后工作日 · 李欣</div><div class="sub">基础平台部 / 人力研发组 · 待确认离职</div></div><span class="tag tag-warn">离职</span></div>
+          <div class="schedule-item"><div class="schedule-date"><b>12-01</b>周二</div><div class="schedule-main"><div class="title">异动生效 · 王强 晋升 P9</div><div class="sub">产品研发部 / 用户研发组 · 测试专家</div></div><span class="tag tag-neutral">异动</span></div>
+          <div class="schedule-item"><div class="schedule-date"><b>12-01</b>周二</div><div class="schedule-main"><div class="title">合同到期 · 王强</div><div class="sub">门店业务部 / 工程产研组 · 固定期限合同到期</div></div><span class="tag tag-warn">合同</span></div>
+          <div class="schedule-item"><div class="schedule-date"><b>12-01</b>周二</div><div class="schedule-main"><div class="title">月度考勤确认 · 2026-11</div><div class="sub">技术中心 · 待确认月度汇总</div></div><span class="tag tag-neutral">考勤</span></div>
+          <div class="schedule-item"><div class="schedule-date"><b>12-05</b>周六</div><div class="schedule-main"><div class="title">试用期结束 · 张伟</div><div class="sub">基础平台部 / 人力研发组 · 待评估</div></div><span class="tag tag-primary">转正</span></div>
+        </div>
+      </div>
+
+      <div class="card section-card" id="shortcuts">
+        <div class="card-head">
+          <div><h2 class="card-title">快捷入口</h2><p class="card-sub">按菜单权限展示，点击进入来源模块</p></div>
+          <span class="tag tag-neutral">最近访问</span>
+        </div>
+        <div class="shortcut-grid">
+          <div class="shortcut" data-toast="进入招聘工作台"><span class="icon">招</span>招聘工作台</div>
+          <div class="shortcut" data-toast="进入入职台账"><span class="icon">入</span>入职台账</div>
+          <div class="shortcut" data-toast="进入转正台账"><span class="icon">转</span>转正台账</div>
+          <div class="shortcut" data-toast="进入离职台账"><span class="icon">离</span>离职台账</div>
+          <div class="shortcut" data-toast="进入异动台账"><span class="icon">动</span>异动台账</div>
+          <div class="shortcut" data-toast="进入绩效通晒"><span class="icon">绩</span>绩效通晒</div>
+          <div class="shortcut" data-toast="进入编制台账"><span class="icon">编</span>编制台账</div>
+          <div class="shortcut" data-toast="进入岗位管理"><span class="icon">岗</span>岗位管理</div>
+          <div class="shortcut" data-toast="进入合同管理"><span class="icon">合</span>合同管理</div>
+          <div class="shortcut" data-toast="进入考勤管理"><span class="icon">勤</span>考勤管理</div>
+          <div class="shortcut" data-toast="进入员工资料"><span class="icon">档</span>员工资料</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../原型图/prototype/prototype.js"></script>
+</body>
+</html>

@@ -1,0 +1,988 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>招聘 · 示例集团 App</title>
+<!--
+  招聘过程管理 · App 端静态原型（Mock）
+  App 菜单 devhubAppRecruitProcess · 独占 devhubAppRecruitProcessM
+  业务规则真源：分组 文档/业务规则.md、数据模型.md
+  高频闭环，重表单引导 Web；面试官仅本人场次且不含薪资与 Offer
+-->
+<style>
+:root{--primary:#2563eb;--primary-weak:#eff4ff;--primary-line:#bfd3ff;--bg:#f4f6fa;--panel:#fff;--line:#e5e8ef;--line-strong:#d3d9e4;--text:#1f2937;--muted:#6b7280;--subtle:#9aa3b2;--success:#15803d;--success-weak:#eaf7ef;--warn:#b45309;--warn-weak:#fff7e6;--danger:#b91c1c;--danger-weak:#fdecec;--radius:12px;--shadow:0 1px 2px rgba(16,24,40,.05),0 2px 8px rgba(16,24,40,.06)}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}[hidden]{display:none!important}html,body{margin:0;height:100%}
+body{background:#e9edf5;color:var(--text);font:14px/1.55 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;display:flex;justify-content:center;align-items:center;min-height:100vh}
+.stage{padding:20px}.phone{position:relative;width:390px;height:844px;background:var(--bg);border-radius:40px;border:8px solid #0f172a;box-shadow:0 24px 64px rgba(15,23,42,.24);overflow:hidden;display:flex;flex-direction:column}
+.statusbar{flex:none;height:34px;display:flex;align-items:center;justify-content:space-between;padding:0 22px;font-size:12px;font-weight:600;background:#fff}
+.navbar{flex:none;height:48px;display:flex;align-items:center;gap:6px;padding:0 8px;background:#fff;border-bottom:1px solid var(--line);position:relative;z-index:5}
+.navbar__back{width:32px;height:32px;border:0;background:none;font-size:24px;line-height:1;color:var(--text);cursor:pointer}
+.navbar__title{flex:1;font-size:16px;font-weight:600;text-align:center}
+.navbar__action{min-width:44px;height:32px;border:0;background:none;color:var(--primary);font-size:13px;cursor:pointer;padding:0 6px}
+.scroll{flex:1;overflow-y:auto;overscroll-behavior:contain;padding:12px 12px 28px;-webkit-overflow-scrolling:touch}
+.view{display:flex;flex-direction:column;gap:12px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px}
+.card--tap{cursor:pointer}.card--tap:active{background:#f8fafc}
+.section__head{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.section__title{font-size:15px;font-weight:600}.section__extra{font-size:12px;color:var(--muted)}
+.seg{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}.seg::-webkit-scrollbar{display:none}
+.seg__item{flex:none;height:32px;padding:0 12px;border-radius:16px;background:#fff;border:1px solid var(--line-strong);color:var(--muted);font-size:13px;display:inline-flex;align-items:center;cursor:pointer}
+.seg__item--active{background:var(--primary-weak);border-color:var(--primary-line);color:var(--primary);font-weight:600}
+.kpi-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.kpi{background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:12px;box-shadow:var(--shadow);cursor:pointer}
+.kpi:active{background:#f8fafc}
+.kpi--wide{grid-column:1/-1}.kpi__label{font-size:12px;color:var(--muted)}.kpi__value{font-size:24px;font-weight:700;margin-top:2px;font-variant-numeric:tabular-nums}.kpi__sub{font-size:12px;color:var(--subtle);margin-top:2px}
+.entry-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:4px}
+.entry{display:flex;flex-direction:column;align-items:center;gap:6px;padding:8px 0;border:0;background:none;cursor:pointer;position:relative}
+.entry__icon{width:44px;height:44px;border-radius:14px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:700;color:#fff;background:var(--primary)}
+.entry__icon--orange{background:#ea580c}.entry__icon--green{background:#15803d}.entry__icon--violet{background:#7c3aed}.entry__icon--slate{background:#475569}
+.entry__label{font-size:12px;color:var(--text)}
+.entry__badge{position:absolute;top:4px;right:8px;min-width:16px;height:16px;padding:0 4px;border-radius:8px;background:var(--danger);color:#fff;font-size:10px;line-height:16px;text-align:center}
+.cell{display:flex;align-items:flex-start;gap:10px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);cursor:pointer}
+.cell:active{background:#f8fafc}.cell--static{cursor:default}.cell__main{flex:1;min-width:0}
+.cell__title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.cell__sub{font-size:12px;color:var(--muted);margin-top:3px;display:flex;flex-wrap:wrap;gap:4px 10px}
+.cell__side{flex:none;text-align:right;font-size:12px;color:var(--muted);display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.avatar{width:38px;height:38px;border-radius:50%;background:#fde8dc;color:#c2410c;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:600;flex:none}
+.avatar.lg{width:52px;height:52px;font-size:20px}
+.tag{display:inline-flex;align-items:center;height:20px;padding:0 6px;border-radius:6px;font-size:11px;background:#f1f5f9;color:var(--muted);white-space:nowrap}
+.tag--primary{background:var(--primary-weak);color:var(--primary)}.tag--success{background:var(--success-weak);color:var(--success)}.tag--warn{background:var(--warn-weak);color:var(--warn)}.tag--danger{background:var(--danger-weak);color:var(--danger)}
+.btn{height:40px;padding:0 14px;border-radius:10px;border:1px solid var(--line-strong);background:#fff;font-size:14px;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:6px}
+.btn:active{background:#f8fafc}
+.btn--primary{background:var(--primary);border-color:var(--primary);color:#fff}.btn--primary:active{background:#1d4ed8}
+.btn--ghost{background:var(--primary-weak);border-color:var(--primary-line);color:var(--primary)}.btn--danger{background:#fff;border-color:#f3c6c6;color:var(--danger)}
+.btn--sm{height:30px;padding:0 10px;font-size:12px;border-radius:8px}.btn--block{width:100%}.btn--disabled{opacity:.45;pointer-events:none}
+.bottombar{position:sticky;bottom:0;display:flex;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(6px)}
+.bottombar .btn{flex:1}
+.hero{display:flex;align-items:center;gap:10px}.hero__name{font-size:17px;font-weight:700}.hero__sub{font-size:12px;color:var(--muted)}
+.kv{display:flex;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}.kv:last-child{border-bottom:0}.kv__k{color:var(--muted);flex:none}.kv__v{text-align:right;word-break:break-all}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.stat{background:#f8fafc;border-radius:10px;padding:10px;text-align:center}.stat__num{font-size:18px;font-weight:700}.stat__label{font-size:11px;color:var(--muted)}
+.week{display:grid;grid-template-columns:repeat(7,1fr);gap:4px;align-items:end}
+.week__day{border:0;background:none;padding:8px 0;border-radius:10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;color:var(--muted);font-size:12px}
+.week__day--active{background:var(--primary);color:#fff}.week__wd{font-size:11px;opacity:.8}.week__date{font-size:13px;font-weight:600}
+.week__dot{width:5px;height:5px;border-radius:50%;background:var(--primary)}.week__day--active .week__dot{background:#fff}
+.event{display:flex;gap:10px;padding:12px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.event__time{width:48px;flex:none;font-size:13px;font-weight:700;font-variant-numeric:tabular-nums}
+.event__body{flex:1;min-width:0}.event__title{font-size:14px;font-weight:600;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.event__meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;flex-wrap:wrap;gap:2px 8px}.event__actions{display:flex;gap:6px;margin-top:8px;justify-content:flex-end}
+.switch{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}.switch input{width:18px;height:18px;accent-color:var(--primary)}
+.searchbar{display:flex;gap:8px;align-items:center}.searchbar .input{flex:1;min-width:0}
+.input{width:100%;height:38px;padding:0 12px;border:1px solid var(--line-strong);border-radius:10px;background:#fff;font-size:14px;outline:none}.input:focus{border-color:var(--primary)}
+textarea.input{height:96px;padding:10px 12px;resize:none;line-height:1.5}
+.form{display:flex;flex-direction:column;gap:12px}.form__row{display:flex;flex-direction:column;gap:6px}.form__label{font-size:13px;color:var(--muted)}.form__hint{font-size:12px;color:var(--subtle)}
+.form-inline{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.radio-cards{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.iv-pick{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.radio-card{height:44px;border:1px solid var(--line-strong);border-radius:10px;background:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer}
+.radio-card--active{border-color:var(--primary);background:var(--primary-weak);color:var(--primary);font-weight:600}
+.timeline{display:flex;flex-direction:column}.node{display:flex;gap:10px;position:relative;padding:0 0 14px}.node:last-child{padding-bottom:0}
+.node__dot{width:10px;height:10px;border-radius:50%;background:var(--line-strong);margin-top:5px;flex:none;position:relative;z-index:1}
+.node--done .node__dot{background:var(--success)}.node--doing .node__dot{background:var(--primary);box-shadow:0 0 0 3px var(--primary-weak)}
+.node__line{position:absolute;left:4.5px;top:15px;bottom:0;width:1px;background:var(--line)}
+.node__body{flex:1;font-size:13px}.node__title{font-weight:600}.node__meta{font-size:12px;color:var(--muted);margin-top:2px}
+.empty,.errorbox{padding:36px 16px;text-align:center;color:var(--muted);font-size:13px;background:#fff;border-radius:var(--radius);border:1px dashed var(--line-strong)}
+.empty__icon{font-size:26px;display:block;margin-bottom:8px;color:var(--subtle)}.errorbox{color:var(--danger);border-color:#f3c6c6;background:#fffafa}
+.skeleton{height:12px;border-radius:6px;background:linear-gradient(90deg,#eef2f7 25%,#f7f9fc 37%,#eef2f7 63%);background-size:400% 100%;animation:sk 1.2s ease infinite;margin:8px 0}
+@keyframes sk{0%{background-position:100% 50%}100%{background-position:0 50%}}
+.mask{position:absolute;inset:0;background:rgba(15,23,42,.45);z-index:20}
+.sheet{position:absolute;left:0;right:0;bottom:0;max-height:78%;display:flex;flex-direction:column;background:#fff;border-radius:18px 18px 0 0;z-index:21;box-shadow:0 -8px 32px rgba(15,23,42,.18);animation:up .2s ease}
+@keyframes up{from{transform:translateY(24px);opacity:.6}to{transform:none;opacity:1}}
+.sheet__head{display:flex;align-items:center;justify-content:space-between;padding:14px 16px 8px;border-bottom:1px solid var(--line)}
+.sheet__title{font-size:15px;font-weight:600}.sheet__close{border:0;background:none;font-size:20px;color:var(--muted);cursor:pointer;width:32px;height:32px}
+.sheet__body{padding:12px 16px calc(16px + env(safe-area-inset-bottom));overflow-y:auto}
+.sheet__item{width:100%;height:48px;border:0;border-bottom:1px solid var(--line);background:#fff;font-size:14px;text-align:center;cursor:pointer}.sheet__item:last-child{border-bottom:0}.sheet__item--danger{color:var(--danger)}
+.toast{position:absolute;left:50%;bottom:88px;transform:translateX(-50%);max-width:86%;padding:10px 14px;border-radius:10px;background:rgba(15,23,42,.9);color:#fff;font-size:13px;z-index:30;text-align:center}
+.note{font-size:12px;color:var(--muted);line-height:1.6}
+.locked-banner{display:flex;gap:8px;align-items:flex-start;padding:10px 12px;border-radius:10px;background:var(--warn-weak);color:var(--warn);font-size:12px;line-height:1.5}
+.divider{height:1px;background:var(--line);margin:8px 0}.counter{text-align:right;font-size:11px;color:var(--subtle)}
+.filter-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.filter-chip{display:inline-flex;align-items:center;gap:6px;height:28px;padding:0 10px;border-radius:14px;background:var(--primary-weak);color:var(--primary);font-size:12px}
+@media(max-width:430px){body{align-items:stretch}.stage{padding:0}.phone{width:100%;height:100vh;border:0;border-radius:0;box-shadow:none}}
+</style>
+</head>
+<body>
+<div class="stage"><div class="phone" id="phone">
+  <div class="statusbar"><span>9:41</span><span>▮▮▮ ᯤ 100%</span></div>
+  <header class="navbar">
+    <button class="navbar__back" id="btnBack" type="button" aria-label="返回">‹</button>
+    <span class="navbar__title" id="navTitle">招聘工作台</span>
+    <button class="navbar__action" id="navAction" type="button" hidden></button>
+  </header>
+  <main class="scroll" id="app"></main>
+  <div class="mask" id="mask" data-act="close-sheet" hidden></div>
+  <section class="sheet" id="sheet" hidden></section>
+  <div class="toast" id="toast" role="status" hidden></div>
+</div></div>
+<script>
+(function(){
+'use strict';
+
+var DB = {
+  user: { name:'张勇', role:'HRBP' },
+  metrics: { resume:23, referral:5, headhunter:4, first:8, offer:3 },
+  weeks: [
+    { label:'11月23日 - 11月29日', days:[
+      {date:'2026-11-23',wd:'一',count:3},{date:'2026-11-24',wd:'二',count:1},{date:'2026-11-25',wd:'三',count:1},
+      {date:'2026-11-26',wd:'四',count:1},{date:'2026-11-27',wd:'五',count:0},{date:'2026-11-28',wd:'六',count:0},{date:'2026-11-29',wd:'日',count:0}
+    ]},
+    { label:'11月16日 - 11月22日', days:[
+      {date:'2026-11-16',wd:'一',count:0},{date:'2026-11-17',wd:'二',count:1},{date:'2026-11-18',wd:'三',count:0},
+      {date:'2026-11-19',wd:'四',count:2},{date:'2026-11-20',wd:'五',count:0},{date:'2026-11-21',wd:'六',count:0},{date:'2026-11-22',wd:'日',count:0}
+    ]}
+  ],
+  interviews: [
+    { id:'IV01', date:'2026-11-23', time:'10:00', duration:45, round:'初试', candidateId:'C01', candidate:'李华', positionId:'P01', position:'后端开发工程师', interviewers:['张峰','张亮'], organizer:'张勇', mode:'视频', place:'视频会议 · 826 302 771', invite:'已接受', status:'已完成', evaluated:1, myEvaluated:true, evaluations:[{interviewer:'张峰',conclusion:'通过',comment:'基础扎实，项目经验匹配',time:'11-23 11:02'}] },
+    { id:'IV02', date:'2026-11-23', time:'14:00', duration:45, round:'复试', candidateId:'C02', candidate:'王丽', positionId:'P02', position:'前端开发工程师', interviewers:['张勇','张宇'], organizer:'张勇', mode:'现场', place:'总部 3F 面试间 B', invite:'已接受', status:'已完成', evaluated:0, myEvaluated:false, evaluations:[] },
+    { id:'IV03', date:'2026-11-23', time:'16:00', duration:60, round:'终试', candidateId:'C03', candidate:'张琳', positionId:'P03', position:'产品经理', interviewers:['张若曦'], organizer:'张宇', mode:'视频', place:'视频会议 · 512 880 334', invite:'已接受', status:'待面试', evaluated:0, myEvaluated:false, evaluations:[] },
+    { id:'IV04', date:'2026-11-24', time:'14:00', duration:45, round:'初试', candidateId:'C04', candidate:'李思远', positionId:'P01', position:'后端开发工程师', interviewers:['张峰'], organizer:'张勇', mode:'电话', place:'电话', invite:'待确认', status:'待面试', evaluated:0, myEvaluated:false, evaluations:[] },
+    { id:'IV05', date:'2026-11-25', time:'10:30', duration:45, round:'复试', candidateId:'C01', candidate:'李华', positionId:'P01', position:'后端开发工程师', interviewers:['张峰','张勇'], organizer:'张勇', mode:'视频', place:'视频会议 · 903 221 556', invite:'已接受', status:'已完成', evaluated:0, myEvaluated:false, evaluations:[] },
+    { id:'IV06', date:'2026-11-26', time:'15:00', duration:60, round:'终试', candidateId:'C02', candidate:'王丽', positionId:'P02', position:'前端开发工程师', interviewers:['张若曦','张勇'], organizer:'张宇', mode:'现场', place:'总部 5F 会议室', invite:'已接受', status:'已完成', evaluated:0, myEvaluated:false, evaluations:[] }
+  ],
+  candidates: [
+    { id:'C01', name:'李华', phone:'138****2210', position:'后端开发工程师', positionId:'P01', channel:'内推', referrer:'张峰', stage:'Offer 审批中', round:'—', owner:'张勇', followed:false, lock:null, education:'硕士 · 某大学', years:6, company:'某电商平台 · 高级后端', current:'48万', expected:'55万', salaryNote:'谈薪中', quarter:'2026Q4', hr:'张勇', category:'S1类岗位', family:'后端研发', resumeSummary:'6 年后端经验，主导订单履约系统重构，熟悉 Java 与分布式事务。' },
+    { id:'C02', name:'王丽', phone:'139****8821', position:'前端开发工程师', positionId:'P02', channel:'猎头', referrer:'顾问李刚', stage:'Offer 审批中', round:'—', owner:'张勇', followed:true, lock:null, education:'本科 · 某大学', years:5, company:'某 SaaS 公司 · 前端负责人', current:'42万', expected:'50万', salaryNote:'待收流水', quarter:'2026Q4', hr:'张勇', category:'关键岗位', family:'前端', resumeSummary:'5 年前端经验，负责低代码平台前端架构与团队管理。' },
+    { id:'C03', name:'张琳', phone:'137****3312', position:'产品经理', positionId:'P03', channel:'招聘网站', referrer:'', stage:'面试中', round:'终试', owner:'张宇', followed:false, lock:null, education:'本科 · 某大学', years:7, company:'某出行公司 · 产品经理', current:'45万', expected:'52万', salaryNote:'—', quarter:'2026Q4', hr:'张宇', category:'S1类岗位', family:'产品经理', resumeSummary:'7 年产品经验，负责履约与调度产品线。' },
+    { id:'C04', name:'李思远', phone:'136****7745', position:'后端开发工程师', positionId:'P01', channel:'官网投递', referrer:'', stage:'待处理', round:'—', owner:'张勇', followed:false, lock:{by:'张宇',until:'2026-11-27'}, education:'本科 · 某大学', years:4, company:'某物流公司 · 后端工程师', current:'40万', expected:'46万', salaryNote:'—', quarter:'2026Q4', hr:'张勇', category:'S1类岗位', family:'后端研发', resumeSummary:'4 年后端经验，熟悉 Go 与高并发服务。' },
+    { id:'C05', name:'张军', phone:'135****9028', position:'测试工程师', positionId:'P04', channel:'内推', referrer:'张峰', stage:'初筛通过', round:'待安排初试', owner:'张勇', followed:false, lock:null, education:'本科 · 某大学', years:3, company:'某支付公司 · 测试工程师', current:'28万', expected:'32万', salaryNote:'—', quarter:'2026Q4', hr:'张勇', category:'A类岗位', family:'测试', resumeSummary:'3 年测试经验，负责支付链路自动化测试。' },
+    { id:'C06', name:'李丽', phone:'134****1102', position:'数据分析师', positionId:'P05', channel:'人才库', referrer:'', stage:'已终止', round:'—', owner:'李涛', followed:false, lock:null, education:'本科 · 某大学', years:5, company:'某零售公司 · 数据分析', current:'35万', expected:'40万', salaryNote:'—', quarter:'2026Q3', hr:'李涛', category:'S2类岗位', family:'数据分析', resumeSummary:'5 年零售行业数据分析经验。' },
+    { id:'C07', name:'刘伟', phone:'133****5521', position:'测试工程师', positionId:'P04', channel:'内推', referrer:'张琳', stage:'已发 Offer', round:'—', owner:'张勇', followed:true, lock:null, education:'本科 · 某大学', years:4, company:'某内容平台 · 测试工程师', current:'30万', expected:'36万', salaryNote:'待发 Offer', quarter:'2026Q4', hr:'张勇', category:'A类岗位', family:'测试', resumeSummary:'4 年测试经验，负责内容平台质量保障。' },
+    { id:'C08', name:'李晨', phone:'132****6688', position:'数据分析师', positionId:'P05', channel:'猎头', referrer:'RPO 供应商', stage:'已入职', round:'—', owner:'张勇', followed:false, lock:null, education:'本科 · 某大学', years:6, company:'某云服务商 · 数据分析', current:'38万', expected:'42万', salaryNote:'—', quarter:'2026Q4', hr:'张勇', category:'S2类岗位', family:'数据分析', resumeSummary:'6 年数据平台建设与经营分析经验。' }
+  ],
+  positions: [
+    { id:'P01', name:'后端开发工程师', demand:'REQ20260912', org:'技术中心 / 创新业务部', level:'P6', owner:'张勇', hiring:3, onboarded:1, status:'在招', updated:'2026-11-20', candidateIds:['C01','C04','C05'], logs:['2026-11-20 张勇 更新职位描述','2026-11-12 张勇 创建职位'] },
+    { id:'P02', name:'前端开发工程师', demand:'REQ20260913', org:'技术中心 / 创新业务部', level:'P6', owner:'张宇', hiring:2, onboarded:0, status:'在招', updated:'2026-11-18', candidateIds:['C02'], logs:['2026-11-18 张宇 更新在招人数'] },
+    { id:'P03', name:'产品经理', demand:'REQ20260914', org:'技术中心 / 创新业务部', level:'P7', owner:'张勇', hiring:1, onboarded:0, status:'暂停', updated:'2026-11-15', candidateIds:['C03'], logs:['2026-11-15 张勇 暂停在招'] },
+    { id:'P04', name:'测试工程师', demand:'REQ20260915', org:'技术中心 / 创新业务部', level:'P5', owner:'李涛', hiring:2, onboarded:1, status:'在招', updated:'2026-11-10', candidateIds:['C05','C07'], logs:['2026-11-10 李涛 创建职位'] },
+    { id:'P05', name:'数据分析师', demand:'REQ20260916', org:'技术中心 / 创新业务部', level:'P5', owner:'张勇', hiring:1, onboarded:1, status:'已关闭', updated:'2026-10-09', candidateIds:['C06','C08'], logs:['2026-10-09 张勇 关闭职位'] }
+  ],
+  offers: [
+    { id:'OF01', candidateId:'C01', candidate:'李华', position:'后端开发工程师', org:'技术中心 / 创新业务部', level:'P6', quarter:'2026Q4', planDate:'2026-12-08', status:'审批中', node:'HRBP', owner:'张勇', sentAt:'', updated:'2026-11-21', chain:[{node:'业务终面人',approver:'张峰',state:'已通过',comment:'通过，技术扎实',time:'11-20 15:20'},{node:'HRBP',approver:'张若曦',state:'审批中',comment:'',time:''},{node:'薪酬负责人',approver:'待分配',state:'待审批',comment:'',time:''}], content:{fixed:'32,000',perf:'6,000',bonusMonths:3,signOn:'20,000',total:'58.4万',raise:'+21.7%',band:'P6 带宽上限 60万',flags:['超涨幅 15% 预警']}, validDays:7, note:'候选人期望 12 月初入职' },
+    { id:'OF02', candidateId:'C02', candidate:'王丽', position:'前端开发工程师', org:'技术中心 / 创新业务部', level:'P6', quarter:'2026Q4', planDate:'2026-12-01', status:'待发送', node:'已完成', owner:'张勇', sentAt:'', updated:'2026-11-22', chain:[{node:'业务终面人',approver:'张宇',state:'已通过',comment:'通过',time:'11-19 10:10'},{node:'HRBP',approver:'张若曦',state:'已通过',comment:'通过',time:'11-21 09:30'},{node:'薪酬负责人',approver:'李若曦',state:'已通过',comment:'通过',time:'11-22 14:05'}], content:{fixed:'29,000',perf:'5,000',bonusMonths:3,signOn:'10,000',total:'47.2万',raise:'+12.4%',band:'P6 带宽上限 60万',flags:[]}, validDays:7, note:'' },
+    { id:'OF03', candidateId:'C07', candidate:'刘伟', position:'测试工程师', org:'技术中心 / 创新业务部', level:'P5', quarter:'2026Q4', planDate:'2026-11-30', status:'已发送', node:'已完成', owner:'张勇', sentAt:'2026-11-21 10:20', updated:'2026-11-21', chain:[{node:'业务终面人',approver:'张琳',state:'已通过',comment:'通过',time:'11-18 17:20'},{node:'HRBP',approver:'张若曦',state:'已通过',comment:'通过',time:'11-20 11:00'},{node:'薪酬负责人',approver:'李若曦',state:'已通过',comment:'通过',time:'11-20 16:40'}], content:{fixed:'22,000',perf:'3,000',bonusMonths:3,signOn:'0',total:'31.6万',raise:'+5.3%',band:'P5 带宽上限 36万',flags:[]}, validDays:7, note:'候选人已收流水' },
+    { id:'OF04', candidateId:'C08', candidate:'李晨', position:'数据分析师', org:'技术中心 / 创新业务部', level:'P5', quarter:'2026Q4', planDate:'2026-11-10', status:'已入职', node:'已完成', owner:'张勇', sentAt:'2026-10-28 09:10', updated:'2026-11-10', chain:[{node:'业务终面人',approver:'张宇',state:'已通过',comment:'通过',time:'10-24 15:00'},{node:'HRBP',approver:'张若曦',state:'已通过',comment:'通过',time:'10-26 10:00'},{node:'薪酬负责人',approver:'李若曦',state:'已通过',comment:'通过',time:'10-27 14:30'}], content:{fixed:'25,000',perf:'4,000',bonusMonths:3,signOn:'0',total:'36.2万',raise:'+8.1%',band:'P5 带宽上限 36万',flags:[]}, validDays:7, note:'' },
+    { id:'OF05', candidateId:'C06', candidate:'李丽', position:'数据分析师', org:'技术中心 / 创新业务部', level:'P5', quarter:'2026Q3', planDate:'2026-10-08', status:'已关闭', node:'已完成', owner:'李涛', sentAt:'2026-09-25 16:00', updated:'2026-10-08', chain:[{node:'业务终面人',approver:'张宇',state:'已通过',comment:'通过',time:'09-20 15:00'},{node:'HRBP',approver:'张若曦',state:'已通过',comment:'通过',time:'09-22 10:00'},{node:'薪酬负责人',approver:'李若曦',state:'已通过',comment:'通过',time:'09-23 14:00'}], content:{fixed:'25,000',perf:'3,000',bonusMonths:3,signOn:'0',total:'33.6万',raise:'+4.2%',band:'P5 带宽上限 36万',flags:[]}, validDays:7, note:'候选人放弃（选择其他平台）' }
+  ],
+  ledger: [
+    { name:'李华', dept:'创新业务部', position:'后端开发工程师', level:'P6', category:'S1类岗位', quarter:'2026Q4', hr:'张勇', first:'通过', second:'通过', final:'待定', offer:'审批中', planDate:'2026-12-08', onboarded:'否', reason:'—', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:['超薪标','超涨幅'], note:'谈薪中' },
+    { name:'王丽', dept:'创新业务部', position:'前端开发工程师', level:'P6', category:'S1类岗位', quarter:'2026Q4', hr:'张勇', first:'通过', second:'通过', final:'通过', offer:'待发送', planDate:'2026-12-01', onboarded:'否', reason:'—', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'待发 Offer' },
+    { name:'刘伟', dept:'创新业务部', position:'测试工程师', level:'P5', category:'A类岗位', quarter:'2026Q4', hr:'张勇', first:'通过', second:'通过', final:'通过', offer:'已发送', planDate:'2026-11-30', onboarded:'否', reason:'—', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'收流水' },
+    { name:'李晨', dept:'创新业务部', position:'数据分析师', level:'P5', category:'S2类岗位', quarter:'2026Q4', hr:'张勇', first:'通过', second:'通过', final:'通过', offer:'已入职', planDate:'2026-11-10', onboarded:'是', reason:'—', actualLevel:'P5', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'—' },
+    { name:'张琳', dept:'创新业务部', position:'产品经理', level:'P7', category:'关键岗位', quarter:'2026Q4', hr:'张宇', first:'通过', second:'通过', final:'待定', offer:'未发起', planDate:'—', onboarded:'否', reason:'—', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'终试待裁决' },
+    { name:'李丽', dept:'创新业务部', position:'数据分析师', level:'P5', category:'S2类岗位', quarter:'2026Q3', hr:'李涛', first:'通过', second:'淘汰', final:'—', offer:'已放弃', planDate:'—', onboarded:'否', reason:'选择其他平台', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'已放弃' },
+    { name:'李飞', dept:'创新业务部', position:'后端开发工程师', level:'P6', category:'S1类岗位', quarter:'2026Q4', hr:'李涛', first:'通过', second:'通过', final:'通过', offer:'已入职', planDate:'2026-10-20', onboarded:'是', reason:'—', actualLevel:'P7', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:['职级差异'], note:'Offer P6，实际 P7' },
+    { name:'张婷', dept:'创新业务部', position:'前端开发工程师', level:'P6', category:'S1类岗位', quarter:'2026Q4', hr:'张勇', first:'待定', second:'—', final:'—', offer:'未发起', planDate:'—', onboarded:'否', reason:'—', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'初试待定' },
+    { name:'张波', dept:'创新业务部', position:'测试工程师', level:'P5', category:'A类岗位', quarter:'2026Q4', hr:'李涛', first:'通过', second:'通过', final:'通过', offer:'已放弃', planDate:'2026-11-25', onboarded:'否', reason:'薪酬待遇不满足', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'—' },
+    { name:'张辉', dept:'创新业务部', position:'产品经理', level:'P7', category:'关键岗位', quarter:'2026Q4', hr:'张宇', first:'通过', second:'—', final:'—', offer:'未发起', planDate:'—', onboarded:'否', reason:'—', actualLevel:'—', current:'****', expected:'****', offerPackage:'****', raise:'****', flags:[], note:'复试待安排' }
+  ]
+};
+
+(function syncLedgerFromWeb(){
+  try {
+    var raw = localStorage.getItem('demo_hr_recruit_ledger_v1');
+    if (!raw) return;
+    var rows = JSON.parse(raw);
+    if (!Array.isArray(rows) || !rows.length) return;
+    DB.ledger = rows.map(function(r){
+      var flags = [];
+      if (r.flag && r.flag !== '未超限' && r.flag !== '—') flags = String(r.flag).split('&');
+      if (r.actualLevel && r.actualLevel !== '—' && String(r.level).split(' ')[0] !== r.actualLevel) flags.push('职级差异');
+      return {
+        name: r.name, dept: r.dept + (r.org3 ? ' / ' + r.org3 : ''), position: r.position, level: r.level, category: r.category,
+        quarter: r.quarter, hr: r.hr, first: r.r1 || '—', second: r.r2 || '—', final: r.r3 || '—',
+        offer: r.offer || '未发起', planDate: r.onboardDate || '—', onboarded: r.joined || '否',
+        reason: r.decline || '—', actualLevel: r.actualLevel || '—',
+        current: '****', expected: '****', offerPackage: '****', raise: r.raise || '****',
+        flags: flags, note: r.note || '—', source: r.source || '过程创建'
+      };
+    });
+  } catch (e) { /* 忽略原型本地存储异常 */ }
+})();
+
+var state = {
+  demo:'data', scheduleDay:'2026-11-23', weekOffset:0, onlyMine:false,
+  candTab:'全部', candQuery:'', candFilter:{}, candRecTab:'投递记录',
+  intTab:'我的面试', intFilter:{}, posStatus:'全部',
+  offerTab:'待我审批', offerStatus:'', ledgerFilter:{}, preset:'',
+  currentCandId:'', currentPosId:'', currentOfferId:'', evalInterviewId:'', editingInterviewId:'',
+  formCandidateId:'C05', formCandidateName:'张军', formDirty:false
+};
+
+var app = document.getElementById('app');
+var navTitle = document.getElementById('navTitle');
+var navAction = document.getElementById('navAction');
+var btnBack = document.getElementById('btnBack');
+var sheet = document.getElementById('sheet');
+var mask = document.getElementById('mask');
+var toastEl = document.getElementById('toast');
+var ACTIONS = {};
+
+function hashPath(){ return (location.hash || '#/workbench').replace(/^#/, '') || '/workbench'; }
+var NAV = { stack: [hashPath()] };
+function go(path){ if (path === hashPath()) { render(); return; } NAV.stack.push(path); location.hash = '#' + path; }
+function goBack(){ if (NAV.stack.length > 1) { NAV.stack.pop(); location.hash = '#' + NAV.stack[NAV.stack.length - 1]; } else { location.hash = '#/workbench'; } }
+function toast(msg){ toastEl.textContent = msg; toastEl.hidden = false; clearTimeout(toast._t); toast._t = setTimeout(function(){ toastEl.hidden = true; }, 1800); }
+
+function openSheet(title, bodyHtml){
+  sheet.innerHTML = '<div class="sheet__head"><span class="sheet__title">' + title + '</span><button class="sheet__close" type="button" data-act="close-sheet">×</button></div><div class="sheet__body">' + bodyHtml + '</div>';
+  sheet.hidden = false; mask.hidden = false;
+}
+function closeSheet(){ sheet.hidden = true; mask.hidden = true; sheet.innerHTML = ''; }
+function openConfirm(opt){
+  openSheet(opt.title || '确认', '<p class="note" style="font-size:13px;color:var(--text);margin:4px 0 14px">' + opt.message + '</p><div style="display:flex;gap:8px"><button class="btn btn--block" type="button" data-act="close-sheet">取消</button><button class="btn btn--block ' + (opt.danger ? 'btn--danger' : 'btn--primary') + '" type="button" id="confirmOk">' + (opt.okText || '确定') + '</button></div>');
+  document.getElementById('confirmOk').onclick = function(){ closeSheet(); opt.onOk(); };
+}
+function openReasonSheet(opt){
+  var opts = opt.options.map(function(o){ return '<option value="' + o + '">' + o + '</option>'; }).join('');
+  openSheet(opt.title, '<div class="form"><div class="form__row"><span class="form__label">' + opt.label + '</span><select class="input" id="reasonSelect">' + opts + '</select></div><div class="form__row"><span class="form__label">说明</span><textarea class="input" id="reasonText" maxlength="200" placeholder="补充说明（必填）"></textarea></div><button class="btn btn--primary btn--block" type="button" id="reasonOk">' + (opt.okText || '确认') + '</button></div>');
+  document.getElementById('reasonOk').onclick = function(){
+    var txt = document.getElementById('reasonText').value.trim();
+    if (!txt) { toast('请填写说明'); return; }
+    var val = document.getElementById('reasonSelect').value;
+    closeSheet(); opt.onOk(val, txt);
+  };
+}
+function tag(text, type){ return '<span class="tag' + (type ? ' tag--' + type : '') + '">' + text + '</span>'; }
+function emptyState(text){ return '<div class="empty"><span class="empty__icon">☁</span>' + text + '</div>'; }
+function errorState(){ return '<div class="errorbox">数据加载失败，请重试<br><button class="btn btn--sm btn--ghost" style="margin-top:10px" type="button" data-act="demo-retry">重试</button></div>'; }
+function demoSwitchHtml(){
+  return '<div class="seg" id="demoSwitch">' + ['data|数据','empty|空态','error|错误态'].map(function(p){
+    var kv = p.split('|');
+    return '<button class="seg__item' + (state.demo === kv[0] ? ' seg__item--active' : '') + '" type="button" data-act="demo" data-mode="' + kv[0] + '">' + kv[1] + '</button>';
+  }).join('') + '</div>';
+}
+function demoWrap(dataHtml){
+  if (state.demo === 'empty') { return emptyState('当前没有待处理事项'); }
+  if (state.demo === 'error') { return errorState(); }
+  return dataHtml;
+}
+function statusTag(s){
+  var map = { '在招':'primary', '暂停':'warn', '已关闭':'', '待处理':'warn', '初筛通过':'primary', '面试中':'warn', '已终止':'', '已入职':'success', '审批中':'warn', '待发送':'warn', '已发送':'primary', '已接受':'success', '已拒绝':'warn', '已放弃':'warn', 'Offer 审批中':'warn', '已发 Offer':'primary', '已锁定':'primary', '未锁定':'' };
+  return tag(s, map[s] || '');
+}
+function byCand(id){ return DB.candidates.filter(function(x){ return x.id === id; })[0]; }
+function byPos(id){ return DB.positions.filter(function(x){ return x.id === id; })[0]; }
+function byOffer(id){ return DB.offers.filter(function(x){ return x.id === id; })[0]; }
+function toMin(t){ var p = t.split(':'); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); }
+function findConflict(date, time, duration, names, excludeId){
+  var s = toMin(time), e = s + duration, hit = null;
+  DB.interviews.some(function(iv){
+    if (iv.id === excludeId || iv.status === '已取消' || iv.date !== date) { return false; }
+    var s2 = toMin(iv.time), e2 = s2 + iv.duration;
+    if (!(s < e2 && s2 < e)) { return false; }
+    var dup = iv.interviewers.filter(function(n){ return names.indexOf(n) > -1; });
+    if (!dup.length) { return false; }
+    hit = { interview: iv, names: dup };
+    return true;
+  });
+  return hit;
+}
+function opt(values, selected){ return values.map(function(v){ return '<option value="' + v + '"' + (v === selected ? ' selected' : '') + '>' + v + '</option>'; }).join(''); }
+function kv(k, v){ return '<div class="kv"><span class="kv__k">' + k + '</span><span class="kv__v">' + v + '</span></div>'; }
+
+function renderWorkbench(){
+  var m = DB.metrics;
+  var upcoming = DB.interviews.filter(function(iv){ return iv.status !== '已取消' && (!state.onlyMine || iv.organizer === DB.user.name); }).sort(function(a,b){ return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  var next = upcoming[0];
+  var pending = ''
+    + '<div class="card"><div class="section__head"><span class="section__title">待处理</span><span class="section__extra">近半年 · 全部组织</span></div>'
+    +   '<div class="kpi-grid">'
+    +     kpi('resume', '待处理简历', m.resume)
+    +     kpi('referral', '待处理内推简历', m.referral)
+    +     kpi('headhunter', '待处理猎头简历', m.headhunter)
+    +     kpi('first', '待安排初试', m.first)
+    +     kpi('offer', '待发 Offer', m.offer, true)
+    +   '</div></div>'
+    + '<div class="card card--tap" data-go="/schedule"><div class="section__head"><span class="section__title">招聘日程</span><span class="section__extra">7 天 ›</span></div>'
+    +   '<div class="note">未来 7 天共 ' + upcoming.length + ' 场面试' + (next ? ' · 最近一场 ' + next.date.slice(5) + ' ' + next.time + ' ' + next.candidate : '') + '</div>'
+    +   '<div class="divider"></div><label class="switch"><input type="checkbox" id="onlyMine"' + (state.onlyMine ? ' checked' : '') + '>仅看我安排的面试</label></div>';
+  return '<div class="view">' + demoSwitchHtml()
+    + '<div class="card hero"><span class="avatar lg">张</span><div><div class="hero__name">张勇，下午好</div><div class="hero__sub">2026年11月23日 周一 · 招聘过程管理</div></div></div>'
+    + demoWrap(pending)
+    + '<div class="card"><div class="section__head"><span class="section__title">快捷入口</span></div><div class="entry-grid">' + entryHtml() + '</div></div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">最近访问职位</span><span class="section__extra" data-go="/positions">更多 ›</span></div>'
+    +   DB.positions.slice(0, 5).map(positionCell).join('') + '</div>'
+    + '</div>';
+}
+function kpi(key, label, val, wide){
+  return '<div class="kpi' + (wide ? ' kpi--wide' : '') + '" data-act="kpi" data-key="' + key + '"><div class="kpi__label">' + label + '</div><div class="kpi__value">' + val + '</div></div>';
+}
+function entryHtml(){
+  var items = [
+    { label:'职位', count:DB.positions.length, go:'/positions', cls:'' },
+    { label:'应聘者', count:DB.candidates.length, go:'/candidates', cls:' entry__icon--green' },
+    { label:'面试', count:DB.interviews.length, go:'/interviews', cls:' entry__icon--violet' },
+    { label:'Offer', count:DB.offers.length, go:'/offers', cls:' entry__icon--orange' },
+    { label:'台账', count:DB.ledger.length, go:'/ledger', cls:' entry__icon--slate' }
+  ];
+  return items.map(function(it){
+    return '<button class="entry" type="button" data-go="' + it.go + '"><span class="entry__icon' + it.cls + '">' + it.label.slice(0, 1) + '</span><span class="entry__label">' + it.label + '</span><span class="entry__badge">' + it.count + '</span></button>';
+  }).join('');
+}
+function positionCell(p){
+  return '<div class="cell" data-go="/position/' + p.id + '" data-recent-position="' + p.id + '"><div class="cell__main"><div class="cell__title">' + p.name + '</div><div class="cell__sub">' + p.id + ' · ' + p.org + '</div><div class="cell__sub">招聘负责人 ' + p.owner + ' · 在招 ' + p.hiring + ' / 已入职 ' + p.onboarded + '</div></div><div class="cell__side">' + statusTag(p.status) + '</div></div>';
+}
+
+function renderSchedule(){
+  var week = DB.weeks[state.weekOffset] || DB.weeks[0];
+  var list = DB.interviews.filter(function(iv){
+    return iv.date === state.scheduleDay && iv.status !== '已取消' && (!state.onlyMine || iv.organizer === DB.user.name);
+  }).sort(function(a,b){ return a.time < b.time ? -1 : 1; });
+  var weekHtml = '<div class="week">' + week.days.map(function(d){
+    var active = d.date === state.scheduleDay;
+    return '<button class="week__day' + (active ? ' week__day--active' : '') + '" type="button" data-act="sch-day" data-date="' + d.date + '">'
+      + '<span class="week__wd">' + d.wd + '</span><span class="week__date">' + d.date.slice(8) + '</span>'
+      + '<span class="week__dot" style="' + (d.count ? '' : 'opacity:0') + '"></span></button>';
+  }).join('') + '</div>';
+  var card = '<div class="card">'
+    + '<div class="section__head"><button class="btn btn--sm" type="button" data-act="sch-prev">‹ 上周</button><span class="section__extra">' + week.label + '</span><button class="btn btn--sm" type="button" data-act="sch-next">下周 ›</button></div>'
+    + weekHtml
+    + '<div class="divider"></div>'
+    + '<label class="switch"><input type="checkbox" id="onlyMine"' + (state.onlyMine ? ' checked' : '') + '>仅看我安排的面试</label>'
+    + '</div>';
+  var listHtml = list.map(function(iv){ return eventCard(iv, false); }).join('');
+  return '<div class="view">' + card + demoWrap(listHtml ? '<div class="list">' + listHtml + '</div>' : emptyState('当日暂无面试安排')) + '</div>';
+}
+function eventCard(iv, withDate){
+  var canEval = iv.myEvaluated === false && iv.status === '已完成' && iv.interviewers.indexOf(DB.user.name) > -1;
+  var evalTag = iv.status === '已完成' ? (iv.evaluated ? tag(iv.evaluated + ' 个评价', 'primary') : tag('待评价', 'warn')) : '';
+  var inviteTag = iv.invite === '已接受' ? tag('已接受', 'primary') : tag(iv.invite, 'warn');
+  var meta = [];
+  if (withDate) { meta.push('<span>' + iv.date.slice(5) + '</span>'); }
+  meta.push('<span>' + iv.interviewers.join('、') + '</span>');
+  meta.push('<span>' + iv.mode + '</span>');
+  meta.push('<span>' + inviteTag + '</span>');
+  meta.push('<span>' + evalTag + '</span>');
+  return '<div class="event"><div class="event__time">' + iv.time + '<div class="note">' + iv.round + '</div></div><div class="event__body">'
+    + '<div class="event__title">' + iv.candidate + ' · ' + iv.position + statusTag(iv.status) + '</div>'
+    + '<div class="event__meta">' + meta.join('') + '</div>'
+    + '<div class="event__actions">'
+    + '<button class="btn btn--sm" type="button" data-act="int-detail" data-id="' + iv.id + '">详情</button>'
+    + (canEval ? '<button class="btn btn--sm btn--primary" type="button" data-act="quick-eval" data-id="' + iv.id + '" data-preset="通过">通过</button><button class="btn btn--sm btn--danger" type="button" data-act="quick-eval" data-id="' + iv.id + '" data-preset="淘汰">淘汰</button>' : '')
+    + '</div></div></div>';
+}
+
+function renderInterviews(){
+  var tab = state.intTab;
+  var list = DB.interviews.filter(function(iv){
+    if (iv.status === '已取消') { return false; }
+    if (tab === '我的面试') { return iv.organizer === DB.user.name || iv.interviewers.indexOf(DB.user.name) > -1; }
+    return true;
+  }).filter(function(iv){
+    var f = state.intFilter || {};
+    if (f.round && iv.round !== f.round) { return false; }
+    if (f.status && iv.status !== f.status) { return false; }
+    return true;
+  }).sort(function(a,b){ return (a.date + a.time) < (b.date + b.time) ? -1 : 1; });
+  var tabs = '<div class="seg" id="intTabs">' + ['我的面试', '全部面试'].map(function(t){
+    return '<button class="seg__item' + (tab === t ? ' seg__item--active' : '') + '" type="button" data-act="int-tab" data-tab="' + t + '">' + t + '</button>';
+  }).join('') + '</div>';
+  var filterChip = (state.intFilter.round || state.intFilter.status) ? '<div class="filter-bar" style="margin-top:8px"><span class="filter-chip">筛选：' + (state.intFilter.round || '') + ' ' + (state.intFilter.status || '') + '<span data-act="int-filter-clear" style="cursor:pointer">×</span></span></div>' : '';
+  var head = '<div class="card"><div class="section__head">' + tabs + '<button class="btn btn--sm" type="button" data-act="int-filter-open">筛选</button></div>' + filterChip + '</div>';
+  var listHtml = list.map(function(iv){ return eventCard(iv, true); }).join('');
+  return '<div class="view">' + head + demoWrap(listHtml ? '<div class="list">' + listHtml + '</div>' : emptyState('暂无面试场次')) + '</div>';
+}
+
+function renderInterviewForm(editId){
+  state.editingInterviewId = editId || '';
+  var iv = editId ? DB.interviews.filter(function(x){ return x.id === editId; })[0] : null;
+  var c = byCand(iv ? iv.candidateId : (state.formCandidateId || 'C05')) || byCand('C05');
+  state.formCandidateId = c.id; state.formCandidateName = c.name;
+  var date = iv ? iv.date : '2026-11-23';
+  var time = iv ? iv.time : '14:00';
+  var dur = iv ? iv.duration : 45;
+  var mode = iv ? iv.mode : '视频';
+  var place = iv ? iv.place : '视频会议 · 待填写';
+  var names = iv ? iv.interviewers : [];
+  var people = ['张峰','张亮','张宇','张若曦','张勇'];
+  return '<div class="view">'
+    + '<div class="card"><div class="section__head"><span class="section__title">' + (iv ? '改期面试' : '安排面试') + '</span></div>'
+    + '<div class="cell cell--static"><span class="avatar">' + c.name.slice(0, 1) + '</span><div class="cell__main"><div class="cell__title">' + c.name + '</div><div class="cell__sub"><span>' + c.position + '</span><span>' + c.stage + '</span></div></div></div></div>'
+    + '<div class="card"><div class="form">'
+    + '<div class="form-inline"><div class="form__row"><span class="form__label">面试日期</span><input class="input" id="fDate" type="date" value="' + date + '"></div><div class="form__row"><span class="form__label">开始时间</span><input class="input" id="fTime" type="time" value="' + time + '"></div></div>'
+    + '<div class="form-inline"><div class="form__row"><span class="form__label">时长</span><select class="input" id="fDur">' + opt(['30','45','60','90'], String(dur)) + '</select></div><div class="form__row"><span class="form__label">轮次</span><select class="input" id="fRound">' + opt(['初试','复试','终试'], iv ? iv.round : '初试') + '</select></div></div>'
+    + '<div class="form__row"><span class="form__label">面试方式</span><select class="input" id="fMode">' + opt(['视频','现场','电话'], mode) + '</select></div>'
+    + '<div class="form__row"><span class="form__label">地点或会议链接</span><input class="input" id="fPlace" value="' + place + '"></div>'
+    + '<div class="form__row"><span class="form__label">面试官（1–5 人）</span><div class="iv-pick">' + people.map(function(n){ return '<button class="radio-card' + (names.indexOf(n) > -1 ? ' radio-card--active' : '') + '" type="button" data-act="iv-pick" data-name="' + n + '">' + n + '</button>'; }).join('') + '</div></div>'
+    + '<div class="note">面试官同一时段已有未取消场次时将阻断保存。</div>'
+    + '<button class="btn btn--primary btn--block" type="button" data-act="int-submit">' + (iv ? '保存改期' : '提交安排') + '</button>'
+    + '</div></div></div>';
+}
+
+function renderInterviewDetail(id){
+  var iv = DB.interviews.filter(function(x){ return x.id === id; })[0];
+  if (!iv) { return '<div class="view">' + emptyState('未找到面试场次') + '</div>'; }
+  var c = byCand(iv.candidateId);
+  var prev = DB.interviews.filter(function(x){ return x.candidateId === iv.candidateId && x.id !== iv.id && x.evaluations.length; });
+  var prevHtml = prev.map(function(x){ return x.evaluations.map(function(e){ return kv(x.round + ' · ' + e.interviewer, e.conclusion + '：' + e.comment); }).join(''); }).join('');
+  var evalHtml = iv.evaluations.length ? iv.evaluations.map(function(e){ return kv(e.interviewer + ' ' + e.conclusion, e.comment); }).join('') : '<div class="note">暂无评价</div>';
+  var btns = '';
+  if (iv.status === '已完成' && !iv.myEvaluated && iv.interviewers.indexOf(DB.user.name) > -1) { btns += '<button class="btn btn--primary" type="button" data-act="eval-go" data-id="' + iv.id + '">评价</button>'; }
+  if (iv.status !== '已取消') { btns += '<button class="btn" type="button" data-act="resched" data-id="' + iv.id + '">改期</button><button class="btn btn--danger" type="button" data-act="cancel-iv" data-id="' + iv.id + '">取消</button>'; }
+  return '<div class="view">'
+    + '<div class="card"><div class="section__head"><span class="section__title">' + iv.round + ' · ' + iv.time + '</span>' + statusTag(iv.status) + '</div>'
+    + kv('面试日期', iv.date) + kv('时长', iv.duration + ' 分钟') + kv('方式', iv.mode) + kv('地点', iv.place) + kv('面试官', iv.interviewers.join('、')) + kv('安排人', iv.organizer) + kv('邀约状态', iv.invite)
+    + '</div>'
+    + '<div class="card card--tap" data-act="cand-go" data-id="' + c.id + '"><div class="section__head"><span class="section__title">候选人</span><span class="section__extra">查看档案 ›</span></div><div class="hero"><span class="avatar lg">' + c.name.slice(0, 1) + '</span><div><div class="hero__name">' + c.name + '</div><div class="hero__sub">' + c.position + ' · ' + c.channel + '</div></div></div><div class="note" style="margin-top:8px">' + c.resumeSummary + '</div></div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">前轮评价摘要</span></div>' + (prevHtml || '<div class="note">暂无前轮评价</div>') + '</div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">本场评价</span></div>' + evalHtml + '</div>'
+    + (btns ? '<div class="bottombar">' + btns + '</div>' : '')
+    + '</div>';
+}
+
+function renderEvaluate(id){
+  var iv = DB.interviews.filter(function(x){ return x.id === id; })[0];
+  if (!iv) { return '<div class="view">' + emptyState('未找到面试场次') + '</div>'; }
+  var cons = ['通过','淘汰','待定'];
+  var cards = cons.map(function(x){ return '<button class="radio-card' + (state.preset === x ? ' radio-card--active' : '') + '" type="button" data-act="eval-pick" data-eval="' + x + '">' + x + '</button>'; }).join('');
+  return '<div class="view"><div class="card"><div class="section__head"><span class="section__title">' + iv.candidate + ' · ' + iv.round + '</span>' + tag('24 小时内提交', 'warn') + '</div><div class="note">面试结束时间：' + iv.date + ' ' + iv.time + '，请于结束后 24 小时内提交评价。</div></div>'
+    + '<div class="card"><div class="form"><div class="form__row"><span class="form__label">评价结论</span><div class="radio-cards" id="evalPick">' + cards + '</div></div>'
+    + '<div class="form__row"><span class="form__label">评语（必填，不超过 500 字）</span><textarea class="input" id="evalComment" maxlength="500" placeholder="请填写评语"></textarea><span class="counter" id="evalCount">0 / 500</span></div>'
+    + '<div class="form__row"><span class="form__label">优势（选填）</span><input class="input" id="evalStrength"></div>'
+    + '<div class="form__row"><span class="form__label">风险（选填）</span><input class="input" id="evalRisk"></div>'
+    + '<button class="btn btn--primary btn--block" type="button" data-act="eval-submit">提交评价</button></div></div></div>';
+}
+
+function renderCandidates(){
+  var tabCounts = {
+    '全部': DB.candidates.length,
+    '未归档简历': 0,
+    '我关注的应聘者': DB.candidates.filter(function(c){ return c.followed; }).length,
+    '已锁定的应聘者': DB.candidates.filter(function(c){ return !!c.lock; }).length
+  };
+  var tabs = ['全部','未归档简历','我关注的应聘者','已锁定的应聘者'];
+  var tabLabels = { '全部':'全部', '未归档简历':'未归档', '我关注的应聘者':'我关注', '已锁定的应聘者':'已锁定' };
+  var list = DB.candidates.filter(function(c){
+    if (state.candTab === '我关注的应聘者' && !c.followed) { return false; }
+    if (state.candTab === '已锁定的应聘者' && !c.lock) { return false; }
+    if (state.candTab === '未归档简历') { return false; }
+    var f = state.candFilter || {};
+    if (f.position && c.position !== f.position) { return false; }
+    if (f.stage && c.stage !== f.stage) { return false; }
+    if (f.channel && c.channel !== f.channel) { return false; }
+    if (f.owner && c.owner !== f.owner) { return false; }
+    if (f.lock === '已锁定' && !c.lock) { return false; }
+    if (f.lock === '未锁定' && c.lock) { return false; }
+    if (state.candQuery) {
+      var q = state.candQuery;
+      if (c.name.indexOf(q) === -1 && c.phone.indexOf(q) === -1) { return false; }
+    }
+    return true;
+  });
+  var filterKeys = Object.keys(state.candFilter || {}).filter(function(k){ return state.candFilter[k]; });
+  var filterChip = filterKeys.length ? '<div class="filter-bar" style="margin-top:8px"><span class="filter-chip">已筛选 ' + list.length + ' 人<span data-act="cand-filter-clear" style="cursor:pointer">×</span></span></div>' : '';
+  var tabsHtml = '<div class="seg">' + tabs.map(function(t){
+    return '<button class="seg__item' + (state.candTab === t ? ' seg__item--active' : '') + '" type="button" data-act="cand-tab" data-tab="' + t + '">' + tabLabels[t] + ' ' + tabCounts[t] + '</button>';
+  }).join('') + '</div>';
+  var head = '<div class="card">' + tabsHtml
+    + '<div class="searchbar" style="margin-top:10px"><input class="input" id="candSearch" placeholder="姓名或手机号" value="' + state.candQuery + '"><button class="btn btn--sm" type="button" data-act="cand-filter-open">筛选</button><button class="btn btn--sm" type="button" data-act="cand-import">导入</button></div>'
+    + filterChip + '</div>';
+  var listHtml = list.map(candCard).join('');
+  return '<div class="view">' + head + demoWrap(listHtml ? '<div class="list">' + listHtml + '</div>' : emptyState('暂无应聘者')) + '</div>';
+}
+function candCard(c){
+  var lockTag = c.lock ? tag(c.lock.by === DB.user.name ? '我锁定' : '他人锁定', 'warn') : '';
+  return '<div class="cell" data-act="cand-go" data-id="' + c.id + '"><span class="avatar">' + c.name.slice(0, 1) + '</span><div class="cell__main">'
+    + '<div class="cell__title">' + c.name + statusTag(c.stage) + (c.followed ? tag('已关注', 'primary') : '') + lockTag + '</div>'
+    + '<div class="cell__sub"><span>' + c.position + '</span><span>' + c.channel + (c.referrer ? ' · ' + c.referrer : '') + '</span></div>'
+    + '<div class="cell__sub"><span>当前轮次 ' + (c.round || '—') + '</span><span>负责人 ' + c.owner + '</span><span>' + c.phone + '</span></div>'
+    + '</div><div class="cell__side"><span class="note">最近操作</span><span class="note">11-22</span></div></div>';
+}
+
+function renderCandidate(id){
+  state.currentCandId = id;
+  var c = byCand(id);
+  if (!c) { return '<div class="view">' + emptyState('未找到应聘者') + '</div>'; }
+  var lockedByOther = c.lock && c.lock.by !== DB.user.name;
+  var banner = lockedByOther ? '<div class="locked-banner">该应聘者已被 ' + c.lock.by + ' 锁定，锁定期至 ' + c.lock.until + '，期间仅可查看。</div>' : '';
+  var actionBtns = '';
+  if (lockedByOther) {
+    actionBtns = '<button class="btn btn--primary btn--disabled" type="button">初筛通过</button><button class="btn btn--disabled" type="button">更多操作</button>';
+  } else {
+    if (c.stage === '待处理') { actionBtns += '<button class="btn btn--primary" type="button" data-act="screen-pass">初筛通过</button>'; }
+    actionBtns += '<button class="btn btn--ghost" type="button" data-act="arrange">安排面试</button><button class="btn" type="button" data-act="cand-actions">更多</button>';
+  }
+  var recordsTab = state.candRecTab || '投递记录';
+  var recTabs = ['投递记录','面试记录','Offer 记录','操作记录'];
+  var recTabsHtml = '<div class="seg">' + recTabs.map(function(t){
+    return '<button class="seg__item' + (recordsTab === t ? ' seg__item--active' : '') + '" type="button" data-act="cand-rec-tab" data-tab="' + t + '">' + t + '</button>';
+  }).join('') + '</div>';
+  var recBody = '';
+  if (recordsTab === '投递记录') {
+    recBody = kv('应聘职位', c.position) + kv('来源渠道', c.channel + (c.referrer ? ' · ' + c.referrer : '')) + kv('招聘季度', c.quarter) + kv('招聘HR', c.hr) + kv('岗位类别', c.category) + kv('进展备注', c.salaryNote);
+  } else if (recordsTab === '面试记录') {
+    var ivs = DB.interviews.filter(function(iv){ return iv.candidateId === c.id; });
+    recBody = ivs.length ? ivs.map(function(iv){ return kv(iv.date.slice(5) + ' ' + iv.round, iv.status + ' · ' + iv.evaluated + ' 个评价'); }).join('') : '<div class="note">暂无面试记录</div>';
+  } else if (recordsTab === 'Offer 记录') {
+    var os = DB.offers.filter(function(o){ return o.candidateId === c.id; });
+    recBody = os.length ? os.map(function(o){ return kv(o.id, o.status + ' · 计划 ' + o.planDate); }).join('') : '<div class="note">暂无 Offer 记录</div>';
+  } else {
+    recBody = kv('11-22 10:20 张勇', '更新进展备注') + kv('11-20 09:10 张勇', '查看简历');
+  }
+  return '<div class="view">'
+    + banner
+    + '<div class="card"><div class="section__head"><span class="section__title">' + c.name + '</span>' + statusTag(c.stage) + '</div>'
+    + '<div class="hero"><span class="avatar lg">' + c.name.slice(0, 1) + '</span><div><div class="hero__name">' + c.position + '</div><div class="hero__sub">' + c.education + ' · ' + c.years + ' 年经验</div></div></div>'
+    + '<div class="divider"></div>'
+    + kv('手机号', c.phone) + kv('当前公司职位', c.company) + kv('当前 / 期望年包', '**** / ****') + kv('薪酬备注', c.salaryNote) + kv('来源', c.channel + (c.referrer ? ' · ' + c.referrer : '')) + kv('招聘季度 / 招聘HR', c.quarter + ' / ' + c.hr) + kv('岗位类别 / 岗位族', c.category + ' / ' + c.family)
+    + '</div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">简历摘要</span><span class="section__extra">完整简历请至 Web 查看</span></div><div class="note">' + c.resumeSummary + '</div></div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">记录</span></div>' + recTabsHtml + '<div style="margin-top:8px">' + recBody + '</div></div>'
+    + '<div class="bottombar">' + actionBtns + '</div>'
+    + '</div>';
+}
+
+function renderPositions(){
+  var statuses = ['全部','在招','暂停','已关闭'];
+  var list = DB.positions.filter(function(p){ return state.posStatus === '全部' || p.status === state.posStatus; });
+  var head = '<div class="card"><div class="seg" id="posFilter">' + statuses.map(function(s){
+    return '<button class="seg__item' + (state.posStatus === s ? ' seg__item--active' : '') + '" type="button" data-act="pos-filter" data-status="' + s + '">' + s + '</button>';
+  }).join('') + '</div></div>';
+  var listHtml = list.map(posCard).join('');
+  return '<div class="view">' + head + demoWrap(listHtml ? '<div class="list">' + listHtml + '</div>' : emptyState('暂无职位')) + '</div>';
+}
+function posCard(p){
+  return '<div class="cell" data-act="pos-go" data-id="' + p.id + '"><div class="cell__main"><div class="cell__title">' + p.name + statusTag(p.status) + '</div><div class="cell__sub"><span>' + p.id + '</span><span>' + p.demand + '</span><span>' + p.level + '</span></div><div class="cell__sub"><span>负责人 ' + p.owner + '</span><span>在招 ' + p.hiring + '</span><span>已入职 ' + p.onboarded + '</span></div></div><div class="cell__side"><span class="note">' + p.updated + '</span><span class="note">›</span></div></div>';
+}
+
+function renderPosition(id){
+  state.currentPosId = id;
+  var p = byPos(id);
+  if (!p) { return '<div class="view">' + emptyState('未找到职位') + '</div>'; }
+  var candidates = p.candidateIds.map(byCand).filter(Boolean);
+  var btns = p.status === '已关闭'
+    ? '<button class="btn btn--disabled" type="button">编辑职位（请至 Web 端处理）</button>'
+    : '<button class="btn btn--ghost" type="button" data-act="pos-edit">编辑</button><button class="btn ' + (p.status === '在招' ? 'btn--danger' : 'btn--primary') + '" type="button" data-act="pos-toggle">' + (p.status === '在招' ? '暂停在招' : '恢复在招') + '</button>';
+  var candHtml = candidates.length ? candidates.map(function(c){ return '<div class="kv" data-act="cand-go" data-id="' + c.id + '" style="cursor:pointer"><span class="kv__k">' + c.name + '</span><span class="kv__v">' + c.stage + ' ›</span></div>'; }).join('') : '<div class="note">暂无候选人</div>';
+  return '<div class="view">'
+    + '<div class="card"><div class="section__head"><span class="section__title">' + p.name + '</span>' + statusTag(p.status) + '</div>'
+    + kv('职位编号', p.id) + kv('所属需求', p.demand) + kv('组织', p.org) + kv('职级', p.level) + kv('招聘负责人', p.owner) + kv('更新时间', p.updated) + '</div>'
+    + '<div class="card"><div class="stats"><div class="stat"><div class="stat__num">' + p.hiring + '</div><div class="stat__label">在招人数</div></div><div class="stat"><div class="stat__num">' + p.onboarded + '</div><div class="stat__label">已入职</div></div><div class="stat"><div class="stat__num">' + candidates.length + '</div><div class="stat__label">候选人</div></div></div></div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">候选人</span><span class="section__extra">只读</span></div>' + candHtml + '</div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">操作记录</span></div>' + p.logs.map(function(l){ return '<div class="note">' + l + '</div>'; }).join('') + '</div>'
+    + '<div class="bottombar">' + btns + '</div>'
+    + '</div>';
+}
+
+function renderOffers(){
+  var tabs = [
+    { k:'待我审批', f:function(o){ return o.status === '审批中'; } },
+    { k:'我发起的', f:function(o){ return o.owner === DB.user.name; } },
+    { k:'全部', f:function(){ return true; } }
+  ];
+  var def = tabs.filter(function(t){ return t.k === state.offerTab; })[0] || tabs[0];
+  var list = DB.offers.filter(def.f);
+  if (state.offerStatus) { list = list.filter(function(o){ return o.status === state.offerStatus; }); }
+  var tabsHtml = '<div class="seg" id="offerTabs">' + tabs.map(function(t){
+    return '<button class="seg__item' + (state.offerTab === t.k ? ' seg__item--active' : '') + '" type="button" data-act="offer-tab" data-tab="' + t.k + '">' + t.k + ' ' + DB.offers.filter(t.f).length + '</button>';
+  }).join('') + '</div>';
+  var statuses = ['全部状态','审批中','待发送','已发送','已入职','已关闭'];
+  var statusHtml = '<div class="seg" id="offerStatusFilter" style="margin-top:8px">' + statuses.map(function(s){
+    var val = s === '全部状态' ? '' : s;
+    return '<button class="seg__item' + ((state.offerStatus || '') === val ? ' seg__item--active' : '') + '" type="button" data-act="offer-status" data-status="' + val + '">' + s + '</button>';
+  }).join('') + '</div>';
+  var head = '<div class="card">' + tabsHtml + statusHtml + '</div>';
+  var listHtml = list.map(offerCard).join('');
+  return '<div class="view">' + head + demoWrap(listHtml ? '<div class="list">' + listHtml + '</div>' : emptyState('暂无 Offer')) + '</div>';
+}
+function offerCard(o){
+  return '<div class="cell" data-act="offer-go" data-id="' + o.id + '"><div class="cell__main"><div class="cell__title">' + o.candidate + statusTag(o.status) + '</div><div class="cell__sub"><span>' + o.id + '</span><span>' + o.position + '</span><span>' + o.level + '</span></div><div class="cell__sub"><span>计划入职 ' + o.planDate + '</span><span>节点 ' + o.node + '</span><span>负责人 ' + o.owner + '</span></div></div><div class="cell__side"><span class="note">›</span></div></div>';
+}
+
+function renderOffer(id){
+  state.currentOfferId = id;
+  var o = byOffer(id);
+  if (!o) { return '<div class="view">' + emptyState('未找到 Offer') + '</div>'; }
+  var chain = o.chain.map(function(n, i){
+    var cls = n.state === '已通过' ? 'node--done' : (n.state === '审批中' ? 'node--doing' : '');
+    return '<div class="node ' + cls + '">' + (i < o.chain.length - 1 ? '<span class="node__line"></span>' : '') + '<span class="node__dot"></span><div class="node__body"><div class="node__title">' + n.node + ' · ' + n.approver + ' ' + tag(n.state, n.state === '已通过' ? 'success' : (n.state === '审批中' ? 'primary' : 'warn')) + '</div><div class="node__meta">' + (n.comment || '—') + (n.time ? ' · ' + n.time : '') + '</div></div></div>';
+  }).join('');
+  var flags = (o.content.flags || []).map(function(f){ return tag(f, 'warn'); }).join(' ');
+  return '<div class="view">'
+    + '<div class="card"><div class="section__head"><span class="section__title">' + o.candidate + '</span>' + statusTag(o.status) + '</div>'
+    + '<div class="hero"><span class="avatar lg">' + o.candidate.slice(0, 1) + '</span><div><div class="hero__name">' + o.position + '</div><div class="hero__sub">' + o.org + ' · ' + o.level + '</div></div></div>'
+    + '<div class="divider"></div>' + kv('Offer 编号', o.id) + kv('招聘季度', o.quarter) + kv('计划入职日期', o.planDate) + kv('招聘负责人', o.owner) + kv('发送时间', o.sentAt || '—') + '</div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">审批链</span></div><div class="timeline">' + chain + '</div></div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">Offer 内容</span><span class="section__extra">薪资按权限脱敏</span></div>'
+    + kv('月度固定薪资', '****') + kv('月度绩效基数', '****') + kv('目标奖金月数', '****') + kv('签字费', '****') + kv('年度总包', '****') + kv('涨幅', '****') + kv('薪标上限', '****')
+    + (flags ? '<div class="note" style="margin-top:8px">' + flags + '</div>' : '') + '</div>'
+    + '<div class="card"><div class="section__head"><span class="section__title">有效期与备注</span></div>' + kv('Offer 有效期', o.validDays + ' 天') + kv('备注', o.note || '—') + '</div>'
+    + offerActionsHtml(o)
+    + '</div>';
+}
+function offerActionsHtml(o){
+  var btns = [];
+  if (o.status === '审批中') {
+    btns.push('<button class="btn btn--primary" type="button" data-act="offer-approve" data-id="' + o.id + '">通过</button>');
+    btns.push('<button class="btn btn--danger" type="button" data-act="offer-reject" data-id="' + o.id + '">驳回</button>');
+    if (o.owner === DB.user.name) { btns.push('<button class="btn" type="button" data-act="offer-withdraw" data-id="' + o.id + '">撤回</button>'); }
+  }
+  if (o.status === '待发送') { btns.push('<button class="btn btn--primary btn--block" type="button" data-act="offer-send" data-id="' + o.id + '">发送 Offer</button>'); }
+  if (o.status === '待发送' || o.status === '已发送') { btns.push('<button class="btn btn--danger" type="button" data-act="offer-close" data-id="' + o.id + '">关闭</button>'); }
+  return btns.length ? '<div class="bottombar">' + btns.join('') + '</div>' : '';
+}
+
+function renderLedger(){
+  var f = state.ledgerFilter || {};
+  var rows = DB.ledger.filter(function(r){
+    if (f.quarter && r.quarter !== f.quarter) { return false; }
+    if (f.hr && r.hr !== f.hr) { return false; }
+    if (f.status && r.offer !== f.status) { return false; }
+    if (f.category && r.category !== f.category) { return false; }
+    if (f.reason && r.reason !== f.reason) { return false; }
+    return true;
+  });
+  var hasFilter = Object.keys(f).some(function(k){ return f[k]; });
+  var head = '<div class="card"><div class="note">候选人级台账 · 只读；填写、编辑与导入请至 Web 端</div><div class="filter-bar" style="margin-top:8px"><button class="btn btn--sm" type="button" data-act="lg-filter-open">筛选</button><span class="note">共 ' + rows.length + ' 条</span>' + (hasFilter ? '<span class="filter-chip">已筛选<span data-act="lg-filter-clear" style="cursor:pointer">×</span></span>' : '') + '</div></div>';
+  var listHtml = rows.map(ledgerCard).join('');
+  return '<div class="view">' + head + demoWrap(listHtml ? '<div class="list">' + listHtml + '</div>' : emptyState('暂无台账数据')) + '</div>';
+}
+function ledgerCard(r){
+  var flags = (r.flags || []).map(function(f){ return tag(f, f.indexOf('超') > -1 ? 'warn' : 'primary'); }).join('');
+  return '<div class="card card--tap" data-act="lg-go" data-name="' + r.name + '"><div class="cell__title">' + r.name + statusTag(r.offer) + flags + '</div>'
+    + '<div class="cell__sub"><span>' + r.dept + '</span><span>' + r.position + ' · ' + r.level + '</span><span>' + r.category + '</span></div>'
+    + '<div class="cell__sub"><span>' + r.quarter + '</span><span>招聘HR ' + r.hr + '</span><span>面：' + r.first + ' / ' + r.second + ' / ' + r.final + '</span></div>'
+    + '<div class="cell__sub"><span>待入职 ' + (r.planDate || '—') + '</span><span>已入职 ' + r.onboarded + '</span><span>放弃原因 ' + (r.reason || '—') + '</span></div>'
+    + '<div class="cell__sub"><span>年包 ' + r.offerPackage + '</span><span>涨幅 ' + r.raise + '</span><span>实际职级 ' + (r.actualLevel || '—') + '</span></div></div>';
+}
+
+var ROUTES = [
+  { re: /^\/workbench$/, title: '招聘工作台', render: renderWorkbench },
+  { re: /^\/schedule$/, title: '招聘日程', render: renderSchedule, action: { text: '面试列表', act: 'go-interviews' } },
+  { re: /^\/interviews$/, title: '面试', render: renderInterviews, action: { text: '安排', act: 'int-new' } },
+  { re: /^\/interviews\/new(?:\/([\w-]+))?$/, title: '安排面试', render: renderInterviewForm },
+  { re: /^\/interview\/([\w-]+)\/evaluate$/, title: '面试评价', render: renderEvaluate },
+  { re: /^\/interview\/([\w-]+)$/, title: '面试详情', render: renderInterviewDetail },
+  { re: /^\/candidates$/, title: '应聘者', render: renderCandidates },
+  { re: /^\/candidate\/([\w-]+)$/, title: '应聘者详情', render: renderCandidate },
+  { re: /^\/positions$/, title: '职位', render: renderPositions, action: { text: '新建', act: 'pos-new' } },
+  { re: /^\/position\/([\w-]+)$/, title: '职位详情', render: renderPosition },
+  { re: /^\/offers$/, title: 'Offer', render: renderOffers, action: { text: '发起', act: 'offer-new' } },
+  { re: /^\/offer\/([\w-]+)$/, title: 'Offer 详情', render: renderOffer },
+  { re: /^\/ledger$/, title: '招聘台账', render: renderLedger, action: { text: '导出', act: 'lg-export' } }
+];
+
+function render(){
+  var path = hashPath(), match = null, params = [];
+  for (var i = 0; i < ROUTES.length; i++) {
+    var mm = path.match(ROUTES[i].re);
+    if (mm) { match = ROUTES[i]; params = mm.slice(1); break; }
+  }
+  if (!match) { NAV.stack = ['/workbench']; location.hash = '#/workbench'; return; }
+  navTitle.textContent = match.title;
+  btnBack.hidden = (path === '/workbench' || match === ROUTES[0]);
+  if (match.action) {
+    navAction.hidden = false;
+    navAction.textContent = match.action.text;
+    navAction.setAttribute('data-act', match.action.act);
+  } else {
+    navAction.hidden = true;
+    navAction.removeAttribute('data-act');
+  }
+  state.formDirty = false;
+  app.innerHTML = match.render.apply(null, params);
+  app.scrollTop = 0;
+  closeSheet();
+}
+
+window.addEventListener('hashchange', function(){
+  var p = hashPath();
+  if (p !== NAV.stack[NAV.stack.length - 1]) { NAV.stack.push(p); }
+  render();
+});
+btnBack.addEventListener('click', function(){
+  if (state.formDirty) {
+    openConfirm({ title:'放弃填写？', message:'返回将丢失未提交内容。', okText:'放弃返回', danger:true, onOk:function(){ state.formDirty = false; goBack(); } });
+    return;
+  }
+  goBack();
+});
+document.addEventListener('click', function(e){
+  var goEl = e.target.closest ? e.target.closest('[data-go]') : null;
+  if (goEl) { go(goEl.getAttribute('data-go')); return; }
+  var actEl = e.target.closest ? e.target.closest('[data-act]') : null;
+  if (actEl) {
+    var fn = ACTIONS[actEl.getAttribute('data-act')];
+    if (fn) { fn(actEl, e); }
+  }
+});
+document.addEventListener('input', function(e){
+  if (!e.target || !e.target.id) { return; }
+  if (e.target.id === 'candSearch') {
+    state.candQuery = e.target.value;
+    render();
+    var el = document.getElementById('candSearch');
+    if (el) { el.focus(); try { el.setSelectionRange(el.value.length, el.value.length); } catch (err) {} }
+    return;
+  }
+  if (e.target.id === 'evalComment') {
+    var counter = document.getElementById('evalCount');
+    if (counter) { counter.textContent = e.target.value.length + ' / 500'; }
+  }
+  if (/^f[A-Z]/.test(e.target.id) || e.target.id === 'evalComment' || e.target.id === 'evalStrength' || e.target.id === 'evalRisk') {
+    state.formDirty = true;
+  }
+});
+document.addEventListener('change', function(e){
+  if (!e.target || !e.target.id) { return; }
+  if (e.target.id === 'onlyMine') { state.onlyMine = e.target.checked; render(); return; }
+  if (/^f[A-Z]/.test(e.target.id) || e.target.id === 'evalComment' || e.target.id === 'evalStrength' || e.target.id === 'evalRisk') { state.formDirty = true; }
+});
+
+ACTIONS['close-sheet'] = closeSheet;
+ACTIONS['demo'] = function(el){ state.demo = el.getAttribute('data-mode'); render(); };
+ACTIONS['demo-retry'] = function(){ state.demo = 'data'; render(); toast('已恢复数据态'); };
+ACTIONS['go-interviews'] = function(){ go('/interviews'); };
+ACTIONS['kpi'] = function(el){
+  var key = el.getAttribute('data-key');
+  if (key === 'offer') { state.offerTab = '全部'; state.offerStatus = '待发送'; go('/offers'); return; }
+  state.candTab = '全部'; state.candFilter = {}; state.candQuery = '';
+  if (key === 'resume') { state.candFilter.stage = '待处理'; }
+  if (key === 'referral') { state.candFilter.channel = '内推'; }
+  if (key === 'headhunter') { state.candFilter.channel = '猎头'; }
+  if (key === 'first') { state.candFilter.stage = '初筛通过'; }
+  go('/candidates');
+};
+ACTIONS['pos-new'] = function(){ toast('请至 Web 端处理'); };
+ACTIONS['offer-new'] = function(){ toast('请至 Web 端处理'); };
+ACTIONS['lg-export'] = function(){ toast('请至 Web 端处理'); };
+
+ACTIONS['sch-prev'] = function(){ state.weekOffset = 1; state.scheduleDay = DB.weeks[state.weekOffset].days[0].date; render(); };
+ACTIONS['sch-next'] = function(){ state.weekOffset = 0; state.scheduleDay = DB.weeks[0].days[0].date; render(); };
+ACTIONS['sch-day'] = function(el){ state.scheduleDay = el.getAttribute('data-date'); render(); };
+ACTIONS['int-detail'] = function(el){ go('/interview/' + el.getAttribute('data-id')); };
+ACTIONS['quick-eval'] = function(el){ state.evalInterviewId = el.getAttribute('data-id'); state.preset = el.getAttribute('data-preset'); go('/interview/' + state.evalInterviewId + '/evaluate'); };
+ACTIONS['eval-go'] = function(el){ state.evalInterviewId = el.getAttribute('data-id'); state.preset = ''; go('/interview/' + state.evalInterviewId + '/evaluate'); };
+ACTIONS['eval-pick'] = function(el){
+  var group = document.querySelectorAll('#evalPick .radio-card');
+  Array.prototype.forEach.call(group, function(x){ x.classList.remove('radio-card--active'); });
+  el.classList.add('radio-card--active');
+  state.preset = el.getAttribute('data-eval');
+};
+ACTIONS['iv-pick'] = function(el){ el.classList.toggle('radio-card--active'); state.formDirty = true; };
+ACTIONS['eval-submit'] = function(){
+  var pick = document.querySelector('#evalPick .radio-card--active');
+  var text = document.getElementById('evalComment').value.trim();
+  if (!pick) { toast('请选择评价结论'); return; }
+  if (!text) { toast('请填写评语'); return; }
+  if (text.length > 500) { toast('评语不超过 500 字'); return; }
+  var iv = DB.interviews.filter(function(x){ return x.id === state.evalInterviewId; })[0];
+  iv.evaluations.push({ interviewer: DB.user.name, conclusion: pick.getAttribute('data-eval'), comment: text, time: '2026-11-23 15:20' });
+  iv.evaluated += 1; iv.myEvaluated = true;
+  state.formDirty = false; state.preset = '';
+  toast('评价已提交');
+  goBack();
+};
+ACTIONS['int-tab'] = function(el){ state.intTab = el.getAttribute('data-tab'); render(); };
+ACTIONS['int-filter-open'] = function(){
+  var f = state.intFilter || {};
+  openSheet('筛选面试', '<div class="form"><div class="form__row"><span class="form__label">轮次</span><select class="input" id="ifRound">' + opt(['全部','初试','复试','终试'], f.round || '全部') + '</select></div><div class="form__row"><span class="form__label">场次状态</span><select class="input" id="ifStatus">' + opt(['全部','待面试','已完成','已取消'], f.status || '全部') + '</select></div><div style="display:flex;gap:8px"><button class="btn btn--block" type="button" id="ifClear">重置</button><button class="btn btn--primary btn--block" type="button" id="ifOk">确定</button></div></div>');
+  document.getElementById('ifClear').onclick = function(){ state.intFilter = {}; closeSheet(); render(); };
+  document.getElementById('ifOk').onclick = function(){
+    var r = document.getElementById('ifRound').value;
+    var s = document.getElementById('ifStatus').value;
+    state.intFilter = {};
+    if (r !== '全部') { state.intFilter.round = r; }
+    if (s !== '全部') { state.intFilter.status = s; }
+    closeSheet(); render();
+  };
+};
+ACTIONS['int-filter-clear'] = function(){ state.intFilter = {}; render(); };
+ACTIONS['int-new'] = function(){ state.editingInterviewId = ''; state.formCandidateId = state.formCandidateId || 'C01'; go('/interviews/new'); };
+ACTIONS['int-submit'] = function(){
+  var date = document.getElementById('fDate').value;
+  var time = document.getElementById('fTime').value;
+  var dur = parseInt(document.getElementById('fDur').value, 10);
+  var mode = document.getElementById('fMode').value;
+  var round = document.getElementById('fRound').value;
+  var place = document.getElementById('fPlace').value.trim();
+  var names = Array.prototype.slice.call(document.querySelectorAll('.iv-pick .radio-card--active')).map(function(el){ return el.getAttribute('data-name'); });
+  if (!date || !time || !place) { toast('请补全日期、时间与地点'); return; }
+  if (!names.length) { toast('请选择至少一名面试官'); return; }
+  var editing = state.editingInterviewId;
+  var conflict = findConflict(date, time, dur, names, editing);
+  if (conflict) { toast('面试官时段冲突：' + conflict.names.join('、') + ' ' + conflict.interview.time + ' 已有面试'); return; }
+  if (editing) {
+    var iv = DB.interviews.filter(function(x){ return x.id === editing; })[0];
+    iv.date = date; iv.time = time; iv.duration = dur; iv.mode = mode; iv.round = round; iv.place = place; iv.interviewers = names; iv.invite = '待确认';
+    state.formDirty = false;
+    toast('改期已保存，邀约已重新发送');
+    goBack();
+  } else {
+    var c = byCand(state.formCandidateId || 'C05');
+    DB.interviews.push({ id:'IV' + (100 + DB.interviews.length + 1), date:date, time:time, duration:dur, round:round, candidateId:c.id, candidate:c.name, positionId:c.positionId, position:c.position, interviewers:names, organizer:DB.user.name, mode:mode, place:place, invite:'待确认', status:'待面试', evaluated:0, myEvaluated:false, evaluations:[] });
+    state.formDirty = false;
+    toast('面试已安排，邀约已发送');
+    goBack();
+  }
+};
+ACTIONS['resched'] = function(el){ state.formDirty = false; go('/interviews/new/' + el.getAttribute('data-id')); };
+ACTIONS['cancel-iv'] = function(el){
+  var id = el.getAttribute('data-id');
+  openReasonSheet({ title:'取消面试', label:'取消原因', options:['候选人临时有事','面试官时间冲突','职位暂停','其他'], okText:'确认取消', onOk:function(sel, txt){
+    var iv = DB.interviews.filter(function(x){ return x.id === id; })[0];
+    iv.status = '已取消';
+    toast('面试已取消，已通知候选人');
+    render();
+  }});
+};
+ACTIONS['cand-tab'] = function(el){ state.candTab = el.getAttribute('data-tab'); render(); };
+ACTIONS['cand-go'] = function(el){ go('/candidate/' + el.getAttribute('data-id')); };
+ACTIONS['cand-rec-tab'] = function(el){ state.candRecTab = el.getAttribute('data-tab'); render(); };
+ACTIONS['cand-import'] = function(){ toast('请至 Web 端处理'); };
+ACTIONS['cand-offer'] = function(){ toast('请至 Web 端处理'); };
+ACTIONS['cand-filter-open'] = function(){
+  var f = state.candFilter || {};
+  var positions = ['全部'].concat(DB.positions.map(function(p){ return p.name; }));
+  openSheet('筛选应聘者', '<div class="form">'
+    + '<div class="form__row"><span class="form__label">应聘职位</span><select class="input" id="cfPosition">' + opt(positions, f.position || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">来源渠道</span><select class="input" id="cfChannel">' + opt(['全部','内推','猎头','招聘网站','官网投递','人才库'], f.channel || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">投递状态</span><select class="input" id="cfStage">' + opt(['全部','待处理','初筛通过','面试中','Offer 审批中','已发 Offer','已入职','已终止'], f.stage || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">招聘负责人</span><select class="input" id="cfOwner">' + opt(['全部','张勇','张宇','李涛'], f.owner || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">锁定状态</span><select class="input" id="cfLock">' + opt(['全部','未锁定','已锁定'], f.lock || '全部') + '</select></div>'
+    + '<div style="display:flex;gap:8px"><button class="btn btn--block" type="button" id="cfClear">重置</button><button class="btn btn--primary btn--block" type="button" id="cfOk">确定</button></div></div>');
+  document.getElementById('cfClear').onclick = function(){ state.candFilter = {}; closeSheet(); render(); };
+  document.getElementById('cfOk').onclick = function(){
+    var map = { position:'cfPosition', channel:'cfChannel', stage:'cfStage', owner:'cfOwner', lock:'cfLock' };
+    var next = {};
+    Object.keys(map).forEach(function(k){ var v = document.getElementById(map[k]).value; if (v !== '全部') { next[k] = v; } });
+    state.candFilter = next; closeSheet(); render();
+  };
+};
+ACTIONS['cand-filter-clear'] = function(){ state.candFilter = {}; render(); };
+ACTIONS['screen-pass'] = function(){
+  openConfirm({ title:'初筛通过', message:'通过后进入待安排初试。', okText:'确认通过', onOk:function(){
+    var c = byCand(state.currentCandId);
+    c.stage = '初筛通过'; c.round = '待安排初试';
+    toast('已通过初筛'); render();
+  }});
+};
+ACTIONS['screen-fail'] = function(){
+  openReasonSheet({ title:'淘汰', label:'淘汰原因', options:['经验不符','薪资不符','学历不符','其他'], okText:'确认淘汰', onOk:function(sel){
+    var c = byCand(state.currentCandId);
+    c.stage = '初筛淘汰'; c.salaryNote = sel;
+    toast('已淘汰'); render();
+  }});
+};
+ACTIONS['terminate'] = function(){
+  openReasonSheet({ title:'终止流程', label:'终止原因', options:['经验不符','薪资不符','学历不符','面试未通过','候选人放弃','需求关闭','其他'], okText:'确认终止', onOk:function(sel, txt){
+    var c = byCand(state.currentCandId);
+    c.stage = '已终止'; c.salaryNote = sel + '：' + txt;
+    toast('已终止并进入人才库'); render();
+  }});
+};
+ACTIONS['cand-actions'] = function(){
+  var c = byCand(state.currentCandId);
+  openSheet('操作', '<button class="sheet__item" type="button" data-act="follow">' + (c.followed ? '取消关注' : '关注') + '</button>'
+    + '<button class="sheet__item" type="button" data-act="lock">' + (c.lock ? '释放锁定' : '锁定 7 天') + '</button>'
+    + '<button class="sheet__item" type="button" data-act="cand-offer">发起 Offer（请至 Web 端处理）</button>'
+    + '<button class="sheet__item" type="button" data-act="screen-fail">淘汰</button>'
+    + '<button class="sheet__item sheet__item--danger" type="button" data-act="terminate">终止流程</button>');
+};
+ACTIONS['follow'] = function(){
+  var c = byCand(state.currentCandId);
+  c.followed = !c.followed;
+  closeSheet();
+  toast(c.followed ? '已关注' : '已取消关注');
+  render();
+};
+ACTIONS['lock'] = function(){
+  var c = byCand(state.currentCandId);
+  closeSheet();
+  if (c.lock) { c.lock = null; toast('已释放锁定'); render(); return; }
+  openConfirm({ title:'锁定应聘者', message:'锁定 7 天，锁定期内其他招聘负责人只读。', okText:'锁定', onOk:function(){
+    c.lock = { by: DB.user.name, until: '2026-11-30' };
+    toast('已锁定至 2026-11-30'); render();
+  }});
+};
+ACTIONS['arrange'] = function(){
+  var c = byCand(state.currentCandId);
+  state.formCandidateId = c.id; state.formCandidateName = c.name; state.editingInterviewId = ''; state.formDirty = false;
+  go('/interviews/new');
+};
+ACTIONS['pos-filter'] = function(el){ state.posStatus = el.getAttribute('data-status'); render(); };
+ACTIONS['pos-go'] = function(el){ go('/position/' + el.getAttribute('data-id')); };
+ACTIONS['pos-edit'] = function(){ toast('请至 Web 端处理'); };
+ACTIONS['pos-toggle'] = function(){
+  var p = byPos(state.currentPosId);
+  var next = p.status === '在招' ? '暂停' : '在招';
+  openConfirm({ title: next === '暂停' ? '暂停在招' : '恢复在招', message: next === '暂停' ? '暂停后不再接收新简历与发起新面试，在途流程可继续。' : '恢复后重新接收简历。', okText: '确认' + next, danger: next === '暂停', onOk:function(){
+    p.status = next;
+    p.logs.unshift('2026-11-23 张勇 ' + next + '在招');
+    toast('已' + next + (next === '暂停' ? '' : '在招'));
+    render();
+  }});
+};
+ACTIONS['offer-tab'] = function(el){ state.offerTab = el.getAttribute('data-tab'); render(); };
+ACTIONS['offer-status'] = function(el){ state.offerStatus = el.getAttribute('data-status'); render(); };
+ACTIONS['offer-go'] = function(el){ go('/offer/' + el.getAttribute('data-id')); };
+ACTIONS['offer-approve'] = function(el){
+  var o = byOffer(el.getAttribute('data-id'));
+  openConfirm({ title:'审批通过', message:'通过后进入待发送，由招聘负责人或 HRBP 发送。', okText:'通过', onOk:function(){
+    o.status = '待发送'; o.node = '已完成';
+    o.chain.forEach(function(n){ if (n.state === '审批中') { n.state = '已通过'; n.time = '11-23 15:40'; } });
+    toast('审批已通过'); render();
+  }});
+};
+ACTIONS['offer-reject'] = function(el){
+  var o = byOffer(el.getAttribute('data-id'));
+  openReasonSheet({ title:'驳回 Offer', label:'驳回原因', options:['薪资超带宽','职级不一致','签字费待确认','其他'], okText:'确认驳回', onOk:function(sel){
+    o.status = '待发起'; o.node = '—';
+    o.chain.forEach(function(n){ if (n.state === '审批中') { n.state = '已驳回'; n.comment = sel; } });
+    toast('已驳回'); render();
+  }});
+};
+ACTIONS['offer-withdraw'] = function(el){
+  var o = byOffer(el.getAttribute('data-id'));
+  openConfirm({ title:'撤回 Offer', message:'撤回后内容保留，可修改后重新提交。', okText:'撤回', onOk:function(){
+    o.status = '待发起'; o.node = '—'; toast('已撤回'); render();
+  }});
+};
+ACTIONS['offer-send'] = function(el){
+  var o = byOffer(el.getAttribute('data-id'));
+  openSheet('发送 Offer', '<div class="form"><label class="switch"><input type="checkbox" id="chSms" checked>短信</label><label class="switch"><input type="checkbox" id="chMail" checked>邮件</label><label class="switch"><input type="checkbox" id="chInbox">站内信</label><button class="btn btn--primary btn--block" type="button" id="sendOk">确认发送</button></div>');
+  document.getElementById('sendOk').onclick = function(){
+    if (!document.getElementById('chSms').checked && !document.getElementById('chMail').checked && !document.getElementById('chInbox').checked) { toast('请选择送达渠道'); return; }
+    o.status = '已发送'; o.sentAt = '2026-11-23 15:45'; o.node = '已完成';
+    closeSheet(); toast('Offer 已发送，有效期至 2026-11-30'); render();
+  };
+};
+ACTIONS['offer-close'] = function(el){
+  var o = byOffer(el.getAttribute('data-id'));
+  var extra = o.status === '已接受' ? '关闭后将取消对应入职单。' : '';
+  openReasonSheet({ title:'关闭 Offer', label:'关闭原因', options:['候选人接受其他 Offer','需求调整','薪资未达成','其他'], okText:'确认关闭', onOk:function(sel){
+    o.status = '已关闭'; o.note = (sel + ' ' + extra).trim();
+    toast('Offer 已关闭'); render();
+  }});
+};
+ACTIONS['lg-filter-open'] = function(){
+  var f = state.ledgerFilter || {};
+  var hrs = ['全部'];
+  DB.ledger.forEach(function(r){ if (hrs.indexOf(r.hr) < 0) hrs.push(r.hr); });
+  openSheet('筛选台账', '<div class="form">'
+    + '<div class="form__row"><span class="form__label">招聘季度</span><select class="input" id="lfQuarter">' + opt(['全部','2026Q3','2026Q4','2027Q1'], f.quarter || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">招聘HR</span><select class="input" id="lfHr">' + opt(hrs, f.hr || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">状态</span><select class="input" id="lfStatus">' + opt(['全部','审批中','待发送','已发送','已入职','未发起','已放弃','已拒绝'], f.status || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">岗位类别</span><select class="input" id="lfCategory">' + opt(['全部','关键岗位','S1类岗位','S2类岗位','A类岗位'], f.category || '全部') + '</select></div>'
+    + '<div class="form__row"><span class="form__label">放弃原因</span><select class="input" id="lfReason">' + opt(['全部','选择其他平台','薪酬待遇不满足','地理位置','转正周期过长','家里有事','其他'], f.reason || '全部') + '</select></div>'
+    + '<div style="display:flex;gap:8px"><button class="btn btn--block" type="button" id="lfClear">重置</button><button class="btn btn--primary btn--block" type="button" id="lfOk">确定</button></div></div>');
+  document.getElementById('lfClear').onclick = function(){ state.ledgerFilter = {}; closeSheet(); render(); };
+  document.getElementById('lfOk').onclick = function(){
+    var map = { quarter:'lfQuarter', hr:'lfHr', status:'lfStatus', category:'lfCategory', reason:'lfReason' };
+    var next = {};
+    Object.keys(map).forEach(function(k){ var v = document.getElementById(map[k]).value; if (v !== '全部') { next[k] = v; } });
+    state.ledgerFilter = next; closeSheet(); render();
+  };
+};
+ACTIONS['lg-filter-clear'] = function(){ state.ledgerFilter = {}; render(); };
+ACTIONS['lg-go'] = function(el){
+  var name = el.getAttribute('data-name');
+  var c = DB.candidates.filter(function(x){ return x.name === name; })[0];
+  if (c) { go('/candidate/' + c.id); } else { toast('该候选人仅台账留存'); }
+};
+
+render();
+})();
+</script>
+</body>
+</html>

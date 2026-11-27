@@ -1,0 +1,773 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,BusyInput,PageableSelect,Table,Tag,Drawer,Form,Message,Confirm,Popover">
+  <title>绩效通晒 · 通晒工作台</title>
+  <style>
+    :root{
+      --primary:#2563eb; --primary-weak:#eff4ff; --primary-line:#bfd3ff;
+      --bg:#f4f6fa; --panel:#fff; --line:#e5e8ef; --line-strong:#d3d9e4;
+      --text:#1f2937; --muted:#6b7280; --subtle:#9aa3b2;
+      --success:#15803d; --success-weak:#eaf7ef; --warn:#b45309; --warn-weak:#fff7e6;
+      --danger:#b91c1c; --danger-weak:#fdecec;
+      --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.08);
+    }
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    button,input,select,textarea{font:inherit;color:inherit}
+    .topnav{display:flex;align-items:center;gap:12px;height:52px;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+    .logo{font-weight:700}
+    .crumb{color:var(--muted)}
+    .crumb b{color:var(--text)}
+    .spacer{flex:1}
+    .mock{font-size:12px;color:var(--subtle)}
+    .page{max-width:1560px;margin:0 auto;padding:22px 24px 72px}
+    .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+    .page-head h1{font-size:22px;margin:0}
+    .page-head p{margin:4px 0 0;color:var(--muted)}
+    .period-picker{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+    .period-picker select{height:34px;border:1px solid var(--line-strong);border-radius:8px;padding:0 10px;background:#fff}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .views{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:14px;flex-wrap:wrap}
+    .view-btn{appearance:none;border:0;background:transparent;padding:9px 16px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+    .view-btn.is-active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+    .range-bar{display:flex;align-items:center;gap:18px;padding:14px 18px;margin-bottom:12px;flex-wrap:wrap}
+    .range-title{font-weight:600;display:flex;align-items:center;gap:8px}
+    .range-title select{height:32px;border:1px solid var(--line-strong);border-radius:8px;padding:0 8px;background:#fff;font-weight:500}
+    .range-meta{display:flex;gap:18px;color:var(--muted);font-size:12.5px;flex-wrap:wrap}
+    .range-meta b{color:var(--text)}
+    .range-actions{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+    .btn{height:34px;padding:0 14px;border:1px solid var(--line-strong);background:#fff;border-radius:8px;cursor:pointer;white-space:nowrap}
+    .btn:hover{border-color:#b8c0ce;background:#fafbfc}
+    .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn-primary:hover{background:#1d4ed8;border-color:#1d4ed8}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .btn-sm{height:28px;padding:0 9px;font-size:12.5px}
+    .baseline{display:flex;align-items:center;gap:10px;padding:10px 16px;margin-bottom:12px;font-size:12.5px;color:var(--muted);flex-wrap:wrap}
+    .baseline .tag{font-size:11.5px;height:20px}
+    .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;white-space:nowrap}
+    .tag-neutral{background:#f2f4f8;color:#4b5563}
+    .tag-blue{background:var(--primary-weak);color:#1e40af}
+    .tag-warn{background:var(--warn-weak);color:var(--warn)}
+    .tag-ok{background:var(--success-weak);color:var(--success)}
+    .tag-danger{background:var(--danger-weak);color:var(--danger)}
+    .tag-grade{background:#eef2f7;color:#334155;font-weight:700;min-width:26px;justify-content:center}
+    .tag-S{background:#e8f0ff;color:#1d4ed8}
+    .tag-A{background:#eaf7ef;color:#15803d}
+    .tag-B{background:#f2f4f8;color:#4b5563}
+    .tag-C{background:#fff7e6;color:#b45309}
+    .tag-D{background:#fdecec;color:#b91c1c}
+    .section-head{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:14px 18px 10px;flex-wrap:wrap}
+    .section-head h2{font-size:15px;margin:0}
+    .dims{display:flex;gap:4px;flex-wrap:wrap}
+    .dim{appearance:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:4px 12px;cursor:pointer;font-size:12.5px;color:var(--muted)}
+    .dim.is-active{border-color:var(--primary);color:var(--primary);background:var(--primary-weak);font-weight:600}
+    .sum-wrap{overflow:auto;padding:0 18px 14px}
+    .sum-wrap-meta{padding:0 18px 6px;margin-top:-4px}
+    .sum-table{width:100%;min-width:900px;border-collapse:collapse;font-size:12.5px}
+    .sum-table th,.sum-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left}
+    .sum-table th{color:var(--muted);font-weight:500;background:#f8fafc}
+    .sum-table td.num,.sum-table th.num{text-align:right;font-variant-numeric:tabular-nums}
+    .sum-table tr.total td{font-weight:600;background:#fbfcfe}
+    .pct{color:var(--muted);font-size:11.5px;margin-left:5px;display:inline-block}
+    .dev{display:flex;gap:4px;flex-wrap:wrap}
+    .table-tools{display:flex;gap:12px;align-items:flex-end;padding:12px 18px;border-top:1px solid var(--line);flex-wrap:wrap}
+    .tf{display:flex;flex-direction:column;gap:5px}
+    .tf label{font-size:11.5px;color:var(--muted)}
+    .tf input,.tf select{height:32px;border:1px solid var(--line-strong);border-radius:8px;padding:0 9px;background:#fff;font-size:13px}
+    .tf.acts{flex-direction:row;margin-left:auto;gap:8px}
+    .table-wrap{overflow:auto;max-height:calc(100vh - 220px)}
+    .cal-table{border-collapse:separate;border-spacing:0;min-width:1520px;width:100%;font-size:12.5px}
+    .cal-table th,.cal-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:middle;background:#fff;white-space:nowrap}
+    .cal-table thead th{background:#f8fafc;color:var(--muted);font-weight:500;position:sticky;top:0;z-index:3}
+    .cal-table th.c1,.cal-table td.c1{position:sticky;left:0;z-index:2;width:96px;min-width:96px}
+    .cal-table th.c2,.cal-table td.c2{position:sticky;left:96px;z-index:2;width:86px;min-width:86px;box-shadow:6px 0 8px -6px rgba(16,24,40,.18)}
+    .cal-table thead th.c1,.cal-table thead th.c2{z-index:4}
+    .cal-table tbody tr:hover td{background:#fbfcfe}
+    .hist{color:var(--muted);font-size:11.5px;letter-spacing:.2px}
+    .grade-cell{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+    .grade-select{height:30px;border:1px solid var(--line-strong);border-radius:8px;padding:0 6px;background:#fff;font-weight:600}
+    .grade-select:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .suggest{color:var(--subtle);font-size:11px}
+    .link{border:0;background:transparent;color:var(--primary);cursor:pointer;font-size:11.5px;padding:0;text-decoration:underline}
+    .plan-input{height:30px;border:1px solid var(--line-strong);border-radius:8px;padding:0 8px;background:#fff;width:170px;font-size:12.5px}
+    .reason-cell{max-width:230px;white-space:normal;display:flex;align-items:flex-start;gap:6px}
+    .reason-text{color:#374151;font-size:12px;line-height:1.45;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+    .reason-warn{color:var(--warn);font-size:11.5px}
+    .muted{color:var(--muted);font-size:12px}
+    .empty{padding:48px 0;text-align:center;color:var(--subtle)}
+    .drawer-mask{position:fixed;inset:0;background:rgba(17,24,39,.36);z-index:30}
+    .drawer{position:fixed;top:0;right:0;bottom:0;width:min(680px,96vw);background:#fff;z-index:40;display:flex;flex-direction:column;box-shadow:-12px 0 32px rgba(16,24,40,.14)}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+    .drawer-head h2{font-size:16px;margin:0}
+    .icon-btn{border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px}
+    .icon-btn:hover{background:#f2f4f8;color:var(--text)}
+    .drawer-body{padding:14px 20px;overflow:auto;flex:1}
+    .log-filter{display:flex;gap:8px;margin-bottom:12px}
+    .log-filter input{flex:1;height:32px;border:1px solid var(--line-strong);border-radius:8px;padding:0 9px}
+    .log{position:relative;padding:0 0 14px 18px;border-left:2px solid var(--line);margin-left:4px}
+    .log:last-child{border-left-color:transparent}
+    .log::before{content:"";position:absolute;left:-6px;top:5px;width:10px;height:10px;border-radius:50%;background:var(--primary)}
+    .log-top{display:flex;align-items:center;gap:8px;flex-wrap:wrap;font-size:12.5px}
+    .log-top b{font-size:13px}
+    .log-time{color:var(--subtle);font-size:11.5px}
+    .log-change{margin-top:4px;font-size:12.5px;color:#374151}
+    .log-change .old{color:var(--danger)}
+    .log-change .new{color:var(--success);font-weight:600}
+    .log-reason{margin-top:3px;font-size:12px;color:var(--muted)}
+    .modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.36);z-index:50;display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal{background:#fff;border-radius:12px;width:min(520px,100%);padding:20px;box-shadow:0 18px 48px rgba(16,24,40,.2)}
+    .modal h3{margin:0 0 10px;font-size:16px}
+    .modal p{margin:0 0 12px;color:var(--muted);font-size:13px}
+    .modal .change-row{display:flex;align-items:center;gap:8px;margin-bottom:12px;font-size:13px;flex-wrap:wrap}
+    .modal label{display:block;font-size:12.5px;color:#374151;margin-bottom:5px}
+    .modal textarea{width:100%;min-height:92px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;resize:vertical}
+    .modal textarea:focus{outline:none;border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+    .banner{padding:10px 18px;background:var(--success-weak);border-bottom:1px solid #c9e9d4;color:var(--success);font-size:13px;display:flex;gap:8px;align-items:center}
+    .toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:60}
+    .toast.err{background:var(--danger)}
+    @media(max-width:760px){
+      .page{padding:14px 10px 60px}
+      .topnav{padding:0 12px}
+      .crumb,.mock{display:none}
+      .range-actions{margin-left:0}
+      .table-wrap{max-height:none}
+    }
+  </style>
+</head>
+<body>
+  <nav class="topnav" aria-label="原型导航">
+    <span class="logo">示例集团 · 人资管理</span>
+    <span class="crumb">HR管理 / 绩效管理 / <b>绩效通晒</b></span>
+    <span class="spacer"></span>
+    <span class="mock">静态 Mock</span>
+  </nav>
+
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <h1>绩效通晒</h1>
+        <p>校准本期绩效等级，修改全程留痕，中心确认后结果生效</p>
+      </div>
+      <div class="period-picker">
+        <label for="periodSelect">考核周期</label>
+        <select id="periodSelect">
+          <option>2026年Q3绩效—技术中心</option>
+          <option>2026年Q2绩效—技术中心</option>
+        </select>
+      </div>
+    </header>
+
+    <div class="views" role="tablist" aria-label="通晒范围">
+      <button class="view-btn is-active" data-scope="team" role="tab" aria-selected="true">团队通晒</button>
+      <button class="view-btn" data-scope="center" role="tab" aria-selected="false">中心通晒</button>
+    </div>
+
+    <section class="panel range-bar" id="rangeBar">
+      <div class="range-title">
+        <span id="rangeLabel">团队</span>
+        <select id="groupSelect"></select>
+      </div>
+      <div class="range-meta">
+        <span>纳入 <b id="mCount">0</b> 人</span>
+        <span>已确认团队 <b id="mTeams">0 / 3</b></span>
+        <span>通晒状态 <b id="mStatus">通晒中</b></span>
+        <span>本期调整 <b id="mChanges">0</b> 次</span>
+      </div>
+      <div class="range-actions">
+        <button class="btn" type="button" id="btnLogs">变更记录</button>
+        <button class="btn" type="button" id="btnExport">导出</button>
+        <button class="btn btn-primary" type="button" id="btnConfirm">确认本团队</button>
+      </div>
+    </section>
+
+    <section class="panel baseline" aria-label="比例基线">
+      <span>比例基线：</span>
+      <span id="baselineTags"></span>
+      <span>偏差只提示，不拦截保存与确认</span>
+      <span class="muted" id="paramSource"></span>
+    </section>
+
+    <section class="panel" aria-label="分布汇总">
+      <div id="lockedBanner" class="banner" hidden><span class="tag tag-ok">已生效</span><span id="lockedText"></span></div>
+      <div class="section-head">
+        <h2>等级分布</h2>
+        <div class="dims" id="dims">
+          <button class="dim is-active" data-dim="level" type="button">职级层级</button>
+          <button class="dim" data-dim="dept" type="button">部门</button>
+          <button class="dim" data-dim="seq" type="button">序列</button>
+          <button class="dim" data-dim="tenure" type="button">司龄</button>
+        </div>
+      </div>
+      <div class="sum-wrap-meta"><span class="muted" id="sumMeta"></span></div>
+      <div class="sum-wrap">
+        <table class="sum-table">
+          <thead>
+            <tr>
+              <th>维度值</th><th class="num">S</th><th class="num">A</th><th class="num">B</th><th class="num">C</th><th class="num">D</th><th class="num">合计</th><th>偏差提示</th>
+            </tr>
+          </thead>
+          <tbody id="sumRows"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top:12px" aria-label="绩效台账">
+      <div class="section-head">
+        <h2>绩效台账</h2>
+        <span class="muted" id="tableMeta"></span>
+      </div>
+      <div class="table-tools">
+        <div class="tf"><label for="fq">关键字</label><input id="fq" placeholder="姓名或工号"></div>
+        <div class="tf"><label for="fdept">部门</label><select id="fdept"><option value="">全部</option></select></div>
+        <div class="tf"><label for="fgrade">本期等级</label>
+          <select id="fgrade"><option value="">全部</option><option>S</option><option>A</option><option>B</option><option>C</option><option>D</option></select>
+        </div>
+        <div class="tf acts">
+          <button class="btn" type="button" id="btnReset">重置</button>
+          <button class="btn btn-primary" type="button" id="btnQuery">查询</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="cal-table">
+          <thead id="calHead"></thead>
+          <tbody id="calRows"></tbody>
+        </table>
+      </div>
+      <div class="empty" id="calEmpty" hidden>当前筛选下暂无人员</div>
+    </section>
+  </main>
+
+  <datalist id="planOptions"></datalist>
+
+  <div class="drawer-mask" id="drawerMask" hidden></div>
+  <aside class="drawer" id="logDrawer" hidden aria-label="变更记录抽屉">
+    <header class="drawer-head">
+      <h2>变更记录 <span class="muted" id="logCount"></span></h2>
+      <button class="icon-btn" type="button" id="btnCloseLogs" aria-label="关闭">×</button>
+    </header>
+    <div class="drawer-body">
+      <div class="log-filter"><input id="logQuery" placeholder="按员工、字段或原因筛选"></div>
+      <div id="logList"></div>
+    </div>
+  </aside>
+
+  <div class="modal-mask" id="modalMask" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle"></h3>
+      <div id="modalBody"></div>
+      <div class="modal-foot">
+        <button class="btn" type="button" id="modalCancel">取消</button>
+        <button class="btn btn-primary" type="button" id="modalOk">确定</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const PERF_PARAMS = {
+      source: '绩效参数配置（演示）',
+      baselines: [
+        { code: 'S', type: 'upper', value: 15, tolerance: 0 },
+        { code: 'A', type: 'upper', value: 20, tolerance: 0 },
+        { code: 'B', type: 'reference', value: 50, tolerance: 5 },
+        { code: 'C', type: 'reference', value: 10, tolerance: 5 },
+        { code: 'D', type: 'lower', value: 5, tolerance: 0 }
+      ],
+      levelBoundaries: [3, 6, 8],
+      tenureBoundaries: [0.5, 1, 2, 3],
+      historyPeriods: 3,
+      planPhrases: ['维持原岗位工作职责', '扩大工作职责', '提名晋升', '调薪或奖金倾斜'],
+      nonBRequired: ['S', 'A', 'C', 'D']
+    };
+    const HISTORY_PERIODS = ['25Q4', '26Q1', '26Q2'].slice(-PERF_PARAMS.historyPeriods);
+    const rows = [
+      { id:'L08118', name:'李平', dept:'供应链研发部', group:'TMS研发组', position:'后端研发工程师', manager:'张超', level:'P6', location:'长沙', hire:'2025-01-02', status:'正式', hist:['B','A','A'], suggested:'B', grade:'A', plan:'扩大工作职责', reason:'冷链项目技术 PM，攻坚完成上线并推动 AI Native 实践' },
+      { id:'L09494', name:'刘明', dept:'供应链研发部', group:'TMS研发组', position:'后端研发工程师', manager:'张超', level:'P7', location:'长沙', hire:'2025-07-14', status:'正式', hist:['A','A','B'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L12931', name:'李辉', dept:'供应链研发部', group:'TMS研发组', position:'后端研发工程师', manager:'张超', level:'P7', location:'长沙', hire:'2026-04-13', status:'试用', hist:['/','/','/'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L08845', name:'李丽', dept:'供应链研发部', group:'TMS研发组', position:'后端研发工程师', manager:'张超', level:'P5', location:'长沙', hire:'2025-05-19', status:'正式', hist:['S','S','A'], suggested:'A', grade:'A', plan:'扩大工作职责', reason:'合同项目 AI Native 脚手架沉淀，组内分享推广' },
+      { id:'L08904', name:'李子涵', dept:'供应链研发部', group:'TMS研发组', position:'后端研发工程师', manager:'张超', level:'P6', location:'长沙', hire:'2025-05-21', status:'正式', hist:['A','B','B'], suggested:'A', grade:'A', plan:'扩大工作职责', reason:'主导退出清场项目，跨 11 部门协同落地' },
+      { id:'L08004', name:'李悦', dept:'供应链研发部', group:'TMS研发组', position:'初级后端研发工程师', manager:'张超', level:'P3', location:'长沙', hire:'2024-12-06', status:'正式', hist:['C','B','B'], suggested:'B', grade:'C', plan:'维持原岗位工作职责', reason:'业务理解偏差，本季度缺陷 36 个，场景考虑不全' },
+
+      { id:'L01125', name:'李亮', dept:'供应链研发部', group:'订单研发组', position:'后端研发工程师', manager:'王琳', level:'P6', location:'长沙', hire:'2022-04-01', status:'正式', hist:['A','B','A'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L11863', name:'刘静', dept:'供应链研发部', group:'订单研发组', position:'后端研发工程师', manager:'李亮', level:'P5', location:'长沙', hire:'2026-02-09', status:'正式', hist:['/','B','B'], suggested:'B', grade:'A', plan:'扩大工作职责', reason:'采购核心链路独立补位，Q3 无故障' },
+      { id:'L01126', name:'李璐', dept:'供应链研发部', group:'订单研发组', position:'后端研发工程师', manager:'李亮', level:'P6', location:'长沙', hire:'2022-04-01', status:'正式', hist:['B','B','B'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L11258', name:'李勇', dept:'供应链研发部', group:'订单研发组', position:'后端研发工程师', manager:'李亮', level:'P7', location:'长沙', hire:'2025-11-26', status:'正式', hist:['/','B','B'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L15154', name:'李娜', dept:'供应链研发部', group:'订单研发组', position:'后端研发工程师', manager:'李亮', level:'P5', location:'长沙', hire:'2026-06-26', status:'试用', hist:['/','/','/'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+
+      { id:'L01400', name:'张艳', dept:'商品研发部', group:'客服研发组', position:'后端研发工程师', manager:'王琳', level:'P7', location:'长沙', hire:'2021-03-15', status:'正式', hist:['A','A','B'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L11628', name:'李文', dept:'商品研发部', group:'客服研发组', position:'后端研发工程师', manager:'张艳', level:'P5', location:'长沙', hire:'2025-12-29', status:'正式', hist:['/','B','B'], suggested:'A', grade:'B', plan:'维持原岗位工作职责', reason:'吞吐提升明显，但线上问题处理时效一般，维持 B' },
+      { id:'L13435', name:'刘芳', dept:'商品研发部', group:'客服研发组', position:'后端研发工程师', manager:'张艳', level:'P5', location:'长沙', hire:'2026-04-29', status:'正式', hist:['/','/','/'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L14766', name:'张平', dept:'商品研发部', group:'客服研发组', position:'后端研发工程师', manager:'张艳', level:'P6', location:'长沙', hire:'2026-06-22', status:'试用', hist:['/','/','/'], suggested:'C', grade:'C', plan:'维持原岗位工作职责', reason:'试用期线上体验问题处理不及时，未达预期' },
+
+      { id:'L12000', name:'张涛', dept:'供应链测试部', group:'测试组', position:'测试工程师', manager:'王琳', level:'P5', location:'长沙', hire:'2024-05-10', status:'正式', hist:['B','B','B'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L12100', name:'张明', dept:'供应链测试部', group:'测试组', position:'测试工程师', manager:'王琳', level:'P4', location:'长沙', hire:'2025-09-01', status:'正式', hist:['/','B','B'], suggested:'B', grade:'B', plan:'维持原岗位工作职责', reason:'' },
+      { id:'L12200', name:'张龙', dept:'供应链测试部', group:'测试组', position:'测试工程师', manager:'王琳', level:'P5', location:'长沙', hire:'2025-03-20', status:'离职', hist:['C','C','/'], suggested:'C', grade:'D', plan:'', reason:'协商离职（有赔偿），本期记 D' }
+    ];
+
+    const groups = ['TMS研发组', '订单研发组', '客服研发组', '测试组'];
+    const state = {
+      scope: 'team', group: 'TMS研发组', dim: 'level', locked: false,
+      confirmed: {}, filter: { q: '', dept: '', grade: '' },
+      logs: [
+        { time:'2026-09-20 09:42', user:'张超', emp:'李平', field:'本期绩效', old:'B', new:'A', reason:'冷链项目技术 PM，攻坚完成上线并推动 AI Native 实践', scope:'团队' },
+        { time:'2026-09-20 09:48', user:'张超', emp:'李悦', field:'本期绩效', old:'B', new:'C', reason:'业务理解偏差，本季度缺陷 36 个，场景考虑不全', scope:'团队' },
+        { time:'2026-09-20 10:05', user:'张艳', emp:'李文', field:'本期绩效', old:'A', new:'B', reason:'吞吐提升明显，但线上问题处理时效一般，维持 B', scope:'团队' }
+      ],
+      modal: null
+    };
+    const el = (id) => document.getElementById(id);
+    const seqOf = (r) => r.dept.includes('测试') ? '测试' : '研发';
+    const levelBandNames = () => {
+      const [a, b, c] = PERF_PARAMS.levelBoundaries;
+      return [`P1-P${a}`, `P${a + 1}-P${b}`, `P${b + 1}-P${c}`, `P${c + 1}及以上`];
+    };
+    const tenureBandNames = () => {
+      const [a, b, c, d] = PERF_PARAMS.tenureBoundaries;
+      return [`不足 ${a} 年`, `${a}-${b} 年`, `${b}-${c} 年`, `${c}-${d} 年`, `${d} 年以上`];
+    };
+    const levelBand = (level) => {
+      const n = Number(String(level).replace('P', ''));
+      const [a, b, c] = PERF_PARAMS.levelBoundaries;
+      if (n <= a) return `P1-P${a}`;
+      if (n <= b) return `P${a + 1}-P${b}`;
+      if (n <= c) return `P${b + 1}-P${c}`;
+      return `P${c + 1}及以上`;
+    };
+    const tenureOf = (r) => {
+      const end = new Date('2026-09-30T00:00:00');
+      const start = new Date(r.hire + 'T00:00:00');
+      return (end - start) / (365.25 * 24 * 3600 * 1000);
+    };
+    const tenureBand = (r) => {
+      const y = tenureOf(r);
+      const [a, b, c, d] = PERF_PARAMS.tenureBoundaries;
+      if (y < a) return `不足 ${a} 年`;
+      if (y < b) return `${a}-${b} 年`;
+      if (y < c) return `${b}-${c} 年`;
+      if (y < d) return `${c}-${d} 年`;
+      return `${d} 年以上`;
+    };
+
+    function toast(msg, err) {
+      const t = el('toast');
+      t.textContent = msg;
+      t.className = 'toast' + (err ? ' err' : '');
+      t.hidden = false;
+      clearTimeout(t._t);
+      t._t = setTimeout(() => { t.hidden = true; }, 2400);
+    }
+
+    const scopeRows = () => state.scope === 'team' ? rows.filter(r => r.group === state.group) : rows.slice();
+    const scopeName = () => state.scope === 'team' ? state.group : '技术中心';
+    const deptOf = (group) => (rows.find(r => r.group === group) || rows[0]).dept;
+    function dimLabel() {
+      if (state.dim === 'dept') return '部门';
+      if (state.dim === 'seq') return '序列';
+      if (state.dim === 'tenure') return '司龄';
+      return state.scope === 'center' ? '部门 × 职级层级' : '职级层级';
+    }
+    function summaryScope() {
+      if (state.scope === 'center') return { list: rows.slice(), label: '技术中心 · 按' + dimLabel() };
+      if (state.dim === 'dept') return { list: rows.filter(r => r.dept === deptOf(state.group)), label: '所属部门 ' + deptOf(state.group) + ' · 按职级层级' };
+      return { list: scopeRows(), label: state.group + ' · 按' + dimLabel() };
+    }
+
+    function deviation(grade, pct) {
+      const b = PERF_PARAMS.baselines.find((x) => x.code === grade);
+      if (!b) return null;
+      if (b.type === 'upper' && pct > b.value) return ['高于基线', 'warn'];
+      if (b.type === 'lower' && pct < b.value) return ['低于基线', 'danger'];
+      if (b.type === 'reference' && Math.abs(pct - b.value) >= b.tolerance) return ['偏离参考', 'info'];
+      return null;
+    }
+
+    function groupKeys(list) {
+      if (state.dim === 'dept') {
+        if (state.scope === 'center') return [...new Set(list.map(r => r.dept))].sort((a, b) => a.localeCompare(b, 'zh'));
+        return levelBandNames().filter(k => list.some(r => levelBand(r.level) === k));
+      }
+      if (state.dim === 'level') {
+        if (state.scope === 'center') {
+          const keys = [];
+          list.forEach(r => {
+            const k = r.dept + ' · ' + levelBand(r.level);
+            if (!keys.includes(k)) keys.push(k);
+          });
+          return keys.sort((a, b) => a.localeCompare(b, 'zh'));
+        }
+        return levelBandNames().filter(k => list.some(r => levelBand(r.level) === k));
+      }
+      if (state.dim === 'seq') return ['研发', '测试'].filter(k => list.some(r => seqOf(r) === k));
+      return tenureBandNames().filter(k => list.some(r => tenureBand(r) === k));
+    }
+
+    function keyOf(r) {
+      if (state.dim === 'dept') return state.scope === 'center' ? r.dept : levelBand(r.level);
+      if (state.dim === 'level') return state.scope === 'center' ? r.dept + ' · ' + levelBand(r.level) : levelBand(r.level);
+      if (state.dim === 'seq') return seqOf(r);
+      return tenureBand(r);
+    }
+
+    function renderSummary() {
+      const meta = summaryScope();
+      const list = meta.list;
+      el('sumMeta').textContent = meta.label;
+      const keys = groupKeys(list);
+      const counts = { S:0, A:0, B:0, C:0, D:0 };
+      const body = keys.map(k => {
+        const group = list.filter(r => keyOf(r) === k);
+        const c = { S:0, A:0, B:0, C:0, D:0 };
+        group.forEach(r => { c[r.grade]++; counts[r.grade]++; });
+        const total = group.length;
+        const cells = ['S','A','B','C','D'].map(g => {
+          const pct = total ? c[g] / total * 100 : 0;
+          return `<td class="num">${c[g]} <span class="pct">${pct.toFixed(1)}%</span></td>`;
+        }).join('');
+        const devs = ['S','A','B','C','D'].map(g => {
+          const pct = total ? c[g] / total * 100 : 0;
+          const d = deviation(g, pct);
+          if (!d) return '';
+          const cls = d[1] === 'warn' ? 'tag-warn' : d[1] === 'danger' ? 'tag-danger' : 'tag-neutral';
+          return `<span class="tag ${cls}">${g} ${d[0]}</span>`;
+        }).join('');
+        return `<tr><td>${k}</td>${cells}<td class="num">${total}</td><td><div class="dev">${devs || '<span class="muted">正常</span>'}</div></td></tr>`;
+      }).join('');
+      const total = list.length;
+      const totalCells = ['S','A','B','C','D'].map(g => `<td class="num">${counts[g]} <span class="pct">${total ? (counts[g] / total * 100).toFixed(1) : '0.0'}%</span></td>`).join('');
+      el('sumRows').innerHTML = body + `<tr class="total"><td>合计</td>${totalCells}<td class="num">${total}</td><td><span class="muted">纳入 ${total} 人</span></td></tr>`;
+    }
+
+    function renderRange() {
+      el('rangeLabel').textContent = state.scope === 'team' ? '团队' : '范围';
+      el('groupSelect').hidden = state.scope !== 'team';
+      el('mCount').textContent = scopeRows().length;
+      el('mTeams').textContent = `${Object.keys(state.confirmed).filter(k => state.confirmed[k]).length} / ${groups.length}`;
+      el('mStatus').textContent = state.locked ? '已生效' : (state.scope === 'team' && state.confirmed[state.group]) ? '已校准' : '通晒中';
+      el('mChanges').textContent = state.logs.length;
+      el('btnConfirm').textContent = state.scope === 'team' ? (state.confirmed[state.group] ? '重新确认本团队' : '确认本团队') : '确认中心结果';
+      el('btnConfirm').disabled = state.locked;
+      el('rangeBar').classList.toggle('is-locked', state.locked);
+      el('lockedBanner').hidden = !state.locked;
+      el('lockedText').textContent = state.locked ? '中心结果已于 2026-09-24 16:30 生效，台账已锁定；如需更正请联系 HRBP 发起更正并留痕。' : '';
+    }
+
+    function addMonths(iso, n) {
+      const d = new Date(iso + 'T00:00:00');
+      d.setMonth(d.getMonth() + n);
+      return d.toISOString().slice(0, 10);
+    }
+    const regularOf = (r) => r.status === '试用' ? '—' : addMonths(r.hire, 3);
+    function tenureText(r) {
+      const start = new Date(r.hire + 'T00:00:00');
+      const end = new Date('2026-09-30T00:00:00');
+      let months = (end.getFullYear() - start.getFullYear()) * 12 + end.getMonth() - start.getMonth();
+      if (end.getDate() < start.getDate()) months -= 1;
+      const y = Math.floor(months / 12);
+      const m = months % 12;
+      return y > 0 ? `${y}年${m}个月` : `${m}个月`;
+    }
+
+    function renderTable() {
+      const isCenter = state.scope === 'center';
+      el('calHead').innerHTML = `<tr>
+        <th class="c1">工号</th><th class="c2">姓名</th>
+        <th>二级组织</th><th>三级组织</th><th>四级组织</th><th>职位</th><th>直线经理</th><th>职级</th><th>工作地点</th><th>入职日期</th><th>人员状态</th>
+        ${isCenter ? '<th>转正日期</th><th>司龄</th>' : ''}
+        <th>历史绩效<br><small>${HISTORY_PERIODS.join(' / ')}</small></th>
+        <th>本期绩效</th><th>后续计划</th><th>非 B 原因</th>
+      </tr>`;
+      const list = scopeRows().filter(r => {
+        const q = state.filter.q.trim();
+        if (q && !(r.name.includes(q) || r.id.toLowerCase().includes(q.toLowerCase()))) return false;
+        if (state.filter.dept && r.dept !== state.filter.dept) return false;
+        if (state.filter.grade && r.grade !== state.filter.grade) return false;
+        return true;
+      });
+      el('tableMeta').textContent = `${scopeName()} · 共 ${list.length} 人`;
+      el('calEmpty').hidden = list.length > 0;
+      el('calRows').innerHTML = list.map(r => {
+        const missingReason = PERF_PARAMS.nonBRequired.includes(r.grade) && !r.reason;
+        const suggestedDiff = r.suggested !== r.grade;
+        const editable = !state.locked;
+        return `<tr>
+          <td class="c1">${r.id}</td>
+          <td class="c2">${r.name}</td>
+          <td>技术中心</td><td>${r.dept}</td><td>${r.group}</td><td>${r.position}</td><td>${r.manager}</td><td>${r.level}</td>
+          <td>${r.location}</td><td>${r.hire}</td><td>${r.status}</td>
+          ${isCenter ? `<td>${regularOf(r)}</td><td>${tenureText(r)}</td>` : ''}
+          <td class="hist">${r.hist.slice(-PERF_PARAMS.historyPeriods).join(' / ')}</td>
+          <td>
+            ${editable
+              ? `<div class="grade-cell"><select class="grade-select" data-grade="${r.id}" aria-label="${r.name} 本期等级">${['S','A','B','C','D'].map(g => `<option ${g === r.grade ? 'selected' : ''}>${g}</option>`).join('')}</select>${suggestedDiff ? `<span class="suggest">建议 ${r.suggested}</span><button class="link" type="button" data-restore="${r.id}">恢复</button>` : ''}</div>`
+              : `<div class="grade-cell"><span class="tag tag-grade tag-${r.grade}">${r.grade}</span>${suggestedDiff ? `<span class="suggest">建议 ${r.suggested}</span>` : ''}</div>`}
+          </td>
+          <td>${editable
+            ? `<input class="plan-input" list="planOptions" data-plan="${r.id}" value="${r.plan}" aria-label="${r.name} 后续计划">`
+            : (r.plan || '<span class="muted">—</span>')}</td>
+          <td>
+            <div class="reason-cell">
+              ${r.reason ? `<span class="reason-text" title="${r.reason}">${r.reason}</span>` : (missingReason ? '<span class="reason-warn">待补充</span>' : '<span class="muted">—</span>')}
+              ${editable ? `<button class="link" type="button" data-reason="${r.id}">编辑</button>` : ''}
+            </div>
+          </td>
+        </tr>`;
+      }).join('');
+    }
+
+    function renderLogs(filterText) {
+      const q = (filterText || '').trim();
+      const list = !q ? state.logs : state.logs.filter(l =>
+        l.emp.includes(q) || l.field.includes(q) || l.reason.includes(q) || l.user.includes(q));
+      el('logCount').textContent = `· ${list.length} 条`;
+      el('logList').innerHTML = list.length ? list.map(l => `
+        <div class="log">
+          <div class="log-top">
+            <span class="log-time">${l.time}</span><b>${l.user}</b>
+            <span class="tag tag-neutral">${l.scope}</span>
+            <span class="tag tag-blue">${l.emp}</span>
+          </div>
+          <div class="log-change">${l.field}：<span class="old">${l.old || '—'}</span> → <span class="new">${l.new || '—'}</span></div>
+          <div class="log-reason">原因：${l.reason}</div>
+        </div>`).join('') : '<div class="empty">暂无变更记录</div>';
+    }
+
+    function renderAll() { renderRange(); renderSummary(); renderTable(); }
+
+    function openModal(type, payload) {
+      state.modal = { type, payload };
+      const mask = el('modalMask');
+      const body = el('modalBody');
+      const now = '2026-09-20 11:20';
+      if (type === 'grade') {
+        el('modalTitle').textContent = '调整本期绩效';
+        body.innerHTML = `
+          <div class="change-row"><b>${payload.name}</b><span class="tag tag-grade tag-${payload.old}">${payload.old}</span><span>→</span><span class="tag tag-grade tag-${payload.new}">${payload.new}</span><span class="muted">建议等级 ${payload.suggested}</span></div>
+          <label for="reasonInput">变更原因<span style="color:var(--danger)">*</span></label>
+          <textarea id="reasonInput" placeholder="请填写调整依据（客观事实）"></textarea>`;
+      } else if (type === 'plan') {
+        el('modalTitle').textContent = '调整后续计划';
+        body.innerHTML = `
+          <div class="change-row"><b>${payload.name}</b><span class="muted">${payload.old || '空'} → ${payload.new || '空'}</span></div>
+          <label for="reasonInput">变更原因<span style="color:var(--danger)">*</span></label>
+          <textarea id="reasonInput" placeholder="请填写调整依据"></textarea>`;
+      } else if (type === 'reason') {
+        el('modalTitle').textContent = '编辑非 B 绩效原因';
+        body.innerHTML = `
+          <div class="change-row"><b>${payload.name}</b><span class="tag tag-grade tag-${payload.grade}">${payload.grade}</span><span class="muted">按参数配置必填</span></div>
+          <label for="reasonContent">原因说明</label>
+          <textarea id="reasonContent" placeholder="请阐述客观事实">${payload.reason || ''}</textarea>`;
+      } else if (type === 'confirmTeam') {
+        el('modalTitle').textContent = `确认「${state.group}」通晒结果`;
+        body.innerHTML = `<p>确认后本团队状态变为已校准，仍可在中心通晒中调整。确认前请核对非 B 原因是否完整。</p>
+          <div class="change-row muted">本团队纳入 ${payload.count} 人，非 B 人员 ${payload.nonB} 人，已有原因 ${payload.withReason} 人</div>`;
+      } else if (type === 'confirmCenter') {
+        el('modalTitle').textContent = '确认中心结果并生效';
+        body.innerHTML = `<p>确认后本期全部最终等级生效，台账锁定，结果同步至员工档案与员工成长记录。生效后如需更正需由 HRBP 发起并留痕。</p>
+          <div class="change-row muted">范围 ${payload.count} 人 · 已调整 ${state.logs.length} 次 · 本操作不可撤销</div>`;
+      }
+      mask.hidden = false;
+    }
+
+    function closeModal() {
+      el('modalMask').hidden = true;
+      state.modal = null;
+      renderTable();
+    }
+
+    function logChange(emp, field, oldV, newV, reason) {
+      state.logs.unshift({ time:'2026-09-20 11:20', user: state.scope === 'team' ? '张超' : '王琳', emp, field, old: oldV, new: newV, reason, scope: state.scope === 'team' ? '团队' : '中心' });
+    }
+
+    function markDirty() {
+      if (state.scope === 'team' && state.confirmed[state.group]) state.confirmed[state.group] = false;
+    }
+
+    function commitModal() {
+      const m = state.modal;
+      if (!m) return;
+      if (m.type === 'grade') {
+        const reason = el('reasonInput').value.trim();
+        if (!reason) { toast('请填写变更原因', true); return; }
+        const r = rows.find(x => x.id === m.payload.id);
+        logChange(r.name, '本期绩效', r.grade, m.payload.new, reason);
+        r.grade = m.payload.new;
+        markDirty();
+        closeModal(); renderAll();
+        toast(`已将 ${r.name} 调整为 ${r.grade}`);
+        return;
+      }
+      if (m.type === 'plan') {
+        const reason = el('reasonInput').value.trim();
+        if (!reason) { toast('请填写变更原因', true); return; }
+        const r = rows.find(x => x.id === m.payload.id);
+        logChange(r.name, '后续计划', r.plan || '空', m.payload.new || '空', reason);
+        r.plan = m.payload.new;
+        markDirty();
+        closeModal(); renderAll();
+        toast('后续计划已更新');
+        return;
+      }
+      if (m.type === 'reason') {
+        const content = el('reasonContent').value.trim();
+        const r = rows.find(x => x.id === m.payload.id);
+        if (PERF_PARAMS.nonBRequired.includes(r.grade) && !content) { toast('当前等级按参数配置必须填写原因', true); return; }
+        logChange(r.name, '非 B 绩效原因', r.reason || '空', content || '空', '通晒会补充或修改非 B 绩效原因');
+        r.reason = content;
+        markDirty();
+        closeModal(); renderAll();
+        toast('原因已保存');
+        return;
+      }
+      if (m.type === 'confirmTeam') {
+        if (m.payload.nonB !== m.payload.withReason) { toast('存在非 B 等级未填写原因的人员，请补充后再确认', true); return; }
+        state.confirmed[state.group] = true;
+        closeModal(); renderAll();
+        toast(`「${state.group}」已确认`);
+        return;
+      }
+      if (m.type === 'confirmCenter') {
+        state.locked = true;
+        closeModal(); renderAll();
+        toast('中心结果已生效，台账已锁定');
+      }
+    }
+
+    function exportCsv() {
+      const list = scopeRows();
+      const isCenter = state.scope === 'center';
+      const header = ['工号','姓名','二级组织','三级组织','四级组织','职位','直线经理','职级','工作地点','入职日期','人员状态']
+        .concat(isCenter ? ['转正日期','司龄'] : [])
+        .concat(['25Q4','26Q1','26Q2','本期绩效','建议等级','后续计划','非B原因']);
+      const lines = [header.join(',')];
+      list.forEach(r => {
+        const cells = [r.id, r.name, '技术中心', r.dept, r.group, r.position, r.manager, r.level, r.location, r.hire, r.status]
+          .concat(isCenter ? [regularOf(r), tenureText(r)] : [])
+          .concat([...r.hist, r.grade, r.suggested, r.plan, r.reason])
+          .map(v => `"${String(v == null ? '' : v).replace(/"/g, '""')}"`);
+        lines.push(cells.join(','));
+      });
+      lines.push('');
+      lines.push('变更记录');
+      lines.push(['时间','操作人','员工','字段','原值','新值','原因','范围'].join(','));
+      state.logs.forEach(l => lines.push([l.time, l.user, l.emp, l.field, l.old, l.new, l.reason, l.scope].map(v => `"${String(v).replace(/"/g, '""')}"`).join(',')));
+      const blob = new Blob(['\ufeff' + lines.join('\r\n')], { type: 'text/csv;charset=utf-8' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `2026Q3绩效_${scopeName()}_${state.locked ? '已生效' : '未生效'}.csv`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      toast('已导出当前视图（含变更记录）');
+    }
+
+    document.addEventListener('click', (e) => {
+      const scopeBtn = e.target.closest('.view-btn');
+      if (scopeBtn) {
+        state.scope = scopeBtn.dataset.scope;
+        document.querySelectorAll('.view-btn').forEach(b => {
+          const on = b === scopeBtn;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        renderAll();
+        return;
+      }
+      const dimBtn = e.target.closest('.dim');
+      if (dimBtn) {
+        state.dim = dimBtn.dataset.dim;
+        document.querySelectorAll('.dim').forEach(b => b.classList.toggle('is-active', b === dimBtn));
+        renderSummary();
+        return;
+      }
+      const restore = e.target.closest('[data-restore]');
+      if (restore) {
+        const r = rows.find(x => x.id === restore.dataset.restore);
+        if (r.suggested === r.grade) return;
+        openModal('grade', { id: r.id, name: r.name, old: r.grade, new: r.suggested, suggested: r.suggested });
+        return;
+      }
+      const reasonBtn = e.target.closest('[data-reason]');
+      if (reasonBtn) {
+        const r = rows.find(x => x.id === reasonBtn.dataset.reason);
+        openModal('reason', { id: r.id, name: r.name, grade: r.grade, reason: r.reason });
+        return;
+      }
+    });
+
+    document.addEventListener('change', (e) => {
+      const gradeSel = e.target.closest('[data-grade]');
+      if (gradeSel) {
+        const r = rows.find(x => x.id === gradeSel.dataset.grade);
+        if (gradeSel.value === r.grade) return;
+        openModal('grade', { id: r.id, name: r.name, old: r.grade, new: gradeSel.value, suggested: r.suggested });
+        return;
+      }
+      const planInput = e.target.closest('[data-plan]');
+      if (planInput) {
+        const r = rows.find(x => x.id === planInput.dataset.plan);
+        if (planInput.value === r.plan) return;
+        openModal('plan', { id: r.id, name: r.name, old: r.plan, new: planInput.value.trim() });
+      }
+    });
+
+    el('groupSelect').addEventListener('change', (e) => { state.group = e.target.value; renderAll(); });
+    el('btnQuery').addEventListener('click', () => {
+      state.filter = { q: el('fq').value, dept: el('fdept').value, grade: el('fgrade').value };
+      renderTable();
+    });
+    el('btnReset').addEventListener('click', () => {
+      el('fq').value = ''; el('fdept').value = ''; el('fgrade').value = '';
+      state.filter = { q: '', dept: '', grade: '' };
+      renderTable();
+    });
+    el('btnLogs').addEventListener('click', () => {
+      el('logQuery').value = '';
+      renderLogs('');
+      el('drawerMask').hidden = false;
+      el('logDrawer').hidden = false;
+    });
+    el('btnCloseLogs').addEventListener('click', () => { el('logDrawer').hidden = true; el('drawerMask').hidden = true; });
+    el('logQuery').addEventListener('input', (e) => renderLogs(e.target.value));
+    el('btnExport').addEventListener('click', exportCsv);
+    el('btnConfirm').addEventListener('click', () => {
+      if (state.locked) return;
+      if (state.scope === 'team') {
+        const list = scopeRows();
+        const nonB = list.filter(r => PERF_PARAMS.nonBRequired.includes(r.grade)).length;
+        const withReason = list.filter(r => PERF_PARAMS.nonBRequired.includes(r.grade) && r.reason).length;
+        openModal('confirmTeam', { count: list.length, nonB, withReason });
+      } else {
+        const unconfirmed = groups.filter(g => !state.confirmed[g]);
+        if (unconfirmed.length) { toast(`尚有 ${unconfirmed.length} 个团队未确认：${unconfirmed.join('、')}`, true); return; }
+        openModal('confirmCenter', { count: rows.length });
+      }
+    });
+    el('modalCancel').addEventListener('click', closeModal);
+    el('modalOk').addEventListener('click', commitModal);
+    el('drawerMask').addEventListener('click', () => { el('logDrawer').hidden = true; el('drawerMask').hidden = true; });
+    el('modalMask').addEventListener('click', (e) => { if (e.target === el('modalMask')) closeModal(); });
+
+    function renderBaselineTags() {
+      const clsOf = { upper: 'tag-blue', reference: 'tag-neutral', lower: 'tag-danger' };
+      el('baselineTags').innerHTML = PERF_PARAMS.baselines.map((b) => {
+        const text = b.type === 'upper' ? `${b.code} ≤ ${b.value}%` : b.type === 'lower' ? `${b.code} ≥ ${b.value}%` : `${b.code} 约 ${b.value}%`;
+        return `<span class="tag ${clsOf[b.type]}">${text}</span>`;
+      }).join('');
+      el('paramSource').textContent = `参数来源：${PERF_PARAMS.source}`;
+    }
+
+    (function init() {
+      el('groupSelect').innerHTML = groups.map(g => `<option ${g === state.group ? 'selected' : ''}>${g}</option>`).join('');
+      el('fdept').innerHTML = '<option value="">全部</option>' + [...new Set(rows.map(r => r.dept))].map(d => `<option>${d}</option>`).join('');
+      document.getElementById('planOptions').innerHTML = PERF_PARAMS.planPhrases.map(p => `<option>${p}</option>`).join('');
+      renderBaselineTags();
+      renderAll();
+    })();
+  </script>
+</body>
+</html>

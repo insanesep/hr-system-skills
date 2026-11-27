@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>考勤管理 · 日考勤、月考勤、假勤审批与规则</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ HR管理 / 考勤管理</span>
+    <span class="spacer">静态 Mock · 四个页签</span>
+  </nav>
+
+  <main class="page" id="list">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">勤</span>考勤管理</h1>
+        <p class="page-sub">按考勤组与班次匹配每日出勤，处理异常与假勤审批，生成并确认月度考勤汇总</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" data-action="import-punch">导入打卡数据</button>
+        <button class="btn" type="button" data-toast="已按当前筛选导出考勤数据">导出</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="考勤管理页签">
+      <button class="tab is-active" type="button" data-tab-group="attendance" data-tab-key="daily">日考勤</button>
+      <button class="tab" type="button" data-tab-group="attendance" data-tab-key="monthly">月考勤</button>
+      <button class="tab" type="button" data-tab-group="attendance" data-tab-key="leave">假勤审批 <span class="num">7</span></button>
+      <button class="tab" type="button" data-tab-group="attendance" data-tab-key="rules">考勤规则</button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">842</div><div class="label">今日应出勤</div><div class="hint">在职且匹配考勤组</div></div>
+      <div class="stat"><div class="num">796</div><div class="label">正常出勤</div><div class="hint">正常 + 加班 + 出差</div></div>
+      <div class="stat"><div class="num">27</div><div class="label">异常待处理</div><div class="hint">迟到 / 缺卡 / 旷工</div></div>
+      <div class="stat"><div class="num">12</div><div class="label">请假 / 出差</div><div class="hint">已通过假勤</div></div>
+      <div class="stat"><div class="num">7</div><div class="label">未配置考勤组</div><div class="hint">需补规则</div></div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field">日期 <input type="date" value="2026-11-24"></label>
+        <label class="field">组织 <select><option>全部</option><option>产品研发部</option><option>技术管理部</option><option>信息安全部</option></select></label>
+        <label class="field">考勤组 <select><option>全部</option><option>技术中心标准考勤组</option><option>信息安全部考勤组</option></select></label>
+        <label class="field">状态 <select><option>全部</option><option>正常</option><option>迟到</option><option>早退</option><option>缺卡</option><option>旷工</option><option>请假</option><option>出差</option></select></label>
+        <span class="grow"></span>
+        <button class="btn btn-primary" type="button" data-toast="已按条件筛选考勤">查询</button>
+        <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+      </div>
+    </div>
+
+    <section id="daily" data-panel-group="attendance" data-panel-key="daily">
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">日考勤 <b>842</b> 人 · 点击「查看」处理异常与补卡</div><div class="table-tools">异常待处理 27 · 未配置考勤组 7</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>日期</th><th>姓名</th><th>工号</th><th>组织</th><th>考勤组</th><th>班次</th><th>上班打卡</th><th>下班打卡</th><th>日考勤状态</th><th>异常类型</th><th>数据来源</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">2026-11-24</td><td class="name-cell"><span class="avatar">王</span>王婷</td><td class="mono">D10002</td><td>产品研发部 / 用户研发组</td><td>技术中心标准考勤组</td><td>09:00-18:00</td><td class="mono">08:56</td><td class="mono">18:12</td><td><span class="tag tag-success">正常</span></td><td class="muted">—</td><td>外部导入</td><td><button class="btn-link" type="button" data-action="attendance-detail" data-name="王婷" data-org="产品研发部 / 用户研发组" data-date="2026-11-24" data-status="正常" data-exception="—">查看</button></td></tr>
+              <tr><td class="mono">2026-11-24</td><td class="name-cell"><span class="avatar">张</span>张伟</td><td class="mono">D10033</td><td>基础平台部 / 人力研发组</td><td>技术中心标准考勤组</td><td>09:00-18:00</td><td class="mono">09:18</td><td class="mono">18:05</td><td><span class="tag tag-warn">迟到</span></td><td>迟到 18 分钟</td><td>外部导入</td><td><button class="btn-link" type="button" data-action="attendance-detail" data-name="张伟" data-org="基础平台部 / 人力研发组" data-date="2026-11-24" data-status="迟到" data-exception="迟到 18 分钟">查看</button></td></tr>
+              <tr><td class="mono">2026-11-24</td><td class="name-cell"><span class="avatar">李</span>李明</td><td class="mono">D10112</td><td>信息安全部 / 信息安全管理组</td><td>信息安全部考勤组</td><td>09:00-18:00</td><td class="mono">08:59</td><td class="muted">—</td><td><span class="tag tag-warn">缺卡</span></td><td>下班未打卡</td><td>外部导入</td><td><button class="btn-link" type="button" data-action="attendance-detail" data-name="李明" data-org="信息安全部 / 信息安全管理组" data-date="2026-11-24" data-status="缺卡" data-exception="下班未打卡">查看</button></td></tr>
+              <tr><td class="mono">2026-11-24</td><td class="name-cell"><span class="avatar">王</span>王强</td><td class="mono">D10087</td><td>门店业务部 / 工程产研组</td><td>技术中心标准考勤组</td><td>09:00-18:00</td><td class="mono">08:48</td><td class="mono">20:30</td><td><span class="tag tag-primary">加班</span></td><td>加班 2.5 小时</td><td>假勤回写</td><td><button class="btn-link" type="button" data-action="attendance-detail" data-name="王强" data-org="门店业务部 / 工程产研组" data-date="2026-11-24" data-status="加班" data-exception="加班 2.5 小时">查看</button></td></tr>
+              <tr><td class="mono">2026-11-24</td><td class="name-cell"><span class="avatar">张</span>张娜</td><td class="mono">D10041</td><td>产品研发部 / 用户研发组</td><td>技术中心标准考勤组</td><td>09:00-18:00</td><td class="muted">—</td><td class="muted">—</td><td><span class="tag tag-neutral">请假</span></td><td>事假 1 天</td><td>假勤回写</td><td><button class="btn-link" type="button" data-action="attendance-detail" data-name="张娜" data-org="产品研发部 / 用户研发组" data-date="2026-11-24" data-status="请假" data-exception="事假 1 天">查看</button></td></tr>
+              <tr><td class="mono">2026-11-24</td><td class="name-cell"><span class="avatar">李</span>李鑫</td><td class="mono">D10118</td><td>信息安全部</td><td><span class="tag tag-warn">未配置</span></td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td><td>系统生成</td><td><button class="btn-link" type="button" data-action="rule-edit" data-name="信息安全部">配置规则</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="monthly" data-panel-group="attendance" data-panel-key="monthly" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">月考勤 <b>2026-11</b> · 月度汇总由日考勤与假勤自动计算</div><div class="table-tools">待确认 23 人 · 已锁定 0 人</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>姓名</th><th>工号</th><th>组织</th><th>月份</th><th>应出勤</th><th>实际出勤</th><th>迟到</th><th>早退</th><th>缺卡</th><th>旷工</th><th>请假</th><th>加班</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="name-cell"><span class="avatar">王</span>王婷</td><td class="mono">D10002</td><td>产品研发部 / 用户研发组</td><td class="mono">2026-11</td><td>20</td><td>20</td><td>0</td><td>0</td><td>0</td><td>0</td><td>0</td><td>6.5h</td><td><span class="tag tag-warn">待确认</span></td><td><button class="btn-link" type="button" data-action="monthly-detail" data-name="王婷">查看</button><button class="btn-link" type="button" data-toast="王婷 2026-11 月度考勤已确认">确认</button></td></tr>
+              <tr><td class="name-cell"><span class="avatar">张</span>张伟</td><td class="mono">D10033</td><td>基础平台部 / 人力研发组</td><td class="mono">2026-11</td><td>20</td><td>20</td><td>2</td><td>0</td><td>0</td><td>0</td><td>0</td><td>4.0h</td><td><span class="tag tag-warn">待确认</span></td><td><button class="btn-link" type="button" data-action="monthly-detail" data-name="张伟">查看</button><button class="btn-link" type="button" data-toast="张伟 2026-11 月度考勤已确认">确认</button></td></tr>
+              <tr><td class="name-cell"><span class="avatar">李</span>李明</td><td class="mono">D10112</td><td>信息安全部 / 信息安全管理组</td><td class="mono">2026-11</td><td>20</td><td>19</td><td>0</td><td>0</td><td>2</td><td>0</td><td>1</td><td>0</td><td><span class="tag tag-warn">待确认</span></td><td><button class="btn-link" type="button" data-action="monthly-detail" data-name="李明">查看</button><button class="btn-link" type="button" data-toast="李明 2026-11 月度考勤已确认">确认</button></td></tr>
+              <tr><td class="name-cell"><span class="avatar">张</span>张娜</td><td class="mono">D10041</td><td>产品研发部 / 用户研发组</td><td class="mono">2026-11</td><td>20</td><td>19</td><td>0</td><td>1</td><td>0</td><td>0</td><td>1</td><td>8.0h</td><td><span class="tag tag-success">已确认</span></td><td><button class="btn-link" type="button" data-action="monthly-detail" data-name="张娜">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="leave" data-panel-group="attendance" data-panel-key="leave" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">假勤审批 <b>7</b> 条待审批 · 请假 / 加班 / 出差 / 补卡</div><div class="table-tools">按提交时间升序</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>申请编号</th><th>申请人</th><th>组织</th><th>假勤类型</th><th>开始时间</th><th>结束时间</th><th>时长</th><th>原因</th><th>审批状态</th><th>当前审批人</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">LV20261124001</td><td class="name-cell"><span class="avatar">张</span>张娜</td><td>产品研发部 / 用户研发组</td><td><span class="tag tag-neutral">请假</span></td><td>2026-11-24 09:00</td><td>2026-11-24 18:00</td><td>1 天</td><td>事假</td><td><span class="tag tag-warn">待审批</span></td><td>王婷</td><td><button class="btn-link" type="button" data-action="leave-approve" data-name="张娜" data-type="请假" data-duration="1 天">审批</button><button class="btn-link" type="button" data-action="leave-detail" data-name="张娜" data-type="请假" data-duration="1 天">查看</button></td></tr>
+              <tr><td class="mono">OT20261124002</td><td class="name-cell"><span class="avatar">王</span>王强</td><td>门店业务部 / 工程产研组</td><td><span class="tag tag-neutral">加班</span></td><td>2026-11-24 18:00</td><td>2026-11-24 20:30</td><td>2.5 小时</td><td>版本上线支持</td><td><span class="tag tag-warn">待审批</span></td><td>王婷</td><td><button class="btn-link" type="button" data-action="leave-approve" data-name="王强" data-type="加班" data-duration="2.5 小时">审批</button><button class="btn-link" type="button" data-action="leave-detail" data-name="王强" data-type="加班" data-duration="2.5 小时">查看</button></td></tr>
+              <tr><td class="mono">BT20261123003</td><td class="name-cell"><span class="avatar">李</span>李明</td><td>信息安全部 / 信息安全管理组</td><td><span class="tag tag-neutral">补卡</span></td><td>2026-11-23 18:00</td><td>2026-11-23 18:05</td><td>1 次</td><td>忘记打卡</td><td><span class="tag tag-warn">待审批</span></td><td>张宁</td><td><button class="btn-link" type="button" data-action="leave-approve" data-name="李明" data-type="补卡" data-duration="1 次">审批</button><button class="btn-link" type="button" data-action="leave-detail" data-name="李明" data-type="补卡" data-duration="1 次">查看</button></td></tr>
+              <tr><td class="mono">TR20261122004</td><td class="name-cell"><span class="avatar">李</span>李鑫</td><td>信息安全部</td><td><span class="tag tag-neutral">出差</span></td><td>2026-11-25 09:00</td><td>2026-11-27 18:00</td><td>3 天</td><td>供应商安全评估</td><td><span class="tag tag-success">已通过</span></td><td>—</td><td><button class="btn-link" type="button" data-action="leave-detail" data-name="李鑫" data-type="出差" data-duration="3 天">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section id="rules" data-panel-group="attendance" data-panel-key="rules" hidden>
+      <div class="grid-2">
+        <div class="card table-card">
+          <div class="table-top"><div class="batch">考勤组 <b>3</b> 个 · 按组织绑定员工</div><div class="table-tools">覆盖 835 人</div></div>
+          <div class="table-wrap" style="max-height:420px">
+            <table style="min-width:700px">
+              <thead><tr><th>考勤组</th><th>组织范围</th><th>绑定员工</th><th>班次</th><th>工作日</th><th>迟到容差</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>技术中心标准考勤组</td><td>技术中心</td><td>620</td><td>标准班 09:00-18:00</td><td>周一至周五</td><td>15 分钟</td><td><span class="tag tag-success">启用</span></td><td><button class="btn-link" type="button" data-action="rule-edit" data-name="技术中心标准考勤组">编辑</button></td></tr>
+                <tr><td>信息安全部考勤组</td><td>信息安全部</td><td>26</td><td>标准班 09:00-18:00</td><td>周一至周五</td><td>15 分钟</td><td><span class="tag tag-success">启用</span></td><td><button class="btn-link" type="button" data-action="rule-edit" data-name="信息安全部考勤组">编辑</button></td></tr>
+                <tr><td>门店运营考勤组</td><td>门店运营中心</td><td>189</td><td>门店班 08:30-17:30</td><td>周一至周六</td><td>10 分钟</td><td><span class="tag tag-success">启用</span></td><td><button class="btn-link" type="button" data-action="rule-edit" data-name="门店运营考勤组">编辑</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+        <div class="card table-card">
+          <div class="table-top"><div class="batch">班次 <b>2</b> 个 · 上下午打卡时间</div><div class="table-tools">启用 2 个</div></div>
+          <div class="table-wrap" style="max-height:420px">
+            <table style="min-width:560px">
+              <thead><tr><th>班次</th><th>上班</th><th>下班</th><th>打卡次数</th><th>弹性</th><th>状态</th><th>操作</th></tr></thead>
+              <tbody>
+                <tr><td>标准班</td><td class="mono">09:00</td><td class="mono">18:00</td><td>2 次</td><td>30 分钟</td><td><span class="tag tag-success">启用</span></td><td><button class="btn-link" type="button" data-action="rule-edit" data-name="标准班">编辑</button></td></tr>
+                <tr><td>门店班</td><td class="mono">08:30</td><td class="mono">17:30</td><td>2 次</td><td>15 分钟</td><td><span class="tag tag-success">启用</span></td><td><button class="btn-link" type="button" data-action="rule-edit" data-name="门店班">编辑</button></td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var toast = HRUI.toast;
+
+      document.addEventListener('click', function (event) {
+        var detail = event.target.closest('[data-action="attendance-detail"]');
+        if (detail) {
+          var d = detail.dataset;
+          var body = '<div class="detail-grid"><div class="detail-box"><h4>考勤信息</h4><div class="line"><span>员工</span><b>' + d.name + '</b></div><div class="line"><span>组织</span><b>' + d.org + '</b></div><div class="line"><span>日期</span><b>' + d.date + '</b></div><div class="line"><span>状态</span><b>' + d.status + '</b></div></div><div class="detail-box"><h4>班次与打卡</h4><div class="line"><span>班次</span><b>09:00-18:00</b></div><div class="line"><span>上班打卡</span><b>08:56</b></div><div class="line"><span>下班打卡</span><b>18:12</b></div><div class="line"><span>异常</span><b>' + d.exception + '</b></div></div></div>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">异常处理</h4><div class="detail-box"><div class="line"><span>异常状态</span><b>' + (d.status === '正常' ? '无异常' : '待处理') + '</b></div><div class="line"><span>可执行操作</span><b>' + (d.status === '正常' ? '无' : '补卡 / 更正 / 忽略') + '</b></div></div>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">假勤与更正记录</h4><div class="timeline"><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-24 09:00</div><div class="tl-title">系统生成考勤记录</div><div class="tl-text">按技术中心标准考勤组匹配。</div></div></div>';
+          var foot = d.status === '正常' ? '<button class="btn" type="button" data-close="drawer">关闭</button>' : '<button class="btn" type="button" data-close="drawer">取消</button><button class="btn" type="button" data-toast="已发起补卡申请">补卡</button><button class="btn btn-primary" type="button" data-toast="异常已更正，保留原记录">更正</button>';
+          HRUI.openDrawer(d.name + ' · ' + d.date, d.org + ' · ' + d.status, body, foot);
+        }
+
+        var leave = event.target.closest('[data-action="leave-approve"]');
+        if (leave) {
+          var l = leave.dataset;
+          HRUI.openDrawer('假勤审批 · ' + l.name, l.type + ' · ' + l.duration, '<table class="desc"><tr><th>申请人</th><td>' + l.name + '</td><th>假勤类型</th><td>' + l.type + '</td></tr><tr><th>时长</th><td>' + l.duration + '</td><th>审批状态</th><td>待审批</td></tr></table><div class="form-item" style="margin-top:12px"><label>审批意见</label><textarea placeholder="通过或驳回原因"></textarea></div>', '<button class="btn" type="button" data-close="drawer">取消</button><button class="btn" type="button" data-toast="已驳回，意见已记录">驳回</button><button class="btn btn-primary" type="button" data-toast="假勤已通过，回写日考勤与月度汇总" data-close="drawer">通过</button>');
+        }
+
+        var leaveDetail = event.target.closest('[data-action="leave-detail"]');
+        if (leaveDetail) {
+          var l = leaveDetail.dataset;
+          HRUI.openDrawer('假勤详情 · ' + l.name, l.type + ' · ' + l.duration, '<table class="desc"><tr><th>申请人</th><td>' + l.name + '</td><th>假勤类型</th><td>' + l.type + '</td></tr><tr><th>时长</th><td>' + l.duration + '</td><th>审批状态</th><td>已通过</td></tr><tr><th>原因</th><td colspan="3">按申请内容展示</td></tr></table><div class="detail-box" style="margin-top:12px"><h4>影响范围</h4><div class="line"><span>日考勤</span><b>标记 ' + l.type + '</b></div><div class="line"><span>月度汇总</span><b>已回写</b></div></div>', '<button class="btn" type="button" data-close="drawer">关闭</button>');
+        }
+
+        var monthly = event.target.closest('[data-action="monthly-detail"]');
+        if (monthly) {
+          HRUI.openDrawer('月度考勤明细 · ' + monthly.dataset.name, '2026-11 · 技术中心', '<table class="desc"><tr><th>应出勤</th><td>20 天</td><th>实际出勤</th><td>20 天</td></tr><tr><th>迟到</th><td>0 次</td><th>缺卡</th><td>0 次</td></tr><tr><th>请假</th><td>0 天</td><th>加班</th><td>6.5 小时</td></tr></table><div class="detail-box" style="margin-top:12px"><h4>确认提示</h4><div class="sub">确认后月度考勤锁定，锁定后更正须 HRBP 审批并留痕。</div></div>', '<button class="btn" type="button" data-close="drawer">关闭</button><button class="btn btn-primary" type="button" data-toast="月度考勤已确认并锁定" data-close="drawer">确认月度</button>');
+        }
+
+        if (event.target.closest('[data-action="import-punch"]')) {
+          HRUI.openModal('导入打卡数据', '<div class="form-item"><label>打卡数据模板</label><div class="detail-box"><div class="line"><span>模板</span><b>考勤打卡导入模板 V1.0</b></div><div class="line"><span>限制</span><b>单次不超过 10,000 行</b></div></div></div><div class="form-item"><label>选择文件</label><input type="file" accept=".xlsx"></div><div class="form-item"><label>说明</label><textarea placeholder="可填写本次导入说明"></textarea></div>', '<button class="btn" type="button" data-close="modal">取消</button><button class="btn btn-primary" type="button" data-toast="导入任务已提交，失败行将生成回执" data-close="modal">开始导入</button>');
+        }
+
+        var rule = event.target.closest('[data-action="rule-edit"]');
+        if (rule) {
+          HRUI.openModal('考勤规则 · ' + (rule.dataset.name || '规则'), '<div class="form-grid"><div class="form-item"><label>名称</label><input value="' + (rule.dataset.name || '') + '"></div><div class="form-item"><label>班次</label><select><option>标准班 09:00-18:00</option><option>门店班 08:30-17:30</option></select></div><div class="form-item"><label>工作日</label><input value="周一至周五"></div><div class="form-item"><label>休息日</label><input value="周六、周日"></div><div class="form-item"><label>迟到容差</label><input type="number" value="15"></div><div class="form-item"><label>生效日期</label><input type="date" value="2026-12-01"></div></div><div class="detail-box" style="margin-top:12px;background:#fff7e6;border-color:#f2ddb4"><h4>提示</h4><div class="sub">规则变更只影响生效日期之后的考勤计算，已确认或已锁定月份不重算。</div></div>', '<button class="btn" type="button" data-close="modal">取消</button><button class="btn btn-primary" type="button" data-toast="考勤规则已保存，生效日期后生效" data-close="modal">保存规则</button>');
+        }
+      });
+
+      function applyHash() {
+        var hash = location.hash.replace('#', '');
+        if (hash === 'daily' || hash === 'monthly' || hash === 'leave' || hash === 'rules') HRUI.switchTab('attendance', hash);
+      }
+      applyHash();
+      window.addEventListener('hashchange', applyHash);
+    })();
+  </script>
+</body>
+</html>

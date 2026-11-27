@@ -1,0 +1,257 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>岗位管理 · 职级体系、标准职位与岗位映射</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ 组织管理 / 岗位管理</span>
+    <span class="spacer">静态 Mock · 三个页签可切换</span>
+  </nav>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">岗</span>岗位管理</h1>
+        <p class="page-sub">维护职级矩阵、岗位序列、标准职位与在岗岗位映射，作为编制、招聘与绩效的岗位主数据</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" data-action="import-standard">导入标准职位</button>
+        <button class="btn btn-primary" type="button" data-action="new-standard">新增标准职位</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="岗位管理页签">
+      <button class="tab is-active" type="button" data-tab-group="position" data-tab-key="level">职级体系</button>
+      <button class="tab" type="button" data-tab-group="position" data-tab-key="standard">标准职位 <span class="num">26</span></button>
+      <button class="tab" type="button" data-tab-group="position" data-tab-key="mapping">岗位映射 <span class="num">332</span></button>
+    </div>
+
+    <section id="level" data-panel-group="position" data-panel-key="level">
+      <div class="stats">
+        <div class="stat"><div class="num">33</div><div class="label">职级数量</div><div class="hint">M / P / S / O 四序</div></div>
+        <div class="stat"><div class="num">12</div><div class="label">岗位序列</div><div class="hint">安全序列未建设</div></div>
+        <div class="stat"><div class="num">11</div><div class="label">已启用序列</div><div class="hint">建设中 10 个</div></div>
+        <div class="stat"><div class="num">26</div><div class="label">标准职位</div><div class="hint">已启用 18 个</div></div>
+        <div class="stat"><div class="num">332</div><div class="label">待切换映射</div><div class="hint">命名不一致 + 职级错配</div></div>
+      </div>
+
+      <div class="card section-card">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title">职级矩阵</h2>
+            <p class="card-sub">职级类别 × 职级序列；职级、序列与类别以本页为唯一真源</p>
+          </div>
+          <span class="tag tag-primary">唯一真源</span>
+        </div>
+        <div class="table-wrap">
+          <table class="matrix">
+            <thead><tr><th>职级类别</th><th>管理序列 M</th><th>专业序列 P</th><th>业务序列 S</th><th>操作序列 O</th></tr></thead>
+            <tbody>
+              <tr><td class="seq">战略决策层</td><td><span class="level-chip">M13 总裁</span><span class="level-chip">M12 副总裁</span><span class="level-chip">M11 中心总经理</span><span class="level-chip">M10 中心副总经理</span></td><td class="muted">—</td><td class="muted">—</td><td class="muted">—</td></tr>
+              <tr><td class="seq">总监级</td><td><span class="level-chip">M9 高级总监</span><span class="level-chip">M8 总监</span><span class="level-chip">M7 副总监</span></td><td><span class="level-chip">P11 资深专家</span><span class="level-chip">P10 高级专家</span></td><td class="muted">—</td><td class="muted">—</td></tr>
+              <tr><td class="seq">经理级</td><td><span class="level-chip">M6 高级经理</span><span class="level-chip">M5 经理</span><span class="level-chip">M4 副经理</span></td><td><span class="level-chip">P9 高级专家</span><span class="level-chip">P8 中级专家</span><span class="level-chip">P7 中级专家</span></td><td class="muted">—</td><td class="muted">—</td></tr>
+              <tr><td class="seq">主管级</td><td><span class="level-chip">M3 高级主管</span><span class="level-chip">M2 主管</span><span class="level-chip">M1 副主管</span><span class="level-chip">M0 组长</span></td><td><span class="level-chip">P6 初级专家</span><span class="level-chip">P5 初级专家</span><span class="level-chip">P4 初级专家</span></td><td class="muted">—</td><td class="muted">—</td></tr>
+              <tr><td class="seq">员工级</td><td class="muted">—</td><td><span class="level-chip">P3 高级专员</span><span class="level-chip">P2 中级专员</span><span class="level-chip">P1 初级专员</span></td><td><span class="level-chip">S5 资深店长</span><span class="level-chip">S4 店长</span><span class="level-chip">S3 副店长</span><span class="level-chip">S2 资深店员</span><span class="level-chip">S1 店员</span></td><td><span class="level-chip">O3 高级操作员</span><span class="level-chip">O2 中级操作员</span><span class="level-chip">O1 初级操作员</span></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <div class="grid-2">
+        <div class="card section-card">
+          <div class="card-head">
+            <div><h2 class="card-title">岗位序列</h2><p class="card-sub">技术中心初始 12 个职位族，安全序列未建设</p></div>
+            <button class="btn-link" type="button" data-toast="已打开岗位序列维护">维护</button>
+          </div>
+          <div class="table-wrap" style="max-height:360px">
+            <table style="min-width:560px">
+              <thead><tr><th>岗位序列</th><th>建设状态</th><th>已有职级段</th><th>标准职位</th><th>在岗人数</th></tr></thead>
+              <tbody>
+                <tr><td>产品经理</td><td><span class="tag tag-success">已启用</span></td><td>P3-P9（P10-P11 规划中）</td><td>5</td><td>140</td></tr>
+                <tr><td>产品运营</td><td><span class="tag tag-warn">建设中</span></td><td>P1-P7</td><td>3</td><td>21</td></tr>
+                <tr><td>UED</td><td><span class="tag tag-warn">建设中</span></td><td>P4-P9</td><td>2</td><td>10</td></tr>
+                <tr><td>PMO</td><td><span class="tag tag-warn">建设中</span></td><td>P3-P8</td><td>2</td><td>7</td></tr>
+                <tr><td>后端开发</td><td><span class="tag tag-warn">建设中</span></td><td>P4-P9</td><td>2</td><td>260</td></tr>
+                <tr><td>安全</td><td><span class="tag tag-neutral">未建设</span></td><td class="muted">—</td><td>1</td><td>26</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="card section-card">
+          <div class="card-head">
+            <div><h2 class="card-title">命名规则</h2><p class="card-sub">按职级段生成标准职位名称建议，允许人工调整</p></div>
+            <span class="tag tag-neutral">规则</span>
+          </div>
+          <div class="list-body">
+            <div class="list-row"><div class="grow"><div class="title">P1-P3 · 员工级</div><div class="sub">初级 + 序列职位名称</div></div><span class="tag tag-neutral">初级产品经理</span></div>
+            <div class="list-row"><div class="grow"><div class="title">P4-P6 · 主管级</div><div class="sub">序列职位名称</div></div><span class="tag tag-neutral">产品经理</span></div>
+            <div class="list-row"><div class="grow"><div class="title">P7-P9 · 经理级</div><div class="sub">序列名称 + 专家</div></div><span class="tag tag-neutral">产品专家</span></div>
+            <div class="list-row"><div class="grow"><div class="title">P10 · 总监级</div><div class="sub">高级 + 序列名称 + 专家</div></div><span class="tag tag-neutral">高级产品专家</span></div>
+            <div class="list-row"><div class="grow"><div class="title">P11 · 总监级</div><div class="sub">资深 + 序列名称 + 专家</div></div><span class="tag tag-neutral">资深产品专家</span></div>
+            <div class="list-row"><div class="grow"><div class="title">M 序列</div><div class="sub">按管理职责命名，不套用专业前缀</div></div><span class="tag tag-neutral">经理 / 总监</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="standard" data-panel-group="position" data-panel-key="standard" hidden>
+      <div class="stats">
+        <div class="stat"><div class="num">26</div><div class="label">标准职位总数</div><div class="hint">覆盖 11 个已启用序列</div></div>
+        <div class="stat"><div class="num">18</div><div class="label">已启用</div><div class="hint">可被编制与招聘引用</div></div>
+        <div class="stat"><div class="num">4</div><div class="label">待启用</div><div class="hint">序列建设中</div></div>
+        <div class="stat"><div class="num">210</div><div class="label">在岗人数</div><div class="hint">引用当前标准职位</div></div>
+        <div class="stat"><div class="num">64</div><div class="label">编制引用</div><div class="hint">编制明细行数</div></div>
+      </div>
+
+      <div class="card filter-card">
+        <div class="filter-row">
+          <label class="field">关键字 <input type="search" placeholder="职位名称 / 编码"></label>
+          <label class="field">岗位序列 <select><option>全部</option><option>产品经理</option><option>后端开发</option><option>测试</option><option>运维</option><option>安全</option></select></label>
+          <label class="field">职级类别 <select><option>全部</option><option>员工级</option><option>主管级</option><option>经理级</option><option>总监级</option></select></label>
+          <label class="field">状态 <select><option>全部</option><option>已启用</option><option>待启用</option><option>已停用</option></select></label>
+          <span class="grow"></span>
+          <button class="btn btn-primary" type="button" data-toast="已按条件筛选标准职位">查询</button>
+          <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">标准职位 <b>26</b> 个 · 点击「查看」打开详情抽屉</div><div class="table-tools">已启用 18 · 待启用 4 · 已停用 4</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>职位编码</th><th>职位名称</th><th>类型</th><th>岗位序列</th><th>适用职级</th><th>职级类别</th><th>状态</th><th>在岗</th><th>编制引用</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">PM-0001</td><td class="name-cell">初级产品经理</td><td><span class="tag tag-neutral">专业</span></td><td>产品经理</td><td>P1-P3</td><td>员工级</td><td><span class="tag tag-success">已启用</span></td><td>12</td><td>5</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="PM-0001" data-name="初级产品经理" data-seq="产品经理" data-range="P1-P3" data-cat="员工级" data-status="已启用" data-count="12" data-est="5">查看</button></td></tr>
+              <tr><td class="mono">PM-0002</td><td class="name-cell">产品经理</td><td><span class="tag tag-neutral">专业</span></td><td>产品经理</td><td>P4-P6</td><td>主管级</td><td><span class="tag tag-success">已启用</span></td><td>28</td><td>12</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="PM-0002" data-name="产品经理" data-seq="产品经理" data-range="P4-P6" data-cat="主管级" data-status="已启用" data-count="28" data-est="12">查看</button></td></tr>
+              <tr><td class="mono">PM-0003</td><td class="name-cell">产品专家</td><td><span class="tag tag-neutral">专业</span></td><td>产品经理</td><td>P7-P9</td><td>经理级</td><td><span class="tag tag-success">已启用</span></td><td>9</td><td>4</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="PM-0003" data-name="产品专家" data-seq="产品经理" data-range="P7-P9" data-cat="经理级" data-status="已启用" data-count="9" data-est="4">查看</button></td></tr>
+              <tr><td class="mono">BE-0001</td><td class="name-cell">后端开发工程师</td><td><span class="tag tag-neutral">专业</span></td><td>后端开发</td><td>P4-P6</td><td>主管级</td><td><span class="tag tag-success">已启用</span></td><td>46</td><td>18</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="BE-0001" data-name="后端开发工程师" data-seq="后端开发" data-range="P4-P6" data-cat="主管级" data-status="已启用" data-count="46" data-est="18">查看</button></td></tr>
+              <tr><td class="mono">BE-0002</td><td class="name-cell">后端开发专家</td><td><span class="tag tag-neutral">专业</span></td><td>后端开发</td><td>P7-P9</td><td>经理级</td><td><span class="tag tag-success">已启用</span></td><td>7</td><td>3</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="BE-0002" data-name="后端开发专家" data-seq="后端开发" data-range="P7-P9" data-cat="经理级" data-status="已启用" data-count="7" data-est="3">查看</button></td></tr>
+              <tr><td class="mono">QA-0001</td><td class="name-cell">测试工程师</td><td><span class="tag tag-neutral">专业</span></td><td>测试</td><td>P4-P6</td><td>主管级</td><td><span class="tag tag-success">已启用</span></td><td>31</td><td>11</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="QA-0001" data-name="测试工程师" data-seq="测试" data-range="P4-P6" data-cat="主管级" data-status="已启用" data-count="31" data-est="11">查看</button></td></tr>
+              <tr><td class="mono">OPS-0001</td><td class="name-cell">运维工程师</td><td><span class="tag tag-neutral">专业</span></td><td>运维</td><td>P4-P6</td><td>主管级</td><td><span class="tag tag-success">已启用</span></td><td>18</td><td>8</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="OPS-0001" data-name="运维工程师" data-seq="运维" data-range="P4-P6" data-cat="主管级" data-status="已启用" data-count="18" data-est="8">查看</button></td></tr>
+              <tr><td class="mono">UED-0001</td><td class="name-cell">UI设计师</td><td><span class="tag tag-neutral">专业</span></td><td>UED</td><td>P4-P6</td><td>主管级</td><td><span class="tag tag-success">已启用</span></td><td>6</td><td>3</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="UED-0001" data-name="UI设计师" data-seq="UED" data-range="P4-P6" data-cat="主管级" data-status="已启用" data-count="6" data-est="3">查看</button></td></tr>
+              <tr><td class="mono">SEC-0001</td><td class="name-cell">安全工程师</td><td><span class="tag tag-neutral">专业</span></td><td>安全</td><td>P4-P6</td><td>主管级</td><td><span class="tag tag-warn">待启用</span></td><td>0</td><td>0</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="SEC-0001" data-name="安全工程师" data-seq="安全" data-range="P4-P6" data-cat="主管级" data-status="待启用" data-count="0" data-est="0">查看</button></td></tr>
+              <tr><td class="mono">PM-0004</td><td class="name-cell">数据产品经理</td><td><span class="tag tag-neutral">专业</span></td><td>产品经理</td><td>P7-P9</td><td>经理级</td><td><span class="tag tag-neutral">已停用</span></td><td>0</td><td>0</td><td><button class="btn-link" type="button" data-action="std-detail" data-code="PM-0004" data-name="数据产品经理" data-seq="产品经理" data-range="P7-P9" data-cat="经理级" data-status="已停用" data-count="0" data-est="0">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pager"><span>共 26 条 · 当前第 1 页</span><div class="pages"><button type="button">‹</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">›</button></div></div>
+      </div>
+    </section>
+
+    <section id="mapping" data-panel-group="position" data-panel-key="mapping" hidden>
+      <div class="stats">
+        <div class="stat"><div class="num">844</div><div class="label">在岗员工</div><div class="hint">来源员工资料</div></div>
+        <div class="stat"><div class="num">512</div><div class="label">一致</div><div class="hint">无需切换</div></div>
+        <div class="stat"><div class="num">186</div><div class="label">命名不一致</div><div class="hint">可切换</div></div>
+        <div class="stat"><div class="num">74</div><div class="label">职级错配</div><div class="hint">需人工处理</div></div>
+        <div class="stat"><div class="num">46</div><div class="label">层级未建设</div><div class="hint">缺标准职位</div></div>
+        <div class="stat"><div class="num">332</div><div class="label">待切换</div><div class="hint">含可切换与需处理</div></div>
+      </div>
+
+      <div class="card filter-card">
+        <div class="filter-row">
+          <label class="field">关键字 <input type="search" placeholder="姓名 / 工号"></label>
+          <label class="field">组织 <select><option>全部</option><option>技术管理部</option><option>产品研发部</option><option>信息安全部</option></select></label>
+          <label class="field">匹配结果 <select><option>全部</option><option>一致</option><option>命名不一致</option><option>职级错配</option><option>层级未建设</option><option>序列未建设</option></select></label>
+          <label class="field">切换状态 <select><option>全部</option><option>待处理</option><option>待切换</option><option>已切换</option><option>无需切换</option><option>已忽略</option></select></label>
+          <span class="grow"></span>
+          <button class="btn" type="button" data-toast="映射已按最新数据重新生成">生成映射</button>
+          <button class="btn" type="button" data-toast="已选择 12 条可切换记录，批量切换执行中">批量切换</button>
+        </div>
+      </div>
+
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">岗位映射 <b>844</b> 人 · 仅切换岗位名称，不改变组织、职级与编制</div><div class="table-tools">最近刷新：2026-11-24 09:30</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>工号</th><th>姓名</th><th>组织</th><th>当前职位</th><th>岗位序列</th><th>职级</th><th>建议标准职位</th><th>匹配结果</th><th>切换状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">D10021</td><td class="name-cell">王杰</td><td>技术管理部 / 项目管理组</td><td>PMO专员</td><td>PMO</td><td>P3</td><td>PMO</td><td><span class="tag tag-warn">命名不一致</span></td><td><span class="tag tag-primary">待切换</span></td><td><button class="btn-link" type="button" data-action="map-detail" data-name="王杰" data-org="技术管理部 / 项目管理组" data-cur="PMO专员" data-seq="PMO" data-level="P3" data-sug="PMO" data-match="命名不一致" data-switch="待切换">切换</button></td></tr>
+              <tr><td class="mono">D10003</td><td class="name-cell">王宏</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>PMO</td><td>P7</td><td>PMO</td><td><span class="tag tag-success">一致</span></td><td><span class="tag tag-neutral">无需切换</span></td><td><button class="btn-link muted" type="button" disabled>查看</button></td></tr>
+              <tr><td class="mono">D10112</td><td class="name-cell">李明</td><td>信息安全部 / 信息安全管理组</td><td>信息安全工程师</td><td>安全</td><td>P5</td><td class="muted">—</td><td><span class="tag tag-neutral">序列未建设</span></td><td><span class="tag tag-neutral">待处理</span></td><td><button class="btn-link" type="button" data-action="map-detail" data-name="李明" data-org="信息安全部 / 信息安全管理组" data-cur="信息安全工程师" data-seq="安全" data-level="P5" data-sug="—" data-match="序列未建设" data-switch="待处理">查看</button></td></tr>
+              <tr><td class="mono">D10087</td><td class="name-cell">王强</td><td>门店业务部 / 工程产研组</td><td>测试工程师</td><td>测试</td><td>P8</td><td>测试工程师</td><td><span class="tag tag-danger">职级错配</span></td><td><span class="tag tag-neutral">待处理</span></td><td><button class="btn-link" type="button" data-action="map-detail" data-name="王强" data-org="门店业务部 / 工程产研组" data-cur="测试工程师" data-seq="测试" data-level="P8" data-sug="测试专家" data-match="职级错配" data-switch="待处理">查看</button></td></tr>
+              <tr><td class="mono">D10055</td><td class="name-cell">王伟</td><td>产品研发部 / 用户研发组</td><td>测试工程师</td><td>测试</td><td>P7</td><td>测试专家</td><td><span class="tag tag-warn">命名不一致</span></td><td><span class="tag tag-primary">待切换</span></td><td><button class="btn-link" type="button" data-action="map-detail" data-name="王伟" data-org="产品研发部 / 用户研发组" data-cur="测试工程师" data-seq="测试" data-level="P7" data-sug="测试专家" data-match="命名不一致" data-switch="待切换">切换</button></td></tr>
+              <tr><td class="mono">D10060</td><td class="name-cell">李磊</td><td>供应链测试部 / 软件测试组</td><td>测试工程师</td><td>测试</td><td>P6</td><td>测试工程师</td><td><span class="tag tag-success">一致</span></td><td><span class="tag tag-neutral">无需切换</span></td><td><button class="btn-link muted" type="button" disabled>查看</button></td></tr>
+              <tr><td class="mono">D10118</td><td class="name-cell">李鑫</td><td>信息安全部</td><td>数据安全负责人</td><td>安全</td><td>M7</td><td class="muted">—</td><td><span class="tag tag-neutral">序列未建设</span></td><td><span class="tag tag-neutral">待处理</span></td><td><button class="btn-link" type="button" data-action="map-detail" data-name="李鑫" data-org="信息安全部" data-cur="数据安全负责人" data-seq="安全" data-level="M7" data-sug="—" data-match="序列未建设" data-switch="待处理">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pager"><span>共 844 条 · 当前第 1 页</span><div class="pages"><button type="button">‹</button><button class="is-active" type="button">1</button><button type="button">2</button><button type="button">3</button><button type="button">›</button></div></div>
+      </div>
+    </section>
+  </main>
+
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var $ = HRUI.$;
+      var toast = HRUI.toast;
+
+      document.addEventListener('click', function (event) {
+        var std = event.target.closest('[data-action="std-detail"]');
+        if (std) {
+          var d = std.dataset;
+          var body = '<div class="steps"><div class="step is-done"><span class="idx">01</span>维护职位</div><div class="step is-current"><span class="idx">02</span>被编制引用</div><div class="step"><span class="idx">03</span>招聘快照</div><div class="step"><span class="idx">04</span>版本留痕</div></div>' +
+            '<table class="desc"><tr><th>职位编码</th><td class="mono">' + d.code + '</td><th>职位类型</th><td>专业职位</td></tr><tr><th>岗位序列</th><td>' + d.seq + '</td><th>适用职级</th><td>' + d.range + '</td></tr><tr><th>职级类别</th><td>' + d.cat + '</td><th>状态</th><td>' + d.status + '</td></tr><tr><th>在岗人数</th><td>' + d.count + '</td><th>编制引用</th><td>' + d.est + ' 行</td></tr></table>' +
+            '<div class="detail-grid" style="margin-top:12px"><div class="detail-box"><h4>职位定位</h4><div class="sub">承担该岗位序列在目标职级范围内的核心交付责任，支撑业务目标与组织能力建设。</div></div><div class="detail-box"><h4>引用影响</h4><div class="line"><span>停用后新建引用</span><b>阻断</b></div><div class="line"><span>已引用编制</span><b>保留快照</b></div><div class="line"><span>名称变更</span><b>生成新版本</b></div></div></div>';
+          HRUI.openDrawer(d.name, d.code + ' · ' + d.seq + ' · ' + d.range, body, '<button class="btn" type="button" data-toast="已打开编辑抽屉">编辑</button><button class="btn" type="button" data-toast="标准职位已停用，历史引用保留">停用</button><button class="btn btn-primary" type="button" data-close="drawer">完成</button>');
+        }
+
+        var map = event.target.closest('[data-action="map-detail"]');
+        if (map) {
+          var m = map.dataset;
+          var canSwitch = m.match === '命名不一致' && m.sug !== '—';
+          var body = '<div class="steps"><div class="step is-done"><span class="idx">01</span>当前任职</div><div class="step is-current"><span class="idx">02</span>匹配标准职位</div><div class="step"><span class="idx">03</span>切换确认</div><div class="step"><span class="idx">04</span>写入记录</div></div>' +
+            '<div class="detail-grid"><div class="detail-box"><h4>当前职位</h4><div class="line"><span>组织</span><b>' + m.org + '</b></div><div class="line"><span>职位名称</span><b>' + m.cur + '</b></div><div class="line"><span>岗位序列 / 职级</span><b>' + m.seq + ' / ' + m.level + '</b></div></div><div class="detail-box"><h4>建议标准职位</h4><div class="line"><span>标准职位</span><b>' + m.sug + '</b></div><div class="line"><span>匹配结果</span><b>' + m.match + '</b></div><div class="line"><span>切换状态</span><b>' + m.switch + '</b></div></div></div>' +
+            '<div class="detail-box" style="margin-top:12px;background:#fff7e6;border-color:#f2ddb4"><h4>切换说明</h4><div class="sub">仅更正员工资料当前任职的职位名称与标准职位关联，不改变组织、职级、直接上级与编制行，不生成调岗或晋升记录。</div></div>' +
+            (canSwitch ? '<div class="form-item" style="margin-top:12px"><label>切换原因 <span style="color:#b91c1c">*</span></label><textarea placeholder="如：按技术中心岗位命名规则统一岗位名称"></textarea></div>' : '<div class="empty" style="padding:18px 0">当前匹配结果不可直接切换，请先补充标准职位或修正员工职级。</div>');
+          HRUI.openDrawer(m.name + ' · 岗位映射', m.org + ' · ' + m.cur + ' → ' + m.sug, body, canSwitch ? '<button class="btn" type="button" data-close="drawer">取消</button><button class="btn" type="button" data-action="ignore-map" data-name="' + m.name + '">忽略</button><button class="btn btn-primary" type="button" data-action="confirm-map" data-name="' + m.name + '" data-sug="' + m.sug + '">确认切换</button>' : '<button class="btn" type="button" data-close="drawer">关闭</button>');
+        }
+
+        var confirmMap = event.target.closest('[data-action="confirm-map"]');
+        if (confirmMap) {
+          toast(confirmMap.dataset.name + ' 已切换为「' + confirmMap.dataset.sug + '」，已写入岗位变更记录');
+          HRUI.closeDrawer();
+        }
+
+        var ignoreMap = event.target.closest('[data-action="ignore-map"]');
+        if (ignoreMap) {
+          toast(ignoreMap.dataset.name + ' 的岗位映射已忽略，保留记录');
+          HRUI.closeDrawer();
+        }
+
+        if (event.target.closest('[data-action="import-standard"]')) {
+          HRUI.openModal('导入标准职位', '<div class="form-item"><label>标准职位模板</label><div class="detail-box"><div class="line"><span>模板</span><b>标准职位导入模板 V1.0</b></div><div class="line"><span>限制</span><b>单次不超过 500 行</b></div></div></div><div class="form-item"><label>选择文件</label><input type="file" accept=".xlsx"></div><div class="form-item"><label>说明</label><textarea placeholder="可填写本次导入的变更说明"></textarea></div>', '<button class="btn" type="button" data-close="modal">取消</button><button class="btn btn-primary" type="button" data-toast="导入任务已提交，预览结果将在导入完成后展示" data-close="modal">开始导入</button>');
+        }
+
+        if (event.target.closest('[data-action="new-standard"]')) {
+          HRUI.openModal('新增标准职位', '<div class="form-grid"><div class="form-item"><label>职位名称</label><input placeholder="如：产品经理"></div><div class="form-item"><label>职位类型</label><select><option>专业职位</option><option>管理职位</option></select></div><div class="form-item"><label>岗位序列</label><select><option>产品经理</option><option>后端开发</option><option>测试</option><option>安全</option></select></div><div class="form-item"><label>适用职级范围</label><input placeholder="如：P4-P6"></div><div class="form-item"><label>默认职级</label><select><option>P5</option><option>P6</option><option>P4</option></select></div><div class="form-item"><label>默认用工形式</label><select><option>全职-正式</option><option>实习生</option><option>劳务外包</option></select></div><div class="form-item full"><label>职位定位</label><textarea placeholder="说明该职位在组织中的价值定位"></textarea></div><div class="form-item full"><label>核心职责</label><textarea placeholder="分条描述核心职责"></textarea></div></div>', '<button class="btn" type="button" data-close="modal">取消</button><button class="btn" type="button" data-toast="草稿已保存">保存草稿</button><button class="btn btn-primary" type="button" data-toast="标准职位已创建并启用" data-close="modal">保存并启用</button>');
+        }
+      });
+
+      function applyHash() {
+        var hash = location.hash.replace('#', '');
+        if (hash === 'level' || hash === 'standard' || hash === 'mapping') HRUI.switchTab('position', hash);
+      }
+      applyHash();
+      window.addEventListener('hashchange', applyHash);
+    })();
+  </script>
+</body>
+</html>

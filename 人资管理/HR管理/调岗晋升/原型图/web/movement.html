@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>调岗晋升 · 异动台账、审批与生效</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+  <style>
+    section[data-panel-key="pending"] th, section[data-panel-key="pending"] td{padding:9px 8px;font-size:12px}
+    section[data-panel-key="pending"] table{min-width:1040px}
+  </style>
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ HR管理 / 调岗晋升</span>
+    <span class="spacer">静态 Mock · 五页签台账</span>
+  </nav>
+
+  <main class="page" id="list">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">动</span>调岗晋升</h1>
+        <p class="page-sub">承载调岗、晋升与降职：校验目标标准职位与编制，审批通过后自动生效并回写任职记录、编制与绩效名单</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" data-toast="已按当前筛选导出异动台账">导出</button>
+        <button class="btn btn-primary" type="button" data-action="create-movement">发起异动</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="异动台账页签">
+      <button class="tab is-active" type="button" data-tab-group="movement" data-tab-key="pending">待审批 <span class="num">5</span></button>
+      <button class="tab" type="button" data-tab-group="movement" data-tab-key="effective">待生效 <span class="num">3</span></button>
+      <button class="tab" type="button" data-tab-group="movement" data-tab-key="done">已生效 <span class="num">8</span></button>
+      <button class="tab" type="button" data-tab-group="movement" data-tab-key="reject">已驳回 <span class="num">2</span></button>
+      <button class="tab" type="button" data-tab-group="movement" data-tab-key="cancel">已撤销 <span class="num">1</span></button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">5</div><div class="label">待审批</div><div class="hint">含 1 条跨中心</div></div>
+      <div class="stat"><div class="num">3</div><div class="label">待生效</div><div class="hint">审批通过未到生效日</div></div>
+      <div class="stat"><div class="num">8</div><div class="label">本月已生效</div><div class="hint">已回写任职与编制</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">晋升</div><div class="hint">本月已生效</div></div>
+      <div class="stat"><div class="num">1</div><div class="label">降职</div><div class="hint">本月已生效</div></div>
+      <div class="stat"><div class="num">1</div><div class="label">生效冲突</div><div class="hint">目标编制被占用</div></div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field">姓名 / 工号 <input type="search" placeholder="姓名或工号"></label>
+        <label class="field">原组织 <select><option>全部</option><option>产品研发部</option><option>门店业务部</option><option>技术管理部</option></select></label>
+        <label class="field">目标组织 <select><option>全部</option><option>产品研发部</option><option>门店业务部</option><option>基础平台部</option></select></label>
+        <label class="field">异动类型 <select><option>全部</option><option>调岗</option><option>晋升</option><option>降职</option></select></label>
+        <label class="field">生效日期 <input type="date" value="2026-12-01"></label>
+        <span class="grow"></span>
+        <button class="btn btn-primary" type="button" data-toast="已按条件筛选异动记录">查询</button>
+        <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+      </div>
+    </div>
+
+    <section data-panel-group="movement" data-panel-key="pending">
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待审批 <b>5</b> 条 · 点击「查看」对比原目标信息</div><div class="table-tools">晋升 3 · 调岗 1 · 降职 1</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>异动单号</th><th>姓名</th><th>工号</th><th>异动类型</th><th>原组织</th><th>目标组织</th><th>原职位 / 职级</th><th>目标职位 / 职级</th><th>生效日期</th><th>审批状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">MV20261123001</td><td class="name-cell"><span class="avatar">王</span>王强</td><td class="mono">D10087</td><td><span class="tag tag-primary">晋升</span></td><td>门店业务部 / 工程产研组</td><td>产品研发部 / 用户研发组</td><td>测试工程师 / P8</td><td>测试专家 / P9</td><td>2026-12-01</td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261123001" data-name="王强" data-type="晋升" data-oldorg="门店业务部 / 工程产研组" data-neworg="产品研发部 / 用户研发组" data-oldpos="测试工程师" data-newpos="测试专家" data-oldlevel="P8" data-newlevel="P9" data-date="2026-12-01" data-status="待审批">查看</button><button class="btn-link" type="button" data-action="mv-approve" data-name="王强">审批</button></td></tr>
+              <tr><td class="mono">MV20261121003</td><td class="name-cell"><span class="avatar">李</span>李明</td><td class="mono">D10112</td><td><span class="tag tag-primary">晋升</span></td><td>信息安全部 / 信息安全管理组</td><td>信息安全部 / 网络安全组</td><td>信息安全工程师 / P5</td><td>安全运营专家 / P6</td><td>2026-12-05</td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261121003" data-name="李明" data-type="晋升" data-oldorg="信息安全部 / 信息安全管理组" data-neworg="信息安全部 / 网络安全组" data-oldpos="信息安全工程师" data-newpos="安全运营专家" data-oldlevel="P5" data-newlevel="P6" data-date="2026-12-05" data-status="待审批">查看</button><button class="btn-link" type="button" data-action="mv-approve" data-name="李明">审批</button></td></tr>
+              <tr><td class="mono">MV20261119004</td><td class="name-cell"><span class="avatar">李</span>李磊</td><td class="mono">D10060</td><td><span class="tag tag-neutral">调岗</span></td><td>供应链测试部 / 软件测试组</td><td>基础平台部 / 人力研发组</td><td>测试工程师 / P6</td><td>测试工程师 / P6</td><td>2026-12-08</td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261119004" data-name="李磊" data-type="调岗" data-oldorg="供应链测试部 / 软件测试组" data-neworg="基础平台部 / 人力研发组" data-oldpos="测试工程师" data-newpos="测试工程师" data-oldlevel="P6" data-newlevel="P6" data-date="2026-12-08" data-status="待审批">查看</button><button class="btn-link" type="button" data-action="mv-approve" data-name="李磊">审批</button></td></tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="movement" data-panel-key="effective" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待生效 <b>3</b> 条 · 审批通过，等待生效日自动生效</div><div class="table-tools"><span class="tag tag-danger">1 条生效冲突</span></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>异动单号</th><th>姓名</th><th>工号</th><th>异动类型</th><th>原组织</th><th>目标组织</th><th>原职位 / 职级</th><th>目标职位 / 职级</th><th>生效日期</th><th>生效状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">MV20261120001</td><td class="name-cell"><span class="avatar">张</span>张文</td><td class="mono">D10044</td><td><span class="tag tag-neutral">调岗</span></td><td>产品研发部 / 交易研发组</td><td>产品研发部 / 产品运营组</td><td>数据研发工程师 / P4</td><td>产品运营 / P4</td><td>2026-12-01</td><td><span class="tag tag-primary">待生效</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261120001" data-name="张文" data-type="调岗" data-oldorg="产品研发部 / 交易研发组" data-neworg="产品研发部 / 产品运营组" data-oldpos="数据研发工程师" data-newpos="产品运营" data-oldlevel="P4" data-newlevel="P4" data-date="2026-12-01" data-status="待生效">查看</button></td></tr>
+              <tr><td class="mono">MV20261122002</td><td class="name-cell"><span class="avatar">王</span>王伟</td><td class="mono">D10055</td><td><span class="tag tag-neutral">调岗</span></td><td>产品研发部 / 用户研发组</td><td>产品研发部 / 交易研发组</td><td>测试工程师 / P7</td><td>测试工程师 / P7</td><td>2026-12-01</td><td><span class="tag tag-primary">待生效</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261122002" data-name="王伟" data-type="调岗" data-oldorg="产品研发部 / 用户研发组" data-neworg="产品研发部 / 交易研发组" data-oldpos="测试工程师" data-newpos="测试工程师" data-oldlevel="P7" data-newlevel="P7" data-date="2026-12-01" data-status="待生效">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="movement" data-panel-key="done" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已生效 <b>8</b> 条 · 任职记录、编制与绩效名单已回写</div><div class="table-tools">按实际生效日期倒序</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>异动单号</th><th>姓名</th><th>工号</th><th>异动类型</th><th>原组织</th><th>目标组织</th><th>原职位 / 职级</th><th>目标职位 / 职级</th><th>生效日期</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">MV20261118003</td><td class="name-cell"><span class="avatar">张</span>张娜</td><td class="mono">D10041</td><td><span class="tag tag-primary">晋升</span></td><td>产品研发部 / 用户研发组</td><td>产品研发部 / 用户研发组</td><td>UI设计师 / P4</td><td>高级UI设计师 / P5</td><td>2026-11-20</td><td><span class="tag tag-success">已生效</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261118003" data-name="张娜" data-type="晋升" data-oldorg="产品研发部 / 用户研发组" data-neworg="产品研发部 / 用户研发组" data-oldpos="UI设计师" data-newpos="高级UI设计师" data-oldlevel="P4" data-newlevel="P5" data-date="2026-11-20" data-status="已生效">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="movement" data-panel-key="reject" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已驳回 <b>2</b> 条 · 原单保留，可复制为新单重新提交</div><div class="table-tools">只读</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>异动单号</th><th>姓名</th><th>工号</th><th>异动类型</th><th>原职位 / 职级</th><th>目标职位 / 职级</th><th>驳回原因</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">MV20261115002</td><td class="name-cell"><span class="avatar">王</span>王娜</td><td class="mono">D10025</td><td><span class="tag tag-danger">降职</span></td><td>测试工程师 / P6</td><td>测试工程师 / P5</td><td>目标编制不足，绩效依据不充分</td><td><span class="tag tag-neutral">已驳回</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261115002" data-name="王娜" data-type="降职" data-oldorg="财务研发部 / 财务测试组" data-neworg="财务研发部 / 财务测试组" data-oldpos="测试工程师" data-newpos="测试工程师" data-oldlevel="P6" data-newlevel="P5" data-date="2026-11-25" data-status="已驳回">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="movement" data-panel-key="cancel" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已撤销 <b>1</b> 条 · 审批记录保留</div><div class="table-tools">只读</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>异动单号</th><th>姓名</th><th>工号</th><th>异动类型</th><th>原职位 / 职级</th><th>目标职位 / 职级</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">MV20261110001</td><td class="name-cell"><span class="avatar">张</span>张鑫</td><td class="mono">D10048</td><td><span class="tag tag-neutral">调岗</span></td><td>PMO / P3</td><td>产品运营 / P3</td><td><span class="tag tag-neutral">已撤销</span></td><td><button class="btn-link" type="button" data-action="mv-detail" data-id="MV20261110001" data-name="张鑫" data-type="调岗" data-oldorg="技术管理部 / 项目管理组" data-neworg="产品研发部 / 产品运营组" data-oldpos="PMO" data-newpos="产品运营" data-oldlevel="P3" data-newlevel="P3" data-date="2026-11-18" data-status="已撤销">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <span id="detail" hidden></span>
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var toast = HRUI.toast;
+
+      function steps(status) {
+        var order = ['发起', '审批', '待生效', '已生效'];
+        var current = status === '待审批' ? 1 : status === '待生效' ? 2 : status === '已生效' ? 4 : 0;
+        return '<div class="steps">' + order.map(function (name, i) {
+          var cls = i < current ? ' is-done' : i === current && status !== '已生效' ? ' is-current' : '';
+          return '<div class="step' + cls + '"><span class="idx">0' + (i + 1) + '</span>' + name + '</div>';
+        }).join('') + '</div>';
+      }
+
+      document.addEventListener('click', function (event) {
+        var detail = event.target.closest('[data-action="mv-detail"]');
+        if (detail) {
+          var d = detail.dataset;
+          var body = steps(d.status) +
+            '<div class="detail-grid"><div class="detail-box"><h4>原信息</h4><div class="line"><span>组织</span><b>' + d.oldorg + '</b></div><div class="line"><span>职位</span><b>' + d.oldpos + '</b></div><div class="line"><span>职级</span><b>' + d.oldlevel + '</b></div></div><div class="detail-box"><h4>目标信息</h4><div class="line"><span>组织</span><b>' + d.neworg + '</b></div><div class="line"><span>职位</span><b>' + d.newpos + '</b></div><div class="line"><span>职级</span><b>' + d.newlevel + '</b></div></div></div>' +
+            '<table class="desc" style="margin-top:12px"><tr><th>异动类型</th><td>' + d.type + '</td><th>生效日期</th><td>' + d.date + '</td></tr><tr><th>目标编制缺额</th><td><span class="tag tag-success">充足</span></td><th>绩效依据</th><td>2026Q3 绩效 A</td></tr><tr><th>审批状态</th><td>' + (d.status === '待审批' ? '待审批' : d.status === '已驳回' ? '已驳回' : '已通过') + '</td><th>单据状态</th><td>' + d.status + '</td></tr></table>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">审批记录</h4><div class="timeline"><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-20 11:20</div><div class="tl-title">原直接上级 · 已通过</div><div class="tl-text">同意异动，工作交接已安排。</div></div><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-21 09:40</div><div class="tl-title">目标直接上级 · 已通过</div><div class="tl-text">已确认目标岗位职责与培养计划。</div></div><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-22 16:10</div><div class="tl-title">HRBP · ' + (d.status === '待审批' ? '待审批' : '已通过') + '</div><div class="tl-text">核对职级范围、编制缺额与绩效依据。</div></div></div>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">生效回写</h4><div class="detail-box"><div class="line"><span>员工资料</span><b>结束原任职，新增目标任职</b></div><div class="line"><span>编制管理</span><b>原行 −1 / 目标行 +1</b></div><div class="line"><span>绩效名单</span><b>组织、职级、直接上级更新</b></div><div class="line"><span>员工成长记录</span><b>写入' + d.type + '事件</b></div></div>';
+          var foot = d.status === '待审批' ? '<button class="btn" type="button" data-action="mv-reject" data-name="' + d.name + '">驳回</button><button class="btn btn-primary" type="button" data-action="mv-approve" data-name="' + d.name + '">审批通过</button>' : '<button class="btn" type="button" data-close="drawer">关闭</button>';
+          HRUI.openDrawer(d.name + ' · ' + d.id, d.oldorg + ' → ' + d.neworg + ' · ' + d.type, body, foot);
+        }
+
+        var approve = event.target.closest('[data-action="mv-approve"]');
+        if (approve) {
+          toast(approve.dataset.name + ' 的异动审批已通过，进入待生效');
+          HRUI.closeDrawer();
+        }
+
+        var reject = event.target.closest('[data-action="mv-reject"]');
+        if (reject) {
+          toast(reject.dataset.name + ' 的异动单已驳回，原单保留');
+          HRUI.closeDrawer();
+        }
+
+        if (event.target.closest('[data-action="create-movement"]')) {
+          HRUI.openModal('发起异动',
+            '<div class="form-grid"><div class="form-item full"><label>员工</label><select><option>王强 · D10087 · 门店业务部 / 工程产研组 · 测试工程师 P8</option><option>王伟 · D10055 · 产品研发部 / 用户研发组 · 测试工程师 P7</option></select></div><div class="form-item"><label>异动类型</label><input value="晋升（由目标职级自动判定）" readonly></div><div class="form-item"><label>生效日期</label><input type="date" value="2026-12-01"></div><div class="form-item"><label>目标组织</label><select><option>产品研发部 / 用户研发组</option><option>基础平台部 / 人力研发组</option></select></div><div class="form-item"><label>目标标准职位</label><select><option>测试专家（P7-P9）</option><option>测试工程师（P4-P6）</option></select></div><div class="form-item"><label>目标职级</label><select><option>P9</option><option>P8</option><option>P7</option></select></div><div class="form-item"><label>目标直接上级</label><select><option>王婷</option><option>王宏</option></select></div><div class="form-item full"><label>目标编制行</label><select><option>产品研发部 / 测试组 / 测试专家 P9 · 可用缺额 2</option><option>产品研发部 / 测试组 / 测试工程师 P6 · 可用缺额 1</option></select></div><div class="form-item full"><label>绩效依据</label><input value="2026Q3 绩效 A（已生效）" readonly></div><div class="form-item full"><label>异动原因</label><textarea>业务需要，承担测试专家职责，负责跨系统质量专项。</textarea></div></div>' +
+            '<div class="detail-box" style="background:#fff7e6;border-color:#f2ddb4"><h4>发起校验</h4><div class="line"><span>目标标准职位</span><b>已启用，适用 P7-P9</b></div><div class="line"><span>目标编制缺额</span><b>可用 2，满足</b></div><div class="line"><span>绩效依据</span><b>2026Q3 绩效 A</b></div></div>',
+            '<button class="btn" type="button" data-close="modal">取消</button><button class="btn" type="button" data-toast="异动草稿已保存">保存草稿</button><button class="btn btn-primary" type="button" data-toast="异动单已提交审批" data-close="modal">提交审批</button>');
+        }
+      });
+
+      function openDetailFromHash() {
+        if (location.hash === '#detail') {
+          var first = document.querySelector('[data-action="mv-detail"]');
+          if (first) first.click();
+        }
+      }
+      openDetailFromHash();
+      window.addEventListener('hashchange', openDetailFromHash);
+    })();
+  </script>
+</body>
+</html>

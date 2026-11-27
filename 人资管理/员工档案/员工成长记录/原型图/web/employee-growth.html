@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>员工成长记录 · 员工列表与事件时间线</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ 员工档案 / 员工成长记录</span>
+    <span class="spacer">静态 Mock · 只读事件流水</span>
+  </nav>
+
+  <main class="page" id="list">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">长</span>员工成长记录</h1>
+        <p class="page-sub">汇总入职、转正、调岗、晋升、降职、绩效、人才盘点、访谈沟通、述职、会议观察、关键信息、岗位信息变更与离职事件，按员工形成可追溯的成长时间线</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" data-toast="已按当前筛选导出员工成长记录">导出</button>
+      </div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field">姓名 / 工号 <input type="search" placeholder="姓名或工号"></label>
+        <label class="field">组织 <select><option>全部</option><option>产品研发部</option><option>技术管理部</option><option>信息安全部</option></select></label>
+        <label class="field">事件类型 <select><option>全部</option><option>入职</option><option>转正</option><option>调岗</option><option>晋升</option><option>绩效</option><option>人才盘点</option><option>访谈沟通</option><option>述职</option><option>会议观察</option><option>关键信息</option><option>岗位信息变更</option><option>离职</option></select></label>
+        <label class="field">最近事件 <input type="date" value="2026-11-24"></label>
+        <span class="grow"></span>
+        <button class="btn btn-primary" type="button" data-toast="已按条件筛选员工成长记录">查询</button>
+        <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+      </div>
+    </div>
+
+    <div class="split-2">
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">员工列表 <b>6</b> 人 · 点击员工切换右侧时间线</div><div class="table-tools">按最近事件倒序</div></div>
+        <div class="table-wrap" style="max-height:640px">
+          <table style="min-width:720px">
+            <thead><tr><th>姓名</th><th>组织</th><th>当前职位</th><th>职级</th><th>状态</th><th>事件数</th><th>最近事件</th></tr></thead>
+            <tbody>
+              <tr class="is-checked" data-action="growth-employee" data-name="王婷" data-org="产品研发部 / 用户研发组" data-pos="产品经理 · P6"><td class="name-cell"><span class="avatar">王</span>王婷</td><td>产品研发部 / 用户研发组</td><td>产品经理</td><td>P6</td><td><span class="tag tag-success">在职</span></td><td>11</td><td>2026-11-18 关键信息</td></tr>
+              <tr data-action="growth-employee" data-name="王杰" data-org="技术管理部 / 项目管理组" data-pos="PMO · P3"><td class="name-cell"><span class="avatar">王</span>王杰</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P3</td><td><span class="tag tag-success">在职</span></td><td>5</td><td>2026-11-08 岗位信息变更</td></tr>
+              <tr data-action="growth-employee" data-name="李明" data-org="信息安全部 / 信息安全管理组" data-pos="信息安全工程师 · P5"><td class="name-cell"><span class="avatar">李</span>李明</td><td>信息安全部 / 信息安全管理组</td><td>信息安全工程师</td><td>P5</td><td><span class="tag tag-success">在职</span></td><td>4</td><td>2026-10-15 绩效</td></tr>
+              <tr data-action="growth-employee" data-name="王强" data-org="产品研发部 / 用户研发组" data-pos="测试专家 · P9"><td class="name-cell"><span class="avatar">王</span>王强</td><td>产品研发部 / 用户研发组</td><td>测试专家</td><td>P9</td><td><span class="tag tag-success">在职</span></td><td>6</td><td>2026-10-15 晋升</td></tr>
+              <tr data-action="growth-employee" data-name="李建" data-org="财务研发部 / 财务测试组" data-pos="测试负责人 · P9"><td class="name-cell"><span class="avatar">李</span>李建</td><td>财务研发部 / 财务测试组</td><td>测试负责人</td><td>P9</td><td><span class="tag tag-neutral">离职</span></td><td>8</td><td>2026-11-21 离职</td></tr>
+              <tr data-action="growth-employee" data-name="张嘉" data-org="产品研发部 / 用户研发组" data-pos="产品经理 · P5"><td class="name-cell"><span class="avatar">张</span>张嘉</td><td>产品研发部 / 用户研发组</td><td>产品经理</td><td>P5</td><td><span class="tag tag-success">在职</span></td><td>4</td><td>2026-09-10 入职</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <div class="pager"><span>共 6 条 · 演示数据</span><div class="pages"><button class="is-active" type="button">1</button></div></div>
+      </div>
+
+      <div class="card section-card" id="timeline" style="margin-bottom:0">
+        <div class="card-head">
+          <div>
+            <h2 class="card-title" id="tlName">王婷 · 成长时间线</h2>
+            <p class="card-sub" id="tlMeta">产品研发部 / 用户研发组 · 产品经理 · P6 · 在职</p>
+          </div>
+          <span class="tag tag-primary">只读</span>
+        </div>
+        <div class="filter-row" style="margin-bottom:14px">
+          <label class="field">事件类型 <select><option>全部事件</option><option>入职</option><option>转正</option><option>晋升</option><option>绩效</option><option>人才盘点</option><option>访谈沟通</option><option>述职</option><option>会议观察</option><option>关键信息</option><option>岗位信息变更</option></select></label>
+          <label class="field">时间 <select><option>全部时间</option><option>近一年</option><option>近半年</option></select></label>
+          <span class="grow"></span>
+          <span class="muted" style="font-size:12px">共 11 条事件</span>
+        </div>
+        <div class="timeline">
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-18</div><div class="tl-title"><span class="tag tag-neutral">关键信息</span> 确认 2027 年轮岗意向</div><div class="tl-text">来源：人才信息 · 关键信息记录 KI-2026-0012；仅 HRBP 与管理者可见。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="关键信息" data-date="2026-11-18" data-title="确认 2027 年轮岗意向" data-source="人才信息 · 关键信息记录 KI-2026-0012" data-status="有效" data-summary="记录时间 2026-11-18 · 记录人 李静怡；希望在用户产品线继续深耕，重点关注交易与会员方向。">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-10</div><div class="tl-title"><span class="tag tag-neutral">岗位信息变更</span> 岗位名称统一为「产品经理」</div><div class="tl-text">来源：岗位管理 · 岗位映射切换；不改变组织、职级与编制。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="岗位信息变更" data-date="2026-11-10" data-title="岗位名称统一为「产品经理」" data-source="岗位管理 · 岗位映射记录" data-status="有效">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-05</div><div class="tl-title"><span class="tag tag-primary">人才盘点</span> 2026H2 盘点结果 高潜</div><div class="tl-text">来源：人才信息 · 盘点记录 TR-2026-0004；盘点结果不改变绩效与薪酬。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="人才盘点" data-date="2026-11-05" data-title="2026H2 盘点结果 高潜" data-source="人才信息 · 盘点记录 TR-2026-0004" data-status="有效" data-summary="盘点结果 高潜；应用建议：连续两个周期绩效 A/B，具备跨产品线承接能力；建议纳入关键岗位继任计划。">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-10-15</div><div class="tl-title"><span class="tag tag-primary">绩效</span> 2026Q3 绩效结果 A</div><div class="tl-text">来源：绩效管理 · 2026Q3 技术中心周期；最终等级中心通晒确认生效。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="绩效" data-date="2026-10-15" data-title="2026Q3 绩效结果 A" data-source="绩效管理 · 考核表" data-status="有效">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-09-05</div><div class="tl-title"><span class="tag tag-neutral">访谈沟通</span> 绩效沟通：2026Q2 反馈</div><div class="tl-text">来源：人才信息 · 沟通记录 IV-2026-0009；绩效沟通，记录人 李静怡。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="访谈沟通" data-date="2026-09-05" data-title="绩效沟通：2026Q2 反馈" data-source="人才信息 · 沟通记录 IV-2026-0009" data-status="有效" data-summary="沟通时间 2026-09-05 · 记录人 李静怡；肯定需求交付质量，明确下半年目标与产品方法论提升计划。">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-09-01</div><div class="tl-title"><span class="tag tag-primary">晋升</span> 产品经理 P5 → P6</div><div class="tl-text">来源：调岗晋升 · MV20260901003；原组织与职位不变，职级晋升。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="晋升" data-date="2026-09-01" data-title="产品经理 P5 → P6" data-source="调岗晋升 · MV20260901003" data-status="有效">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-08-28</div><div class="tl-title"><span class="tag tag-neutral">会议观察</span> 项目评审会观察</div><div class="tl-text">来源：人才信息 · 观察记录 OB-2026-0007；项目评审会，记录人 李静怡。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="会议观察" data-date="2026-08-28" data-title="项目评审会观察" data-source="人才信息 · 观察记录 OB-2026-0007" data-status="有效" data-summary="观察时间 2026-08-28 · 记录人 李静怡；能主动收敛需求范围，风险识别充分。">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-08-20</div><div class="tl-title"><span class="tag tag-primary">述职</span> 晋升述职：P5 → P6</div><div class="tl-text">来源：人才信息 · 述职记录 RP-2026-0003；晋升述职，附件 1 份。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="述职" data-date="2026-08-20" data-title="晋升述职：P5 → P6" data-source="人才信息 · 述职记录 RP-2026-0003" data-status="有效" data-summary="述职时间 2026-08-20 · 记录人 李静怡；管理者反馈：目标感强，需求判断清晰；附件：晋升述职报告.pdf。">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-06-01</div><div class="tl-title"><span class="tag tag-success">转正</span> 按期转正</div><div class="tl-text">来源：转正管理 · RG20260601002；人员状态由试用改为正式。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="转正" data-date="2026-06-01" data-title="按期转正" data-source="转正管理 · RG20260601002" data-status="有效">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-03-03</div><div class="tl-title"><span class="tag tag-neutral">合同签订</span> 固定期限合同签订</div><div class="tl-text">来源：合同管理 · HT-2026-D10002-01；合同生效日期 2026-03-02。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="合同签订" data-date="2026-03-03" data-title="固定期限合同签订" data-source="合同管理 · HT-2026-D10002-01" data-status="有效">查看详情</button></div></div>
+          <div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-03-02</div><div class="tl-title"><span class="tag tag-success">入职</span> 入职产品经理 P5</div><div class="tl-text">来源：入职管理 · OB20260302001；产品研发部 / 用户研发组。</div><div class="row-actions" style="margin-top:6px"><button class="btn-link" type="button" data-action="event-detail" data-type="入职" data-date="2026-03-02" data-title="入职产品经理 P5" data-source="入职管理 · OB20260302001" data-status="有效">查看详情</button></div></div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var toast = HRUI.toast;
+
+      document.addEventListener('click', function (event) {
+        var emp = event.target.closest('[data-action="growth-employee"]');
+        if (emp) {
+          document.querySelectorAll('tr.is-checked').forEach(function (tr) { tr.classList.remove('is-checked'); });
+          var row = emp.closest('tr');
+          if (row) row.classList.add('is-checked');
+          document.getElementById('tlName').textContent = emp.dataset.name + ' · 成长时间线';
+          document.getElementById('tlMeta').textContent = emp.dataset.org + ' · ' + emp.dataset.pos + ' · 在职';
+          toast('已切换至 ' + emp.dataset.name + ' 的成长时间线');
+          return;
+        }
+
+        var detail = event.target.closest('[data-action="event-detail"]');
+        if (detail) {
+          var d = detail.dataset;
+          var body = '<table class="desc"><tr><th>事件类型</th><td><span class="tag tag-primary">' + d.type + '</span></td><th>事件日期</th><td>' + d.date + '</td></tr><tr><th>事件标题</th><td colspan="3">' + d.title + '</td></tr><tr><th>来源模块</th><td>' + d.source + '</td><th>事件状态</th><td><span class="tag tag-success">' + d.status + '</span></td></tr></table>' +
+            '<div class="detail-grid" style="margin-top:12px"><div class="detail-box"><h4>事件时组织快照</h4><div class="line"><span>组织</span><b>产品研发部 / 用户研发组</b></div><div class="line"><span>职位</span><b>产品经理</b></div><div class="line"><span>职级</span><b>P6</b></div><div class="line"><span>直接上级</span><b>王强</b></div></div><div class="detail-box"><h4>操作记录</h4><div class="line"><span>写入时间</span><b>' + d.date + ' 10:30</b></div><div class="line"><span>操作人</span><b>HRBP 李静怡</b></div><div class="line"><span>事件状态</span><b>有效</b></div></div></div>' +
+            '<div class="detail-box" style="margin-top:12px"><h4>来源单据</h4><div class="sub">' + d.source + '；事件快照在写入时固化，来源员工后续组织、职位与职级变化不回写历史事件。</div></div>';
+          if (d.summary) {
+            body += '<div class="detail-box" style="margin-top:12px"><h4>来源记录</h4><div class="sub">' + d.summary + '</div><div class="line"><span>可见范围</span><b>仅 HRBP 与管理者可见</b></div><div class="line"><span>来源入口</span><b>人才信息 · 人才档案</b></div></div>';
+          }
+          HRUI.openDrawer(d.type + ' · ' + d.date, d.title, body, '<button class="btn" type="button" data-close="drawer">关闭</button>');
+        }
+      });
+
+      function scrollToTimeline() {
+        if (location.hash === '#timeline') {
+          document.getElementById('timeline').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+      }
+      scrollToTimeline();
+      window.addEventListener('hashchange', scrollToTimeline);
+    })();
+  </script>
+</body>
+</html>

@@ -27,9 +27,10 @@ metadata:
 
 | 引用资源 | 路径 | 用途 | 所属仓库 |
 |---------|------|------|---------|
-| 业务规则 | [references/business-rule.md](references/business-rule.md) | 功能边界、查询与展示规则、页签与附件规则、脱敏与权限编码 | 本模块 |
-| 数据定义 | [references/data.md](references/data.md) | 员工、任职记录、绩效记录、合同、附件的字段口径与实体关系 | 本模块 |
-| Web 页面 | [references/web-ui.md](references/web-ui.md) | 员工列表与员工明细的区块元素、导航关系、操作反馈 | 本模块 |
+| 业务规则 | [文档/业务规则.md](文档/业务规则.md) | 功能边界、查询与展示规则、页签与附件规则、脱敏与权限编码 | 本模块 |
+| 数据模型 | [文档/数据模型.md](文档/数据模型.md) | 员工、任职记录、绩效记录、合同、附件的字段口径与实体关系 | 本模块 |
+| 页面元素 | [文档/页面元素.md](文档/页面元素.md) | 员工列表与员工明细的区块元素、导航关系、操作反馈 | 本模块 |
+| 合同管理 | [合同管理 SKILL.md](../../HR管理/合同管理/SKILL.md) | 合同页签的合同记录与状态来源 | 本仓库 |
 | 功能权限 | [permission-api.md](../../../../busyming-skills-common/api/mmhm/system/用户权限/references/permission-api.md) | 菜单与按钮按权限编码校验，未授权不展示入口 | busyming-skills-common |
 | 页面编排标准 | [web-operation-list.md](../../../../busyming-skills-design/shared/page-standards/web-operation-list.md) | 员工列表的区域编排 | busyming-skills-design |
 | 页面编排标准 | [web-detail.md](../../../../busyming-skills-design/shared/page-standards/web-detail.md) | 员工明细（档案型）的区域编排 | busyming-skills-design |
@@ -39,11 +40,11 @@ metadata:
 
 | 页面 | 原型 | 功能 |
 |------|------|------|
-| 员工列表 | [assets/web/employee-list.html](assets/web/employee-list.html) | 筛选（关键字 / 部门 / 岗位 / 在职状态 / 入职日期区间）+ 员工表格 + 分页 + 查看明细入口；详见 [references/web-ui.md §员工列表](references/web-ui.md#员工列表) |
-| 员工明细 | [assets/web/employee-list.html#detail](assets/web/employee-list.html#detail) | 员工概览 + 基本信息 / 任职记录 / 绩效 / 合同信息 / 附件资料五个页签 + 附件在线预览；详见 [references/web-ui.md §员工明细](references/web-ui.md#员工明细) |
+| 员工列表 | [原型图/web/employee-list.html](原型图/web/employee-list.html) | 筛选（关键字 / 部门 / 岗位 / 在职状态 / 入职日期区间）+ 员工表格 + 分页 + 查看明细入口；详见 [文档/页面元素.md §员工列表](文档/页面元素.md#员工列表) |
+| 员工明细 | [原型图/web/employee-list.html#detail](原型图/web/employee-list.html#detail) | 员工概览 + 基本信息 / 任职记录 / 绩效 / 合同信息 / 附件资料五个页签 + 附件在线预览；详见 [文档/页面元素.md §员工明细](文档/页面元素.md#员工明细) |
 
 ## Tips
 
-- 规则查找：功能边界、查询展示与脱敏规则看 references/business-rule.md，字段口径看 references/data.md，不在本文件补写
+- 规则查找：功能边界、查询展示与脱敏规则看 文档/业务规则.md，字段口径看 文档/数据模型.md，不在本文件补写
 - 页面类型：列表为操作列表页，明细为档案型详情页；无写操作，故无编辑态与沉底操作栏
 - 原型为静态 Mock，列表与明细在同一 HTML 内以 `#list` / `#detail/{工号}` 双视图互联；明细可切换页签与附件预览

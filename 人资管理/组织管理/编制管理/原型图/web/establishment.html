@@ -1,0 +1,2265 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="prototype-components" content="Button,BusyInput,PageableSelect,DatePicker,Tag,Table,Pagination,BusyTabs,Message">
+<meta name="prototype-routes" content="/hr/establishment/list,/hr/establishment/plan">
+<meta name="prototype-permissions" content="MENU:HR:ESTABLISHMENT;BTN:HR_ESTABLISHMENT:CREATE;BTN:HR_ESTABLISHMENT:EDIT;BTN:HR_ESTABLISHMENT:ADJUST;BTN:HR_ESTABLISHMENT:STATUS;BTN:HR_ESTABLISHMENT:CONFIRM;BTN:HR_ESTABLISHMENT:APPROVE;BTN:HR_ESTABLISHMENT:IMPORT;BTN:HR_ESTABLISHMENT:EXPORT;BTN:HR_ESTABLISHMENT:PLAN_EDIT;BTN:HR_ESTABLISHMENT:PLAN_EXPORT;BTN:HR_ESTABLISHMENT:STANDARD_IMPORT;BTN:HR_ESTABLISHMENT:ARCHIVE_IMPORT">
+<title>编制管理 · 编制台账与编制规划</title>
+<style>
+  :root{
+    --color-primary:#1677ff;
+    --color-primary-hover:#4096ff;
+    --color-primary-bg:#eef4ff;
+    --color-text:#1f2329;
+    --color-text-2:#4e5969;
+    --color-text-3:#86909c;
+    --color-border:#e5e6eb;
+    --color-bg:#f5f6f7;
+    --color-surface:#ffffff;
+    --color-danger:#f53f3f;
+    --color-danger-bg:#fff1f0;
+    --color-warning:#d46b08;
+    --color-warning-bg:#fff7e8;
+    --color-success:#00a870;
+    --color-success-bg:#e8fffb;
+    --radius-s:4px;
+    --radius-m:8px;
+    --radius-l:12px;
+    --shadow-1:0 2px 8px rgba(31,35,41,.08);
+    --shadow-2:0 12px 32px rgba(31,35,41,.16);
+    --font: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:var(--font);
+    font-size:14px;
+    color:var(--color-text);
+    background:var(--color-bg);
+    -webkit-font-smoothing:antialiased;
+    overflow-x:hidden;
+  }
+  [hidden]{display:none !important;}
+  button{font-family:inherit;}
+  a{color:var(--color-primary);text-decoration:none;}
+  .topbar{
+    height:52px;background:var(--color-surface);border-bottom:1px solid var(--color-border);
+    display:flex;align-items:center;gap:16px;padding:0 24px;position:sticky;top:0;z-index:30;
+  }
+  .brand{display:flex;align-items:center;gap:8px;font-weight:600;font-size:15px;white-space:nowrap;}
+  .brand-mark{width:22px;height:22px;border-radius:6px;background:var(--color-primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:12px;}
+  .crumb{color:var(--color-text-3);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+  .topbar .spacer{flex:1;}
+  .mock-badge{
+    font-size:12px;color:var(--color-warning);background:var(--color-warning-bg);
+    border:1px solid #ffe4ba;border-radius:999px;padding:2px 10px;white-space:nowrap;
+  }
+  .user{display:flex;align-items:center;gap:8px;color:var(--color-text-2);font-size:13px;white-space:nowrap;}
+  .avatar{width:24px;height:24px;border-radius:50%;background:#e8f0ff;color:var(--color-primary);display:flex;align-items:center;justify-content:center;font-size:12px;}
+  .page{max-width:1520px;margin:0 auto;padding:20px 24px 48px;}
+  .page-head{display:flex;align-items:flex-start;gap:16px;flex-wrap:wrap;margin-bottom:16px;}
+  .page-head h1{font-size:22px;margin:0 0 6px;font-weight:600;}
+  .page-head .sub{color:var(--color-text-3);font-size:13px;}
+  .page-head .head-actions{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+  .btn{
+    height:32px;padding:0 14px;border-radius:var(--radius-s);border:1px solid var(--color-border);
+    background:var(--color-surface);color:var(--color-text);font-size:13px;cursor:pointer;
+    display:inline-flex;align-items:center;gap:6px;white-space:nowrap;transition:all .15s;
+  }
+  .btn:hover{border-color:var(--color-primary);color:var(--color-primary);}
+  .btn.primary{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+  .btn.primary:hover{background:var(--color-primary-hover);border-color:var(--color-primary-hover);color:#fff;}
+  .btn.danger{background:var(--color-danger);border-color:var(--color-danger);color:#fff;}
+  .btn.danger:hover{opacity:.9;color:#fff;}
+  .btn.text{border-color:transparent;background:transparent;padding:0 8px;color:var(--color-primary);}
+  .btn.text:hover{background:var(--color-primary-bg);}
+  .btn.link-danger{border-color:transparent;background:transparent;color:var(--color-danger);padding:0 8px;}
+  .btn.link-danger:hover{background:var(--color-danger-bg);}
+  .btn.sm{height:26px;padding:0 10px;font-size:12px;}
+  .btn[disabled]{cursor:not-allowed;opacity:.5;}
+  .btn[disabled]:hover{border-color:var(--color-border);color:var(--color-text);}
+  .stats{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px;margin-bottom:16px;}
+  .stat{
+    background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-m);
+    padding:14px 16px;cursor:pointer;transition:box-shadow .15s,border-color .15s;
+  }
+  .stat:hover{border-color:#c9d8f5;box-shadow:var(--shadow-1);}
+  .stat .label{font-size:12px;color:var(--color-text-3);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+  .stat .value{font-size:24px;font-weight:600;line-height:1.1;font-variant-numeric:tabular-nums;}
+  .stat .value.warn{color:var(--color-danger);}
+  .stat .foot{font-size:12px;color:var(--color-text-3);margin-top:6px;}
+  .stat .foot.warn{color:var(--color-warning);}
+  .card{background:var(--color-surface);border:1px solid var(--color-border);border-radius:var(--radius-m);}
+  .filter-card{padding:14px 16px 16px;margin-bottom:12px;}
+  .filter-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px 16px;}
+  .field label{display:block;font-size:12px;color:var(--color-text-2);margin-bottom:6px;}
+  .field label .req{color:var(--color-danger);margin-right:2px;}
+  .input,.select{
+    width:100%;height:32px;border:1px solid var(--color-border);border-radius:var(--radius-s);
+    padding:0 10px;font-size:13px;color:var(--color-text);background:var(--color-surface);
+    font-family:inherit;outline:none;transition:border-color .15s,box-shadow .15s;
+  }
+  .input:focus,.select:focus{border-color:var(--color-primary);box-shadow:0 0 0 2px rgba(22,119,255,.12);}
+  .input.invalid{border-color:var(--color-danger);}
+  .input::placeholder{color:#b9bec7;}
+  .filter-actions{display:flex;align-items:center;gap:8px;margin-top:14px;justify-content:flex-end;}
+  .toolbar{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--color-border);flex-wrap:wrap;}
+  .toolbar .title{font-weight:600;font-size:14px;}
+  .toolbar .spacer{flex:1;}
+  .toolbar .hint{font-size:12px;color:var(--color-text-3);}
+  .table-wrap{overflow:auto;max-width:100%;}
+  table{border-collapse:collapse;width:100%;font-size:13px;}
+  th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--color-border);vertical-align:middle;white-space:nowrap;}
+  thead th{
+    background:#fafbfc;color:var(--color-text-2);font-weight:500;font-size:12px;
+    position:sticky;top:0;z-index:2;
+  }
+  tbody tr:hover td{background:#fafcff;}
+  tbody tr.row-warn td{background:#fffbfb;}
+  #ledgerTable{table-layout:fixed;}
+  #ledgerTable th,#ledgerTable td{padding:9px 8px;}
+  #ledgerTable th:first-child,#ledgerTable td:first-child{padding-left:12px;}
+  #ledgerTable th:last-child,#ledgerTable td:last-child{padding-right:12px;}
+  #ledgerTable .act-group .btn{padding:0 5px;}
+  #ledgerTable td.cell-path{overflow-wrap:anywhere;}
+  tbody tr.row-muted td{opacity:.62;}
+  .cell-path{min-width:220px;white-space:normal;line-height:1.5;}
+  .cell-path .path-sub{color:var(--color-text-3);font-size:12px;}
+  .num{font-variant-numeric:tabular-nums;text-align:right;}
+  th.num{text-align:right;}
+  .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:4px;font-size:12px;line-height:1;white-space:nowrap;gap:4px;}
+  .tag.blue{background:var(--color-primary-bg);color:var(--color-primary);}
+  .tag.green{background:var(--color-success-bg);color:var(--color-success);}
+  .tag.orange{background:var(--color-warning-bg);color:var(--color-warning);}
+  .tag.red{background:var(--color-danger-bg);color:var(--color-danger);}
+  .tag.gray{background:#f2f3f5;color:var(--color-text-2);}
+  .tag.dark{background:#1f2329;color:#fff;}
+  .act-group{display:flex;align-items:center;gap:2px;white-space:nowrap;}
+  .id-link{border:none;background:none;padding:0;color:var(--color-primary);font-size:13px;font-family:inherit;cursor:pointer;white-space:nowrap;}
+  .id-link:hover{text-decoration:underline;}
+  .pager{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;color:var(--color-text-3);font-size:12px;flex-wrap:wrap;gap:8px;}  .pager .pages{display:flex;align-items:center;gap:6px;}
+  .pager .pg{
+    min-width:28px;height:28px;border:1px solid var(--color-border);border-radius:var(--radius-s);
+    background:#fff;color:var(--color-text-2);font-size:12px;cursor:pointer;
+  }
+  .pager .pg.active{background:var(--color-primary);border-color:var(--color-primary);color:#fff;}
+  .state{padding:56px 16px;text-align:center;color:var(--color-text-3);}
+  .state .state-title{color:var(--color-text-2);font-size:14px;margin-bottom:6px;}
+  .state .state-desc{font-size:12px;margin-bottom:14px;}
+  .empty-icon{width:44px;height:44px;border-radius:50%;background:#f2f3f5;display:inline-flex;align-items:center;justify-content:center;color:#a9aeb8;font-size:20px;margin-bottom:12px;}
+  .scrim{position:fixed;inset:0;background:rgba(15,20,30,.45);z-index:90;}
+  .drawer{
+    position:fixed;top:0;right:0;bottom:0;width:min(720px,96vw);background:#fff;z-index:100;
+    display:flex;flex-direction:column;box-shadow:-8px 0 24px rgba(0,0,0,.12);
+  }
+  .drawer.wide{width:min(980px,97vw);}
+  .drawer header,.modal header{display:flex;align-items:flex-start;gap:12px;padding:18px 20px;border-bottom:1px solid var(--color-border);}
+  .drawer header h2,.modal header h2{margin:0;font-size:16px;}
+  .drawer header .sub,.modal header .sub{color:var(--color-text-3);font-size:12px;margin-top:4px;}
+  .drawer header .close,.modal header .close{margin-left:auto;border:none;background:none;font-size:20px;line-height:1;color:var(--color-text-3);cursor:pointer;padding:0 4px;}
+  .drawer-body,.modal-body{padding:20px;overflow:auto;flex:1;}
+  .drawer-foot,.modal-foot{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--color-border);flex-wrap:wrap;}
+  .form-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;}
+  .form-grid .full{grid-column:1 / -1;}
+  .form-section{margin-bottom:20px;}
+  .form-section h3{font-size:13px;margin:0 0 12px;color:var(--color-text);font-weight:600;display:flex;align-items:center;gap:8px;}
+  .form-section h3::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--color-primary);}
+  .tip{font-size:12px;color:var(--color-text-3);line-height:1.6;margin-top:6px;}
+  .error-text{font-size:12px;color:var(--color-danger);margin-top:6px;display:none;}
+  .field.has-error .error-text{display:block;}
+  .form-tip{background:#f7f8fa;border-radius:var(--radius-s);padding:10px 12px;font-size:12px;color:var(--color-text-2);line-height:1.7;}
+  .form-tip b{color:var(--color-text);}
+  textarea.input{height:auto;min-height:76px;padding:8px 10px;resize:vertical;line-height:1.6;}
+  .modal{position:fixed;inset:0;z-index:100;display:flex;align-items:flex-start;justify-content:center;padding:8vh 16px 24px;overflow:auto;}
+  .modal .modal-box{background:#fff;border-radius:var(--radius-m);box-shadow:var(--shadow-2);width:min(640px,96vw);display:flex;flex-direction:column;max-height:84vh;}
+  .modal .modal-box.wide{width:min(820px,96vw);}
+  .modal-body{font-size:14px;color:var(--color-text-2);line-height:1.7;}
+  .modal-body .danger-note{color:var(--color-danger);}
+  .modal-body .strong{color:var(--color-text);font-weight:600;}
+  .radio-group{display:flex;flex-wrap:wrap;gap:14px;padding:2px 0;}
+  .radio-group label{display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--color-text);cursor:pointer;}
+  .tabs{display:flex;align-items:center;gap:4px;background:#fff;border:1px solid var(--color-border);border-radius:var(--radius-m);padding:6px;margin-bottom:12px;overflow:auto;}
+  .tab-btn{border:none;background:transparent;padding:8px 16px;border-radius:6px;font-size:13px;color:var(--color-text-2);cursor:pointer;white-space:nowrap;}
+  .tab-btn.active{background:var(--color-primary-bg);color:var(--color-primary);font-weight:500;}
+  .tab-btn:hover{color:var(--color-primary);}
+  .matrix th,.matrix td{padding:8px 10px;font-size:12px;}
+  .matrix thead th{white-space:nowrap;}
+  .matrix th.sticky-l,.matrix td.sticky-l{position:sticky;left:0;background:#fff;z-index:3;min-width:190px;width:190px;}
+  .matrix thead th.sticky-l{z-index:4;background:#fafbfc;}
+  .matrix th.sticky-2,.matrix td.sticky-2{position:sticky;left:190px;background:#fff;z-index:3;min-width:78px;border-right:1px solid var(--color-border);}
+  .matrix thead th.sticky-2{z-index:4;background:#fafbfc;}
+  .matrix tbody tr:hover td.sticky-l,.matrix tbody tr:hover td.sticky-2{background:#fafcff;}
+  .matrix td.cell-month{min-width:58px;padding:4px 4px;}
+  .matrix td.cell-month.locked{background:#f7f8fa;color:var(--color-text-2);text-align:right;font-variant-numeric:tabular-nums;}
+  .matrix .org-cell{line-height:1.45;}
+  .matrix .org-cell .org-main{font-weight:600;}
+  .matrix .org-cell .org-sub{font-size:11px;color:var(--color-text-3);}
+  .matrix .orig-input{width:72px;height:28px;border:1px solid transparent;border-radius:4px;background:transparent;text-align:right;padding:0 5px;font-size:12px;font-family:inherit;font-variant-numeric:tabular-nums;outline:none;}
+  .matrix .orig-input:hover{border-color:var(--color-border);background:#fff;}
+  .matrix .orig-input:focus{border-color:var(--color-primary);background:#fff;box-shadow:0 0 0 2px rgba(22,119,255,.12);}
+  .matrix .orig-input.invalid{border-color:var(--color-danger);background:#fff;}
+  .month-head{display:flex;flex-direction:column;align-items:center;gap:2px;line-height:1.3;}
+  .node-badge{font-size:10px;color:var(--color-primary);background:var(--color-primary-bg);border-radius:3px;padding:1px 4px;font-weight:400;}
+  .node-dot{width:5px;height:5px;border-radius:50%;background:var(--color-primary);display:inline-block;}
+  .matrix .reason-input{width:100%;min-width:120px;height:28px;border:1px solid transparent;border-radius:4px;background:transparent;padding:0 6px;font-size:12px;font-family:inherit;outline:none;}
+  .matrix .reason-input:hover{border-color:var(--color-border);background:#fff;}
+  .matrix .reason-input:focus{border-color:var(--color-primary);background:#fff;}
+  .matrix .reason-input.invalid{border-color:var(--color-danger);background:#fff;}
+  .matrix tfoot td{background:#fafbfc;font-weight:600;}
+  .diff-neg{color:var(--color-danger);}
+  .diff-pos{color:var(--color-success);}
+  .plan-chips{display:flex;flex-wrap:wrap;gap:8px;padding:12px 16px;border-bottom:1px solid var(--color-border);}
+  .chip{font-size:12px;color:var(--color-text-2);background:#f7f8fa;border:1px solid var(--color-border);border-radius:999px;padding:4px 10px;}
+  .chip b{color:var(--color-text);font-variant-numeric:tabular-nums;}
+  .chip.warn{background:#fffbfb;border-color:#ffd8d8;color:var(--color-danger);}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;font-size:12px;color:var(--color-text-3);padding:10px 16px 0;}
+  .legend span{display:inline-flex;align-items:center;gap:5px;}
+  .legend i{width:10px;height:10px;border-radius:2px;display:inline-block;}
+  .legend i.lock{background:#f2f3f5;border:1px solid var(--color-border);}
+  .legend i.edit{background:#fff;border:1px solid var(--color-primary);}
+  .legend i.dot{background:var(--color-primary);width:5px;height:5px;border-radius:50%;}
+  .io-summary{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:14px 0;}
+  .io-box{border:1px solid var(--color-border);border-radius:var(--radius-s);padding:10px;text-align:center;}
+  .io-box .k{font-size:12px;color:var(--color-text-3);margin-bottom:6px;}
+  .io-box .v{font-size:18px;font-weight:600;font-variant-numeric:tabular-nums;}
+  .io-box.err .v{color:var(--color-danger);}
+  .upload-zone{border:1px dashed #c9cdd4;border-radius:var(--radius-m);padding:26px 16px;text-align:center;background:#fafbfc;cursor:pointer;}
+  .upload-zone:hover{border-color:var(--color-primary);background:var(--color-primary-bg);}
+  .upload-zone .u-title{font-size:14px;color:var(--color-text);margin-bottom:6px;}
+  .upload-zone .u-desc{font-size:12px;color:var(--color-text-3);line-height:1.7;}
+  .file-chip{display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:var(--color-text-2);background:#f7f8fa;border-radius:var(--radius-s);padding:8px 10px;}
+  .detail-hero{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:4px;}
+  .detail-hero h3{font-size:18px;margin:0;}
+  .desc-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px 20px;margin:16px 0 0;}
+  .desc-item .k{font-size:12px;color:var(--color-text-3);margin-bottom:4px;}
+  .desc-item .v{font-size:13px;color:var(--color-text);line-height:1.6;word-break:break-all;}
+  .desc-item.full{grid-column:1 / -1;}
+  .sub-tabs{display:flex;gap:2px;border-bottom:1px solid var(--color-border);margin:22px 0 0;}
+  .sub-tab{border:none;background:none;padding:10px 14px;font-size:13px;color:var(--color-text-2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;}
+  .sub-tab.active{color:var(--color-primary);border-bottom-color:var(--color-primary);font-weight:500;}
+  .sub-panel{padding-top:12px;}
+  .sub-panel .table-wrap{border:1px solid var(--color-border);border-radius:var(--radius-s);}
+  .sub-panel th{position:static;}
+  .toast-wrap{position:fixed;top:64px;left:50%;transform:translateX(-50%);z-index:200;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;}
+  .toast{
+    background:#fff;border:1px solid var(--color-border);border-left:3px solid var(--color-success);
+    border-radius:var(--radius-s);box-shadow:var(--shadow-1);padding:10px 16px;font-size:13px;color:var(--color-text);
+    animation:toastIn .18s ease-out;max-width:80vw;
+  }
+  .toast.err{border-left-color:var(--color-danger);}
+  .toast.warn{border-left-color:var(--color-warning);}
+  @keyframes toastIn{from{opacity:0;transform:translateY(-6px);}to{opacity:1;transform:translateY(0);}}
+  .muted{color:var(--color-text-3);}
+  .nowrap{white-space:nowrap;}
+  .mb8{margin-bottom:8px;}
+  .mt12{margin-top:12px;}
+  .mt16{margin-top:16px;}
+  .check-line{display:flex;align-items:flex-start;gap:8px;font-size:13px;color:var(--color-text-2);line-height:1.7;margin-top:10px;}
+  .check-line input{margin-top:3px;}
+  @media (max-width:1280px){
+    .stats{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .filter-grid{grid-template-columns:repeat(3,minmax(0,1fr));}
+  }
+  @media (max-width:980px){
+    .page{padding:16px 14px 40px;}
+    .stats{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .filter-grid{grid-template-columns:repeat(2,minmax(0,1fr));}
+    .form-grid{grid-template-columns:1fr;}
+    .desc-list{grid-template-columns:1fr;}
+    .crumb{display:none;}
+    .io-summary{grid-template-columns:repeat(3,minmax(0,1fr));}
+    .matrix th.sticky-2,.matrix td.sticky-2{position:static;min-width:90px;}
+    .matrix th.sticky-l,.matrix td.sticky-l{position:static;min-width:160px;}
+  }
+  @media (max-width:640px){
+    .topbar{padding:0 14px;gap:10px;}
+    .mock-badge{display:none;}
+    .stats{grid-template-columns:1fr 1fr;gap:8px;}
+    .stat{padding:12px;}
+    .stat .value{font-size:20px;}
+    .filter-grid{grid-template-columns:1fr;}
+    .page-head h1{font-size:19px;}
+    .drawer{width:100vw;}
+    .form-grid{grid-template-columns:1fr;}
+  }
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand"><span class="brand-mark">示</span>示例集团</div>
+  <div class="crumb">人资管理 / 组织管理 / 编制管理</div>
+  <div class="spacer"></div>
+  <span class="mock-badge">静态原型 · 数据为 Mock</span>
+  <div class="user"><span class="avatar">李</span>李雨欣 · 编制管理员</div>
+</header>
+
+<main class="page">
+
+  <!-- ===================== 编制台账 ===================== -->
+  <section id="view-ledger" class="view">
+    <div class="page-head">
+      <div>
+        <h1>编制管理</h1>
+        <div class="sub">维护岗位编制台账与年度编制规划，编制数据联动招聘占用与在编人数</div>
+      </div>
+      <div class="head-actions">
+        <a class="btn" href="#outsource">外包超编</a>
+        <a class="btn" href="#plan">编制规划</a>
+        <button class="btn" data-act="openImport" data-import="ledger">批量导入</button>
+        <button class="btn" data-act="exportLedger">导出</button>
+        <button class="btn primary" data-act="openCreate">新增编制</button>
+      </div>
+    </div>
+
+    <div class="stats" id="ledgerStats"></div>
+
+    <div class="card filter-card">
+      <div class="filter-grid">
+        <div class="field">
+          <label for="fKw">关键字</label>
+          <input class="input" id="fKw" placeholder="编制编号 / 岗位 / 部门，输入 FAIL 演示加载失败">
+        </div>
+        <div class="field">
+          <label for="fCenter">一级中心</label>
+          <select class="select" id="fCenter"><option>全部</option><option>技术中心</option></select>
+        </div>
+        <div class="field">
+          <label for="fDept2">二级部门</label>
+          <select class="select" id="fDept2">
+            <option>全部</option>
+            <option>UED</option>
+            <option>财务研发部</option>
+            <option>供应链研发部</option>
+            <option>大数据&amp;AI产研部</option>
+            <option>信息安全部</option>
+            <option>产品运营部</option>
+            <option>运营研发部</option>
+            <option>商品研发部</option>
+            <option>商品研发部</option>
+            <option>运维服务部</option>
+            <option>供应链&amp;物流产品部</option>
+            <option>创新业务研发部</option>
+            <option>产品部</option>
+            <option>技术管理部</option>
+            <option>算法部</option>
+            <option>办公产品部</option>
+            <option>基础平台&amp;效能技术部</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fLevelCat">职级类别</label>
+          <select class="select" id="fLevelCat">
+            <option>全部</option><option>战略决策层</option><option>总监级</option><option>经理级</option><option>主管级</option><option>员工级</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fPlan">编制计划</label>
+          <select class="select" id="fPlan">
+            <option>全部</option><option>新增</option><option>保留</option><option>调出</option><option>划拨</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fStatus">编制状态</label>
+          <select class="select" id="fStatus">
+            <option>全部</option><option>待审批</option><option>生效中</option><option>已停用</option><option>已结束</option><option>已驳回</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="fStart">开始日期</label>
+          <input class="input" id="fStart" type="date" value="2026-01-01">
+        </div>
+        <div class="field">
+          <label for="fEnd">结束日期</label>
+          <input class="input" id="fEnd" type="date">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn" data-act="resetLedger">重置</button>
+        <button class="btn primary" data-act="queryLedger">查询</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <span class="title">编制台账</span>
+        <span class="hint" id="ledgerHint">共 12 条</span>
+        <span class="spacer"></span>
+        <button class="btn sm" data-act="openImport" data-import="ledger">批量导入</button>
+      </div>
+      <div id="ledgerState" class="state" hidden>
+        <div class="empty-icon">!</div>
+        <div class="state-title">台账加载失败</div>
+        <div class="state-desc">查询超时或服务暂不可用，请稍后重试</div>
+        <button class="btn primary" data-act="retryLedger">重试</button>
+      </div>
+      <div class="table-wrap" id="ledgerTableWrap">
+        <table id="ledgerTable" style="min-width:1450px;">
+          <colgroup>
+            <col style="width:96px;"><col style="width:200px;"><col style="width:114px;"><col style="width:58px;">
+            <col style="width:96px;"><col style="width:86px;"><col style="width:76px;"><col style="width:60px;">
+            <col style="width:152px;"><col style="width:60px;"><col style="width:88px;"><col style="width:66px;">
+            <col style="width:66px;"><col style="width:76px;"><col style="width:162px;">
+          </colgroup>
+          <thead>
+            <tr>
+              <th>编制编号</th>
+              <th>组织路径</th>
+              <th>职位</th>
+              <th>直线上级</th>
+              <th>职级序列</th>
+              <th>职级 / 类别</th>
+              <th>用工形式</th>
+              <th>编制计划</th>
+              <th>编制起止</th>
+              <th class="num">编制数量</th>
+              <th class="num">在编</th>
+              <th class="num">招聘占用</th>
+              <th class="num">可用缺额</th>
+              <th>编制状态</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="ledgerBody"></tbody>
+        </table>
+      </div>
+      <div class="pager" id="ledgerPager">
+        <span>共 12 条 · 每页 20 条</span>
+        <div class="pages">
+          <button class="pg active">1</button>
+          <button class="pg">2</button>
+          <button class="pg" disabled>下一页</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 外包超编 ===================== -->
+  <section id="view-outsource" class="view" hidden>
+    <div class="page-head">
+      <div>
+        <h1>外包超编</h1>
+        <div class="sub">用工形式为劳务外包且可用缺额为负的编制行；处理备注按在编人员维护</div>
+      </div>
+      <div class="head-actions">
+        <a class="btn" href="#ledger">返回编制台账</a>
+        <button class="btn" data-act="exportOutsource">导出</button>
+      </div>
+    </div>
+
+    <div class="stats" id="outsourceStats"></div>
+
+    <div class="card filter-card">
+      <div class="filter-grid">
+        <div class="field">
+          <label for="oKw">关键字</label>
+          <input class="input" id="oKw" placeholder="工号 / 姓名 / 职位 / 部门">
+        </div>
+        <div class="field">
+          <label for="oDept2">二级部门</label>
+          <select class="select" id="oDept2">
+            <option>全部</option><option>财务研发部</option><option>供应链研发部</option><option>运维服务部</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="oLevelCat">职级类别</label>
+          <select class="select" id="oLevelCat">
+            <option>全部</option><option>战略决策层</option><option>总监级</option><option>经理级</option><option>主管级</option><option>员工级</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="oOwner">直线上级</label>
+          <input class="input" id="oOwner" placeholder="直线上级姓名">
+        </div>
+      </div>
+      <div class="filter-actions">
+        <button class="btn" data-act="resetOutsource">重置</button>
+        <button class="btn primary" data-act="queryOutsource">查询</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="toolbar">
+        <span class="title">外包超编台账</span>
+        <span class="hint" id="outsourceHint">共 3 行</span>
+        <span class="spacer"></span>
+      </div>
+      <div class="table-wrap">
+        <table style="min-width:1180px;">
+          <thead>
+            <tr>
+              <th>组织路径</th>
+              <th>职位</th>
+              <th>职级 / 类别</th>
+              <th>用工形式</th>
+              <th class="num">编制数量</th>
+              <th class="num">在编</th>
+              <th class="num">招聘占用</th>
+              <th class="num">超编人数</th>
+              <th>直线上级</th>
+              <th>编制备注</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="outsourceBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </section>
+
+  <!-- ===================== 编制规划 ===================== -->
+  <section id="view-plan" class="view" hidden>
+    <div class="page-head">
+      <div>
+        <h1>编制规划</h1>
+        <div class="sub">3 月在职基线，4–12 月由编制明细按月末快照自动汇总，对照原编制与当前在编</div>
+      </div>
+      <div class="head-actions">
+        <a class="btn" href="#ledger">返回编制台账</a>
+        <button class="btn" data-act="exportPlan">导出规划</button>
+        <button class="btn primary" data-act="savePlan">保存规划</button>
+      </div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-grid">
+        <div class="field">
+          <label for="pYear">规划年度</label>
+          <select class="select" id="pYear"><option>2026</option></select>
+        </div>
+        <div class="field">
+          <label for="pCenter">一级中心</label>
+          <select class="select" id="pCenter"><option>全部</option><option>技术中心</option></select>
+        </div>
+        <div class="field">
+          <label for="pDept2">二级部门</label>
+          <select class="select" id="pDept2">
+            <option>全部</option>
+            <option>UED</option>
+            <option>财务研发部</option>
+            <option>供应链研发部</option>
+            <option>大数据&amp;AI产研部</option>
+            <option>信息安全部</option>
+            <option>产品运营部</option>
+            <option>运营研发部</option>
+            <option>商品研发部</option>
+            <option>商品研发部</option>
+            <option>运维服务部</option>
+            <option>供应链&amp;物流产品部</option>
+            <option>创新业务研发部</option>
+            <option>产品部</option>
+            <option>技术管理部</option>
+          </select>
+        </div>
+        <div class="field">
+          <label for="pDept3">三级部门</label>
+          <select class="select" id="pDept3"><option>全部</option></select>
+        </div>
+        <div class="field">
+          <label for="pLevelCat">职级类别</label>
+          <select class="select" id="pLevelCat">
+            <option>全部</option><option>战略决策层</option><option>总监级</option><option>经理级</option><option>主管级</option><option>员工级</option>
+          </select>
+        </div>
+      </div>
+      <div class="filter-actions">
+        <span class="tip" style="margin-right:auto;">3 月在职为快照；4–12 月由编制明细按月末快照自动汇总，季度节点为 4/1、7/1、10/1</span>
+        <button class="btn" data-act="resetPlan">重置</button>
+        <button class="btn primary" data-act="queryPlan">查询</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-tab="plan" role="tab">规划视图</button>
+      <button class="tab-btn" data-tab="standard" role="tab">定编标准</button>
+      <button class="tab-btn" data-tab="archive" role="tab">备案编制</button>
+    </div>
+
+    <!-- 规划矩阵 -->
+    <div class="card" id="tab-plan">
+      <div class="toolbar">
+        <span class="title">2026 年度编制规划</span>
+        <span class="hint" id="planSavedHint">上次保存：2026-04-08 10:20</span>
+        <span class="hint">横向滚动查看在编与规划余量</span>
+        <span class="spacer"></span>
+        <span class="hint" id="planDirtyHint" style="color:var(--color-warning);display:none;">有未保存的修改</span>
+      </div>
+      <div class="plan-chips" id="planChips"></div>
+      <div class="legend">
+        <span><i class="lock"></i>3 月在职快照 / 4–12 月自动汇总</span>
+        <span><i class="dot"></i>季度评审节点</span>
+        <span>仅全职正式 · M/P 序列计入</span>
+        <span><i class="edit"></i>仅原编制与调整原因可编辑</span>
+        <span>调整 = 12 月编制 − 原编制数</span>
+        <span>规划余量 = 12 月编制 − 在编 − 招聘占用，负数表示超规划</span>
+      </div>
+      <div class="table-wrap" style="max-height:620px;">
+        <table class="matrix" style="min-width:1606px;table-layout:fixed;">
+          <colgroup>
+            <col style="width:190px;"><col style="width:78px;"><col style="width:70px;">
+            <col style="width:58px;"><col style="width:58px;"><col style="width:58px;"><col style="width:58px;"><col style="width:58px;"><col style="width:58px;"><col style="width:58px;"><col style="width:58px;"><col style="width:58px;">
+            <col style="width:76px;"><col style="width:96px;"><col style="width:72px;"><col style="width:150px;"><col style="width:80px;">
+            <col style="width:68px;"><col style="width:68px;"><col style="width:68px;"><col style="width:68px;">
+          </colgroup>
+          <thead>
+            <tr id="planHead"></tr>
+          </thead>
+          <tbody id="planBody"></tbody>
+          <tfoot id="planFoot"></tfoot>
+        </table>
+      </div>
+    </div>
+
+    <!-- 定编标准 -->
+    <div class="card" id="tab-standard" hidden>
+      <div class="toolbar">
+        <span class="title">定编标准</span>
+        <span class="hint">只读参考 · 由招聘管理员维护，支持按模板导入</span>
+        <span class="spacer"></span>
+        <button class="btn sm" data-act="exportStandard">导出</button>
+        <button class="btn sm primary" data-act="openImport" data-import="standard">导入定编标准</button>
+      </div>
+      <div class="table-wrap">
+        <table style="min-width:1960px;">
+          <thead>
+            <tr>
+              <th>一级中心</th>
+              <th>二级部门</th>
+              <th>三级部门</th>
+              <th>职位</th>
+              <th>标准职位</th>
+              <th>职务序列</th>
+              <th>职务标签</th>
+              <th>职级类别</th>
+              <th>定编因素</th>
+              <th>定编标准值</th>
+              <th class="num">在职（3 月）</th>
+              <th class="num">12 月编制</th>
+              <th>导入时间</th>
+              <th>操作</th>
+            </tr>
+          </thead>
+          <tbody id="standardBody"></tbody>
+        </table>
+      </div>
+      <div class="pager"><span>共 6 条</span><div class="pages"><button class="pg active">1</button></div></div>
+    </div>
+
+    <!-- 备案编制 -->
+    <div class="card" id="tab-archive" hidden>
+      <div class="toolbar">
+        <span class="title">备案编制</span>
+        <span class="hint" id="archiveHint">2026 年度备案基线 · 最新导入 2026-03-31</span>
+        <span class="spacer"></span>
+        <button class="btn sm" data-act="exportArchive">导出</button>
+        <button class="btn sm primary" data-act="openImport" data-import="archive">导入备案编制</button>
+      </div>
+      <div class="table-wrap" style="max-height:560px;">
+        <table style="min-width:1900px;">
+          <thead>
+            <tr id="archiveHead"></tr>
+          </thead>
+          <tbody id="archiveBody"></tbody>
+        </table>
+      </div>
+      <div class="pager"><span>共 8 条</span><div class="pages"><button class="pg active">1</button></div></div>
+    </div>
+  </section>
+
+</main>
+
+<div id="scrim" class="scrim" hidden></div>
+
+<aside id="drawer" class="drawer" hidden aria-modal="true" role="dialog">
+  <header>
+    <div>
+      <h2 id="drawerTitle">新增编制</h2>
+      <div class="sub" id="drawerSub"></div>
+    </div>
+    <button class="close" data-act="closeDrawer" aria-label="关闭">×</button>
+  </header>
+  <div class="drawer-body" id="drawerBody"></div>
+  <div class="drawer-foot" id="drawerFoot"></div>
+</aside>
+
+<div id="modal" class="modal" hidden aria-modal="true" role="dialog">
+  <div class="modal-box" id="modalBox">
+    <header>
+      <div>
+        <h2 id="modalTitle">确认</h2>
+        <div class="sub" id="modalSub"></div>
+      </div>
+      <button class="close" data-act="closeModal" aria-label="关闭">×</button>
+    </header>
+    <div class="modal-body" id="modalBody"></div>
+    <div class="modal-foot" id="modalFoot"></div>
+  </div>
+</div>
+
+<div class="toast-wrap" id="toastWrap"></div>
+
+<script>
+(function(){
+  'use strict';
+
+  /* ============ Mock 数据 ============ */
+  var center = '技术中心';
+  var DEMAND_OCC_KEY = 'demo_hr_recruit_demand_occupancy_v1';
+  var DEMAND_OCC = {};
+  function loadDemandOcc() {
+    try {
+      var raw = localStorage.getItem(DEMAND_OCC_KEY);
+      var arr = raw ? JSON.parse(raw) : [];
+      var map = {};
+      if (Array.isArray(arr)) arr.forEach(function (o) { map[o.id] = o; });
+      return map;
+    } catch (e) { return {}; }
+  }
+  DEMAND_OCC = loadDemandOcc();
+
+  var rows = [
+    { id:'EST2026001', dept2:'UED', dept3:'', job:'UI设计工程师', stdJob:'UI设计工程师', owner:'王璐', level:'P4', levelCat:'主管级', form:'全职-正式', plan:'保留', start:'2026-04-01', end:'', qty:3, onboard:3, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026002', dept2:'财务研发部', dept3:'财务产品组', job:'产品经理', stdJob:'产品经理', owner:'王健', level:'P7', levelCat:'经理级', form:'全职-正式', plan:'新增', start:'2026-04-01', end:'', qty:2, onboard:0, occupy:1, status:'待审批', pending:0, reason:'财务共享三期立项', officeType:'自建', location:'某省某市', tag:'', remark:'审批中：一级中心负责人' },
+    { id:'EST2026003', dept2:'供应链研发部', dept3:'TMS研发组', job:'前端研发工程师', stdJob:'前端研发工程师', owner:'王璐', level:'P5', levelCat:'主管级', form:'全职-正式', plan:'新增', start:'2026-04-01', end:'', qty:12, onboard:10, occupy:4, status:'生效中', pending:1, reason:'TMS 2.0 重构', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026004', dept2:'数据与AI研发部', dept3:'数据研发组', job:'数据研发工程师', stdJob:'数据研发工程师', owner:'李雨欣', level:'P6', levelCat:'主管级', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'2026-12-31', qty:13, onboard:11, occupy:1, status:'生效中', pending:1, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026005', dept2:'运维服务部', dept3:'门店运维组', job:'运维工程师', stdJob:'运维工程师', owner:'李鹏', level:'P4', levelCat:'员工级', form:'全职-正式', plan:'保留', start:'2025-10-01', end:'', qty:34, onboard:34, occupy:0, status:'生效中', pending:0, reason:'', officeType:'驻场', location:'全国门店', tag:'', remark:'' },
+    { id:'EST2026006', dept2:'商品研发部', dept3:'营销研发组', job:'研发工程师', stdJob:'研发工程师', owner:'张静怡', level:'P6', levelCat:'主管级', form:'全职-正式', plan:'调出', start:'2025-07-01', end:'2026-06-30', qty:14, onboard:14, occupy:0, status:'生效中', pending:0, reason:'整组调出至商品研发部', officeType:'自建', location:'某省某市', tag:'原营销组', remark:'' },
+    { id:'EST2026007', dept2:'算法部', dept3:'', job:'算法工程师', stdJob:'算法工程师', owner:'李平', level:'P8', levelCat:'经理级', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:12, onboard:9, occupy:0, status:'已停用', pending:0, reason:'算法部合并至数据与AI研发部', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026008', dept2:'办公产品部', dept3:'BPM平台产研组', job:'产品经理', stdJob:'产品经理', owner:'李洋', level:'P5', levelCat:'主管级', form:'全职-正式', plan:'保留', start:'2025-04-01', end:'2026-03-31', qty:3, onboard:2, occupy:0, status:'已结束', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026009', dept2:'产品运营部', dept3:'算法运营组', job:'运营专员', stdJob:'运营专员', owner:'李凯', level:'P3', levelCat:'员工级', form:'全职-正式', plan:'新增', start:'2026-07-01', end:'', qty:3, onboard:0, occupy:0, status:'已驳回', pending:0, reason:'新业务试运营', officeType:'自建', location:'某省某市', tag:'', remark:'驳回原因：编制依据不足，请补充定编测算' },
+    { id:'EST2026010', dept2:'基础平台部', dept3:'人力研发组', job:'研发工程师', stdJob:'研发工程师', owner:'李琳', level:'P6', levelCat:'主管级', form:'全职-正式', plan:'新增', start:'2026-04-01', end:'', qty:3, onboard:2, occupy:0, status:'待审批', pending:0, reason:'人资数字化二期', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026011', dept2:'商品研发部', dept3:'收银研发组', job:'测试工程师', stdJob:'测试工程师', owner:'李丹', level:'P4', levelCat:'员工级', form:'全职-正式', plan:'划拨', start:'2026-04-01', end:'', qty:4, onboard:4, occupy:0, status:'生效中', pending:0, reason:'由营销研发组整组划拨', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026012', dept2:'供应链产品部', dept3:'OMS产品组', job:'产品经理', stdJob:'产品经理', owner:'张欣', level:'P6', levelCat:'经理级', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:2, onboard:2, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026RD01', demandId:'RD2026Q4-001', dept2:'基础平台部', dept3:'人力研发组', job:'后端研发工程师', stdJob:'后端研发工程师', owner:'王亮', level:'P7', levelCat:'经理级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:5, onboard:2, occupy:1, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD02', demandId:'RD2026Q4-002', dept2:'运营研发部', dept3:'任务工具&调度组', job:'前端研发工程师', stdJob:'前端研发工程师', owner:'李超', level:'P6', levelCat:'主管级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:3, onboard:1, occupy:1, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD03', demandId:'RD2026Q4-003', dept2:'供应链测试部', dept3:'软件测试组', job:'测试工程师', stdJob:'测试工程师', owner:'王若曦', level:'P5', levelCat:'主管级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:2, onboard:1, occupy:0, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD04', demandId:'RD2026Q4-004', dept2:'商品产品部', dept3:'商品产品组', job:'产品经理', stdJob:'产品经理', owner:'王宇', level:'P8', levelCat:'经理级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:2, onboard:0, occupy:1, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD05', demandId:'RD2026Q4-005', dept2:'数据与AI研发部', dept3:'数据平台组', job:'数据分析师', stdJob:'数据分析师', owner:'王亮', level:'P5', levelCat:'主管级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:2, onboard:1, occupy:0, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD06', demandId:'RD2026Q4-006', dept2:'财务研发部', dept3:'财务研发组', job:'ERP实施工程师', stdJob:'ERP实施工程师', owner:'王亮', level:'P4', levelCat:'主管级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:1, onboard:0, occupy:0, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD07', demandId:'RD2026Q4-007', dept2:'财务研发部', dept3:'财务产品组', job:'产品经理', stdJob:'产品经理', owner:'李超', level:'P8', levelCat:'经理级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026RD08', demandId:'RD2026Q4-008', dept2:'基础平台部', dept3:'人力研发组', job:'后端研发工程师', stdJob:'后端研发工程师', owner:'王亮', level:'P8', levelCat:'经理级', form:'全职-正式', plan:'新增', start:'2026-10-01', end:'', qty:1, onboard:0, occupy:0, status:'生效中', pending:0, reason:'招聘台账需求同步', officeType:'自建', location:'某省某市', tag:'台账需求', remark:'由招聘台账需求同步' },
+    { id:'EST2026013', dept2:'UED', dept3:'', job:'设计经理', stdJob:'UI设计经理', owner:'王璐', level:'P7', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026014', dept2:'UED', dept3:'', job:'高级视觉设计师', stdJob:'视觉设计师', owner:'王璐', level:'P7', form:'全职-正式', plan:'新增', start:'2026-07-01', end:'', qty:2, onboard:0, occupy:0, status:'生效中', pending:0, reason:'设计团队扩充', officeType:'自建', location:'某省某市', tag:'', remark:'7 月到岗' },
+    { id:'EST2026015', dept2:'UED', dept3:'', job:'视觉设计师', stdJob:'视觉设计师', owner:'王璐', level:'P3', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026016', dept2:'财务研发部', dept3:'财务产品组', job:'产品经理', stdJob:'产品经理', owner:'王健', level:'P7', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:3, onboard:3, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026017', dept2:'财务研发部', dept3:'财务产品组', job:'高级产品经理', stdJob:'产品经理', owner:'王健', level:'P7', form:'全职-正式', plan:'新增', start:'2026-04-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'财务共享三期增编', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026018', dept2:'信息安全部', dept3:'数据安全组', job:'数据安全工程师', stdJob:'数据安全工程师', owner:'李雨欣', level:'P5', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026019', dept2:'信息安全部', dept3:'数据安全组', job:'隐私合规工程师', stdJob:'数据安全工程师', owner:'李雨欣', level:'P5', form:'全职-正式', plan:'新增', start:'2026-07-01', end:'', qty:1, onboard:0, occupy:0, status:'生效中', pending:0, reason:'隐私合规专项增编 1 人', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026020', dept2:'产品运营部', dept3:'算法运营组', job:'算法运营经理', stdJob:'产品运营经理', owner:'李凯', level:'P7', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026021', dept2:'产品运营部', dept3:'算法运营组', job:'算法运营经理', stdJob:'产品运营经理', owner:'李凯', level:'P7', form:'全职-正式', plan:'新增', start:'2026-06-01', end:'', qty:2, onboard:0, occupy:0, status:'生效中', pending:0, reason:'算法运营扩编 2 人', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026022', dept2:'数据与AI研发部', dept3:'AI Agent平台组', job:'AI平台产品经理', stdJob:'产品经理', owner:'李雨欣', level:'P7', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:1, onboard:1, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026023', dept2:'数据与AI研发部', dept3:'AI Agent平台组', job:'AI Agent研发工程师', stdJob:'研发工程师', owner:'李雨欣', level:'P7', form:'全职-正式', plan:'新增', start:'2026-06-01', end:'', qty:1, onboard:0, occupy:0, status:'生效中', pending:0, reason:'AI Agent 平台建设增编 1 人', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026024', dept2:'运营研发部', dept3:'质量组', job:'测试工程师', stdJob:'测试工程师', owner:'李鹏', level:'P5', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:5, onboard:5, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026025', dept2:'运营研发部', dept3:'质量组', job:'高级测试工程师', stdJob:'测试工程师', owner:'李鹏', level:'P5', form:'全职-正式', plan:'新增', start:'2026-06-01', end:'', qty:1, onboard:0, occupy:0, status:'生效中', pending:0, reason:'质量保障扩编 2 人', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026026', dept2:'运营研发部', dept3:'质量组', job:'测试开发工程师', stdJob:'测试工程师', owner:'李鹏', level:'P5', form:'全职-正式', plan:'新增', start:'2026-07-01', end:'', qty:1, onboard:0, occupy:0, status:'生效中', pending:0, reason:'质量保障扩编 2 人', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026027', dept2:'产品部', dept3:'商品产品部', job:'业务负责人', stdJob:'产品负责人', owner:'王健', level:'M9', form:'全职-正式', plan:'调出', start:'2025-01-01', end:'2026-03-31', qty:2, onboard:0, occupy:0, status:'已结束', pending:0, reason:'商品产品部撤并', officeType:'自建', location:'某省某市', tag:'', remark:'编制随组织调整退出' },
+    { id:'EST2026028', dept2:'信息安全部', dept3:'信息安全管理组', job:'信息安全工程师', stdJob:'信息安全工程师', owner:'李雨欣', level:'P5', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:4, onboard:4, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026029', dept2:'创新业务研发部', dept3:'', job:'前端研发工程师', stdJob:'前端研发工程师', owner:'李艳', level:'P5', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:7, onboard:7, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' },
+    { id:'EST2026030', dept2:'财务研发部', dept3:'财务测试组', job:'测试工程师', stdJob:'测试工程师', owner:'张静怡', level:'P5', form:'全职-正式', plan:'保留', start:'2026-01-01', end:'', qty:4, onboard:4, occupy:0, status:'生效中', pending:0, reason:'', officeType:'自建', location:'某省某市', tag:'', remark:'' }
+  ];
+
+  var planYear = 2026;
+  var planConfig = [
+    { dept2:'UED', dept3:'', levelCat:'经理级', march:1, original:1, reason:'设计团队扩充' },
+    { dept2:'UED', dept3:'', levelCat:'主管级', march:3, original:3, reason:'' },
+    { dept2:'UED', dept3:'', levelCat:'员工级', march:1, original:1, reason:'' },
+    { dept2:'财务研发部', dept3:'财务产品组', levelCat:'经理级', march:3, original:3, reason:'财务共享三期增编' },
+    { dept2:'财务研发部', dept3:'财务测试组', levelCat:'主管级', march:4, original:4, reason:'' },
+    { dept2:'供应链研发部', dept3:'TMS研发组', levelCat:'主管级', march:10, original:10, reason:'TMS 2.0 重构增编 2 人' },
+    { dept2:'数据与AI研发部', dept3:'数据研发组', levelCat:'主管级', march:11, original:13, reason:'' },
+    { dept2:'运维服务部', dept3:'门店运维组', levelCat:'主管级', march:34, original:34, reason:'' },
+    { dept2:'商品研发部', dept3:'营销研发组', levelCat:'主管级', march:14, original:14, reason:'整组调出至商品研发部' },
+    { dept2:'商品研发部', dept3:'收银研发组', levelCat:'主管级', march:0, reason:'由营销研发组整组划拨' },
+    { dept2:'供应链产品部', dept3:'OMS产品组', levelCat:'主管级', march:2, original:2, reason:'' },
+    { dept2:'信息安全部', dept3:'数据安全组', levelCat:'主管级', march:1, original:1, reason:'隐私合规专项增编 1 人' },
+    { dept2:'信息安全部', dept3:'信息安全管理组', levelCat:'主管级', march:4, original:4, reason:'' },
+    { dept2:'产品运营部', dept3:'算法运营组', levelCat:'经理级', march:1, original:1, reason:'算法运营扩编 2 人' },
+    { dept2:'数据与AI研发部', dept3:'AI Agent平台组', levelCat:'经理级', march:1, original:1, reason:'AI Agent 平台建设增编 1 人' },
+    { dept2:'运营研发部', dept3:'质量组', levelCat:'主管级', march:5, original:5, reason:'质量保障扩编 2 人' },
+    { dept2:'创新业务研发部', dept3:'', levelCat:'主管级', march:7, original:7, reason:'' },
+    { dept2:'产品部', dept3:'商品产品部', levelCat:'总监级', march:0, original:2, reason:'商品产品部撤并' }
+  ];
+  var planRows = [];
+  var planEdits = {};
+
+  var standards = [
+    { org:'示例集团', center:'技术中心', dept2:'财务研发部', dept3:'财务产品组', job:'产品经理', stdJob:'产品经理', seq:'专业序列（P）', tag:'产品族', levelCat:'经理级', main:'财务域产品规划与交付', core:'财务产品体系建设', deptDuty:'财务产品需求、方案与交付', jobDuty:'负责财务域产品架构、需求优先级与版本结果', factor:'产研比、研测比', value:'按产品架构规划需要', imported:'2026-04-02 09:31' },
+    { org:'示例集团', center:'技术中心', dept2:'财务研发部', dept3:'财务测试组', job:'测试工程师', stdJob:'测试工程师', seq:'专业序列（P）', tag:'研发族', levelCat:'主管级', main:'财务域质量保障', core:'测试体系与质量门禁', deptDuty:'财务域测试方案、自动化与验收', jobDuty:'负责财务域测试设计与质量风险闭环', factor:'研测比', value:'研测比总体 4~5:1', imported:'2026-03-18 14:02' },
+    { org:'示例集团', center:'技术中心', dept2:'供应链研发部', dept3:'TMS研发组', job:'前端研发工程师', stdJob:'前端研发工程师', seq:'专业序列（P）', tag:'研发族', levelCat:'主管级', main:'运输管理系统研发', core:'TMS 产品研发与交付', deptDuty:'运输域研发、联调与上线支持', jobDuty:'负责 TMS 前端架构、组件与交付质量', factor:'按业务域研发组配置', value:'每研发组 1~2 名', imported:'2026-04-02 09:31' },
+    { org:'示例集团', center:'技术中心', dept2:'UED', dept3:'', job:'视觉设计师', stdJob:'视觉设计师', seq:'专业序列（P）', tag:'设计族', levelCat:'员工级', main:'数字化产品体验设计', core:'视觉规范与体验一致性', deptDuty:'设计规范、视觉资产与体验走查', jobDuty:'负责产品视觉方案、设计资产与走查', factor:'产品经理与设计师配比', value:'约 1:5~6', imported:'2026-03-18 14:02' },
+    { org:'示例集团', center:'技术中心', dept2:'信息安全部', dept3:'数据安全组', job:'数据安全工程师', stdJob:'数据安全工程师', seq:'专业序列（P）', tag:'安全族', levelCat:'主管级', main:'数据安全与隐私合规', core:'数据分级、授权与隐私评估', deptDuty:'数据安全制度、评估与事件响应', jobDuty:'负责数据安全评估、权限治理与合规整改', factor:'集团人数比', value:'0.0002', imported:'2026-03-18 14:02' },
+    { org:'示例集团', center:'技术中心', dept2:'运营研发部', dept3:'质量组', job:'测试工程师', stdJob:'测试工程师', seq:'专业序列（P）', tag:'研发族', levelCat:'主管级', main:'运营域质量保障', core:'自动化测试与发布质量', deptDuty:'运营域测试方案与质量度量', jobDuty:'负责运营域自动化、回归与质量分析', factor:'按业务域研发组配置', value:'每研发组 1~2 名', imported:'2026-04-02 09:31' }
+  ];
+
+  var archives = [
+    { org:'示例集团', center:'技术中心', dept2:'UED', dept3:'', job:'—', tag:'大数字化', levelCat:'经理级', onboard:1, months:[1,1,1,1,1,1,1,1,1,1,1,1], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'UED', dept3:'', job:'—', tag:'大数字化', levelCat:'主管级', onboard:3, months:[3,3,3,3,3,3,3,3,3,3,3,3], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'财务研发部', dept3:'', job:'—', tag:'大数字化', levelCat:'经理级', onboard:8, months:[11,11,11,12,14,14,14,14,14,14,14,14], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'财务研发部', dept3:'', job:'—', tag:'大数字化', levelCat:'主管级', onboard:36, months:[38,38,39,39,39,39,39,40,40,40,40,40], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'商品研发部', dept3:'', job:'—', tag:'大数字化', levelCat:'主管级', onboard:10, months:[6,6,6,6,6,26,26,26,26,26,26,26], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'运维服务部', dept3:'', job:'—', tag:'大数字化', levelCat:'员工级', onboard:5, months:[1,1,1,1,1,1,1,1,1,1,1,1], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'供应链产品部', dept3:'', job:'—', tag:'大数字化', levelCat:'经理级', onboard:3, months:[3,3,3,3,3,3,6,6,6,6,6,6], imported:'2026-03-31 18:00' },
+    { org:'示例集团', center:'技术中心', dept2:'信息安全部', dept3:'', job:'—', tag:'大数字化', levelCat:'主管级', onboard:7, months:[7,7,7,7,7,7,7,7,7,7,7,7], imported:'2026-03-31 18:00' }
+  ];
+
+  var outsourceRows = [
+    { id:'OS001', dept2:'财务研发部', dept3:'财务研发组', job:'后端研发工程师', level:'P4', form:'劳务外包', qty:2, onboard:3, occupy:0, owner:'张杰', remark:'10月离职不替补', people:[{ no:'W09600', name:'李雪', level:'P4', join:'2026-04-17', note:'10月离职不替补' }] },
+    { id:'OS002', dept2:'财务研发部', dept3:'财务研发组', job:'ERP开发工程师', level:'P4', form:'劳务外包', qty:1, onboard:2, occupy:0, owner:'王雨欣', remark:'测试外包离职 1HC，未替补', people:[{ no:'W09607', name:'王刚', level:'P4', join:'2026-04-29', note:'测试外包离职 1HC，未替补' }] },
+    { id:'OS003', dept2:'财务研发部', dept3:'财务产品组', job:'实施工程师', level:'P4', form:'劳务外包', qty:1, onboard:2, occupy:0, owner:'王建', remark:'8月度离职 1HC 外包不替补', people:[{ no:'W09608', name:'王鹏', level:'P4', join:'2026-05-06', note:'8月度离职 1HC 外包不替补' }] }
+  ];
+
+  function gradeSeq(level){
+    var s = String(level || '').toUpperCase().charAt(0);
+    return s === 'M' ? '管理序列（M）' : s === 'P' ? '专业序列（P）' : s === 'S' ? '业务序列（S）' : s === 'O' ? '操作序列（O）' : '—';
+  }
+  function gradeCat(level){
+    var s = String(level || '').toUpperCase();
+    var seq = s.charAt(0);
+    var n = Math.max.apply(null, (s.match(/\d+/g) || ['0']).map(Number));
+    if (seq === 'M') return n >= 10 ? '战略决策层' : n >= 7 ? '总监级' : n >= 4 ? '经理级' : '主管级';
+    if (seq === 'P') return n >= 10 ? '总监级' : n >= 7 ? '经理级' : n >= 4 ? '主管级' : '员工级';
+    return '员工级';
+  }
+  rows.forEach(function(r){ r.levelSeq = gradeSeq(r.level); r.levelCat = gradeCat(r.level); });
+  outsourceRows.forEach(function(r){ r.levelSeq = gradeSeq(r.level); r.levelCat = gradeCat(r.level); });
+
+  var detailExtra = {
+    EST2026001: {
+      people:[
+        { name:'张凯', no:'D10106', level:'P4', join:'2026-04-08', source:'招聘入职', confirm:'已确认' },
+        { name:'张洋', no:'D10152', level:'P4', join:'2026-05-20', source:'内部调配', confirm:'已确认' },
+        { name:'张婉清', no:'D10204', level:'P4', join:'2026-08-03', source:'招聘入职', confirm:'已确认' }
+      ],
+      offers:[],
+      changes:[
+        { time:'2026-04-01 09:00', type:'新增编制', before:'—', after:'3', person:'李雨欣', remark:'UED 设计组编制核定，审批通过' },
+        { time:'2026-04-01 09:05', type:'编制确认', before:'待编制确认', after:'已确认', person:'李雨欣', remark:'首批 2 人入职归档' }
+      ]
+    },
+    EST2026003: {
+      people:[
+        { name:'张雨欣', no:'D10231', level:'P5', join:'2026-04-07', source:'招聘入职', confirm:'已确认' },
+        { name:'王悦', no:'D10288', level:'P5', join:'2026-08-18', source:'招聘入职', confirm:'待编制确认' }
+      ],
+      offers:[
+        { need:'REQ2026-0183', offer:'OFF-2026-0156', name:'李婷', level:'P5', arrive:'2026-12-01', status:'已接受未入职' }
+      ],
+      changes:[
+        { time:'2026-04-01 09:12', type:'新增编制', before:'—', after:'10', person:'李雨欣', remark:'TMS 2.0 重构，审批通过' },
+        { time:'2026-06-28 16:40', type:'调增', before:'10', after:'12', person:'李雨欣', remark:'Q2 评审增编 2 人' }
+      ]
+    },
+    EST2026007: {
+      people:[
+        { name:'李平', no:'D10011', level:'P8', join:'2023-05-04', source:'招聘入职', confirm:'已确认' }
+      ],
+      offers:[],
+      changes:[
+        { time:'2026-03-20 11:05', type:'停用', before:'生效中', after:'已停用', person:'李雨欣', remark:'算法部合并至数据与AI研发部' }
+      ]
+    }
+  };
+
+  var planDirty = false;
+
+  /* ============ 工具函数 ============ */
+  function esc(v){
+    return String(v === undefined || v === null ? '' : v)
+      .replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+      .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
+  }
+  function ledgerReserved(r){ if (!r.demandId) return 0; var o = DEMAND_OCC[r.demandId]; return o ? Number(o.reserved) || 0 : 0; }
+  function avail(r){ return r.qty - r.onboard - r.occupy - ledgerReserved(r); }
+  function num(v){ return Number(v) || 0; }
+  function fmt(n){ return Number(n || 0).toLocaleString('zh-CN'); }
+  function todayStr(){
+    var d = new Date();
+    var m = d.getMonth() + 1, day = d.getDate();
+    return d.getFullYear() + '-' + (m < 10 ? '0' + m : m) + '-' + (day < 10 ? '0' + day : day);
+  }
+  function toast(msg, type){
+    var wrap = document.getElementById('toastWrap');
+    var el = document.createElement('div');
+    el.className = 'toast' + (type ? ' ' + type : '');
+    el.textContent = msg;
+    wrap.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 2600);
+  }
+  function statusTag(s){
+    var map = {
+      '生效中':'green', '待审批':'orange', '已停用':'gray', '已结束':'gray', '已驳回':'red'
+    };
+    return '<span class="tag ' + (map[s] || 'gray') + '">' + esc(s) + '</span>';
+  }
+  function planTag(p){
+    var map = { '新增':'blue', '保留':'gray', '调出':'orange', '划拨':'blue' };
+    return '<span class="tag ' + (map[p] || 'gray') + '">' + esc(p) + '</span>';
+  }
+  function endText(r){
+    return esc(r.start) + ' ~ ' + (r.end ? esc(r.end) : '长期');
+  }
+  function findRow(id){
+    for (var i = 0; i < rows.length; i++) if (rows[i].id === id) return rows[i];
+    return null;
+  }
+  function nextEstId(){
+    var seq = rows.length + 1;
+    while (findRow('EST2026' + String(seq).padStart(3, '0'))) seq++;
+    return 'EST2026' + String(seq).padStart(3, '0');
+  }
+
+  /* ============ 台账渲染 ============ */
+  function renderStats(){
+    var active = rows.filter(function(r){ return r.status === '生效中'; });
+    var total = active.reduce(function(a, r){ return a + r.qty; }, 0);
+    var onboard = active.reduce(function(a, r){ return a + r.onboard; }, 0);
+    var occupy = active.reduce(function(a, r){ return a + r.occupy + ledgerReserved(r); }, 0);
+    var ledgerSum = active.reduce(function(a, r){ return a + ledgerReserved(r); }, 0);
+    var availSum = active.reduce(function(a, r){ return a + avail(r); }, 0);
+    var pending = rows.filter(function(r){ return r.status === '待审批'; }).length;
+    var over = active.filter(function(r){ return avail(r) < 0; }).length;
+    var pendingConfirm = active.reduce(function(a, r){ return a + (r.pending || 0); }, 0);
+
+    document.getElementById('ledgerStats').innerHTML = [
+      '<div class="stat" data-act="statAll"><div class="label">编制数量合计</div><div class="value">' + fmt(total) + '</div><div class="foot">生效中编制 · 含 ' + active.length + ' 条明细</div></div>',
+      '<div class="stat" data-act="statAll"><div class="label">在编人数</div><div class="value">' + fmt(onboard) + '</div><div class="foot">' + (pendingConfirm ? '含 ' + pendingConfirm + ' 人待编制确认' : '全部已确认') + '</div></div>',
+      '<div class="stat" data-act="statAll"><div class="label">招聘占用</div><div class="value">' + fmt(occupy) + '</div><div class="foot">来自招聘中需求 · 含台账预占 ' + fmt(ledgerSum) + '</div></div>',
+      '<div class="stat" data-act="statAll"><div class="label">可用缺额</div><div class="value' + (availSum < 0 ? ' warn' : '') + '">' + fmt(availSum) + '</div><div class="foot' + (over ? ' warn' : '') + '">' + (over ? over + ' 条超编，需优先处理' : '无超编') + '</div></div>',
+      '<div class="stat" data-act="statPending"><div class="label">待审批编制</div><div class="value">' + pending + '</div><div class="foot">一级中心负责人审批</div></div>'
+    ].join('');
+  }
+
+  function filteredRows(){
+    var kw = document.getElementById('fKw').value.trim().toLowerCase();
+    var d2 = document.getElementById('fDept2').value;
+    var lc = document.getElementById('fLevelCat').value;
+    var pl = document.getElementById('fPlan').value;
+    var st = document.getElementById('fStatus').value;
+    return rows.filter(function(r){
+      if (kw && (r.id + r.job + r.dept2 + r.dept3 + (r.dept4 || '')).toLowerCase().indexOf(kw) < 0) return false;
+      if (d2 !== '全部' && r.dept2 !== d2) return false;
+      if (lc !== '全部' && r.levelCat !== lc) return false;
+      if (pl !== '全部' && r.plan !== pl) return false;
+      if (st !== '全部' && r.status !== st) return false;
+      return true;
+    });
+  }
+
+  function rowActions(r){
+    var a = '<button class="btn text sm" data-act="detail" data-id="' + r.id + '">详情</button>';
+    if (r.status === '生效中' || r.status === '已驳回') {
+      a += '<button class="btn text sm" data-act="edit" data-id="' + r.id + '">编辑</button>';
+    }
+    if (r.status === '已驳回') {
+      a += '<button class="btn text sm" data-act="resubmit" data-id="' + r.id + '">重新提交</button>';
+    }
+    if (r.status === '生效中' || r.status === '已停用') {
+      a += '<button class="btn text sm" data-act="adjust" data-id="' + r.id + '">调整</button>';
+    }
+    if (r.status === '生效中') {
+      a += '<button class="btn link-danger sm" data-act="adjustPreset" data-preset="stop" data-id="' + r.id + '">停用</button>';
+    }
+    if (r.status === '待审批') {
+      a += '<button class="btn link-danger sm" data-act="withdraw" data-id="' + r.id + '">撤回</button>';
+    }
+    if (r.status === '已停用') {
+      a += '<button class="btn text sm" data-act="enable" data-id="' + r.id + '">启用</button>';
+    }
+    return a;
+  }
+
+  function renderLedger(){
+    var stateEl = document.getElementById('ledgerState');
+    var tableEl = document.getElementById('ledgerTableWrap');
+    var pagerEl = document.getElementById('ledgerPager');
+    var kw = document.getElementById('fKw').value.trim();
+
+    if (kw.toUpperCase() === 'FAIL') {
+      stateEl.hidden = false;
+      tableEl.hidden = true;
+      pagerEl.hidden = true;
+      document.getElementById('ledgerHint').textContent = '加载失败';
+      return;
+    }
+    stateEl.hidden = true;
+    tableEl.hidden = false;
+    pagerEl.hidden = false;
+
+    var list = filteredRows();
+    document.getElementById('ledgerHint').textContent = '共 ' + list.length + ' 条 · 招聘占用含台账预占';
+    var body = document.getElementById('ledgerBody');
+
+    if (!list.length) {
+      body.innerHTML = '<tr><td colspan="15"><div class="state" style="padding:40px 16px;">' +
+        '<div class="empty-icon">⌕</div><div class="state-title">未找到匹配的编制</div>' +
+        '<div class="state-desc">调整筛选条件后重试</div></div></td></tr>';
+      return;
+    }
+
+    body.innerHTML = list.map(function(r){
+      var a = avail(r);
+      var warn = (a < 0 ? ' row-warn' : '') + (r.status === '已结束' ? ' row-muted' : '');
+      return '<tr class="' + warn + '">' +
+        '<td class="nowrap"><button class="id-link" data-act="detail" data-id="' + r.id + '">' + esc(r.id) + '</button></td>' +
+        '<td class="cell-path"><div>' + esc(center) + ' / ' + esc(r.dept2) + (r.dept3 ? ' / ' + esc(r.dept3) : ' / —') + (r.dept4 ? ' / ' + esc(r.dept4) : '') + '</div></td>' +
+        '<td class="cell-path"><div>' + esc(r.job) + '</div>' + (r.stdJob && r.stdJob !== r.job ? '<div class="path-sub">标准职位：' + esc(r.stdJob) + '</div>' : '') + '</td>' +
+        '<td>' + esc(r.owner) + '</td>' +
+        '<td class="nowrap">' + esc(r.levelSeq) + '</td>' +
+        '<td class="nowrap">' + esc(r.level) + ' · ' + esc(r.levelCat) + '</td>' +
+        '<td>' + esc(r.form) + '</td>' +
+        '<td>' + planTag(r.plan) + '</td>' +
+        '<td class="nowrap">' + endText(r) + '</td>' +
+        '<td class="num">' + r.qty + '</td>' +
+        '<td class="num">' + r.onboard + (r.pending ? ' <span class="tag orange" title="含 ' + r.pending + ' 人待编制确认">待确认' + r.pending + '</span>' : '') + '</td>' +
+        '<td class="num">' + (r.occupy + ledgerReserved(r)) + (ledgerReserved(r) ? ' <span class="tag orange" title="其中台账预占 ' + ledgerReserved(r) + ' 人">台账' + ledgerReserved(r) + '</span>' : '') + '</td>' +
+        '<td class="num ' + (a < 0 ? 'diff-neg' : '') + '">' + (a > 0 ? '+' + a : a) + '</td>' +
+        '<td>' + statusTag(r.status) + '</td>' +
+        '<td><div class="act-group">' + rowActions(r) + '</div></td>' +
+        '</tr>';
+    }).join('');
+  }
+
+  /* ============ 抽屉 ============ */
+  function openDrawer(title, sub, bodyHtml, footHtml, wide){
+    document.getElementById('drawerTitle').textContent = title;
+    document.getElementById('drawerSub').innerHTML = sub || '';
+    document.getElementById('drawerBody').innerHTML = bodyHtml;
+    document.getElementById('drawerFoot').innerHTML = footHtml || '';
+    var dr = document.getElementById('drawer');
+    dr.classList.toggle('wide', !!wide);
+    dr.hidden = false;
+    document.getElementById('scrim').hidden = false;
+    document.body.style.overflow = 'hidden';
+    dr.scrollTop = 0;
+  }
+  function closeDrawer(){
+    document.getElementById('drawer').hidden = true;
+    if (document.getElementById('modal').hidden) {
+      document.getElementById('scrim').hidden = true;
+      document.body.style.overflow = '';
+    }
+  }
+
+  function dept3Options(dept2){
+    var map = {
+      'UED':[],
+      '技术管理部':['项目管理组'],
+      '财务研发部':['财务产品组','财务测试组','财务共享研发组'],
+      '供应链研发部':['TMS研发组','订单研发组','WMS研发组'],
+      '数据与AI研发部':['数据研发组','数据安全组','AI Agent平台组','算法平台组'],
+      '信息安全部':['数据安全组','网络安全组','信息安全管理组'],
+      '产品运营部':['算法运营组','供应链运营组','商品运营组'],
+      '运营研发部':['质量组','前端组','任务工具&调度组','组织发展组'],
+      '商品研发部':['收银研发组','商品产品组'],
+      '商品研发部':['营销研发组','商品中台研发组'],
+      '运维服务部':['门店运维组','基础设施组'],
+      '供应链产品部':['OMS产品组','物流产品组'],
+      '创新业务研发部':[],
+      '产品部':['商品产品部'],
+      '算法部':['算法应用组'],
+      '办公产品部':['BPM平台产研组','协同办公产品组'],
+      '基础平台部':['人力研发组','效能平台组']
+    };
+    return map[dept2] || [];
+  }
+
+  function dept2Options(selected){
+    var list = ['UED','财务研发部','供应链研发部','数据与AI研发部','信息安全部','产品运营部','运营研发部','商品研发部','商品研发部','运维服务部','供应链产品部','创新业务研发部','产品部','技术管理部','算法部','办公产品部','基础平台部'];
+    return list.map(function(d){
+      return '<option' + (d === selected ? ' selected' : '') + '>' + esc(d) + '</option>';
+    }).join('');
+  }
+
+  function levelCatOptions(selected){
+    return ['战略决策层','总监级','经理级','主管级','员工级'].map(function(d){
+      return '<option' + (d === selected ? ' selected' : '') + '>' + d + '</option>';
+    }).join('');
+  }
+  function formOptions(list, selected){
+    return list.map(function(d){
+      return '<option' + (d === selected ? ' selected' : '') + '>' + esc(d) + '</option>';
+    }).join('');
+  }
+
+  function openCreate(){
+    var body =
+      '<div class="form-tip mb8">编制行以 <b>组织 + 职位 + 直线上级 + 开始时间</b> 唯一。新增与调增提交一级中心负责人审批；组织、职位与职级取自岗位管理，不在此维护。</div>' +
+      '<div class="form-section">' +
+        '<h3>组织与岗位</h3>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label>一级中心 <span class="req">*</span></label><input class="input" value="技术中心" readonly></div>' +
+          '<div class="field" id="fldDept2"><label>二级部门 <span class="req">*</span></label><select class="select" id="cDept2">' + dept2Options('财务研发部') + '</select><div class="error-text">请选择二级部门</div></div>' +
+          '<div class="field" id="fldDept3"><label>三级部门</label><select class="select" id="cDept3"></select><div class="error-text">请选择三级部门</div></div>' +
+          '<div class="field"><label>五级组织</label><input class="input" id="cDept4" placeholder="选填，部门本级可留空"></div>' +
+          '<div class="field" id="fldJob"><label>职位 <span class="req">*</span></label><select class="select" id="cJob">' +
+            formOptions(['产品经理','前端研发工程师','后端研发工程师','数据研发工程师','测试工程师','UI设计工程师','运维工程师','算法工程师'],'产品经理') +
+            '</select><div class="error-text">请选择职位</div></div>' +
+          '<div class="field"><label>标准职位</label><input class="input" value="产品经理" readonly></div>' +
+          '<div class="field"><label>直线上级 <span class="req">*</span></label><select class="select" id="cLeader">' +
+            formOptions(['王健','王璐','李雨欣','李鹏','张静怡'],'王健') + '</select></div>' +
+          '<div class="field"><label>职级序列</label><select class="select" id="cLevelSeq">' + formOptions(['管理序列（M）','专业序列（P）','业务序列（S）','操作序列（O）'],'专业序列（P）') + '</select></div>' +
+          '<div class="field"><label>职级</label><select class="select" id="cLevel">' + formOptions(['P4','P5','P6','P7','P8'],'P6') + '</select></div>' +
+          '<div class="field"><label>职级类别</label><select class="select" id="cLevelCat">' + levelCatOptions('主管级') + '</select></div>' +
+          '<div class="field"><label>用工形式 <span class="req">*</span></label><select class="select" id="cForm">' +
+            formOptions(['全职-正式','实习生','劳务外包','兼职（PT）'],'全职-正式') + '</select></div>' +
+          '<div class="field"><label>办公业态</label><select class="select" id="cOfficeType">' + formOptions(['自建','驻场','外包'],'自建') + '</select></div>' +
+          '<div class="field"><label>办公地点</label><input class="input" id="cLocation" value="某省某市"></div>' +
+          '<div class="field"><label>原部门标签</label><input class="input" id="cTag" placeholder="选填，用于组织调整标识"></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-section">' +
+        '<h3>编制信息</h3>' +
+        '<div class="form-grid">' +
+          '<div class="field"><label>编制计划 <span class="req">*</span></label><select class="select" id="cPlan">' +
+            formOptions(['新增','保留','调出','划拨'],'新增') + '</select></div>' +
+          '<div class="field" id="fldQty"><label>编制数量 <span class="req">*</span></label><input class="input" id="cQty" type="number" min="0" max="9999" step="1" value="2"><div class="error-text">请输入 0–9999 的整数</div></div>' +
+          '<div class="field" id="fldStart"><label>职位编制开始时间 <span class="req">*</span></label><input class="input" id="cStart" type="date" value="' + todayStr() + '"><div class="error-text">开始时间必填且不得早于今天</div></div>' +
+          '<div class="field"><label>职位编制结束时间</label><input class="input" id="cEnd" type="date"><div class="error-text" id="cEndErr">结束时间不得早于开始时间</div><div class="tip">留空表示长期</div></div>' +
+          '<div class="field full"><label>备注</label><textarea class="input" id="cRemark" placeholder="选填，不超过 200 字"></textarea></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="form-tip">提交审批后进入待审批状态，不占用招聘缺额；审批通过后编制生效，可在招聘管理中被需求引用。驳回后回到可编辑状态并记录原因。</div>';
+
+    var foot =
+      '<button class="btn" data-act="closeDrawer">取消</button>' +
+      '<button class="btn" data-act="saveCreate" data-mode="continue">保存并继续</button>' +
+      '<button class="btn primary" data-act="saveCreate" data-mode="submit">提交审批</button>';
+
+    openDrawer('新增编制', '编制计划 × 组织 × 职位 × 职级，审批通过后生效', body, foot, true);
+    syncDept3();
+  }
+
+  function syncDept3(){
+    var d2 = document.getElementById('cDept2');
+    if (!d2) return;
+    var sel = document.getElementById('cDept3');
+    var list = dept3Options(d2.value);
+    sel.innerHTML = '<option value="">—（部门本级）</option>' + list.map(function(d){ return '<option>' + esc(d) + '</option>'; }).join('');
+  }
+
+  function validateCreate(){
+    var ok = true;
+    ['fldDept2','fldDept3','fldJob','fldQty','fldStart'].forEach(function(id){
+      var el = document.getElementById(id);
+      if (el) el.classList.remove('has-error');
+    });
+    var endErr = document.getElementById('cEndErr');
+    if (endErr) { endErr.style.display = 'none'; document.getElementById('cEnd').classList.remove('invalid'); }
+    var qty = Number(document.getElementById('cQty').value);
+    if (!Number.isInteger(qty) || qty < 0 || qty > 9999) {
+      document.getElementById('fldQty').classList.add('has-error'); ok = false;
+    }
+    var start = document.getElementById('cStart').value;
+    if (!start || start < todayStr()) {
+      document.getElementById('fldStart').classList.add('has-error'); ok = false;
+    }
+    var end = document.getElementById('cEnd').value;
+    if (end && start && end < start) {
+      endErr.style.display = 'block';
+      document.getElementById('cEnd').classList.add('invalid');
+      ok = false;
+    }
+    return ok;
+  }
+
+  function saveCreate(mode){
+    if (!validateCreate()) {
+      toast('请检查标红字段后再提交', 'err');
+      return;
+    }
+    var d2 = document.getElementById('cDept2').value;
+    var d3 = document.getElementById('cDept3').value;
+    var d4 = document.getElementById('cDept4').value.trim();
+    var job = document.getElementById('cJob').value;
+    var qty = Number(document.getElementById('cQty').value) || 0;
+    var id = nextEstId();
+    rows.unshift({
+      id: id, dept2: d2, dept3: d3, dept4: d4, job: job, stdJob: job,
+      owner: document.getElementById('cLeader').value,
+      levelSeq: document.getElementById('cLevelSeq').value,
+      level: document.getElementById('cLevel').value,
+      levelCat: document.getElementById('cLevelCat').value,
+      form: document.getElementById('cForm').value,
+      plan: document.getElementById('cPlan').value,
+      start: document.getElementById('cStart').value,
+      end: document.getElementById('cEnd').value,
+      qty: qty, onboard: 0, occupy: 0,
+      status: '待审批', pending: 0,
+      reason: document.getElementById('cRemark').value,
+      officeType: document.getElementById('cOfficeType').value,
+      location: document.getElementById('cLocation').value,
+      tag: document.getElementById('cTag').value,
+      remark: '待一级中心负责人审批'
+    });
+    renderStats();
+    renderLedger();
+    if (mode === 'continue') {
+      document.getElementById('cQty').value = '2';
+      document.getElementById('cStart').value = todayStr();
+      document.getElementById('cEnd').value = '';
+      document.getElementById('cRemark').value = '';
+      document.getElementById('cDept4').value = '';
+      toast('已提交审批，可继续新增下一条');
+      return;
+    }
+    closeDrawer();
+    toast('已提交审批，等待一级中心负责人审批');
+  }
+
+  function openEdit(id){
+    var r = findRow(id);
+    if (!r) return;
+    var body =
+      '<div class="form-tip mb8">组织、职位、职级与编制数量不可在此修改；编制数量变更请使用「调整」，职级与岗位口径回岗位管理维护。</div>' +
+      '<div class="form-section"><h3>基本信息</h3><div class="form-grid">' +
+        '<div class="field"><label>编制编号</label><input class="input" value="' + esc(r.id) + '" readonly></div>' +
+        '<div class="field"><label>组织</label><input class="input" value="' + esc(center + ' / ' + r.dept2 + ' / ' + (r.dept3 || '—')) + '" readonly></div>' +
+        '<div class="field"><label>职位</label><input class="input" value="' + esc(r.job) + '" readonly></div>' +
+        '<div class="field"><label>职级序列 / 职级 / 类别</label><input class="input" value="' + esc(r.levelSeq + ' · ' + r.level + ' · ' + r.levelCat) + '" readonly></div>' +
+        '<div class="field"><label>标准职位</label><input class="input" id="eStdJob" value="' + esc(r.stdJob) + '"></div>' +
+        '<div class="field"><label>直线上级</label><input class="input" id="eLeader" value="' + esc(r.owner) + '"></div>' +
+        '<div class="field"><label>办公业态</label><select class="select" id="eOfficeType">' + formOptions(['自建','驻场','外包'], r.officeType) + '</select></div>' +
+        '<div class="field"><label>办公地点</label><input class="input" id="eLocation" value="' + esc(r.location) + '"></div>' +
+        '<div class="field"><label>原部门标签</label><input class="input" id="eTag" value="' + esc(r.tag) + '" placeholder="选填"></div>' +
+        '<div class="field"><label>编制编号状态</label><div style="height:32px;display:flex;align-items:center;">' + statusTag(r.status) + '</div></div>' +
+        '<div class="field full"><label>备注</label><textarea class="input" id="eRemark">' + esc(r.remark) + '</textarea></div>' +
+      '</div></div>';
+    var foot = '<button class="btn" data-act="closeDrawer">取消</button><button class="btn primary" data-act="saveEdit" data-id="' + r.id + '">保存</button>';
+    openDrawer('编辑编制', esc(r.id) + ' · ' + esc(r.job), body, foot);
+  }
+
+  function saveEdit(id){
+    var r = findRow(id);
+    if (!r) return;
+    r.stdJob = document.getElementById('eStdJob').value.trim() || r.stdJob;
+    r.owner = document.getElementById('eLeader').value.trim() || r.owner;
+    r.officeType = document.getElementById('eOfficeType').value;
+    r.location = document.getElementById('eLocation').value.trim();
+    r.tag = document.getElementById('eTag').value.trim();
+    r.remark = document.getElementById('eRemark').value;
+    closeDrawer();
+    renderLedger();
+    toast('编制信息已保存');
+  }
+
+  function openAdjust(id, preset){
+    var r = findRow(id);
+    if (!r) return;
+    var canQty = r.status === '生效中';
+    var body =
+      '<div class="form-tip mb8">当前编制：<b>' + r.qty + '</b> 人 · 在编 <b>' + r.onboard + '</b> 人 · 招聘占用 <b>' + (r.occupy + ledgerReserved(r)) + '</b> 人' + (ledgerReserved(r) ? '（含台账预占 ' + ledgerReserved(r) + ' 人）' : '') + ' · 可用缺额 <b>' + avail(r) + '</b>。调增须审批，调减、延期、缩短、停用与启用即时生效。</div>' +
+      '<div class="form-section"><h3>调整内容</h3><div class="form-grid">' +
+        '<div class="field"><label>调整类型 <span class="req">*</span></label><select class="select" id="aType">' +
+          '<option value="increase"' + (canQty ? '' : ' disabled') + '>调增（提交审批）</option>' +
+          '<option value="decrease"' + (canQty ? '' : ' disabled') + '>调减（即时生效）</option>' +
+          '<option value="extend">延期（修改结束时间）</option>' +
+          '<option value="shorten">缩短（修改结束时间）</option>' +
+          (r.status === '生效中' ? '<option value="stop">停用</option>' : '') +
+          (r.status === '已停用' ? '<option value="enable">启用</option>' : '') +
+        '</select></div>' +
+        '<div class="field" id="fldNewQty"><label>调整后编制数量 <span class="req">*</span></label><input class="input" id="aQty" type="number" min="0" max="9999" value="' + r.qty + '"></div>' +
+        '<div class="field" id="fldEnd"><label>调整后结束时间 <span class="req">*</span></label><input class="input" id="aEnd" type="date" value="' + esc(r.end) + '"><div class="tip">留空表示长期有效</div></div>' +
+        '<div class="field full"><label>调整原因 <span class="req">*</span></label><textarea class="input" id="aReason" placeholder="说明调整依据，调增须关联业务规划"></textarea><div class="error-text" style="display:none;" id="aErr">请填写调整原因</div></div>' +
+      '</div></div>' +
+      '<div class="form-tip">调减后若在编与招聘占用合计超过新编制，将标记为超编并提示中心负责人处理；招聘中需求的可用缺额同步重算。</div>';
+    var foot = '<button class="btn" data-act="closeDrawer">取消</button><button class="btn primary" data-act="saveAdjust" data-id="' + r.id + '">确认调整</button>';
+    openDrawer('调整编制', esc(r.id) + ' · ' + esc(r.job), body, foot);
+    if (preset) {
+      var sel = document.getElementById('aType');
+      if (sel) sel.value = preset;
+    }
+    syncAdjustFields();
+  }
+
+  function syncAdjustFields(){
+    var t = document.getElementById('aType');
+    if (!t) return;
+    var v = t.value;
+    document.getElementById('fldNewQty').style.display = (v === 'increase' || v === 'decrease') ? '' : 'none';
+    document.getElementById('fldEnd').style.display = (v === 'extend' || v === 'shorten') ? '' : 'none';
+  }
+
+  function saveAdjust(id){
+    var r = findRow(id);
+    if (!r) return;
+    var type = document.getElementById('aType').value;
+    var reason = document.getElementById('aReason').value.trim();
+    var err = document.getElementById('aErr');
+    err.style.display = 'none';
+    if (!reason) {
+      err.style.display = 'block';
+      document.getElementById('aReason').classList.add('invalid');
+      return;
+    }
+    var newQty = Number(document.getElementById('aQty').value);
+    var newEnd = document.getElementById('aEnd').value;
+
+    if (type === 'increase') {
+      if (!Number.isInteger(newQty) || newQty <= r.qty || newQty > 9999) {
+        toast('调整后数量须为大于当前编制的整数', 'err');
+        return;
+      }
+      closeDrawer();
+      toast('调增已提交审批（+ ' + (newQty - r.qty) + ' 人），审批通过前按原编制执行', 'warn');
+      return;
+    }
+    if (type === 'decrease') {
+      if (!Number.isInteger(newQty) || newQty < 0 || newQty >= r.qty) {
+        toast('调整后数量须小于当前编制的非负整数', 'err');
+        return;
+      }
+      closeDrawer();
+      var occTotal = r.onboard + r.occupy + ledgerReserved(r);
+      confirmModal('确认调减编制', '调减后编制为 <span class="strong">' + newQty + '</span> 人，在编与招聘占用合计 <span class="strong">' + occTotal + '</span> 人。' +
+        (occTotal > newQty ? '<div class="danger-note mt8">调减后将超编 ' + (occTotal - newQty) + ' 人，仅作警示不拦截，须由编制管理员与中心负责人处理。</div>' : ''),
+        '确认调减', false, function(){
+          r.qty = newQty; r.remark = reason;
+          renderStats(); renderLedger();
+          toast('编制已调减为 ' + newQty + ' 人');
+        });
+      return;
+    }
+    if (type === 'extend' || type === 'shorten') {
+      if (type === 'extend' && newEnd && r.end && newEnd < r.end) {
+        toast('延期后的结束时间须晚于当前结束时间', 'err'); return;
+      }
+      if (type === 'shorten' && newEnd && r.end && newEnd > r.end) {
+        toast('缩短后的结束时间须早于当前结束时间', 'err'); return;
+      }
+      if (type === 'shorten' && newEnd && newEnd < todayStr()) {
+        toast('缩短后的结束时间不得早于今天', 'err'); return;
+      }
+      r.end = newEnd; r.remark = reason;
+      closeDrawer(); renderLedger();
+      toast(type === 'extend' ? '编制有效期已延长' : '编制有效期已缩短');
+      return;
+    }
+    if (type === 'stop') {
+      closeDrawer();
+      confirmModal('确认停用编制', '停用后该编制行保留在台账中，<span class="strong">不承接新的招聘需求与在编追加</span>；在途需求将被标记「编制变更待处理」，在编人员与历史记录不受影响。',
+        '确认停用', true, function(){
+          r.status = '已停用'; r.remark = reason;
+          renderStats(); renderLedger();
+          toast('编制已停用');
+        });
+      return;
+    }
+    if (type === 'enable') {
+      r.status = '生效中'; r.remark = reason;
+      closeDrawer(); renderStats(); renderLedger();
+      toast('编制已启用');
+    }
+  }
+
+  function openEnable(id){
+    var r = findRow(id);
+    if (!r) return;
+    confirmModal('确认启用编制', '启用 <span class="strong">' + esc(r.id) + ' · ' + esc(r.job) + '</span> 后，该编制可重新被招聘需求引用。启用不改变原结束时间，请确认结束时间未过期。',
+      '确认启用', false, function(){
+        r.status = '生效中'; r.remark = '编制管理员启用';
+        renderStats(); renderLedger();
+        toast('编制已启用，可重新承接招聘需求');
+      });
+  }
+
+  function resubmit(id){
+    var r = findRow(id);
+    if (!r) return;
+    confirmModal('重新提交审批', '将编制 <span class="strong">' + esc(r.id) + ' · ' + esc(r.job) + '</span> 重新提交一级中心负责人审批。审批通过前不占用编制与招聘缺额。',
+      '确认提交', false, function(){
+        r.status = '待审批'; r.remark = '重新提交审批';
+        renderStats(); renderLedger();
+        toast('已重新提交审批');
+      });
+  }
+
+  function openWithdraw(id){    var r = findRow(id);
+    if (!r) return;
+    confirmModal('撤回审批', '撤回后该待审批编制将关闭，审批记录保留。如需继续新增，请重新发起。', '确认撤回', false, function(){
+      rows = rows.filter(function(x){ return x.id !== id; });
+      renderStats(); renderLedger(); toast('已撤回，待审批编制已关闭');
+    });
+  }
+
+  function openApprove(id){
+    var r = findRow(id);
+    if (!r) return;
+    var body =
+      '<div class="detail-hero">' + statusTag(r.status) + '<h3>' + esc(r.id) + '</h3></div>' +
+      '<div class="desc-list">' +
+        '<div class="desc-item"><div class="k">组织</div><div class="v">' + esc(center + ' / ' + r.dept2 + ' / ' + (r.dept3 || '—')) + '</div></div>' +
+        '<div class="desc-item"><div class="k">职位 / 职级序列 / 职级</div><div class="v">' + esc(r.job + ' · ' + r.levelSeq + ' · ' + r.level + ' · ' + r.levelCat) + '</div></div>' +
+        '<div class="desc-item"><div class="k">编制数量</div><div class="v strong">' + r.qty + ' 人</div></div>' +
+        '<div class="desc-item"><div class="k">编制计划</div><div class="v">' + esc(r.plan) + '</div></div>' +
+        '<div class="desc-item"><div class="k">开始时间</div><div class="v">' + esc(r.start) + '</div></div>' +
+        '<div class="desc-item"><div class="k">申请人</div><div class="v">李雨欣（编制管理员）</div></div>' +
+        '<div class="desc-item full"><div class="k">申请说明</div><div class="v">' + esc(r.reason || '—') + '</div></div>' +
+      '</div>' +
+      '<div class="form-section mt16"><h3>审批意见</h3>' +
+        '<div class="field"><textarea class="input" id="apOpinion" placeholder="驳回时必填"></textarea></div></div>';
+    var foot = '<button class="btn" data-act="closeDrawer">取消</button>' +
+      '<button class="btn danger" data-act="approveReject" data-id="' + r.id + '">驳回</button>' +
+      '<button class="btn primary" data-act="approvePass" data-id="' + r.id + '">通过</button>';
+    openDrawer('审批编制', '一级中心负责人 · 编制新增 / 调增审批', body, foot);
+  }
+
+  function approvePass(id){
+    var r = findRow(id);
+    if (!r) return;
+    r.status = '生效中'; r.remark = '审批通过：' + (document.getElementById('apOpinion').value.trim() || '同意');
+    closeDrawer(); renderStats(); renderLedger(); toast('审批已通过，编制生效');
+  }
+  function approveReject(id){
+    var r = findRow(id);
+    if (!r) return;
+    var op = document.getElementById('apOpinion').value.trim();
+    if (!op) { toast('驳回时请填写审批意见', 'err'); return; }
+    r.status = '已驳回'; r.remark = '驳回原因：' + op;
+    closeDrawer(); renderStats(); renderLedger(); toast('已驳回，编制回到可编辑状态', 'warn');
+  }
+
+  function openDetail(id){
+    var r = findRow(id);
+    if (!r) return;
+    var extra = detailExtra[id] || { people:[], offers:[], changes:[] };
+    var a = avail(r);
+    var body =
+      '<div class="detail-hero">' + statusTag(r.status) + planTag(r.plan) + '<h3>' + esc(r.job) + '</h3><span class="muted">' + esc(r.id) + '</span></div>' +
+      '<div class="muted" style="font-size:12px;">' + esc(center + ' / ' + r.dept2 + (r.dept3 ? ' / ' + r.dept3 : '')) + '</div>' +
+      '<div class="desc-list">' +
+        '<div class="desc-item"><div class="k">职位 / 职级序列 / 职级</div><div class="v">' + esc(r.job + ' · ' + r.levelSeq + ' · ' + r.level + ' · ' + r.levelCat) + '</div></div>' +
+        '<div class="desc-item"><div class="k">用工形式</div><div class="v">' + esc(r.form) + '</div></div>' +
+        '<div class="desc-item"><div class="k">直线上级</div><div class="v">' + esc(r.owner) + '</div></div>' +
+        '<div class="desc-item"><div class="k">办公地点</div><div class="v">' + esc(r.location || '—') + '</div></div>' +
+        '<div class="desc-item"><div class="k">编制起止</div><div class="v">' + endText(r) + '</div></div>' +
+        '<div class="desc-item"><div class="k">原部门标签</div><div class="v">' + esc(r.tag || '—') + '</div></div>' +
+        '<div class="desc-item"><div class="k">编制数量</div><div class="v strong">' + r.qty + ' 人</div></div>' +
+        '<div class="desc-item"><div class="k">在编 / 招聘占用</div><div class="v">' + r.onboard + (r.pending ? '（含 ' + r.pending + ' 人待确认）' : '') + ' / ' + (r.occupy + ledgerReserved(r)) + (ledgerReserved(r) ? ' <span class="tag orange">其中台账预占 ' + ledgerReserved(r) + '</span>' : '') + '</div></div>' +
+        '<div class="desc-item"><div class="k">可用缺额</div><div class="v ' + (a < 0 ? 'diff-neg' : '') + '">' + (a > 0 ? '+' + a : a) + ' 人' + (a < 0 ? '（超编）' : '') + '</div></div>' +
+        '<div class="desc-item full"><div class="k">备注</div><div class="v">' + esc(r.remark || '—') + '</div></div>' +
+      '</div>' +
+      '<div class="sub-tabs">' +
+        '<button class="sub-tab active" data-subtab="people">在编人员（' + (extra.people.length + r.pending) + '）</button>' +
+        '<button class="sub-tab" data-subtab="offers">招聘占用（' + (extra.offers.length || (r.occupy + ledgerReserved(r))) + '）</button>' +
+        '<button class="sub-tab" data-subtab="changes">变更记录（' + extra.changes.length + '）</button>' +
+      '</div>' +
+      '<div class="sub-panel" id="subPanel"></div>';
+
+    var foot = '<button class="btn" data-act="closeDrawer">关闭</button>';
+    if (r.status === '待审批') {
+      foot += '<button class="btn primary" data-act="approve" data-id="' + r.id + '">去审批</button>';
+    }
+    openDrawer('编制详情', '在编、招聘占用与变更记录', body, foot, true);
+    renderSubPanel(id, 'people');
+  }
+
+  function renderSubPanel(id, tab){
+    var r = findRow(id);
+    var extra = detailExtra[id] || { people:[], offers:[], changes:[] };
+    var el = document.getElementById('subPanel');
+    if (!el) return;
+    if (tab === 'people') {
+      if (!extra.people.length) {
+        el.innerHTML = '<div class="state" style="padding:30px;"><div class="state-title">暂无在编人员</div><div class="state-desc">入职确认后由编制管理自动写入</div></div>';
+        return;
+      }
+      el.innerHTML = '<div class="table-wrap"><table style="min-width:860px;"><thead><tr><th>姓名</th><th>工号</th><th>职级</th><th>入职日期</th><th>来源</th><th>编制确认</th><th>超编处理备注</th><th>操作</th></tr></thead><tbody>' +
+        extra.people.map(function(p, i){
+          return '<tr><td>' + esc(p.name) + '</td><td>' + esc(p.no) + '</td><td>' + esc(p.level) + '</td><td>' + esc(p.join) + '</td><td>' + esc(p.source) + '</td>' +
+            '<td>' + (p.confirm === '已确认' ? '<span class="tag green">已确认</span>' : '<span class="tag orange">待编制确认</span>') + '</td>' +
+            '<td>' + esc(p.note || '—') + '</td>' +
+            '<td>' + (p.confirm === '已确认' ? '<span class="muted">—</span>' : '<button class="btn text sm" data-act="confirmPerson" data-id="' + id + '" data-idx="' + i + '">确认归档</button>') + '</td></tr>';
+        }).join('') + '</tbody></table></div>';
+      return;
+    }
+    if (tab === 'offers') {
+      if (!extra.offers.length) {
+        el.innerHTML = '<div class="state" style="padding:30px;"><div class="state-title">暂无招聘占用</div><div class="state-desc">本编制当前占用 ' + (r.occupy + ledgerReserved(r)) + ' 人' + (ledgerReserved(r) ? '（含台账预占 ' + ledgerReserved(r) + ' 人）' : '') + '</div></div>';
+        return;
+      }
+      el.innerHTML = '<div class="table-wrap"><table style="min-width:760px;"><thead><tr><th>需求编号</th><th>Offer 编号</th><th>候选人</th><th>职级</th><th>计划入职</th><th>状态</th></tr></thead><tbody>' +
+        extra.offers.map(function(o){
+          return '<tr><td>' + esc(o.need) + '</td><td>' + esc(o.offer) + '</td><td>' + esc(o.name) + '</td><td>' + esc(o.level) + '</td><td>' + esc(o.arrive) + '</td><td><span class="tag orange">' + esc(o.status) + '</span></td></tr>';
+        }).join('') + '</tbody></table></div>' +
+        '<div class="tip mt12">招聘占用由招聘管理写入，不可在编制管理修改；候选人入职后转为在编待确认。</div>';
+      return;
+    }
+    if (!extra.changes.length) {
+      el.innerHTML = '<div class="state" style="padding:30px;"><div class="state-title">暂无变更记录</div></div>';
+      return;
+    }
+    el.innerHTML = '<div class="table-wrap"><table style="min-width:820px;"><thead><tr><th>时间</th><th>变更类型</th><th>变更前</th><th>变更后</th><th>操作人</th><th>原因 / 审批意见</th></tr></thead><tbody>' +
+      extra.changes.map(function(c){
+        return '<tr><td class="nowrap">' + esc(c.time) + '</td><td>' + esc(c.type) + '</td><td>' + esc(c.before) + '</td><td>' + esc(c.after) + '</td><td>' + esc(c.person) + '</td><td style="white-space:normal;">' + esc(c.remark) + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+  }
+
+  function confirmPerson(id, idx){
+    var extra = detailExtra[id];
+    if (!extra || !extra.people[idx]) return;
+    extra.people[idx].confirm = '已确认';
+    var r = findRow(id);
+    if (r && r.pending > 0) r.pending--;
+    renderSubPanel(id, 'people');
+    renderStats(); renderLedger();
+    toast('已确认归档');
+  }
+
+  /* ============ 弹窗 ============ */
+  function confirmModal(title, html, okText, danger, onOk){
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalSub').textContent = '';
+    document.getElementById('modalBody').innerHTML = html;
+    var foot = '<button class="btn" data-act="closeModal">取消</button>' +
+      '<button class="btn ' + (danger ? 'danger' : 'primary') + '" id="modalOk">' + esc(okText || '确认') + '</button>';
+    document.getElementById('modalFoot').innerHTML = foot;
+    document.getElementById('modalBox').classList.remove('wide');
+    document.getElementById('modal').hidden = false;
+    document.getElementById('scrim').hidden = false;
+    document.body.style.overflow = 'hidden';
+    document.getElementById('modalOk').onclick = function(){
+      closeModal();
+      if (onOk) onOk();
+    };
+  }
+  function openModal(title, sub, bodyHtml, footHtml, wide){
+    document.getElementById('modalTitle').textContent = title;
+    document.getElementById('modalSub').textContent = sub || '';
+    document.getElementById('modalBody').innerHTML = bodyHtml;
+    document.getElementById('modalFoot').innerHTML = footHtml;
+    document.getElementById('modalBox').classList.toggle('wide', !!wide);
+    document.getElementById('modal').hidden = false;
+    document.getElementById('scrim').hidden = false;
+    document.body.style.overflow = 'hidden';
+  }
+  function closeModal(){
+    document.getElementById('modal').hidden = true;
+    if (document.getElementById('drawer').hidden) {
+      document.getElementById('scrim').hidden = true;
+      document.body.style.overflow = '';
+    }
+  }
+
+  var importType = 'ledger';
+  function openImport(type){
+    importType = type || 'ledger';
+    var meta = {
+      ledger: { title:'批量导入编制', template:'组织架构岗位编制明细导入模板 ESTABLISHMENT_DETAIL V1.0', desc:'按附件1字段导入：保留行匹配已有编制，新增行生成待审批，调出与划拨行更新结束时间或组织归属；模板内未出现的编制不删除。', limit:'单次不超过 10,000 行，文件不超过 20MB' },
+      standard: { title:'导入定编标准', template:'定编标准导入模板 ESTABLISHMENT_STANDARD V1.0', desc:'按「组织 + 标准职位 + 职务序列 + 职务标签 + 职级类别」覆盖更新，含主要定位、职责、定编因素与标准值；月度编制不随模板导入。', limit:'单次不超过 2,000 行' },
+      archive: { title:'导入备案编制', template:'备案编制导入模板 ESTABLISHMENT_ARCHIVE V1.0', desc:'按年度与组织、职位、标签、职级类别覆盖更新 1–12 月备案值；原编制默认值取同年 3 月，已保存规划不被覆盖。', limit:'单次不超过 2,000 行' }
+    }[importType];
+
+    var summaryHtml = importType === 'ledger'
+      ? '<div class="io-box"><div class="k">保留匹配</div><div class="v">2</div></div><div class="io-box"><div class="k">新增待审批</div><div class="v">2</div></div><div class="io-box"><div class="k">调出划拨</div><div class="v">1</div></div><div class="io-box err"><div class="k">失败</div><div class="v">1</div></div><div class="io-box"><div class="k">合计</div><div class="v">6</div></div>'
+      : (importType === 'standard'
+        ? '<div class="io-box"><div class="k">更新</div><div class="v">2</div></div><div class="io-box"><div class="k">新增</div><div class="v">1</div></div><div class="io-box err"><div class="k">失败</div><div class="v">0</div></div><div class="io-box"><div class="k">合计</div><div class="v">3</div></div>'
+        : '<div class="io-box"><div class="k">覆盖更新</div><div class="v">6</div></div><div class="io-box err"><div class="k">失败</div><div class="v">0</div></div><div class="io-box"><div class="k">合计</div><div class="v">6</div></div>');
+
+    var body =
+      '<div class="form-tip mb8"><b>模板：</b>' + esc(meta.template) + '<br>' + esc(meta.desc) + '<br><b>限制：</b>' + esc(meta.limit) + '</div>' +
+      '<div class="upload-zone" id="uploadZone">' +
+        '<div class="u-title">点击选择文件，或将文件拖拽到此处</div>' +
+        '<div class="u-desc">支持 .xlsx，文件内不得包含宏、外部链接与合并单元格以外的格式对象</div>' +
+      '</div>' +
+      '<div class="file-chip" id="fileChip" hidden><span class="tag blue">XLSX</span><span id="fileName">编制台账_2026Q2.xlsx</span><span class="muted" style="margin-left:auto;">386 KB · 12 行</span></div>' +
+      '<div id="importPreview" hidden>' +
+        '<div class="io-summary">' + summaryHtml + '</div>' +
+        (importType === 'ledger'
+          ? '<div class="form-tip"><b>失败明细（第 5 行）：</b>保留行工号「L09999」未匹配到在编人员；其余 5 行可导入。失败行不写入，修正后可再次导入。</div>'
+          : '<div class="form-tip">校验通过，确认导入后覆盖当前参照数据并保留本次导入批次时间。</div>') +
+      '</div>';
+
+    var foot = '<button class="btn text" data-act="downloadTemplate">下载模板</button>' +
+      '<button class="btn" data-act="closeModal">取消</button>' +
+      '<button class="btn" id="previewBtn" data-act="previewImport">开始校验</button>' +
+      '<button class="btn primary" id="doImportBtn" data-act="doImport" disabled>确认导入</button>';
+
+    openModal(meta.title, '增量补齐 · 逐行校验 · 失败行回执', body, foot, true);
+
+    var zone = document.getElementById('uploadZone');
+    zone.addEventListener('click', function(){
+      document.getElementById('uploadZone').style.display = 'none';
+      document.getElementById('fileChip').hidden = false;
+      toast('已选择文件（Mock），点击「开始校验」查看预校验结果');
+    });
+  }
+
+  function previewImport(){
+    if (document.getElementById('fileChip').hidden) {
+      toast('请先选择导入文件', 'err'); return;
+    }
+    document.getElementById('importPreview').hidden = false;
+    document.getElementById('previewBtn').textContent = '重新校验';
+    document.getElementById('doImportBtn').disabled = false;
+  }
+
+  function doImport(){
+    var type = importType;
+    closeModal();
+    if (type === 'ledger') {
+      var d = todayStr();
+      var importId1 = nextEstId();
+      rows.unshift({
+        id: importId1, dept2:'供应链研发部', dept3:'WMS研发组', job:'后端研发工程师', stdJob:'后端研发工程师',
+        owner:'张静怡', level:'P6', levelCat:'主管级', form:'全职-正式', plan:'新增', start:d, end:'',
+        qty:2, onboard:0, occupy:0, status:'待审批', pending:0, reason:'批量导入新增',
+        officeType:'自建', location:'某省某市', tag:'', remark:'批量导入 · 待一级中心负责人审批'
+      });
+      var importId2 = nextEstId();
+      rows.unshift({
+        id: importId2, dept2:'财务研发部', dept3:'财务共享研发组', job:'后端研发工程师', stdJob:'后端研发工程师',
+        owner:'王健', level:'P6', levelCat:'主管级', form:'全职-正式', plan:'新增', start:d, end:'',
+        qty:1, onboard:0, occupy:0, status:'待审批', pending:0, reason:'批量导入新增',
+        officeType:'自建', location:'某省某市', tag:'', remark:'批量导入 · 待一级中心负责人审批'
+      });
+      var upd = rows.filter(function(r){ return r.dept2 === '数据与AI研发部' && r.job === '数据研发工程师'; })[0];
+      if (upd) upd.remark = '批量导入更新：办公地点已同步';
+      renderStats(); renderLedger();
+      if (!document.getElementById('view-plan').hidden) renderPlan();
+      toast('导入完成：保留匹配 2 条、新增 2 条待审批、调出划拨 1 条、失败 1 条');
+      return;
+    }
+    if (type === 'standard') {
+      toast('定编标准导入完成：更新 2 条、新增 1 条');
+      return;
+    }
+    document.getElementById('archiveHint').textContent = '2026 年度备案基线 · 最新导入 ' + todayStr();
+    toast('备案编制导入完成：覆盖 6 条部门备案值');
+  }
+
+  function downloadTemplate(){
+    toast('模板下载已触发（Mock）：' + (importType === 'ledger' ? '组织架构岗位编制明细导入模板 ESTABLISHMENT_DETAIL V1.0' : importType === 'standard' ? '定编标准导入模板 ESTABLISHMENT_STANDARD V1.0' : '备案编制导入模板 ESTABLISHMENT_ARCHIVE V1.0'));
+  }
+
+  /* ============ 外包超编 ============ */
+  function outsourceFiltered(){
+    var kw = (document.getElementById('oKw').value || '').trim();
+    var dept = document.getElementById('oDept2').value;
+    var cat = document.getElementById('oLevelCat').value;
+    var owner = (document.getElementById('oOwner').value || '').trim();
+    return outsourceRows.filter(function(r){
+      if (dept !== '全部' && r.dept2 !== dept) return false;
+      if (cat !== '全部' && r.levelCat !== cat) return false;
+      if (owner && r.owner.indexOf(owner) < 0) return false;
+      if (kw) {
+        var text = [r.dept2, r.dept3, r.job, r.owner, r.level].join(' ') + ' ' + r.people.map(function(p){ return p.no + ' ' + p.name; }).join(' ');
+        if (text.indexOf(kw) < 0) return false;
+      }
+      return true;
+    });
+  }
+  function renderOutsourceStats(){
+    var totalQty = outsourceRows.reduce(function(a, r){ return a + r.qty; }, 0);
+    var totalOn = outsourceRows.reduce(function(a, r){ return a + r.onboard; }, 0);
+    var totalOcc = outsourceRows.reduce(function(a, r){ return a + r.occupy; }, 0);
+    var over = outsourceRows.reduce(function(a, r){ return a + Math.max(0, r.onboard + r.occupy - r.qty); }, 0);
+    document.getElementById('outsourceStats').innerHTML =
+      '<div class="stat"><div class="label">外包编制数量</div><div class="value">' + fmt(totalQty) + '</div><div class="foot">仅统计劳务外包编制行</div></div>' +
+      '<div class="stat"><div class="label">外包在编人数</div><div class="value">' + fmt(totalOn) + '</div><div class="foot">含待编制确认</div></div>' +
+      '<div class="stat"><div class="label">外包招聘占用</div><div class="value">' + fmt(totalOcc) + '</div><div class="foot">在途外包需求剩余人数</div></div>' +
+      '<div class="stat"><div class="label">外包超编人数</div><div class="value warn">' + fmt(over) + '</div><div class="foot warn">在编 + 占用 − 编制</div></div>' +
+      '<div class="stat"><div class="label">超编行数</div><div class="value">' + outsourceRows.length + '</div><div class="foot">按编制行统计</div></div>';
+  }
+  function renderOutsource(){
+    var list = outsourceFiltered();
+    document.getElementById('outsourceHint').textContent = '共 ' + list.length + ' 行';
+    document.getElementById('outsourceBody').innerHTML = list.length ? list.map(function(r){
+      var over = Math.max(0, r.onboard + r.occupy - r.qty);
+      return '<tr>' +
+        '<td class="cell-path">' + esc([r.dept2, r.dept3].filter(Boolean).join(' / ')) + '</td>' +
+        '<td>' + esc(r.job) + '</td>' +
+        '<td><span class="tag blue">' + esc(r.levelSeq) + '</span> ' + esc(r.level) + ' / ' + esc(r.levelCat) + '</td>' +
+        '<td>' + esc(r.form) + '</td>' +
+        '<td class="num">' + r.qty + '</td>' +
+        '<td class="num">' + r.onboard + '</td>' +
+        '<td class="num">' + r.occupy + '</td>' +
+        '<td class="num"><span class="tag red">超 ' + over + '</span></td>' +
+        '<td>' + esc(r.owner) + '</td>' +
+        '<td>' + esc(r.remark || '—') + '</td>' +
+        '<td><button class="btn sm" data-act="outsourceDetail" data-id="' + r.id + '">详情</button></td>' +
+        '</tr>';
+    }).join('') : '<tr><td colspan="11"><div class="state"><div class="state-title">暂无外包超编</div><div class="state-desc">当前筛选下没有劳务外包超编编制行</div></div></td></tr>';
+  }
+  function openOutsourceDetail(id){
+    var r = outsourceRows.filter(function(x){ return x.id === id; })[0];
+    if (!r) return;
+    var people = r.people.map(function(p, i){
+      return '<tr><td>' + esc(p.no) + '</td><td>' + esc(p.name) + '</td><td>' + esc(p.level) + '</td><td>' + esc(p.join) + '</td>' +
+        '<td><input class="input" id="osNote' + i + '" value="' + esc(p.note || '') + '" placeholder="如：10月离职不替补"></td></tr>';
+    }).join('');
+    var body = '<div class="detail-hero"><div><div class="strong">' + esc(r.job) + '</div><div class="muted">' + esc([r.dept2, r.dept3].filter(Boolean).join(' / ')) + ' · ' + esc(r.levelSeq) + ' · ' + esc(r.level) + ' / ' + esc(r.levelCat) + '</div></div>' +
+      '<div class="muted">编制 ' + r.qty + ' · 在编 ' + r.onboard + ' · 占用 ' + r.occupy + ' · <span class="danger-note">超编 ' + Math.max(0, r.onboard + r.occupy - r.qty) + '</span></div></div>' +
+      '<table class="table" style="margin-top:12px;"><thead><tr><th>工号</th><th>姓名</th><th>职级</th><th>入职日期</th><th>超编处理备注</th></tr></thead><tbody>' + people + '</tbody></table>' +
+      '<p class="muted" style="font-size:12px;margin-top:10px;">超编不改变编制数量；由编制管理员与中心负责人按调增编制、人员退场或转签处理。</p>';
+    openDrawer('外包超编详情', esc(r.id) + ' · ' + esc(r.owner), body, '<button class="btn" data-act="closeDrawer">关闭</button><button class="btn primary" data-act="saveOutsourceNote" data-id="' + r.id + '">保存处理备注</button>', true);
+  }
+
+  /* ============ 编制规划 ============ */
+  function renderPlanHead(){
+    var h = '<tr>' +
+      '<th class="sticky-l">组织路径 / 一级中心（编制口径）</th>' +
+      '<th class="sticky-2">职级类别</th>' +
+      '<th class="num">在职人数<br>（3 月）</th>';
+    for (var i = 4; i <= 12; i++) {
+      var node = (i === 4 || i === 7 || i === 10) ? '<span class="node-dot" title="季度评审节点"></span>' : '';
+      h += '<th><div class="month-head"><span>' + i + ' 月</span>' + node + '</div></th>';
+    }
+    h += '<th class="num">12 月占比</th><th class="num">原编制数</th><th class="num">本次调整</th><th>调整原因</th><th>操作</th>' +
+      '<th class="num ach">在编</th><th class="num ach">招聘占用</th><th class="num ach">可用缺额</th><th class="num ach">规划余量</th>' +
+      '</tr>';
+    document.getElementById('planHead').innerHTML = h;
+
+    var ah = '<tr><th>组织路径</th><th>一级中心（编制口径）</th><th>职位</th><th>标签</th><th>职级类别</th><th class="num">在职人数</th>';
+    for (var m = 1; m <= 12; m++) {
+      ah += '<th class="num">' + m + ' 月</th>';
+    }
+    ah += '<th>导入时间</th></tr>';
+    document.getElementById('archiveHead').innerHTML = ah;
+  }
+
+  function planKey(d2, d3, lc){ return d2 + '|' + (d3 || '') + '|' + lc; }
+  function planSigned(v){ return v > 0 ? '+' + v : String(v); }
+  function planMonthRange(m){
+    var mm = m < 10 ? '0' + m : String(m);
+    var lastDay = new Date(planYear, m, 0).getDate();
+    var dd = lastDay < 10 ? '0' + lastDay : String(lastDay);
+    return { first: planYear + '-' + mm + '-01', last: planYear + '-' + mm + '-' + dd };
+  }
+  function planRowMonthValue(r, m){
+    if (r.status !== '生效中' && r.status !== '已结束') return 0;
+    if (r.form !== '全职-正式') return 0;
+    var seq = String(r.level || '').charAt(0).toUpperCase();
+    if (seq !== 'M' && seq !== 'P') return 0;
+    var mr = planMonthRange(m);
+    if (!(r.start && r.start <= mr.last)) return 0;
+    if (r.end && r.end < mr.first) return 0;
+    return num(r.qty);
+  }
+  function archiveMarch(d2, d3, lc){
+    var hit = archives.filter(function(a){ return a.dept2 === d2 && (a.dept3 || '') === (d3 || '') && a.levelCat === lc; })[0];
+    if (!hit && d3) hit = archives.filter(function(a){ return a.dept2 === d2 && !a.dept3 && a.levelCat === lc; })[0];
+    return hit ? num(hit.months[2]) : null;
+  }
+  function buildPlanRows(){
+    var map = {};
+    function ensure(d2, d3, lc){
+      var k = planKey(d2, d3, lc);
+      if (!map[k]) map[k] = { key:k, dept2:d2, dept3:d3 || '', levelCat:lc };
+    }
+    planConfig.forEach(function(c){ ensure(c.dept2, c.dept3, c.levelCat); });
+    rows.forEach(function(r){
+      if (r.status !== '生效中' && r.status !== '已结束') return;
+      if (r.form !== '全职-正式') return;
+      var seq = String(r.level || '').charAt(0).toUpperCase();
+      if (seq !== 'M' && seq !== 'P') return;
+      ensure(r.dept2, r.dept3, r.levelCat);
+    });
+    var out = [];
+    Object.keys(map).forEach(function(k){
+      var g = map[k];
+      var cfg = planConfig.filter(function(c){ return planKey(c.dept2, c.dept3, c.levelCat) === k; })[0];
+      var src = rows.filter(function(r){ return r.dept2 === g.dept2 && (r.dept3 || '') === g.dept3 && r.levelCat === g.levelCat; });
+      var months = [];
+      for (var m = 4; m <= 12; m++) {
+        months.push(src.reduce(function(s, r){ return s + planRowMonthValue(r, m); }, 0));
+      }
+      var onboard = src.filter(function(r){ return r.status === '生效中' && r.form === '全职-正式'; }).reduce(function(s, r){ return s + r.onboard; }, 0);
+      var occupy = src.filter(function(r){ return r.status === '生效中' && r.form === '全职-正式'; }).reduce(function(s, r){ return s + r.occupy; }, 0);
+      var aMarch = archiveMarch(g.dept2, g.dept3, g.levelCat);
+      var edited = planEdits[k] || {};
+      var original = edited.original !== undefined ? edited.original : (cfg && cfg.original !== undefined ? cfg.original : (aMarch !== null ? aMarch : 0));
+      var reason = edited.reason !== undefined ? edited.reason : (cfg ? cfg.reason : '');
+      if (!cfg && months.reduce(function(s, v){ return s + v; }, 0) === 0 && onboard === 0) return;
+      out.push({
+        id: 'PL' + out.length,
+        key: k,
+        dept2: g.dept2,
+        dept3: g.dept3,
+        levelCat: g.levelCat,
+        march: cfg ? cfg.march : onboard,
+        months: months,
+        original: original,
+        reason: reason || '',
+        hasArchive: aMarch !== null || (cfg && cfg.original !== undefined),
+        onboard: onboard,
+        occupy: occupy
+      });
+    });
+    return out;
+  }
+
+  function fillPlanDept3(){
+    var d2 = document.getElementById('pDept2').value;
+    var sel = document.getElementById('pDept3');
+    var cur = sel.value;
+    var opts = ['全部'];
+    var seen = {};
+    planRows.forEach(function(r){
+      if (d2 !== '全部' && r.dept2 !== d2) return;
+      var label = r.dept3 ? r.dept3 : '—（部门本级）';
+      if (!seen[label]) { seen[label] = 1; opts.push(label); }
+    });
+    sel.innerHTML = opts.map(function(o){ return '<option>' + esc(o) + '</option>'; }).join('');
+    if (opts.indexOf(cur) >= 0) sel.value = cur;
+  }
+
+  function planFiltered(){
+    var d2 = document.getElementById('pDept2').value;
+    var d3 = document.getElementById('pDept3').value;
+    var lc = document.getElementById('pLevelCat').value;
+    return planRows.filter(function(r){
+      if (d2 !== '全部' && r.dept2 !== d2) return false;
+      if (d3 !== '全部') {
+        var label = r.dept3 ? r.dept3 : '—（部门本级）';
+        if (label !== d3) return false;
+      }
+      if (lc !== '全部' && r.levelCat !== lc) return false;
+      return true;
+    });
+  }
+
+  function deptTotals(list){
+    var map = {};
+    list.forEach(function(r){
+      map[r.dept2] = (map[r.dept2] || 0) + num(r.months[8]);
+    });
+    return map;
+  }
+
+  function planMonthTotals(list){
+    var sums = [];
+    for (var i = 0; i < 9; i++) sums.push(list.reduce(function(s, r){ return s + num(r.months[i]); }, 0));
+    return sums;
+  }
+
+  function planSums(list){
+    var m12 = list.reduce(function(s, r){ return s + num(r.months[8]); }, 0);
+    var base = list.reduce(function(s, r){ return s + r.original; }, 0);
+    return {
+      march: list.reduce(function(s, r){ return s + r.march; }, 0),
+      m12: m12,
+      base: base,
+      adjust: m12 - base,
+      onboard: list.reduce(function(s, r){ return s + r.onboard; }, 0),
+      occupy: list.reduce(function(s, r){ return s + r.occupy; }, 0),
+      needReason: list.filter(function(r){ return num(r.months[8]) !== r.original; }).length,
+      filledReason: list.filter(function(r){ return num(r.months[8]) !== r.original && (r.reason || '').trim(); }).length
+    };
+  }
+
+  function planChipsHtml(list){
+    var s = planSums(list);
+    var gap = s.m12 - s.onboard - s.occupy;
+    return '<span class="chip">3 月在职 <b>' + s.march + '</b></span>' +
+      '<span class="chip">12 月编制 <b>' + s.m12 + '</b></span>' +
+      '<span class="chip">原编制 <b>' + s.base + '</b></span>' +
+      '<span class="chip">本次调整 <b>' + planSigned(s.adjust) + '</b></span>' +
+      '<span class="chip ' + (gap < 0 ? 'warn' : '') + '">规划余量 <b>' + gap + '</b></span>' +
+      '<span class="chip">调整行 <b>' + s.needReason + '</b> · 已填原因 <b>' + s.filledReason + '/' + s.needReason + '</b></span>';
+  }
+
+  function planFootHtml(list){
+    var s = planSums(list);
+    var gap = s.m12 - s.onboard - s.occupy;
+    var months = planMonthTotals(list);
+    return '<tr>' +
+      '<td class="sticky-l">合计（' + list.length + ' 条）</td><td class="sticky-2">—</td>' +
+      '<td class="num">' + s.march + '</td>' +
+      months.map(function(v){ return '<td class="num">' + v + '</td>'; }).join('') +
+      '<td class="num">' + (s.m12 ? '100%' : '—') + '</td><td class="num">' + s.base + '</td><td class="num">' + planSigned(s.adjust) + '</td><td>—</td><td>—</td>' +
+      '<td class="num ach">' + s.onboard + '</td><td class="num ach">' + s.occupy + '</td>' +
+      '<td class="num ach ' + (gap < 0 ? 'diff-neg' : 'diff-pos') + '">' + gap + '</td>' +
+      '<td class="num ach ' + (gap < 0 ? 'diff-neg' : 'diff-pos') + '">' + (gap < 0 ? '超规划 ' + Math.abs(gap) : '可补 ' + gap) + '</td></tr>';
+  }
+
+  function planOrgCell(r){
+    return '<td class="sticky-l"><div class="org-cell">' +
+      '<div class="org-main">' + esc(center) + ' <span class="org-sub">（编制口径）</span></div>' +
+      '<div class="org-sub">示例集团 / ' + esc(center) + '</div>' +
+      '<div>' + esc(r.dept2) + (r.dept3 ? ' / ' + esc(r.dept3) : ' / —') + '</div>' +
+      '</div></td>';
+  }
+
+  function renderPlan(){
+    planRows = buildPlanRows();
+    fillPlanDept3();
+    var list = planFiltered();
+    var totals = deptTotals(list);
+    var body = document.getElementById('planBody');
+    body.innerHTML = list.map(function(r){
+      var m12 = num(r.months[8]);
+      var adjust = m12 - r.original;
+      var share = totals[r.dept2] ? (m12 / totals[r.dept2] * 100) : 0;
+      var a = m12 - r.onboard - r.occupy;
+      var cells = r.months.map(function(v){
+        return '<td class="cell-month locked">' + v + '</td>';
+      }).join('');
+      return '<tr data-row="' + r.id + '">' +
+        planOrgCell(r) +
+        '<td class="sticky-2">' + esc(r.levelCat) + '</td>' +
+        '<td class="num">' + r.march + '</td>' +
+        cells +
+        '<td class="num" id="share-' + r.id + '">' + (totals[r.dept2] ? share.toFixed(1) + '%' : '—') + '</td>' +
+        '<td class="num"><input class="orig-input" type="number" min="0" max="9999" step="1" value="' + r.original + '" data-orig="' + r.id + '" aria-label="' + esc(r.dept2 + ' ' + r.levelCat) + ' 原编制数">' +
+          (r.hasArchive ? '' : '<div class="muted" style="font-size:10px;">未备案</div>') + '</td>' +
+        '<td class="num" id="adjust-' + r.id + '">' + planSigned(adjust) + '</td>' +
+        '<td><input class="reason-input" id="reason-' + r.id + '" placeholder="' + (adjust !== 0 ? '调整必填' : '无调整') + '" value="' + esc(r.reason) + '" data-reason="' + r.id + '"></td>' +
+        '<td><button class="btn text sm" data-act="planDetail" data-id="' + r.id + '">查看明细</button></td>' +
+        '<td class="num ach">' + r.onboard + '</td>' +
+        '<td class="num ach">' + r.occupy + '</td>' +
+        '<td class="num ach" id="avail-' + r.id + '">' + a + '</td>' +
+        '<td class="num ach ' + (a < 0 ? 'diff-neg' : 'diff-pos') + '" id="gap-' + r.id + '">' + (a < 0 ? '超规划 ' + Math.abs(a) : '可补 ' + a) + '</td>' +
+        '</tr>';
+    }).join('');
+
+    document.getElementById('planChips').innerHTML = planChipsHtml(list);
+    document.getElementById('planFoot').innerHTML = planFootHtml(list);
+  }
+
+  function planRowById(id){
+    return planRows.filter(function(x){ return x.id === id; })[0];
+  }
+
+  function refreshPlanDerived(){
+    var list = planFiltered();
+    var totals = deptTotals(list);
+    list.forEach(function(r){
+      var m12 = num(r.months[8]);
+      var share = totals[r.dept2] ? (m12 / totals[r.dept2] * 100) : 0;
+      var a = m12 - r.onboard - r.occupy;
+      var sEl = document.getElementById('share-' + r.id);
+      if (sEl) sEl.textContent = totals[r.dept2] ? share.toFixed(1) + '%' : '—';
+      var aEl = document.getElementById('adjust-' + r.id);
+      if (aEl) aEl.textContent = planSigned(m12 - r.original);
+      var vEl = document.getElementById('avail-' + r.id);
+      if (vEl) vEl.textContent = a;
+      var gEl = document.getElementById('gap-' + r.id);
+      if (gEl) {
+        gEl.textContent = a < 0 ? '超规划 ' + Math.abs(a) : '可补 ' + a;
+        gEl.className = 'num ach ' + (a < 0 ? 'diff-neg' : 'diff-pos');
+      }
+      var reasonEl = document.getElementById('reason-' + r.id);
+      if (reasonEl) reasonEl.placeholder = (m12 - r.original !== 0) ? '调整必填' : '无调整';
+    });
+    document.getElementById('planChips').innerHTML = planChipsHtml(list);
+    document.getElementById('planFoot').innerHTML = planFootHtml(list);
+    planDirty = true;
+    document.getElementById('planDirtyHint').style.display = '';
+  }
+
+  function openPlanDetail(id){
+    var r = planRowById(id);
+    if (!r) return;
+    var src = rows.filter(function(x){ return x.dept2 === r.dept2 && (x.dept3 || '') === r.dept3 && x.levelCat === r.levelCat; });
+    var body =
+      '<div class="detail-hero"><span class="tag blue">' + esc(r.dept2) + (r.dept3 ? ' / ' + esc(r.dept3) : '') + '</span>' +
+      '<h3>' + esc(r.levelCat) + '</h3><span class="muted">月度快照来源</span></div>' +
+      '<div class="desc-grid">' +
+        '<div class="desc-item"><div class="k">3 月在职</div><div class="v">' + r.march + '</div></div>' +
+        '<div class="desc-item"><div class="k">12 月编制</div><div class="v">' + num(r.months[8]) + '</div></div>' +
+        '<div class="desc-item"><div class="k">原编制数</div><div class="v">' + r.original + (r.hasArchive ? '' : '（未备案）') + '</div></div>' +
+        '<div class="desc-item"><div class="k">本次调整</div><div class="v">' + planSigned(num(r.months[8]) - r.original) + '</div></div>' +
+      '</div>' +
+      '<div class="form-tip mt8">4–12 月仅统计状态为生效中、用工形式为全职-正式且职级序列为 M/P 的编制明细；待审批、已驳回、已停用与已结束按下方标注排除。</div>' +
+      '<div class="table-wrap" style="max-height:360px;"><table style="min-width:880px;"><thead><tr>' +
+        '<th>编制编号</th><th>职位</th><th>编制计划</th><th>起止</th><th class="num">数量</th><th>状态</th><th>计入月份</th>' +
+      '</tr></thead><tbody>' +
+      src.map(function(x){
+        var included = [];
+        for (var m = 4; m <= 12; m++) if (planRowMonthValue(x, m) > 0) included.push(m);
+        var reason = '';
+        if (x.status !== '生效中' && x.status !== '已结束') reason = '排除：' + x.status;
+        else if (x.form !== '全职-正式') reason = '排除：' + x.form;
+        else if (['M','P'].indexOf(String(x.level || '').charAt(0).toUpperCase()) < 0) reason = '排除：职级序列 ' + String(x.level || '').charAt(0);
+        else if (!included.length) reason = '排除：起止时间不在规划区间';
+        var incText = reason || (included.length ? (included[0] === included[included.length - 1] ? included[0] + ' 月' : included[0] + '–' + included[included.length - 1] + ' 月') + (x.status === '已结束' ? '（已结束）' : '') : '—');
+        return '<tr><td>' + esc(x.id) + '</td><td>' + esc(x.job) + '</td><td>' + esc(x.plan) + '</td>' +
+          '<td class="nowrap">' + esc(x.start) + ' ~ ' + (x.end ? esc(x.end) : '长期') + '</td>' +
+          '<td class="num">' + x.qty + '</td><td>' + statusTag(x.status) + '</td>' +
+          '<td>' + (reason ? '<span class="tag">' + esc(incText) + '</span>' : '<span class="tag green">' + esc(incText) + '</span>') + '</td></tr>';
+      }).join('') +
+      '</tbody></table></div>';
+    openDrawer('规划明细 · ' + r.dept2 + (r.dept3 ? ' / ' + r.dept3 : ''), r.levelCat + ' · 月度快照构成', body, '<button class="btn" data-act="closeDrawer">关闭</button>', true);
+  }
+
+  function savePlan(){
+    var invalid = false;
+    document.querySelectorAll('.reason-input.invalid, .orig-input.invalid').forEach(function(el){ el.classList.remove('invalid'); });
+    planRows.forEach(function(r){
+      var origEl = document.querySelector('[data-orig="' + r.id + '"]');
+      var reasonEl = document.getElementById('reason-' + r.id);
+      if (origEl) r.original = Number(origEl.value);
+      if (reasonEl) r.reason = reasonEl.value;
+      var adjust = num(r.months[8]) - r.original;
+      if (origEl && (!Number.isInteger(Number(origEl.value)) || Number(origEl.value) < 0 || Number(origEl.value) > 9999)) {
+        origEl.classList.add('invalid'); invalid = true;
+      }
+      if (reasonEl && adjust !== 0 && !(r.reason || '').trim()) {
+        reasonEl.classList.add('invalid'); invalid = true;
+      }
+    });
+    if (invalid) {
+      toast('请检查原编制数与调整原因后再保存', 'err');
+      var first = document.querySelector('.reason-input.invalid, .orig-input.invalid');
+      if (first) first.scrollIntoView({ block:'center', behavior:'smooth' });
+      return;
+    }
+    planRows.forEach(function(r){
+      planEdits[r.key] = { original: r.original, reason: r.reason };
+    });
+    refreshPlanDerived();
+    planDirty = false;
+    document.getElementById('planDirtyHint').style.display = 'none';
+    var d = new Date();
+    var pad = function(n){ return n < 10 ? '0' + n : n; };
+    document.getElementById('planSavedHint').textContent = '上次保存：' + d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()) + ' ' + pad(d.getHours()) + ':' + pad(d.getMinutes());
+    toast('年度编制规划已保存，原编制数与调整原因已更新');
+  }
+
+  function standardStats(s){
+    var src = rows.filter(function(r){ return r.dept2 === s.dept2 && (r.dept3 || '') === (s.dept3 || '') && r.job === s.job && r.levelCat === s.levelCat; });
+    return {
+      march: src.filter(function(r){ return r.status === '生效中'; }).reduce(function(n, r){ return n + r.onboard; }, 0),
+      dec: src.reduce(function(n, r){ return n + planRowMonthValue(r, 12); }, 0)
+    };
+  }
+
+  function renderStandard(){
+    document.getElementById('standardBody').innerHTML = standards.map(function(s, i){
+      var st = standardStats(s);
+      return '<tr><td>' + esc(s.center) + '</td><td>' + esc(s.dept2) + '</td><td>' + esc(s.dept3 || '—') + '</td>' +
+        '<td>' + esc(s.job) + '</td><td>' + esc(s.stdJob) + '</td><td>' + esc(s.seq) + '</td><td>' + esc(s.tag) + '</td>' +
+        '<td>' + esc(s.levelCat) + '</td><td style="white-space:normal;">' + esc(s.factor) + '</td>' +
+        '<td><span class="tag blue">' + esc(s.value) + '</span></td>' +
+        '<td class="num">' + st.march + '</td><td class="num">' + st.dec + '</td>' +
+        '<td class="nowrap">' + esc(s.imported) + '</td>' +
+        '<td><button class="btn text sm" data-act="standardDetail" data-idx="' + i + '">详情</button></td></tr>';
+    }).join('');
+  }
+
+  function openStandardDetail(idx){
+    var s = standards[idx];
+    if (!s) return;
+    var st = standardStats(s);
+    var monthly = [];
+    for (var m = 4; m <= 12; m++) {
+      monthly.push('<' + 'td class="num">' + rows.filter(function(r){ return r.dept2 === s.dept2 && (r.dept3 || '') === (s.dept3 || '') && r.job === s.job && r.levelCat === s.levelCat; }).reduce(function(n, r){ return n + planRowMonthValue(r, m); }, 0) + '</td>');
+    }
+    var body =
+      '<div class="detail-hero"><span class="tag blue">' + esc(s.levelCat) + '</span><h3>' + esc(s.job) + '</h3><span class="muted">定编标准（只读）</span></div>' +
+      '<div class="desc-grid">' +
+        '<div class="desc-item"><div class="k">组织路径</div><div class="v">' + esc(s.org) + ' / ' + esc(s.center) + ' / ' + esc(s.dept2) + (s.dept3 ? ' / ' + esc(s.dept3) : '') + '</div></div>' +
+        '<div class="desc-item"><div class="k">主要定位</div><div class="v">' + esc(s.main) + '</div></div>' +
+        '<div class="desc-item"><div class="k">核心职责</div><div class="v">' + esc(s.core) + '</div></div>' +
+        '<div class="desc-item"><div class="k">部门职责</div><div class="v">' + esc(s.deptDuty) + '</div></div>' +
+        '<div class="desc-item"><div class="k">职位主要职责</div><div class="v">' + esc(s.jobDuty) + '</div></div>' +
+        '<div class="desc-item"><div class="k">职务序列 / 标签</div><div class="v">' + esc(s.seq) + ' · ' + esc(s.tag) + '</div></div>' +
+        '<div class="desc-item"><div class="k">定编因素</div><div class="v">' + esc(s.factor) + '</div></div>' +
+        '<div class="desc-item"><div class="k">定编标准值</div><div class="v">' + esc(s.value) + '</div></div>' +
+        '<div class="desc-item"><div class="k">在职（3 月） / 12 月编制</div><div class="v">' + st.march + ' / ' + st.dec + '</div></div>' +
+      '</div>' +
+      '<div class="form-tip mt8">月度编制为台账汇总参考，不随定编标准模板导入。</div>' +
+      '<div class="table-wrap"><table style="min-width:720px;"><thead><tr><th>4 月</th><th>5 月</th><th>6 月</th><th>7 月</th><th>8 月</th><th>9 月</th><th>10 月</th><th>11 月</th><th>12 月</th></tr></thead>' +
+      '<tbody><tr>' + monthly.join('') + '</tr></tbody></table></div>';
+    openDrawer('定编标准详情', s.dept2 + (s.dept3 ? ' / ' + s.dept3 : '') + ' · ' + s.job, body, '<button class="btn" data-act="closeDrawer">关闭</button>', true);
+  }
+
+  function renderArchive(){
+    document.getElementById('archiveBody').innerHTML = archives.map(function(a){
+      var cells = a.months.map(function(v){
+        return '<td class="cell-month locked" style="min-width:58px;">' + v + '</td>';
+      }).join('');
+      return '<tr><td>' + esc(a.org) + ' / ' + esc(a.center) + ' / ' + esc(a.dept2) + (a.dept3 ? ' / ' + esc(a.dept3) : '') + '</td>' +
+        '<td>' + esc(a.center) + '</td><td>' + esc(a.job) + '</td><td>' + esc(a.tag) + '</td><td>' + esc(a.levelCat) + '</td>' +
+        '<td class="num">' + a.onboard + '</td>' + cells + '<td class="nowrap">' + esc(a.imported) + '</td></tr>';
+    }).join('');
+  }
+
+  /* ============ 视图与事件 ============ */
+  function showView(v){
+    var plan = v === 'plan';
+    var outsource = v === 'outsource';
+    document.getElementById('view-ledger').hidden = plan || outsource;
+    document.getElementById('view-plan').hidden = !plan;
+    document.getElementById('view-outsource').hidden = !outsource;
+    if (outsource) { renderOutsourceStats(); renderOutsource(); }
+    if (plan) renderPlan();
+    window.scrollTo(0, 0);
+  }
+
+  function switchTab(tab){
+    document.querySelectorAll('.tab-btn').forEach(function(b){
+      b.classList.toggle('active', b.dataset.tab === tab);
+    });
+    document.getElementById('tab-plan').hidden = tab !== 'plan';
+    document.getElementById('tab-standard').hidden = tab !== 'standard';
+    document.getElementById('tab-archive').hidden = tab !== 'archive';
+  }
+
+  function resetLedger(){
+    document.getElementById('fKw').value = '';
+    document.getElementById('fDept2').value = '全部';
+    document.getElementById('fLevelCat').value = '全部';
+    document.getElementById('fPlan').value = '全部';
+    document.getElementById('fStatus').value = '全部';
+    document.getElementById('fStart').value = '2026-01-01';
+    document.getElementById('fEnd').value = '';
+    renderLedger();
+  }
+
+  document.addEventListener('click', function(e){
+    var t = e.target.closest('[data-act]');
+    if (!t) return;
+    var act = t.dataset.act;
+    var id = t.dataset.id;
+
+    switch (act) {
+      case 'closeDrawer': closeDrawer(); break;
+      case 'closeModal': closeModal(); break;
+      case 'openCreate': openCreate(); break;
+      case 'openImport': openImport(t.dataset.import); break;
+      case 'detail': openDetail(id); break;
+      case 'edit': openEdit(id); break;
+      case 'adjust': openAdjust(id); break;
+      case 'adjustPreset': openAdjust(id, t.dataset.preset); break;
+      case 'enable': openEnable(id); break;
+      case 'withdraw': openWithdraw(id); break;
+      case 'resubmit': resubmit(id); break;
+      case 'approve': openApprove(id); break;
+      case 'approvePass': approvePass(id); break;
+      case 'approveReject': approveReject(id); break;
+      case 'saveCreate': saveCreate(t.dataset.mode); break;
+      case 'saveEdit': saveEdit(id); break;
+      case 'saveAdjust': saveAdjust(id); break;
+      case 'queryLedger': renderLedger(); break;
+      case 'resetLedger': resetLedger(); break;
+      case 'retryLedger':
+        document.getElementById('fKw').value = '';
+        renderLedger();
+        toast('已重新加载台账');
+        break;
+      case 'statAll': resetLedger(); break;
+      case 'statPending':
+        document.getElementById('fStatus').value = '待审批';
+        renderLedger();
+        break;
+      case 'confirmPerson': confirmPerson(id, Number(t.dataset.idx)); break;
+      case 'previewImport': previewImport(); break;
+      case 'doImport': doImport(); break;
+      case 'downloadTemplate': downloadTemplate(); break;
+      case 'savePlan': savePlan(); break;
+      case 'queryPlan': renderPlan(); break;
+      case 'planDetail': openPlanDetail(id); break;
+      case 'standardDetail': openStandardDetail(Number(t.dataset.idx)); break;
+      case 'resetPlan':
+        document.getElementById('pDept2').value = '全部';
+        document.getElementById('pDept3').value = '全部';
+        document.getElementById('pLevelCat').value = '全部';
+        renderPlan();
+        break;
+      case 'exportLedger': toast('导出任务已提交，可在下载中心查看（Mock）'); break;
+      case 'exportPlan': toast('规划导出已提交，含 3 月在职、4–12 月编制、原编制与调整原因（Mock）'); break;
+      case 'exportStandard': toast('定编标准导出已提交（Mock）'); break;
+      case 'exportArchive': toast('备案编制导出已提交（Mock）'); break;
+      case 'outsourceDetail': openOutsourceDetail(id); break;
+      case 'queryOutsource': renderOutsource(); break;
+      case 'resetOutsource':
+        document.getElementById('oKw').value = '';
+        document.getElementById('oDept2').value = '全部';
+        document.getElementById('oLevelCat').value = '全部';
+        document.getElementById('oOwner').value = '';
+        renderOutsource();
+        break;
+      case 'exportOutsource': toast('外包超编导出已提交，含在编人员与处理备注（Mock）'); break;
+      case 'saveOutsourceNote':
+        var osr = outsourceRows.filter(function(x){ return x.id === id; })[0];
+        if (osr) {
+          osr.people.forEach(function(p, i){
+            var el = document.getElementById('osNote' + i);
+            if (el) p.note = el.value.trim();
+          });
+          closeDrawer();
+          renderOutsource();
+          toast('处理备注已更新');
+        }
+        break;
+    }
+  });
+
+  document.addEventListener('change', function(e){
+    if (e.target.id === 'cDept2') syncDept3();
+    if (e.target.id === 'aType') syncAdjustFields();
+    if (e.target.id === 'pDept2') fillPlanDept3();
+    if (e.target.dataset && e.target.dataset.orig) {
+      var rid = e.target.dataset.orig;
+      var row = planRowById(rid);
+      if (row) {
+        var v = Math.max(0, Math.min(9999, Math.round(Number(e.target.value) || 0)));
+        e.target.value = v;
+        e.target.classList.remove('invalid');
+        row.original = v;
+        planEdits[row.key] = planEdits[row.key] || {};
+        planEdits[row.key].original = v;
+        refreshPlanDerived();
+      }
+    }
+    if (e.target.dataset && e.target.dataset.reason) {
+      var rid2 = e.target.dataset.reason;
+      var row2 = planRowById(rid2);
+      if (row2) {
+        row2.reason = e.target.value;
+        e.target.classList.remove('invalid');
+        planEdits[row2.key] = planEdits[row2.key] || {};
+        planEdits[row2.key].reason = e.target.value;
+        planDirty = true;
+        document.getElementById('planDirtyHint').style.display = '';
+      }
+    }
+  });
+
+  document.addEventListener('click', function(e){
+    var tab = e.target.closest('[data-tab]');
+    if (tab) { switchTab(tab.dataset.tab); return; }
+    var sub = e.target.closest('[data-subtab]');
+    if (sub) {
+      document.querySelectorAll('.sub-tab').forEach(function(b){ b.classList.toggle('active', b === sub); });
+      var drawerBody = document.getElementById('drawerBody');
+      var hero = drawerBody.querySelector('.detail-hero');
+      var idEl = hero ? hero.querySelector('.muted') : null;
+      if (idEl) renderSubPanel(idEl.textContent.trim(), sub.dataset.subtab);
+    }
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.key === 'Escape') {
+      if (!document.getElementById('modal').hidden) closeModal();
+      else if (!document.getElementById('drawer').hidden) closeDrawer();
+    }
+  });
+
+  document.getElementById('scrim').addEventListener('click', function(){
+    if (!document.getElementById('modal').hidden) closeModal();
+    else closeDrawer();
+  });
+
+  window.addEventListener('hashchange', function(){
+    showView((location.hash || '#ledger').replace('#',''));
+  });
+
+  /* ============ 初始化 ============ */
+  DEMAND_OCC = loadDemandOcc();
+  renderStats();
+  renderLedger();
+  renderPlanHead();
+  renderPlan();
+  renderStandard();
+  renderArchive();
+  renderOutsourceStats();
+  renderOutsource();
+  showView((location.hash || '#ledger').replace('#',''));
+})();
+</script>
+</body>
+</html>

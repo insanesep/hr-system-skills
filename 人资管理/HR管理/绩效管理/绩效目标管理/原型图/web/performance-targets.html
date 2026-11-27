@@ -1,0 +1,800 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,BusyInput,PageableSelect,InputNumber,Tag,Progress,Drawer,Message,Confirm">
+  <title>绩效目标管理 · 目标工作台</title>
+  <style>
+    :root{
+      --primary:#2563eb; --primary-weak:#eff4ff; --primary-line:#bfd3ff;
+      --bg:#f4f6fa; --panel:#fff; --line:#e5e8ef; --line-strong:#d3d9e4;
+      --text:#1f2937; --muted:#6b7280; --subtle:#9aa3b2;
+      --success:#15803d; --success-weak:#eaf7ef; --warn:#b45309; --warn-weak:#fff7e6;
+      --danger:#b91c1c; --danger-weak:#fdecec;
+      --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.08);
+    }
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    button,input,select,textarea{font:inherit;color:inherit}
+    .topnav{display:flex;align-items:center;gap:12px;height:52px;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+    .logo{font-weight:700;letter-spacing:.2px}
+    .crumb{color:var(--muted)}
+    .crumb b{color:var(--text)}
+    .spacer{flex:1}
+    .mock{font-size:12px;color:var(--subtle)}
+    .page{max-width:1240px;margin:0 auto;padding:24px 24px 64px}
+    .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+    .page-head h1{font-size:22px;line-height:1.4;margin:0}
+    .page-head p{margin:4px 0 0;color:var(--muted)}
+    .period-picker{display:flex;align-items:center;gap:8px;color:var(--muted);font-size:13px;flex-wrap:wrap}
+    .period-picker label{white-space:nowrap}
+    .period-picker select{height:34px;padding:0 10px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;max-width:100%}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .overview{display:flex;align-items:center;gap:24px;padding:18px 20px;margin-bottom:16px;flex-wrap:wrap}
+    .ov-title{display:flex;align-items:center;gap:10px;font-size:16px;font-weight:600;margin-bottom:10px}
+    .ov-meta{display:flex;gap:22px;flex-wrap:wrap;color:var(--muted);font-size:13px}
+    .ov-meta b{color:var(--text);font-weight:600}
+    .ov-meta b.ok{color:var(--success)}
+    .ov-meta b.bad{color:var(--danger)}
+    .ov-tip{margin-left:auto;font-size:12px;color:var(--muted);background:var(--primary-weak);border:1px solid var(--primary-line);color:#1e40af;padding:8px 12px;border-radius:8px}
+    .scopebar{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap}
+    .scope{appearance:none;border:0;background:transparent;padding:9px 16px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+    .scope:hover{color:var(--text)}
+    .scope.is-active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+    .listpanel{padding:18px 20px 22px}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:14px;flex-wrap:wrap}
+    .toolbar-title{font-weight:600;font-size:15px}
+    .muted{color:var(--muted);font-size:12.5px}
+    .toolbar .muted{margin-left:8px}
+    .btn{height:34px;padding:0 14px;border:1px solid var(--line-strong);background:#fff;border-radius:8px;cursor:pointer;white-space:nowrap}
+    .btn:hover{border-color:#b8c0ce;background:#fafbfc}
+    .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn-primary:hover{background:#1d4ed8;border-color:#1d4ed8}
+    .btn-danger{color:var(--danger);border-color:#f0c6c6}
+    .btn-sm{height:30px;padding:0 10px;font-size:13px}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .icon-btn{border:0;background:transparent;font-size:22px;line-height:1;cursor:pointer;color:var(--muted);padding:4px 8px;border-radius:6px}
+    .icon-btn:hover{background:#f2f4f8;color:var(--text)}
+    .cards{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}
+    .card{border:1px solid var(--line);border-radius:10px;background:#fff;display:flex;flex-direction:column;min-height:100%}
+    .card:hover{border-color:var(--primary-line);box-shadow:var(--shadow)}
+    .card-top{padding:14px 16px 10px}
+    .card-title-row{display:flex;align-items:flex-start;gap:10px}
+    .card-title-row h3{flex:1;font-size:15px;line-height:1.5;margin:0;font-weight:600}
+    .card-metrics{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+    .chip{font-size:12px;color:#374151;background:#f4f6fa;border:1px solid var(--line);border-radius:999px;padding:2px 9px}
+    .chip-ghost{color:#1e40af;background:var(--primary-weak);border-color:var(--primary-line)}
+    .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;white-space:nowrap}
+    .tag-draft{background:#f2f4f8;color:#4b5563}
+    .tag-pending{background:var(--warn-weak);color:var(--warn)}
+    .tag-approved{background:var(--success-weak);color:var(--success)}
+    .tag-blue{background:var(--primary-weak);color:#1e40af}
+    .progress{height:6px;background:#eef1f6;border-radius:999px;overflow:hidden;margin-top:12px}
+    .progress i{display:block;height:100%;background:var(--primary);border-radius:999px}
+    .card-body{padding:4px 16px 12px;flex:1}
+    .field{margin-top:10px}
+    .field-label{font-size:12px;color:var(--subtle);margin-bottom:2px}
+    .field-text{font-size:13px;color:#374151}
+    .card-body ul{margin:4px 0 0;padding-left:18px;font-size:13px;color:#374151}
+    .card-body li{margin:2px 0}
+    .return-banner{margin:0 16px 4px;padding:8px 10px;border-radius:8px;background:var(--danger-weak);color:var(--danger);font-size:12.5px}
+    .card-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 16px 14px;border-top:1px dashed var(--line);flex-wrap:wrap}
+    .actions{display:flex;gap:6px;flex-wrap:wrap}
+    .empty{padding:56px 0;text-align:center;color:var(--subtle)}
+    .drawer-mask,.modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.36);z-index:30}
+    .drawer{position:fixed;top:0;right:0;bottom:0;width:min(580px,96vw);background:#fff;z-index:40;display:flex;flex-direction:column;box-shadow:-12px 0 32px rgba(16,24,40,.14)}
+    .drawer-wide{width:min(720px,96vw)}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+    .drawer-head h2{font-size:16px;margin:0}
+    .drawer-body{padding:16px 20px;overflow:auto;flex:1}
+    .drawer-foot{display:flex;justify-content:flex-end;gap:8px;padding:12px 20px;border-top:1px solid var(--line);background:#fff}
+    .form-item{margin-bottom:14px}
+    .form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+    .form-item label{display:block;font-size:13px;margin-bottom:6px;color:#374151}
+    .req{color:var(--danger);margin-left:2px}
+    .form-item input,.form-item select,.form-item textarea{width:100%;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px;background:#fff;outline:none}
+    .form-item input:focus,.form-item select:focus,.form-item textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .form-item textarea{min-height:88px;resize:vertical}
+    .form-item .hint{font-size:12px;color:var(--subtle);margin-top:4px}
+    .form-item .err{font-size:12px;color:var(--danger);margin-top:4px;display:none}
+    .form-item.is-error input,.form-item.is-error textarea{border-color:var(--danger)}
+    .form-item.is-error .err{display:block}
+    .weight-bar{position:sticky;bottom:0;background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:10px 12px;font-size:13px;margin-top:6px}
+    .weight-bar.bad{background:var(--danger-weak);border-color:#f0c6c6;color:var(--danger)}
+    .weight-bar.ok{background:var(--success-weak);border-color:#c9e9d4;color:var(--success)}
+    .ver-list{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+    .ver{border:1px solid var(--line);border-radius:8px;padding:10px 12px;cursor:pointer;background:#fff;text-align:left}
+    .ver:hover{border-color:var(--primary-line)}
+    .ver.is-active{border-color:var(--primary);background:var(--primary-weak)}
+    .ver-top{display:flex;align-items:center;gap:8px;font-weight:600;font-size:13px}
+    .ver-meta{font-size:12px;color:var(--muted);margin-top:4px;display:flex;gap:14px;flex-wrap:wrap}
+    .snapshot{border:1px solid var(--line);border-radius:8px;padding:14px}
+    .snapshot h4{margin:0 0 8px;font-size:14px}
+    .snapshot dl{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;margin:0;font-size:13px}
+    .snapshot dt{color:var(--subtle)}
+    .snapshot dd{margin:0}
+    .diff{width:100%;border-collapse:collapse;font-size:13px;margin-top:14px}
+    .diff th,.diff td{border:1px solid var(--line);padding:8px 10px;text-align:left;vertical-align:top}
+    .diff th{background:#f8fafc;color:var(--muted);font-weight:500}
+    .diff td.old{color:var(--danger)}
+    .diff td.new{color:var(--success)}
+    .modal-mask{display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal{background:#fff;border-radius:12px;width:min(460px,100%);padding:20px;box-shadow:0 18px 48px rgba(16,24,40,.2)}
+    .modal h3{margin:0 0 8px;font-size:16px}
+    .modal p{margin:0 0 12px;color:var(--muted);font-size:13px}
+    .modal textarea{width:100%;min-height:96px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px}
+    .modal input[type=number]{width:100%;height:38px;border:1px solid var(--line-strong);border-radius:8px;padding:0 10px}
+    .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+    .toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:60;box-shadow:0 8px 24px rgba(16,24,40,.24)}
+    .toast.err{background:var(--danger)}
+    @media(max-width:1020px){.cards{grid-template-columns:1fr}}
+    @media(max-width:680px){
+      .page{padding:16px 12px 48px}
+      .topnav{padding:0 12px}
+      .crumb{display:none}
+      .overview{padding:14px}
+      .ov-tip{margin-left:0}
+      .listpanel{padding:14px}
+      .form-row{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <nav class="topnav" aria-label="原型导航">
+    <span class="logo">示例集团 · 人资管理</span>
+    <span class="crumb">HR管理 / 绩效管理 / <b>绩效目标管理</b></span>
+    <span class="spacer"></span>
+    <span class="mock">静态 Mock</span>
+  </nav>
+
+  <main class="page">
+    <header class="page-head">
+      <div>
+        <h1>绩效目标管理</h1>
+        <p>拟定并确认本周期 OKR 目标，权重合计需为 100%</p>
+      </div>
+      <div class="period-picker">
+        <label for="periodSelect">考核周期</label>
+        <select id="periodSelect">
+          <option>2026年Q3绩效—技术中心</option>
+          <option>2026年Q2绩效—技术中心</option>
+        </select>
+      </div>
+    </header>
+
+    <section class="panel overview" aria-label="周期概览">
+      <div>
+        <div class="ov-title"><span id="ovPeriod">2026年Q3绩效—技术中心</span><span class="tag tag-blue">目标设定</span></div>
+        <div class="ov-meta">
+          <span>目标截止 <b>2026-09-05</b></span>
+          <span>我的目标 <b id="ovCount">3</b> 个</span>
+          <span>权重合计 <b class="ok" id="ovWeight">100%</b></span>
+          <span>待确认 <b id="ovPending">1</b></span>
+        </div>
+      </div>
+      <div class="ov-tip">同一主体同周期权重合计需为 100% 才能提交确认 · 参数来源：<span id="paramSource">绩效参数配置（演示）</span></div>
+    </section>
+
+    <div class="scopebar" role="tablist" aria-label="目标视图">
+      <button class="scope is-active" role="tab" aria-selected="true" data-scope="mine">我的目标</button>
+      <button class="scope" role="tab" aria-selected="false" data-scope="team">团队目标</button>
+      <button class="scope" role="tab" aria-selected="false" data-scope="dept">部门目标</button>
+    </div>
+
+    <section class="panel listpanel" aria-label="目标列表">
+      <div class="toolbar">
+        <div><span class="toolbar-title" id="listTitle">我的目标</span><span class="muted" id="listMeta"></span></div>
+        <button class="btn btn-primary" id="btnNew">新建目标</button>
+      </div>
+      <div class="cards" id="cards"></div>
+      <div class="empty" id="empty" hidden>当前范围暂无目标</div>
+    </section>
+  </main>
+
+  <div class="drawer-mask" id="drawerMask" hidden></div>
+
+  <aside class="drawer" id="editDrawer" hidden aria-label="目标编辑抽屉">
+    <header class="drawer-head">
+      <h2 id="drawerTitle">新建目标</h2>
+      <button class="icon-btn" type="button" data-close="edit" aria-label="关闭">×</button>
+    </header>
+    <div class="drawer-body">
+      <div class="form-item" id="itemTitle">
+        <label for="fTitle">目标标题<span class="req">*</span></label>
+        <input id="fTitle" maxlength="60" placeholder="如：完成 SD-WAN 项目全量上线">
+        <div class="err">请填写目标标题</div>
+      </div>
+      <div class="form-row">
+        <div class="form-item" id="itemWeight">
+          <label for="fWeight">权重（%）<span class="req">*</span></label>
+          <input id="fWeight" type="number" step="1" value="30">
+          <div class="err">权重不合规</div>
+        </div>
+        <div class="form-item">
+          <label for="fVisible">可见范围</label>
+          <select id="fVisible">
+            <option>中心内可见</option>
+            <option>上级可见</option>
+            <option>本人可见</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-item">
+        <label for="fAlign">对齐目标</label>
+        <select id="fAlign">
+          <option value="">不对齐</option>
+          <option>保障供应链域网络稳定（TMS研发组）</option>
+          <option>完成冷链项目网络交付（TMS研发组）</option>
+          <option>网络基础设施双活与自动化（供应链研发部）</option>
+        </select>
+        <div class="hint">仅可对齐已生效的组目标或部门目标</div>
+      </div>
+      <div class="form-item" id="itemDesc">
+        <label for="fDesc">指标描述<span class="req">*</span></label>
+        <textarea id="fDesc" placeholder="描述目标要达成的业务结果"></textarea>
+        <div class="err">请填写指标描述</div>
+      </div>
+      <div class="form-item" id="itemStd">
+        <label for="fStd">衡量标准<span class="req">*</span></label>
+        <textarea id="fStd" placeholder="每行一条衡量标准"></textarea>
+        <div class="err">请填写衡量标准</div>
+      </div>
+      <div class="form-item" id="itemReason" hidden>
+        <label for="fReason">变更说明<span class="req">*</span></label>
+        <textarea id="fReason" placeholder="说明本次调整的原因，提交后生成新版本"></textarea>
+        <div class="err">请填写变更说明</div>
+      </div>
+      <div class="weight-bar" id="weightBar"></div>
+    </div>
+    <footer class="drawer-foot">
+      <button class="btn" type="button" data-close="edit">取消</button>
+      <button class="btn" type="button" id="btnDraft">保存草稿</button>
+      <button class="btn btn-primary" type="button" id="btnSubmit">提交确认</button>
+    </footer>
+  </aside>
+
+  <aside class="drawer drawer-wide" id="historyDrawer" hidden aria-label="历史版本抽屉">
+    <header class="drawer-head">
+      <h2>历史版本</h2>
+      <button class="icon-btn" type="button" data-close="history" aria-label="关闭">×</button>
+    </header>
+    <div class="drawer-body">
+      <div class="ver-list" id="verList"></div>
+      <div class="snapshot" id="verSnapshot"></div>
+      <div id="verDiff"></div>
+    </div>
+  </aside>
+
+  <div class="modal-mask" id="modalMask" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">退回目标</h3>
+      <p>退回后目标回到草稿，原因会展示给目标承担人。</p>
+      <textarea id="returnReason" placeholder="请填写退回原因（必填）"></textarea>
+      <div class="modal-foot">
+        <button class="btn" type="button" id="btnCancelReturn">取消</button>
+        <button class="btn btn-primary" type="button" id="btnConfirmReturn">确认退回</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="modal-mask" id="progressMask" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="progressTitle">
+      <h3 id="progressTitle">更新目标进度</h3>
+      <p id="progressSub"></p>
+      <input id="progressValue" type="number" step="1" aria-label="目标进度">
+      <div class="modal-foot">
+        <button class="btn" type="button" id="btnCancelProgress">取消</button>
+        <button class="btn btn-primary" type="button" id="btnSaveProgress">保存进度</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const PERF_PARAMS = {
+      source: '绩效参数配置（演示）',
+      weightMin: 1,
+      weightMax: 100,
+      weightTotal: 100,
+      defaultWeight: 30,
+      progressMin: 0,
+      progressMax: 100,
+      visibleOptions: ['中心内可见', '上级可见', '本人可见'],
+      visibleDefault: '中心内可见'
+    };
+    const state = {
+      scope: 'mine',
+      editingId: null,
+      historyId: null,
+      returningId: null,
+      progressId: null,
+      targets: [
+        {
+          id: 't1', owner: '张超', ownerKey: 'mine', scope: 'mine',
+          title: '做好日常网络运维保障，完成 SD-WAN 项目全量上线',
+          weight: 30, status: 'approved', progress: 0, visible: '中心内可见',
+          align: '网络基础设施双活与自动化（供应链研发部）',
+          desc: '常态化开展办公室、仓库全域网络巡检和隐患排查工作，及时处理各类网络问题，保障办公及仓储业务网络稳定可用。',
+          std: [
+            '保障网络连通率稳定在 99% 以上，杜绝单次 30 分钟以上的重大网络中断',
+            '网络配置变更坚持流程评审通过后操作',
+            '会议室与会议设备巡检完成率 100%',
+            '网络巡检、故障处置与配置变更全程留痕，台账与验收材料归档完整'
+          ],
+          updated: '2026-08-18 10:20', versions: [
+            { v: 2, at: '2026-08-18 10:20', by: '张超', note: '补充 SD-WAN 验收口径与留痕要求',
+              snap: { weight: '30%', visible: '中心内可见', align: '网络基础设施双活与自动化（供应链研发部）',
+                desc: '常态化开展办公室、仓库全域网络巡检和隐患排查工作，及时处理各类网络问题，保障办公及仓储业务网络稳定可用。',
+                std: '1. 网络连通率 ≥99%；2. 配置变更须评审；3. 巡检完成率 100%；4. 全过程留痕' } },
+            { v: 1, at: '2026-08-05 09:40', by: '张超', note: '首次生效',
+              snap: { weight: '30%', visible: '中心内可见', align: '未对齐',
+                desc: '开展办公与仓储网络巡检，处理网络问题，保障业务网络稳定。',
+                std: '1. 网络连通率 ≥99%；2. 配置变更须评审；3. 巡检完成率 100%' } }
+          ]
+        },
+        {
+          id: 't2', owner: '张超', ownerKey: 'mine', scope: 'mine',
+          title: '完成仓储网络双活改造，季度内交付验收',
+          weight: 40, status: 'pending', progress: 25, visible: '中心内可见',
+          align: '网络基础设施双活与自动化（供应链研发部）',
+          desc: '完成核心仓网络双链路与双活网关改造，消除单点故障，支撑仓内业务连续性。',
+          std: ['完成 3 个核心仓双活改造并验收', '切换演练单次中断不超过 5 分钟', '改造后季度内零重大网络故障'],
+          updated: '2026-08-26 16:05', versions: []
+        },
+        {
+          id: 't3', owner: '张超', ownerKey: 'mine', scope: 'mine',
+          title: '网络运维自动化平台落地，覆盖 80% 日常巡检',
+          weight: 30, status: 'draft', progress: 0, visible: '上级可见',
+          align: '', returnReason: '衡量标准缺少可验证的验收口径，请补充后重新提交。',
+          desc: '建设网络运维自动化平台，将日常巡检、配置备份与告警处置标准化、自动化。',
+          std: ['平台覆盖 80% 以上日常巡检项', '巡检结果自动生成台账并支持导出'],
+          updated: '2026-08-28 09:12', versions: []
+        },
+        {
+          id: 't4', owner: '李平', ownerKey: 'liuyang', scope: 'team',
+          title: '冷链温控数据接入与看板交付',
+          weight: 60, status: 'pending', progress: 40, visible: '中心内可见',
+          align: '完成冷链项目网络交付（TMS研发组）',
+          desc: '完成冷链温控设备数据接入，交付温控看板并支撑试点仓运行。',
+          std: ['接入 2 个试点仓全部温控点位', '看板数据延迟不超过 1 分钟', '试点期无数据丢失'],
+          updated: '2026-08-25 14:30', versions: []
+        },
+        {
+          id: 't5', owner: '李平', ownerKey: 'liuyang', scope: 'team',
+          title: 'TMS 域慢 SQL 与慢接口治理',
+          weight: 40, status: 'pending', progress: 10, visible: '中心内可见',
+          align: '保障供应链域网络稳定（TMS研发组）',
+          desc: '持续治理 TMS 域慢 SQL 与慢接口，降低高峰期接口超时率。',
+          std: ['慢 SQL 数量季度环比下降 50%', '核心接口 P99 低于 500ms'],
+          updated: '2026-08-24 11:08', versions: []
+        },
+        {
+          id: 't6', owner: '刘明', ownerKey: 'chenmo', scope: 'team',
+          title: '巡仓系统迁移与全量工厂切换',
+          weight: 50, status: 'approved', progress: 80, visible: '中心内可见',
+          align: '完成冷链项目网络交付（TMS研发组）',
+          desc: '完成巡仓系统迁移方案设计与实施，保障全量工厂平稳切换。',
+          std: ['完成全量工厂切换且无业务中断', '迁移回滚预案演练通过'],
+          updated: '2026-08-20 15:44', versions: [{ v: 1, at: '2026-08-12 10:00', by: '刘明', note: '首次生效',
+            snap: { weight: '50%', visible: '中心内可见', align: '完成冷链项目网络交付（TMS研发组）', desc: '完成巡仓系统迁移与全量工厂切换。', std: '1. 全量切换无中断；2. 回滚预案演练通过' } }]
+        },
+        {
+          id: 't7', owner: '刘明', ownerKey: 'chenmo', scope: 'team',
+          title: '工厂网络标准化改造',
+          weight: 50, status: 'approved', progress: 55, visible: '中心内可见',
+          align: '保障供应链域网络稳定（TMS研发组）',
+          desc: '按标准模板完成工厂网络改造，统一设备配置与监控接入。',
+          std: ['完成 8 个工厂网络标准化改造', '全部设备接入统一监控'],
+          updated: '2026-08-20 15:46', versions: [{ v: 1, at: '2026-08-12 10:05', by: '刘明', note: '首次生效',
+            snap: { weight: '50%', visible: '中心内可见', align: '保障供应链域网络稳定（TMS研发组）', desc: '按标准模板完成工厂网络改造。', std: '1. 完成 8 个工厂改造；2. 设备接入统一监控' } }]
+        },
+        {
+          id: 't8', owner: '李辉', ownerKey: 'zhoumu', scope: 'team',
+          title: '服务商共享项目 AI Native 交付',
+          weight: 100, status: 'pending', progress: 15, visible: '中心内可见',
+          align: '保障供应链域网络稳定（TMS研发组）',
+          desc: '以 AI Native 方式完成服务商共享项目交付，沉淀可复用的脚手架。',
+          std: ['9 月 30 日前完成上线', '沉淀至少 1 套可复用脚手架'],
+          updated: '2026-08-27 17:20', versions: []
+        },
+        {
+          id: 't9', owner: 'TMS研发组', ownerKey: 'group-tms', scope: 'dept',
+          title: '保障供应链域网络稳定',
+          weight: 40, status: 'pending', progress: 30, visible: '中心内可见',
+          align: '网络基础设施双活与自动化（供应链研发部）',
+          desc: '统筹 TMS 域网络稳定性建设，完成监控告警覆盖与慢调用治理。',
+          std: ['域内核心系统监控告警覆盖率 100%', '季度内无 30 分钟以上网络中断'],
+          updated: '2026-08-22 09:00', versions: []
+        },
+        {
+          id: 't10', owner: 'TMS研发组', ownerKey: 'group-tms', scope: 'dept',
+          title: '完成冷链项目网络交付',
+          weight: 60, status: 'pending', progress: 45, visible: '中心内可见',
+          align: '网络基础设施双活与自动化（供应链研发部）',
+          desc: '完成冷链项目网络方案设计、实施与验收，保障项目按期上线。',
+          std: ['冷链项目按期上线', '上线后一个月无网络类故障'],
+          updated: '2026-08-22 09:00', versions: []
+        },
+        {
+          id: 't11', owner: '订单研发组', ownerKey: 'group-oms', scope: 'dept',
+          title: '采购链路稳定性提升',
+          weight: 100, status: 'approved', progress: 60, visible: '中心内可见',
+          align: '网络基础设施双活与自动化（供应链研发部）',
+          desc: '完善采购链路补单与自动关单能力，降低线上问题发生率。',
+          std: ['采购链路 P1 故障为 0', '补单与自动关单能力全部上线'],
+          updated: '2026-08-21 10:10', versions: [{ v: 1, at: '2026-08-10 09:30', by: '李亮', note: '首次生效',
+            snap: { weight: '100%', visible: '中心内可见', align: '网络基础设施双活与自动化（供应链研发部）', desc: '完善采购链路补单与自动关单能力。', std: '1. P1 故障为 0；2. 补单与自动关单上线' } }]
+        }
+      ]
+    };
+
+    const statusText = { draft: '草稿', pending: '待确认', approved: '已生效', archived: '已归档' };
+    const statusClass = { draft: 'tag-draft', pending: 'tag-pending', approved: 'tag-approved', archived: 'tag-draft' };
+
+    const el = (id) => document.getElementById(id);
+    const mineTargets = () => state.targets.filter(t => t.ownerKey === 'mine');
+    const scopeTargets = () => state.targets.filter(t => t.scope === state.scope);
+
+    function toast(msg, isErr) {
+      const t = el('toast');
+      t.textContent = msg;
+      t.className = 'toast' + (isErr ? ' err' : '');
+      t.hidden = false;
+      clearTimeout(t._timer);
+      t._timer = setTimeout(() => { t.hidden = true; }, 2400);
+    }
+
+    function weightSum(ownerKey, excludeId) {
+      return state.targets
+        .filter(t => t.ownerKey === ownerKey && t.id !== excludeId)
+        .reduce((sum, t) => sum + Number(t.weight || 0), 0);
+    }
+
+    function renderOverview() {
+      const list = mineTargets();
+      const sum = list.reduce((s, t) => s + Number(t.weight || 0), 0);
+      el('ovCount').textContent = list.length;
+      const w = el('ovWeight');
+      w.textContent = sum + '%';
+      w.className = sum === PERF_PARAMS.weightTotal ? 'ok' : 'bad';
+      el('ovPending').textContent = list.filter(t => t.status === 'pending').length;
+    }
+
+    function actionButtons(t) {
+      const isMine = t.scope === 'mine';
+      const btns = [];
+      if (isMine) {
+        if (t.status === 'draft') {
+          btns.push(`<button class="btn btn-sm" data-act="edit" data-id="${t.id}">编辑</button>`);
+          btns.push(`<button class="btn btn-sm btn-primary" data-act="submit" data-id="${t.id}">提交确认</button>`);
+        } else if (t.status === 'pending') {
+          btns.push(`<button class="btn btn-sm" data-act="edit" data-id="${t.id}">编辑</button>`);
+          btns.push(`<button class="btn btn-sm" data-act="withdraw" data-id="${t.id}">撤回</button>`);
+        } else {
+          btns.push(`<button class="btn btn-sm" data-act="edit" data-id="${t.id}">编辑</button>`);
+          btns.push(`<button class="btn btn-sm" data-act="progress" data-id="${t.id}">更新进度</button>`);
+          btns.push(`<button class="btn btn-sm" data-act="history" data-id="${t.id}">历史版本</button>`);
+        }
+      } else {
+        if (t.status === 'pending') {
+          btns.push(`<button class="btn btn-sm btn-primary" data-act="confirm" data-id="${t.id}">确认</button>`);
+          btns.push(`<button class="btn btn-sm btn-danger" data-act="return" data-id="${t.id}">退回</button>`);
+        }
+        if (t.versions.length) {
+          btns.push(`<button class="btn btn-sm" data-act="history" data-id="${t.id}">历史版本</button>`);
+        }
+      }
+      return btns.join('');
+    }
+
+    function renderCards() {
+      const list = scopeTargets();
+      const titles = { mine: '我的目标', team: '团队目标 · TMS研发组', dept: '部门目标 · 供应链研发部' };
+      el('listTitle').textContent = titles[state.scope];
+      el('listMeta').textContent = `${list.length} 个目标`;
+      el('btnNew').hidden = state.scope !== 'mine';
+      el('empty').hidden = list.length > 0;
+      el('cards').innerHTML = list.map(t => `
+        <article class="card" data-id="${t.id}">
+          <div class="card-top">
+            <div class="card-title-row">
+              <h3>${t.title}</h3>
+              <span class="tag ${statusClass[t.status]}">${statusText[t.status]}</span>
+            </div>
+            <div class="card-metrics">
+              <span class="chip">权重 ${t.weight}%</span>
+              <span class="chip">进度 ${t.progress}%</span>
+              <span class="chip">${t.visible}</span>
+              ${t.align ? `<span class="chip chip-ghost">对齐：${t.align}</span>` : ''}
+            </div>
+            <div class="progress" aria-label="目标进度 ${t.progress}%"><i style="width:${t.progress}%"></i></div>
+          </div>
+          ${t.returnReason && t.status === 'draft' ? `<div class="return-banner">上级退回：${t.returnReason}</div>` : ''}
+          <div class="card-body">
+            <div class="field"><div class="field-label">指标描述</div><div class="field-text">${t.desc}</div></div>
+            <div class="field"><div class="field-label">衡量标准</div><ul>${t.std.map(s => `<li>${s}</li>`).join('')}</ul></div>
+          </div>
+          <footer class="card-foot">
+            <span class="muted">${t.owner} · 更新于 ${t.updated}</span>
+            <div class="actions">${actionButtons(t)}</div>
+          </footer>
+        </article>
+      `).join('');
+    }
+
+    function renderAll() { renderOverview(); renderCards(); }
+
+    function openScope(scope) {
+      state.scope = scope;
+      document.querySelectorAll('.scope').forEach(b => {
+        const on = b.dataset.scope === scope;
+        b.classList.toggle('is-active', on);
+        b.setAttribute('aria-selected', on ? 'true' : 'false');
+      });
+      renderCards();
+    }
+
+    function updateWeightBar() {
+      const weight = Number(el('fWeight').value || 0);
+      const editing = state.targets.find(t => t.id === state.editingId);
+      const ownerKey = editing ? editing.ownerKey : 'mine';
+      const others = weightSum(ownerKey, state.editingId);
+      const total = others + weight;
+      const bar = el('weightBar');
+      const target = PERF_PARAMS.weightTotal;
+      bar.textContent = total === target
+        ? `当前主体权重合计 ${target}%，可提交确认`
+        : total < target
+          ? `当前主体权重合计 ${total}%，还差 ${target - total}%`
+          : `当前主体权重合计 ${total}%，已超出 ${total - target}%`;
+      bar.className = 'weight-bar ' + (total === target ? 'ok' : 'bad');
+      return total;
+    }
+
+    function setFormError(itemId, on) {
+      el(itemId).classList.toggle('is-error', !!on);
+    }
+
+    function openEdit(id) {
+      const t = id ? state.targets.find(x => x.id === id) : null;
+      state.editingId = id;
+      el('drawerTitle').textContent = id ? '编辑目标' : '新建目标';
+      el('fTitle').value = t ? t.title : '';
+      el('fWeight').value = t ? t.weight : PERF_PARAMS.defaultWeight;
+      el('fVisible').value = t ? t.visible : PERF_PARAMS.visibleDefault;
+      el('fAlign').value = t ? t.align : '';
+      el('fDesc').value = t ? t.desc : '';
+      el('fStd').value = t ? t.std.join('\n') : '';
+      el('fReason').value = '';
+      el('itemReason').hidden = !(t && t.status === 'approved');
+      ['itemTitle','itemWeight','itemDesc','itemStd','itemReason'].forEach(x => setFormError(x, false));
+      el('btnDraft').hidden = !!(t && t.status === 'approved');
+      el('btnSubmit').textContent = t && t.status === 'approved' ? '保存并重新提交确认' : '提交确认';
+      updateWeightBar();
+      el('drawerMask').hidden = false;
+      el('editDrawer').hidden = false;
+    }
+
+    function closeDrawer(which) {
+      if (which === 'edit') { el('editDrawer').hidden = true; el('drawerMask').hidden = true; }
+      if (which === 'history') { el('historyDrawer').hidden = true; el('drawerMask').hidden = true; }
+      state.editingId = null;
+      state.historyId = null;
+    }
+
+    function formValues() {
+      return {
+        title: el('fTitle').value.trim(),
+        weight: Number(el('fWeight').value),
+        visible: el('fVisible').value,
+        align: el('fAlign').value,
+        desc: el('fDesc').value.trim(),
+        std: el('fStd').value.split('\n').map(s => s.trim()).filter(Boolean),
+        reason: el('fReason').value.trim()
+      };
+    }
+
+    function validate(v) {
+      let ok = true;
+      setFormError('itemTitle', !v.title); if (!v.title) ok = false;
+      const badWeight = !Number.isInteger(v.weight) || v.weight < PERF_PARAMS.weightMin || v.weight > PERF_PARAMS.weightMax;
+      setFormError('itemWeight', badWeight); if (badWeight) ok = false;
+      setFormError('itemDesc', !v.desc); if (!v.desc) ok = false;
+      setFormError('itemStd', v.std.length === 0); if (!v.std.length) ok = false;
+      const editing = state.targets.find(t => t.id === state.editingId);
+      if (editing && editing.status === 'approved') {
+        setFormError('itemReason', !v.reason); if (!v.reason) ok = false;
+      }
+      const dup = state.targets.some(t => t.ownerKey === 'mine' && t.id !== state.editingId && t.title === v.title);
+      if (dup) { toast('目标标题已存在', true); ok = false; }
+      return ok;
+    }
+
+    function saveTarget(newStatus, isSubmit) {
+      const v = formValues();
+      if (!validate(v)) return;
+      const total = updateWeightBar();
+      if (isSubmit && total !== PERF_PARAMS.weightTotal) { toast(`权重合计需为 ${PERF_PARAMS.weightTotal}% 才能提交确认`, true); return; }
+      const editing = state.targets.find(t => t.id === state.editingId);
+      if (editing) {
+        editing.title = v.title; editing.weight = v.weight; editing.visible = v.visible;
+        editing.desc = v.desc; editing.std = v.std; editing.align = v.align;
+        editing.updated = '2026-08-28 18:00';
+        if (newStatus) editing.status = newStatus;
+        if (editing.status === 'approved' && v.reason) {
+          const vn = (editing.versions[0]?.v || 0) + 1;
+          editing.versions.unshift({ v: vn, at: '2026-08-28 18:00', by: editing.owner, note: v.reason,
+            snap: { weight: v.weight + '%', visible: v.visible, align: v.align || '未对齐', desc: v.desc, std: v.std.join('；') } });
+        }
+      } else {
+        const id = 't' + (Date.now() % 100000);
+        state.targets.push({
+          id, owner: '张超', ownerKey: 'mine', scope: 'mine', title: v.title, weight: v.weight,
+          status: newStatus || 'draft', progress: 0, visible: v.visible, align: v.align,
+          desc: v.desc, std: v.std, updated: '2026-08-28 18:00', versions: []
+        });
+      }
+      closeDrawer('edit');
+      renderAll();
+      toast(isSubmit ? '已提交，等待上级确认' : '已保存草稿');
+    }
+
+    function submitTarget(id) {
+      const t = state.targets.find(x => x.id === id);
+      const sum = weightSum(t.ownerKey) ;
+      if (sum !== PERF_PARAMS.weightTotal) { toast(`当前权重合计 ${sum}%，需调整为 ${PERF_PARAMS.weightTotal}% 后提交`, true); return; }
+      t.status = 'pending';
+      t.updated = '2026-08-28 18:00';
+      renderAll();
+      toast('已提交，等待上级确认');
+    }
+
+    function openHistory(id) {
+      const t = state.targets.find(x => x.id === id);
+      state.historyId = id;
+      if (!t.versions.length) {
+        el('verList').innerHTML = '<div class="muted">暂无历史版本，目标首次生效后生成版本。</div>';
+        el('verSnapshot').innerHTML = '';
+        el('verDiff').innerHTML = '';
+      } else {
+        el('verList').innerHTML = t.versions.map((v, i) => `
+          <button class="ver ${i === 0 ? 'is-active' : ''}" data-ver="${i}">
+            <span class="ver-top">v${v.v}${i === 0 ? ' · 当前生效' : ''}</span>
+            <span class="ver-meta"><span>生效 ${v.at}</span><span>提交人 ${v.by}</span><span>${v.note}</span></span>
+          </button>
+        `).join('');
+        showVersion(0);
+      }
+      el('drawerMask').hidden = false;
+      el('historyDrawer').hidden = false;
+    }
+
+    function showVersion(index) {
+      const t = state.targets.find(x => x.id === state.historyId);
+      const v = t.versions[index];
+      document.querySelectorAll('.ver').forEach((b, i) => b.classList.toggle('is-active', i === index));
+      el('verSnapshot').innerHTML = `
+        <h4>v${v.v} 版本快照</h4>
+        <dl>
+          <dt>权重</dt><dd>${v.snap.weight}</dd>
+          <dt>可见范围</dt><dd>${v.snap.visible}</dd>
+          <dt>对齐目标</dt><dd>${v.snap.align}</dd>
+          <dt>指标描述</dt><dd>${v.snap.desc}</dd>
+          <dt>衡量标准</dt><dd>${v.snap.std}</dd>
+        </dl>`;
+      const prev = t.versions[index + 1];
+      if (!prev) { el('verDiff').innerHTML = ''; return; }
+      const rows = [
+        ['权重', prev.snap.weight, v.snap.weight],
+        ['可见范围', prev.snap.visible, v.snap.visible],
+        ['对齐目标', prev.snap.align, v.snap.align],
+        ['指标描述', prev.snap.desc, v.snap.desc],
+        ['衡量标准', prev.snap.std, v.snap.std]
+      ].filter(r => r[1] !== r[2]);
+      el('verDiff').innerHTML = rows.length ? `
+        <table class="diff">
+          <thead><tr><th>字段</th><th>v${prev.v}</th><th>v${v.v}</th></tr></thead>
+          <tbody>${rows.map(r => `<tr><td>${r[0]}</td><td class="old">${r[1]}</td><td class="new">${r[2]}</td></tr>`).join('')}</tbody>
+        </table>` : '<div class="muted">与上一版本无差异</div>';
+    }
+
+    function openProgress(id) {
+      const t = state.targets.find(x => x.id === id);
+      state.progressId = id;
+      el('progressSub').textContent = t.title;
+      el('progressValue').value = t.progress;
+      el('progressMask').hidden = false;
+    }
+
+    function doProgress() {
+      const raw = el('progressValue').value;
+      const v = Number(raw);
+      if (raw === '' || !Number.isInteger(v) || v < PERF_PARAMS.progressMin || v > PERF_PARAMS.progressMax) { toast(`进度需为 ${PERF_PARAMS.progressMin}–${PERF_PARAMS.progressMax} 的整数`, true); return; }
+      const t = state.targets.find(x => x.id === state.progressId);
+      t.progress = v;
+      t.updated = '2026-08-28 18:00';
+      el('progressMask').hidden = true;
+      state.progressId = null;
+      renderAll();
+      toast('进度已更新');
+    }
+
+    function openReturn(id) {
+      state.returningId = id;
+      el('returnReason').value = '';
+      el('modalMask').hidden = false;
+    }
+
+    function doReturn() {
+      const reason = el('returnReason').value.trim();
+      if (!reason) { toast('请填写退回原因', true); return; }
+      const t = state.targets.find(x => x.id === state.returningId);
+      t.status = 'draft';
+      t.returnReason = reason;
+      t.updated = '2026-08-28 18:00';
+      el('modalMask').hidden = true;
+      state.returningId = null;
+      renderAll();
+      toast('已退回，目标回到草稿');
+    }
+
+    document.addEventListener('click', (e) => {
+      const close = e.target.closest('[data-close]');
+      if (close) { closeDrawer(close.dataset.close); return; }
+      const scopeBtn = e.target.closest('.scope');
+      if (scopeBtn) { openScope(scopeBtn.dataset.scope); return; }
+      const act = e.target.closest('[data-act]');
+      if (act) {
+        const id = act.dataset.id;
+        const a = act.dataset.act;
+        const t = state.targets.find(x => x.id === id);
+        if (a === 'edit') openEdit(id);
+        if (a === 'submit') submitTarget(id);
+        if (a === 'withdraw') { t.status = 'draft'; renderAll(); toast('已撤回，目标回到草稿'); }
+        if (a === 'confirm') {
+          const sum = weightSum(t.ownerKey);
+          if (sum !== PERF_PARAMS.weightTotal) { toast(`该主体权重合计 ${sum}%，不能确认`, true); return; }
+          t.status = 'approved'; t.updated = '2026-08-28 18:00';
+          if (!t.versions.length) t.versions.push({ v: 1, at: '2026-08-28 18:00', by: '张超', note: '首次生效',
+            snap: { weight: t.weight + '%', visible: t.visible, align: t.align || '未对齐', desc: t.desc, std: t.std.join('；') } });
+          renderAll(); toast('目标已生效');
+        }
+        if (a === 'return') openReturn(id);
+        if (a === 'progress') openProgress(id);
+        if (a === 'history') openHistory(id);
+        return;
+      }
+      const ver = e.target.closest('[data-ver]');
+      if (ver) showVersion(Number(ver.dataset.ver));
+    });
+
+    el('btnNew').addEventListener('click', () => openEdit(null));
+    el('fWeight').min = PERF_PARAMS.weightMin;
+    el('fWeight').max = PERF_PARAMS.weightMax;
+    el('progressValue').min = PERF_PARAMS.progressMin;
+    el('progressValue').max = PERF_PARAMS.progressMax;
+    el('fVisible').innerHTML = PERF_PARAMS.visibleOptions.map((o) => `<option>${o}</option>`).join('');
+    document.querySelector('#itemWeight .err').textContent = `权重为 ${PERF_PARAMS.weightMin}–${PERF_PARAMS.weightMax} 的整数`;
+    document.getElementById('paramSource').textContent = PERF_PARAMS.source;
+    el('fWeight').addEventListener('input', updateWeightBar);
+    el('btnDraft').addEventListener('click', () => saveTarget(null, false));
+    el('btnSubmit').addEventListener('click', () => {
+      const editing = state.targets.find(t => t.id === state.editingId);
+      saveTarget(editing && editing.status === 'approved' ? 'approved' : 'pending', true);
+    });
+    el('btnCancelReturn').addEventListener('click', () => { el('modalMask').hidden = true; state.returningId = null; });
+    el('btnConfirmReturn').addEventListener('click', doReturn);
+    el('btnCancelProgress').addEventListener('click', () => { el('progressMask').hidden = true; state.progressId = null; });
+    el('btnSaveProgress').addEventListener('click', doProgress);
+    el('periodSelect').addEventListener('change', (e) => {
+      el('ovPeriod').textContent = e.target.value;
+      toast('历史周期只读展示');
+    });
+
+    renderAll();
+  </script>
+</body>
+</html>

@@ -1,0 +1,416 @@
+<!doctype html>
+<html lang="zh-CN" data-native-manual>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,BusyInput,PageableSelect,DatePicker,Form,Table,Pagination,Tag,Descriptions,BusyTabs,Message">
+  <link rel="stylesheet" href="../../../../../../busyming-skills-design/components/web/tokens/web.css">
+  <link rel="stylesheet" href="../../../../../../busyming-skills-design/docs-site/web/runtime.css">
+  <link rel="stylesheet" href="../../../../../../busyming-skills-design/shared/prototype/web/templates.css">
+  <title>员工资料 · 列表与明细</title>
+  <!-- 静态 Mock：列表与明细同文件双视图，#list / #detail/{工号} 互联。列表关键字输入 FAIL 后点查询演示加载失败，「重试」按原条件重新查询并返回结果（此处为空态）；明细默认 EMP001 全量数据，其他员工演示绩效与附件空态；附件「背调材料.zip」演示预览失败。 -->
+</head>
+<body>
+  <span id="detail" hidden></span>
+  <nav class="tpl-nav" aria-label="原型导航">
+    <span class="tpl-nav__logo">示例集团 · 人资管理</span>
+    <span class="tpl-nav__crumb">员工档案 / <b>员工资料</b></span>
+    <span class="tpl-nav__spacer"></span>
+    <span class="tpl-nav__crumb">静态 Mock</span>
+  </nav>
+
+  <div id="profileApp">
+  <section class="tpl-page" id="viewList" aria-label="员工资料列表">
+    <div class="tpl-page-head">
+      <div class="tpl-page-head__main">
+        <h1 class="tpl-page-title">员工资料</h1>
+        <p class="tpl-page-subtitle">查询员工人事档案，查看明细与附件</p>
+      </div>
+    </div>
+
+    <section class="tpl-panel" aria-label="筛选">
+      <div class="tpl-filter tpl-filter--fixed-controls" id="employeeFilter">
+        <div class="tpl-filter__fields">
+          <div class="busy-form-item" data-requirement="keyword-filter">
+            <div class="busy-form-item__label">关键字</div>
+            <div class="busy-form-item__content"><div class="busy-input"><input id="fKeyword" maxlength="20" placeholder="姓名或工号"></div></div>
+          </div>
+          <div class="busy-form-item" data-requirement="department-filter">
+            <div class="busy-form-item__label">所属部门</div>
+            <div class="busy-form-item__content"><div class="busy-select" id="fDept" data-options='[["","全部"],["人力资源部","人力资源部"],["技术中心","技术中心"],["运营中心","运营中心"],["供应链中心","供应链中心"],["财务部","财务部"]]'><input readonly placeholder="全部"></div></div>
+          </div>
+          <div class="busy-form-item" data-requirement="position-filter">
+            <div class="busy-form-item__label">岗位</div>
+            <div class="busy-form-item__content"><div class="busy-select" id="fPosition" data-options='[["","全部"],["HR专员","HR专员"],["招聘经理","招聘经理"],["前端工程师","前端工程师"],["督导","督导"],["采购专员","采购专员"],["会计","会计"]]'><input readonly placeholder="全部"></div></div>
+          </div>
+          <div class="busy-form-item" data-requirement="status-filter">
+            <div class="busy-form-item__label">在职状态</div>
+            <div class="busy-form-item__content"><div class="busy-select" id="fStatus" data-options='[["","全部"],["在职","在职"],["离职","离职"]]'><input readonly placeholder="全部"></div></div>
+          </div>
+          <div class="busy-form-item" data-requirement="hire-date-filter">
+            <div class="busy-form-item__label">入职日期</div>
+            <div class="busy-form-item__content"><div class="busy-date-editor busy-range-editor" id="fHire"><input class="busy-range-input" readonly placeholder="开始日期 ~ 结束日期"></div></div>
+          </div>
+        </div>
+        <div class="tpl-filter__actions">
+          <button class="busy-button" type="button" id="btnReset" data-requirement="reset-action"><span>重置</span></button>
+          <button class="busy-button busy-button--primary" type="button" id="btnQuery" data-requirement="query-action"><span>查询</span></button>
+        </div>
+      </div>
+    </section>
+
+    <section class="tpl-panel" aria-label="员工列表">
+      <div class="tpl-toolbar">
+        <div class="tpl-toolbar__left"><span class="tpl-toolbar__title">员工列表</span><span id="resultCount"></span></div>
+        <div class="tpl-toolbar__right"><span id="updatedAt"></span><button class="busy-button" type="button" id="btnRefresh"><span>刷新</span></button></div>
+      </div>
+      <div class="tpl-table-wrap" id="tableWrap" data-requirement="employee-table">
+        <table class="busy-table">
+          <thead>
+            <tr>
+              <th data-width="110">工号</th>
+              <th data-width="90">姓名</th>
+              <th data-width="70">性别</th>
+              <th data-width="130">所属部门</th>
+              <th data-width="120">岗位</th>
+              <th data-width="90">在职状态</th>
+              <th data-width="120">入职日期</th>
+              <th data-width="140">手机号码</th>
+              <th data-width="110" data-requirement="detail-action">操作</th>
+            </tr>
+          </thead>
+          <tbody id="employeeRows"></tbody>
+        </table>
+      </div>
+      <div class="tpl-native-state tpl-skeleton" id="listLoading" aria-live="polite" hidden>正在查询员工资料…</div>
+      <div class="tpl-native-state" id="listEmpty" data-requirement="list-empty" hidden>暂无符合条件的员工</div>
+      <div class="tpl-native-state" id="listError" data-requirement="list-error" hidden>员工资料加载失败，请检查网络后重试 <button class="busy-button" type="button" id="btnRetry"><span>重试</span></button></div>
+      <div class="tpl-table-foot" id="tableFoot" data-requirement="employee-pagination"><div class="busy-pagination" id="pager"></div></div>
+    </section>
+  </section>
+
+  <section class="tpl-page" id="viewDetail" aria-label="员工明细" hidden>
+    <div class="tpl-page-head">
+      <div class="tpl-page-head__main">
+        <a class="tpl-page-head__back" href="#list" data-requirement="back-to-list">‹ 返回列表</a>
+        <h1 class="tpl-page-title">员工明细</h1>
+      </div>
+      <div class="tpl-page-head__tags" id="headTags"></div>
+    </div>
+
+    <section class="tpl-panel" aria-label="员工概览" data-requirement="employee-overview">
+      <div class="tpl-overview">
+        <div class="tpl-overview__icon" id="ovIcon">陈</div>
+        <div class="tpl-overview__main">
+          <div class="tpl-overview__name" id="ovName">张帆</div>
+          <div class="tpl-overview__codes"><span>工号<b class="u-mono" id="ovId">EMP001</b></span><span>在职状态<b id="ovStatus">在职</b></span></div>
+          <div class="tpl-overview__meta">
+            <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">所属部门</span><span class="tpl-overview__meta-value" id="ovDept">人力资源部</span></div>
+            <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">岗位</span><span class="tpl-overview__meta-value" id="ovPosition">HR专员</span></div>
+            <div class="tpl-overview__meta-item"><span class="tpl-overview__meta-label">入职日期</span><span class="tpl-overview__meta-value u-mono" id="ovHire">2023-04-10</span></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="tpl-panel" aria-label="档案页签">
+      <div class="busy-tabs" id="profileTabs" data-requirement="profile-tabs">
+        <div class="busy-tabs__item is-active" data-tab="basic">基本信息</div>
+        <div class="busy-tabs__item" data-tab="employment">任职记录</div>
+        <div class="busy-tabs__item" data-tab="performance">绩效</div>
+        <div class="busy-tabs__item" data-tab="contract">合同信息</div>
+        <div class="busy-tabs__item" data-tab="attachment">附件资料</div>
+      </div>
+
+      <section class="tpl-section" id="panel-basic" data-requirement="basic-info-panel" aria-label="基本信息">
+        <div class="tpl-section__head">基本信息</div>
+        <div id="basicHost"></div>
+      </section>
+
+      <section class="tpl-section" id="panel-employment" data-requirement="employment-panel" aria-label="任职记录" hidden>
+        <div class="tpl-section__head">任职记录</div>
+        <div class="tpl-table-wrap">
+          <table class="busy-table">
+            <thead><tr><th data-width="150">部门</th><th data-width="130">岗位</th><th data-width="110">任职类型</th><th data-width="130">生效日期</th><th data-width="130">结束日期</th></tr></thead>
+            <tbody id="employmentRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="tpl-section" id="panel-performance" data-requirement="performance-panel" aria-label="绩效" hidden>
+        <div class="tpl-section__head">绩效</div>
+        <div class="tpl-table-wrap" id="performanceWrap">
+          <table class="busy-table">
+            <thead><tr><th data-width="140">考核周期</th><th data-width="100">考核等级</th><th class="u-right" data-width="90">得分</th><th data-width="110">评定人</th><th data-width="130">评定日期</th></tr></thead>
+            <tbody id="performanceRows"></tbody>
+          </table>
+        </div>
+        <div class="tpl-native-state" id="performanceEmpty" data-requirement="performance-empty" hidden>暂无绩效记录</div>
+      </section>
+
+      <section class="tpl-section" id="panel-contract" data-requirement="contract-panel" aria-label="合同信息" hidden>
+        <div class="tpl-section__head">合同信息</div>
+        <div class="tpl-table-wrap">
+          <table class="busy-table">
+            <thead><tr><th data-width="150">合同编号</th><th data-width="170">合同类型</th><th data-width="120">签订日期</th><th data-width="120">生效日期</th><th data-width="120">到期日期</th><th data-width="100">合同状态</th></tr></thead>
+            <tbody id="contractRows"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="tpl-section" id="panel-attachment" data-requirement="attachment-panel" aria-label="附件资料" hidden>
+        <div class="tpl-section__head">附件资料</div>
+        <div class="tpl-table-wrap" id="attachmentWrap">
+          <table class="busy-table">
+            <thead><tr><th data-width="220">附件名称</th><th data-width="100">附件类型</th><th class="u-right" data-width="100">文件大小</th><th data-width="110">上传人</th><th data-width="130">上传日期</th><th data-width="90">操作</th></tr></thead>
+            <tbody id="attachmentRows"></tbody>
+          </table>
+        </div>
+        <div class="tpl-native-state" id="attachmentEmpty" data-requirement="attachment-empty" hidden>暂无附件资料</div>
+        <section class="tpl-section" id="previewBox" data-requirement="attachment-preview" aria-label="附件预览" hidden>
+          <hr class="tpl-divider">
+          <div class="tpl-section__head" id="previewTitle">附件预览</div>
+          <div id="previewBody"></div>
+          <div class="tpl-row-actions"><button class="busy-button" type="button" id="btnClosePreview"><span>收起</span></button></div>
+        </section>
+      </section>
+    </section>
+  </section>
+  </div>
+
+  <script src="../../../../../../busyming-skills-design/shared/prototype/web/native.js"></script>
+  <script>
+    var EMPLOYEES = [
+      { id: 'EMP001', name: '张帆', gender: '女', dept: '人力资源部', position: 'HR专员', status: '在职', hireDate: '2023-04-10', regularDate: '2023-07-10', phone: '138****5621', birth: '1996-05-12', email: 'zhangfan@example.com', idCard: '430105********3624', leader: '张静', location: '总部' },
+      { id: 'EMP002', name: '张静', gender: '男', dept: '人力资源部', position: '招聘经理', status: '在职', hireDate: '2021-08-02', regularDate: '2021-11-02', phone: '137****9084', birth: '1990-02-25', email: 'zhangjing@example.com', idCard: '430103********1187', leader: '张帆', location: '总部' },
+      { id: 'EMP003', name: '张刚', gender: '女', dept: '技术中心', position: '前端工程师', status: '在职', hireDate: '2024-03-18', regularDate: '2024-06-18', phone: '186****2210' },
+      { id: 'EMP004', name: '李波', gender: '女', dept: '运营中心', position: '督导', status: '在职', hireDate: '2022-11-07', regularDate: '2023-02-07', phone: '150****7736' },
+      { id: 'EMP005', name: '张然', gender: '男', dept: '供应链中心', position: '采购专员', status: '在职', hireDate: '2025-01-15', phone: '189****3358' },
+      { id: 'EMP006', name: '李平', gender: '男', dept: '财务部', position: '会计', status: '在职', hireDate: '2020-06-29', phone: '135****6417' },
+      { id: 'EMP007', name: '张宏', gender: '女', dept: '运营中心', position: '督导', status: '离职', hireDate: '2019-09-16', phone: '158****4029' },
+      { id: 'EMP008', name: '李峰', gender: '男', dept: '技术中心', position: '前端工程师', status: '在职', hireDate: '2025-07-21', phone: '187****8852' },
+      { id: 'EMP009', name: '李宁', gender: '女', dept: '人力资源部', position: 'HR专员', status: '在职', hireDate: '2024-10-08', phone: '136****1190' },
+      { id: 'EMP010', name: '张浩', gender: '男', dept: '供应链中心', position: '采购专员', status: '离职', hireDate: '2018-05-23', phone: '139****7643' },
+      { id: 'EMP011', name: '李宇', gender: '女', dept: '财务部', position: '会计', status: '在职', hireDate: '2023-12-04', phone: '152****2086' },
+      { id: 'EMP012', name: '张悦', gender: '男', dept: '运营中心', position: '督导', status: '在职', hireDate: '2026-02-09', phone: '181****9305' }
+    ];
+    var RICH = {
+      EMP001: {
+        employment: [
+          { dept: '人力资源部', position: 'HR专员', type: '晋升', start: '2025-01-01', end: '', current: true },
+          { dept: '人力资源部', position: 'HR助理', type: '调岗', start: '2024-01-01', end: '2024-12-31' },
+          { dept: '运营中心', position: '门店人事专员', type: '新入职', start: '2023-04-10', end: '2023-12-31' }
+        ],
+        performance: [
+          { period: '2025 年度', level: 'A', score: 92, rater: '张静', date: '2026-01-15' },
+          { period: '2025 下半年', level: 'B', score: 85, rater: '张静', date: '2025-07-20' },
+          { period: '2024 年度', level: 'B', score: 81, rater: '张静', date: '2025-01-18' }
+        ],
+        contracts: [
+          { no: 'HT-2026-0108', type: '无固定期限', sign: '2026-01-01', start: '2026-01-01', end: '', status: '生效中' },
+          { no: 'HT-2023-0456', type: '固定期限', sign: '2023-04-10', start: '2023-04-10', end: '2025-12-31', status: '已到期' }
+        ],
+        attachments: [
+          { name: '张帆-个人简历.pdf', type: '简历', size: '486 KB', uploader: '张帆', date: '2023-04-08', preview: '张帆｜人力资源专员\n\n求职意向：员工关系与招聘支持\n\n2021-2023 某零售企业 人事助理：负责入离职办理、档案整理与考勤复核。\n2023 至今 示例集团 人力资源部：负责员工档案维护、合同台账与招聘协同。\n\n教育背景：某大学 人力资源管理 本科。' },
+          { name: '张帆-身份证明.jpg', type: '证件', size: '1.2 MB', uploader: '张静', date: '2023-04-09', preview: '图片类证件预览（Mock）：此处渲染证件图片，敏感信息按档案脱敏规则展示。' },
+          { name: '背调材料.zip', type: '其他', size: '6.8 MB', uploader: '张静', date: '2023-04-09', unsupported: true }
+        ]
+      }
+    };
+    var $ = function (id) { return document.getElementById(id); };
+    function text(value) { return value ? value : '—'; }
+    function esc(value) { return String(value).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+    function tag(value, primary) { return '<span class="busy-tag busy-tag--' + (primary ? 'primary' : 'info') + '">' + value + '</span>'; }
+
+    /* ---------- 列表 ---------- */
+    var state = { keyword: '', dept: '', position: '', status: '', start: '', end: '', page: 1 };
+    var mockRetried = false;
+    var filtered = EMPLOYEES.slice();
+    function sortRows(rows) {
+      return rows.slice().sort(function (a, b) {
+        if (a.hireDate === b.hireDate) return a.id < b.id ? -1 : 1;
+        return a.hireDate < b.hireDate ? 1 : -1;
+      });
+    }
+    function applyFilter() {
+      var kw = state.keyword.trim().toLowerCase();
+      filtered = sortRows(EMPLOYEES.filter(function (e) {
+        if (kw && !(e.name.toLowerCase().includes(kw) || e.id.toLowerCase().includes(kw))) return false;
+        if (state.dept && e.dept !== state.dept) return false;
+        if (state.position && e.position !== state.position) return false;
+        if (state.status && e.status !== state.status) return false;
+        if (state.start && e.hireDate < state.start) return false;
+        if (state.end && e.hireDate > state.end) return false;
+        return true;
+      }));
+    }
+    function readControls() {
+      state.keyword = $('fKeyword').value;
+      state.dept = $('fDept').dataset.value || '';
+      state.position = $('fPosition').dataset.value || '';
+      state.status = $('fStatus').dataset.value || '';
+      var fields = $('fHire')._dateFields || [];
+      state.start = fields[0] ? fields[0].value : '';
+      state.end = fields[1] ? fields[1].value : '';
+    }
+    function showState(name) {
+      $('listLoading').hidden = name !== 'loading';
+      $('listEmpty').hidden = name !== 'empty';
+      $('listError').hidden = name !== 'error';
+      $('tableWrap').hidden = name === 'loading' || name === 'error';
+      $('tableFoot').hidden = name !== 'ready';
+    }
+    function renderRows(page, size) {
+      state.page = page || 1;
+      var start = (state.page - 1) * size;
+      var rows = filtered.slice(start, start + size);
+      $('employeeRows').innerHTML = rows.map(function (e) {
+        return '<tr><td class="u-mono">' + e.id + '</td><td>' + e.name + '</td><td>' + e.gender + '</td><td>' + e.dept + '</td><td>' + e.position + '</td>' +
+          '<td>' + tag(e.status, e.status === '在职') + '</td><td class="u-mono">' + e.hireDate + '</td><td class="u-mono">' + e.phone + '</td>' +
+          '<td><div class="tpl-row-actions"><button class="busy-button is-link" type="button" data-emp="' + e.id + '"><span>查看明细</span></button></div></td></tr>';
+      }).join('');
+      $('resultCount').textContent = '共 ' + filtered.length + ' 名员工';
+      $('updatedAt').textContent = '更新于 ' + new Date().toLocaleString('zh-CN', { hour12: false });
+      showState(filtered.length ? 'ready' : 'empty');
+      BusyNative.enhance($('tableWrap'));
+    }
+    var pager = null;
+    function runQuery(resetPage) {
+      readControls();
+      var button = $('btnQuery');
+      button.disabled = true;
+      button.querySelector('span').textContent = '查询中…';
+      showState('loading');
+      setTimeout(function () {
+        button.disabled = false;
+        button.querySelector('span').textContent = '查询';
+        if (state.keyword.trim().toUpperCase() === 'FAIL' && !mockRetried) { showState('error'); return; }
+        applyFilter();
+        if (resetPage) pager.reset(); else pager.refresh();
+      }, 280);
+    }
+
+    /* ---------- 明细 ---------- */
+    function renderDetail(emp) {
+      var rich = RICH[emp.id] || {
+        employment: [{ dept: emp.dept, position: emp.position, type: '新入职', start: emp.hireDate, end: '', current: true }],
+        performance: [],
+        contracts: [{ no: 'HT-' + emp.hireDate.slice(0, 4) + '-' + emp.id.slice(3), type: '固定期限', sign: emp.hireDate, start: emp.hireDate, end: '', status: emp.status === '在职' ? '生效中' : '已解除' }],
+        attachments: []
+      };
+      $('ovIcon').textContent = emp.name.charAt(0);
+      $('ovName').textContent = emp.name;
+      $('ovId').textContent = emp.id;
+      $('ovStatus').textContent = emp.status;
+      $('ovDept').textContent = emp.dept;
+      $('ovPosition').textContent = emp.position;
+      $('ovHire').textContent = emp.hireDate;
+      $('headTags').innerHTML = tag(emp.status, emp.status === '在职');
+
+      var fields = [
+        ['姓名', emp.name], ['工号', emp.id], ['性别', text(emp.gender)], ['出生日期', text(emp.birth)],
+        ['手机号码', text(emp.phone)], ['电子邮箱', text(emp.email)], ['身份证号码', text(emp.idCard)], ['入职日期', emp.hireDate],
+        ['转正日期', text(emp.regularDate)], ['在职状态', emp.status], ['所属部门', emp.dept], ['岗位', emp.position], ['直属上级', text(emp.leader)], ['工作地点', text(emp.location)]
+      ];
+      var rows = '';
+      for (var i = 0; i < fields.length; i += 2) {
+        rows += '<tr><th>' + fields[i][0] + '</th><td>' + esc(fields[i][1]) + '</td>' +
+          (fields[i + 1] ? '<th>' + fields[i + 1][0] + '</th><td>' + esc(fields[i + 1][1]) + '</td>' : '') + '</tr>';
+      }
+      $('basicHost').innerHTML = '<table class="busy-descriptions"><tbody>' + rows + '</tbody></table>';
+
+      $('employmentRows').innerHTML = rich.employment.map(function (r) {
+        return '<tr><td>' + r.dept + (r.current ? ' ' + tag('当前', true) : '') + '</td><td>' + r.position + '</td><td>' + r.type + '</td><td class="u-mono">' + r.start + '</td><td class="u-mono">' + (r.end || '至今') + '</td></tr>';
+      }).join('');
+      $('performanceWrap').hidden = !rich.performance.length;
+      $('performanceEmpty').hidden = !!rich.performance.length;
+      $('performanceRows').innerHTML = rich.performance.map(function (r) {
+        return '<tr><td>' + r.period + '</td><td>' + tag(r.level, r.level === 'A') + '</td><td class="u-right u-mono">' + r.score + '</td><td>' + r.rater + '</td><td class="u-mono">' + r.date + '</td></tr>';
+      }).join('');
+      $('contractRows').innerHTML = rich.contracts.map(function (r) {
+        return '<tr><td class="u-mono">' + r.no + '</td><td>' + r.type + '</td><td class="u-mono">' + r.sign + '</td><td class="u-mono">' + r.start + '</td><td class="u-mono">' + text(r.end) + '</td><td>' + tag(r.status, r.status === '生效中') + '</td></tr>';
+      }).join('');
+      $('attachmentWrap').hidden = !rich.attachments.length;
+      $('attachmentEmpty').hidden = !!rich.attachments.length;
+      $('previewBox').hidden = true;
+      $('attachmentRows').innerHTML = rich.attachments.map(function (r, index) {
+        return '<tr><td>' + r.name + '</td><td>' + r.type + '</td><td class="u-right u-mono">' + r.size + '</td><td>' + r.uploader + '</td><td class="u-mono">' + r.date + '</td>' +
+          '<td><div class="tpl-row-actions"><button class="busy-button is-link" type="button" data-preview="' + index + '"><span>预览</span></button></div></td></tr>';
+      }).join('');
+      $('profileTabs').querySelectorAll('.busy-tabs__item').forEach(function (item, index) {
+        item.classList.toggle('is-active', index === 0);
+      });
+      ['basic', 'employment', 'performance', 'contract', 'attachment'].forEach(function (name) {
+        $('panel-' + name).hidden = name !== 'basic';
+      });
+      $('viewDetail').dataset.attachments = JSON.stringify(rich.attachments);
+      BusyNative.enhance($('viewDetail'));
+    }
+
+    function route() {
+      var hash = location.hash || '#list';
+      if (hash.indexOf('#detail') === 0) {
+        var id = hash.split('/')[1] || 'EMP001';
+        var emp = EMPLOYEES.find(function (e) { return e.id === id; }) || EMPLOYEES[0];
+        renderDetail(emp);
+        $('viewList').hidden = true;
+        $('viewDetail').hidden = false;
+      } else {
+        $('viewDetail').hidden = true;
+        $('viewList').hidden = false;
+      }
+    }
+
+    /* ---------- 事件 ---------- */
+    $('btnQuery').addEventListener('click', function () { runQuery(true); });
+    $('btnRefresh').addEventListener('click', function () { runQuery(false); });
+    $('btnRetry').addEventListener('click', function () { mockRetried = true; runQuery(true); });
+    $('btnReset').addEventListener('click', function () {
+      $('fKeyword').value = '';
+      ['fDept', 'fPosition', 'fStatus'].forEach(function (id) { if ($(id)._setValue) $(id)._setValue(''); });
+      ($('fHire')._dateFields || []).forEach(function (field) { field.value = ''; });
+      state = { keyword: '', dept: '', position: '', status: '', start: '', end: '', page: 1 };
+      runQuery(true);
+    });
+    $('tableWrap').addEventListener('click', function (event) {
+      var trigger = event.target.closest('button[data-emp]');
+      if (trigger) location.hash = 'detail/' + trigger.dataset.emp;
+    });
+    $('profileTabs').addEventListener('click', function (event) {
+      var item = event.target.closest('.busy-tabs__item');
+      if (!item) return;
+      ['basic', 'employment', 'performance', 'contract', 'attachment'].forEach(function (name) {
+        $('panel-' + name).hidden = name !== item.dataset.tab;
+      });
+    });
+    $('attachmentRows').addEventListener('click', function (event) {
+      var trigger = event.target.closest('button[data-preview]');
+      if (!trigger) return;
+      var files = JSON.parse($('viewDetail').dataset.attachments || '[]');
+      var file = files[Number(trigger.dataset.preview)];
+      if (!file) return;
+      $('previewBox').hidden = false;
+      $('previewTitle').textContent = '附件预览：' + file.name;
+      if (file.unsupported) {
+        $('previewBody').innerHTML = '<div class="tpl-native-state">该附件暂不支持在线预览，请重试或联系档案管理员。<br>附件类型：' + file.type + '｜文件大小：' + file.size + '｜上传日期：' + file.date + '</div>';
+        BusyNative.message('附件预览失败，已展示文件信息', 'error');
+      } else {
+        $('previewBody').innerHTML = '<div class="tpl-native-state">' + esc(file.preview).replace(/\n/g, '<br>') + '</div>';
+      }
+    });
+    $('btnClosePreview').addEventListener('click', function () { $('previewBox').hidden = true; });
+    window.addEventListener('hashchange', route);
+
+    /* ---------- 初始化 ---------- */
+    BusyNative.inputs(document);
+    BusyNative.enhance(document);
+    pager = BusyNative.pagination($('pager'), function () { return filtered.length; }, function (page, size) {
+      renderRows(page, size);
+    }, { pageSize: 5, pageSizes: [5, 10, 20] });
+    applyFilter();
+    pager.reset();
+    renderDetail(EMPLOYEES[0]);
+    route();
+  </script>
+</body>
+</html>

@@ -1,0 +1,899 @@
+<!doctype html>
+<html lang="zh-CN" data-native-manual>
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,BusyInput,Form,Tag,Descriptions">
+  <link rel="stylesheet" href="../../../../../../busyming-skills-design/components/web/tokens/web.css">
+  <link rel="stylesheet" href="../../../../../../busyming-skills-design/docs-site/web/runtime.css">
+  <link rel="stylesheet" href="../../../../../../busyming-skills-design/shared/prototype/web/templates.css">
+  <title>部门管理 · 五级部门树与档案</title>
+  <!-- 静态 Mock：单页左树右档。默认选中公司并展开至部门层；选中节点后可新增下级、编辑、停用/启用或删除。
+       删除仅对无下级且在职业人数为 0 的叶子可用（企业文化小组可删，基础架构组因在职人员不可删）；
+       停用要求无启用下级（数据部不可停用，核算部可停用）；前端小组为停用样例，可重新启用；
+       拖拽同级调整顺序，拖入节点改变上级；关键字输入 FAIL 演示树加载失败与重试。 -->
+  <style>
+    @layer prototype-fallback {
+      body { margin: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif; background: #f5f6f8; color: #1f2329; font-size: 14px; }
+      .tpl-nav { display: flex; align-items: center; gap: 16px; padding: 10px 20px; background: #111827; color: #fff; font-size: 13px; }
+      .tpl-nav__logo { font-weight: 600; }
+      .tpl-nav__crumb { color: #cbd5e1; }
+      .tpl-nav__crumb b { color: #fff; }
+      .tpl-nav__spacer { flex: 1; }
+      .tpl-page { max-width: 1440px; margin: 0 auto; padding: 20px; }
+      .tpl-page-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; margin-bottom: 16px; }
+      .tpl-page-title { margin: 0 0 4px; font-size: 20px; }
+      .tpl-page-subtitle { margin: 0; color: #646a73; font-size: 13px; }
+      .tpl-panel { background: #fff; border: 1px solid #e5e6eb; border-radius: 8px; padding: 16px; }
+      .tpl-toolbar { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 12px; }
+      .tpl-toolbar__left { display: flex; align-items: center; gap: 8px; }
+      .tpl-toolbar__title { font-weight: 600; }
+      .tpl-toolbar__right { display: flex; align-items: center; gap: 8px; color: #8a9099; font-size: 12px; }
+      .busy-button { display: inline-flex; align-items: center; justify-content: center; gap: 4px; height: 30px; padding: 0 12px; border: 1px solid #d0d3d9; border-radius: 6px; background: #fff; color: #1f2329; font-size: 13px; cursor: pointer; }
+      .busy-button:hover { border-color: #1664ff; color: #1664ff; }
+      .busy-button--primary { background: #1664ff; border-color: #1664ff; color: #fff; }
+      .busy-button--primary:hover { background: #0e52e0; color: #fff; }
+      .busy-button:disabled { opacity: .5; cursor: not-allowed; }
+      .busy-button:disabled:hover { border-color: #d0d3d9; color: #1f2329; background: #fff; }
+      .busy-button--primary:disabled:hover { border-color: #1664ff; color: #fff; background: #1664ff; }
+      .busy-tag { display: inline-flex; align-items: center; height: 20px; padding: 0 6px; border-radius: 4px; font-size: 12px; line-height: 1; white-space: nowrap; }
+      .busy-tag--primary { background: #e8f0ff; color: #1664ff; }
+      .busy-tag--info { background: #f2f3f5; color: #646a73; }
+      .busy-descriptions { width: 100%; border-collapse: collapse; }
+      .busy-descriptions th, .busy-descriptions td { padding: 10px 12px; border-bottom: 1px solid #eff0f2; text-align: left; font-size: 13px; }
+      .busy-descriptions th { width: 110px; font-weight: 500; color: #646a73; background: #fafbfc; }
+      .busy-input input { width: 100%; box-sizing: border-box; height: 32px; padding: 0 10px; border: 1px solid #d0d3d9; border-radius: 6px; font-size: 13px; }
+      .busy-input input:focus { outline: 0; border-color: #1664ff; box-shadow: 0 0 0 2px rgba(22, 100, 255, .12); }
+      .busy-form-item { margin-bottom: 16px; }
+      .busy-form-item__label { margin-bottom: 6px; font-size: 13px; color: #1f2329; }
+      .tpl-native-state { padding: 36px 16px; text-align: center; color: #8a9099; font-size: 13px; }
+      .u-mono { font-variant-numeric: tabular-nums; }
+    }
+    [hidden] { display: none !important; }
+    .dept-layout { display: grid; grid-template-columns: 340px minmax(0, 1fr); gap: 16px; align-items: start; }
+    .dept-tree-panel { min-height: 520px; }
+    .dept-tree-toolbar { display: flex; gap: 8px; margin-bottom: 8px; }
+    .dept-tree-toolbar .busy-input { flex: 1; }
+    .dept-tree-meta { min-height: 18px; margin-bottom: 8px; color: #8a9099; font-size: 12px; }
+    .dept-tree { min-height: 380px; font-size: 13px; outline: 0; }
+    .dept-node__row { position: relative; display: flex; align-items: center; gap: 6px; min-height: 34px; padding: 5px 8px; border-radius: 6px; cursor: pointer; user-select: none; }
+    .dept-node__row:hover { background: #f2f5fa; }
+    .dept-node__row:focus-visible { outline: 2px solid #9dbbff; outline-offset: -2px; }
+    .dept-node__row.is-selected { background: #e8f0ff; }
+    .dept-node__row.is-selected .dept-node__name { color: #1664ff; font-weight: 600; }
+    .dept-node__row.is-stopped .dept-node__name { color: #9aa0a6; }
+    .dept-node__row.is-match .dept-node__name { background: #fff3c4; }
+    .dept-node__row.is-dragging { opacity: .45; }
+    .dept-node__row.is-drop-inside { outline: 2px solid #1664ff; outline-offset: -2px; background: #eef4ff; }
+    .dept-node__row.is-drop-before { box-shadow: inset 0 2px 0 #1664ff; }
+    .dept-node__row.is-drop-after { box-shadow: inset 0 -2px 0 #1664ff; }
+    .dept-node__toggle { flex: none; width: 18px; height: 18px; padding: 0; border: 0; background: none; color: #8a9099; font-size: 11px; line-height: 1; cursor: pointer; transition: transform .15s; }
+    .dept-node__toggle.is-expanded { transform: rotate(90deg); }
+    .dept-node__toggle.is-empty { visibility: hidden; }
+    .dept-node__toggle:disabled { cursor: default; }
+    .dept-node__name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .dept-node__add { flex: none; width: 20px; height: 20px; padding: 0; border: 0; border-radius: 4px; background: #e8f0ff; color: #1664ff; font-size: 15px; line-height: 18px; cursor: pointer; opacity: 0; }
+    .dept-node__row:hover .dept-node__add, .dept-node__row.is-selected .dept-node__add { opacity: 1; }
+    .dept-node__add:disabled { opacity: .35; cursor: not-allowed; }
+    .dept-node__children { margin-left: 14px; border-left: 1px dashed #e5e6eb; padding-left: 4px; }
+    .dept-tree-empty { margin: 12px 8px; padding: 20px 12px; border: 1px dashed #d0d3d9; border-radius: 8px; text-align: center; color: #8a9099; font-size: 13px; }
+    .dept-tree-empty .busy-button { margin-top: 10px; }
+    .dept-detail-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 16px; }
+    .dept-detail-title-row { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .dept-detail-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 18px; }
+    .dept-detail-path { margin: 6px 0 16px; color: #8a9099; font-size: 12px; word-break: break-all; }
+    .dept-detail-actions { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+    .dept-btn-danger { border-color: #f0c2bd; color: #d92d20; }
+    .dept-btn-danger:hover { border-color: #d92d20; color: #d92d20; }
+    .dept-btn-danger:disabled:hover { border-color: #f0c2bd; color: #d92d20; }
+    .dept-hint { margin: 12px 0 0; padding: 10px 14px; border-radius: 6px; background: #f7f8fa; color: #8a9099; font-size: 12px; line-height: 1.7; }
+    .dept-modal { position: fixed; inset: 0; z-index: 100; display: flex; align-items: center; justify-content: center; padding: 24px; background: rgba(15, 23, 42, .45); }
+    .dept-modal__dialog { width: 600px; max-width: 100%; max-height: calc(100vh - 48px); overflow: auto; border-radius: 10px; background: #fff; box-shadow: 0 16px 48px rgba(15, 23, 42, .25); }
+    .dept-modal__head { padding: 18px 20px 8px; }
+    .dept-modal__title { margin: 0; font-size: 17px; }
+    .dept-modal__subtitle { margin: 6px 0 0; color: #8a9099; font-size: 12px; word-break: break-all; }
+    .dept-modal__body { padding: 12px 20px 4px; }
+    .dept-modal__foot { display: flex; justify-content: flex-end; gap: 8px; padding: 12px 20px 20px; }
+    .dept-form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 16px; }
+    .dept-form-grid__full { grid-column: 1 / -1; }
+    .dept-form-item__label em { color: #d92d20; font-style: normal; }
+    .dept-field-hint { margin-top: 4px; color: #8a9099; font-size: 12px; }
+    .dept-field-error { min-height: 18px; margin-top: 4px; color: #d92d20; font-size: 12px; }
+    .dept-readonly { box-sizing: border-box; min-height: 32px; padding: 6px 10px; border: 1px dashed #d0d3d9; border-radius: 6px; background: #f7f8fa; color: #646a73; font-size: 13px; line-height: 20px; }
+    .dept-textarea { width: 100%; box-sizing: border-box; min-height: 68px; padding: 8px 10px; border: 1px solid #d0d3d9; border-radius: 6px; font: inherit; resize: vertical; }
+    .dept-textarea:focus { outline: 0; border-color: #1664ff; box-shadow: 0 0 0 2px rgba(22, 100, 255, .12); }
+    .dept-confirm-text { margin: 0 0 8px; font-size: 14px; line-height: 1.7; }
+    .dept-confirm-meta { margin: 0; color: #646a73; font-size: 13px; line-height: 1.7; word-break: break-all; }
+    .dept-confirm-warn { margin: 12px 0 0; padding: 10px 12px; border-radius: 6px; background: #fff7e8; color: #a15c00; font-size: 13px; line-height: 1.7; }
+    .dept-toast-host { position: fixed; top: 18px; left: 50%; z-index: 200; display: flex; flex-direction: column; gap: 8px; transform: translateX(-50%); pointer-events: none; }
+    .dept-toast { padding: 9px 16px; border-radius: 6px; background: #1f2329; color: #fff; font-size: 13px; box-shadow: 0 6px 20px rgba(0, 0, 0, .2); }
+    .dept-toast--error { background: #d92d20; }
+    @media (max-width: 1100px) {
+      .dept-layout { grid-template-columns: 300px minmax(0, 1fr); }
+      .dept-detail-head { flex-direction: column; }
+      .dept-detail-actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <nav class="tpl-nav" aria-label="原型导航">
+    <span class="tpl-nav__logo">示例集团 · 人资管理</span>
+    <span class="tpl-nav__crumb">组织管理 / <b>部门管理</b></span>
+    <span class="tpl-nav__spacer"></span>
+    <span class="tpl-nav__crumb">静态 Mock</span>
+  </nav>
+
+  <main class="tpl-page">
+    <div class="tpl-page-head">
+      <div class="tpl-page-head__main">
+        <h1 class="tpl-page-title">部门管理</h1>
+        <p class="tpl-page-subtitle">维护公司五级组织架构与部门档案</p>
+      </div>
+    </div>
+
+    <div class="dept-layout">
+      <section class="tpl-panel dept-tree-panel" aria-label="部门树">
+        <div class="dept-tree-toolbar">
+          <div class="busy-input"><input id="treeSearch" type="search" maxlength="30" placeholder="搜索部门名称或编码" autocomplete="off"></div>
+          <button class="busy-button" type="button" id="btnExpand"><span>展开全部</span></button>
+        </div>
+        <div class="dept-tree-meta" id="treeMeta"></div>
+        <div class="dept-tree" id="deptTree" role="tree" aria-label="五级部门树"></div>
+        <div class="tpl-native-state" id="treeError" hidden>部门树加载失败，请检查网络后重试 <button class="busy-button" type="button" id="btnTreeRetry" style="margin-left:8px"><span>重试</span></button></div>
+      </section>
+
+      <section class="tpl-panel" aria-label="部门档案">
+        <div class="dept-detail-head">
+          <div>
+            <div class="dept-detail-title-row">
+              <h2 class="dept-detail-title" id="detailTitle"></h2>
+              <span id="detailTags"></span>
+            </div>
+            <p class="dept-detail-path" id="detailPath"></p>
+          </div>
+          <div class="dept-detail-actions">
+            <button class="busy-button busy-button--primary" type="button" id="btnAddChild"><span>新增下级</span></button>
+            <button class="busy-button" type="button" id="btnEdit"><span>编辑</span></button>
+            <button class="busy-button" type="button" id="btnToggleStatus"><span>停用</span></button>
+            <button class="busy-button dept-btn-danger" type="button" id="btnDelete"><span>删除</span></button>
+          </div>
+        </div>
+        <div id="detailHost"></div>
+        <p class="dept-hint">静态 Mock：选中节点后可新增下级；拖拽同级调整顺序，拖入节点内部改变上级；关键字输入 FAIL 可演示加载失败与重试。</p>
+      </section>
+    </div>
+  </main>
+
+  <div class="dept-modal" id="formModal" hidden>
+    <div class="dept-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="formTitle">
+      <div class="dept-modal__head">
+        <h3 class="dept-modal__title" id="formTitle">新增部门</h3>
+        <p class="dept-modal__subtitle" id="formSubtitle"></p>
+      </div>
+      <div class="dept-modal__body" id="formBody"></div>
+      <div class="dept-modal__foot">
+        <button class="busy-button" type="button" id="btnFormCancel"><span>取消</span></button>
+        <button class="busy-button busy-button--primary" type="button" id="btnFormSave"><span>保存</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dept-modal" id="confirmModal" hidden>
+    <div class="dept-modal__dialog" role="alertdialog" aria-modal="true" aria-labelledby="confirmTitle" style="width:460px">
+      <div class="dept-modal__head">
+        <h3 class="dept-modal__title" id="confirmTitle">确认操作</h3>
+      </div>
+      <div class="dept-modal__body" id="confirmBody"></div>
+      <div class="dept-modal__foot">
+        <button class="busy-button" type="button" id="btnConfirmCancel"><span>取消</span></button>
+        <button class="busy-button busy-button--primary" type="button" id="btnConfirmOk"><span>确认</span></button>
+      </div>
+    </div>
+  </div>
+
+  <div class="dept-toast-host" id="toastHost" aria-live="polite"></div>
+
+  <script>
+    var LEVELS = ['公司', '中心', '部门', '小组', '子小组'];
+    var DATA = [
+      { id: 'D001', name: '示例集团', code: 'DEMO', parentId: null, leader: '李宏', headcount: null, sort: 10, status: '启用', established: '2017-03-01', revoked: '', remark: '集团总部', updatedAt: '2026-11-20 18:20', inService: 0 },
+      { id: 'D010', name: '技术中心', code: 'TECH', parentId: 'D001', leader: '张丹', headcount: 120, sort: 10, status: '启用', established: '2021-03-01', revoked: '', remark: '', updatedAt: '2026-11-19 10:12', inService: 8 },
+      { id: 'D011', name: '研发部', code: 'RD', parentId: 'D010', leader: '张芳', headcount: 60, sort: 10, status: '启用', established: '2021-06-01', revoked: '', remark: '研发与平台建设', updatedAt: '2026-11-18 16:40', inService: 6 },
+      { id: 'D0111', name: '平台小组', code: 'RD_PLATFORM', parentId: 'D011', leader: '刘华', headcount: 20, sort: 10, status: '启用', established: '2022-01-10', revoked: '', remark: '', updatedAt: '2026-11-15 09:30', inService: 3 },
+      { id: 'D01111', name: '基础架构组', code: 'RD_PLATFORM_INFRA', parentId: 'D0111', leader: '李鹏', headcount: 8, sort: 10, status: '启用', established: '2022-02-14', revoked: '', remark: '', updatedAt: '2026-11-12 11:05', inService: 6 },
+      { id: 'D01112', name: '效能工具组', code: 'RD_PLATFORM_DEVX', parentId: 'D0111', leader: '李梅', headcount: 6, sort: 20, status: '启用', established: '2023-04-03', revoked: '', remark: '', updatedAt: '2026-11-08 14:22', inService: 2 },
+      { id: 'D0112', name: '业务研发小组', code: 'RD_BIZ', parentId: 'D011', leader: '张璐', headcount: 26, sort: 20, status: '启用', established: '2021-09-01', revoked: '', remark: '', updatedAt: '2026-11-14 17:10', inService: 12 },
+      { id: 'D0113', name: '前端小组', code: 'RD_FE', parentId: 'D011', leader: '李平', headcount: 12, sort: 30, status: '停用', established: '2021-08-01', revoked: '2026-10-31', remark: '并入业务研发小组', updatedAt: '2026-10-31 18:00', inService: 0 },
+      { id: 'D012', name: '产品部', code: 'PRODUCT', parentId: 'D010', leader: '李洋', headcount: 25, sort: 20, status: '启用', established: '2021-05-20', revoked: '', remark: '', updatedAt: '2026-11-16 10:00', inService: 5 },
+      { id: 'D0121', name: '产品设计小组', code: 'PRODUCT_DESIGN', parentId: 'D012', leader: '李涛', headcount: 10, sort: 10, status: '启用', established: '2022-03-08', revoked: '', remark: '', updatedAt: '2026-11-11 15:36', inService: 4 },
+      { id: 'D013', name: '数据部', code: 'DATA', parentId: 'D010', leader: '张梅', headcount: 18, sort: 30, status: '启用', established: '2023-01-05', revoked: '', remark: '', updatedAt: '2026-11-10 09:18', inService: 4 },
+      { id: 'D0131', name: '数据平台小组', code: 'DATA_PLATFORM', parentId: 'D013', leader: '张健', headcount: 8, sort: 10, status: '启用', established: '2023-02-01', revoked: '', remark: '', updatedAt: '2026-11-09 13:44', inService: 3 },
+      { id: 'D020', name: '运营中心', code: 'OPS', parentId: 'D001', leader: '张鹏', headcount: 300, sort: 20, status: '启用', established: '2018-06-01', revoked: '', remark: '', updatedAt: '2026-11-17 11:26', inService: 12 },
+      { id: 'D021', name: '门店运营部', code: 'OPS_STORE', parentId: 'D020', leader: '李波', headcount: 260, sort: 10, status: '启用', established: '2018-06-01', revoked: '', remark: '', updatedAt: '2026-11-13 16:02', inService: 20 },
+      { id: 'D0211', name: '华东督导小组', code: 'OPS_EAST', parentId: 'D021', leader: '张宏', headcount: 60, sort: 10, status: '启用', established: '2019-01-01', revoked: '', remark: '', updatedAt: '2026-11-07 10:30', inService: 15 },
+      { id: 'D0212', name: '华南督导小组', code: 'OPS_SOUTH', parentId: 'D021', leader: '张悦', headcount: 50, sort: 20, status: '启用', established: '2019-01-01', revoked: '', remark: '', updatedAt: '2026-11-06 09:52', inService: 11 },
+      { id: 'D022', name: '商品部', code: 'OPS_GOODS', parentId: 'D020', leader: '李宇', headcount: 30, sort: 20, status: '启用', established: '2020-04-15', revoked: '', remark: '', updatedAt: '2026-11-05 14:08', inService: 9 },
+      { id: 'D030', name: '供应链中心', code: 'SCM', parentId: 'D001', leader: '张然', headcount: 180, sort: 30, status: '启用', established: '2018-01-01', revoked: '', remark: '', updatedAt: '2026-11-15 16:12', inService: 6 },
+      { id: 'D031', name: '采购部', code: 'SCM_BUY', parentId: 'D030', leader: '张浩', headcount: 80, sort: 10, status: '启用', established: '2018-01-01', revoked: '', remark: '', updatedAt: '2026-11-09 10:40', inService: 10 },
+      { id: 'D0311', name: '生鲜采购小组', code: 'SCM_BUY_FRESH', parentId: 'D031', leader: '李宁', headcount: 30, sort: 10, status: '启用', established: '2019-03-10', revoked: '', remark: '', updatedAt: '2026-11-04 11:20', inService: 8 },
+      { id: 'D040', name: '财务中心', code: 'FIN', parentId: 'D001', leader: '张静', headcount: 40, sort: 40, status: '启用', established: '2018-01-01', revoked: '', remark: '', updatedAt: '2026-11-18 09:10', inService: 5 },
+      { id: 'D041', name: '核算部', code: 'FIN_ACC', parentId: 'D040', leader: '张帆', headcount: 20, sort: 10, status: '启用', established: '2018-01-01', revoked: '', remark: '', updatedAt: '2026-11-12 15:48', inService: 6 },
+      { id: 'D042', name: '资金部', code: 'FIN_FUND', parentId: 'D040', leader: '李峰', headcount: 12, sort: 20, status: '启用', established: '2018-01-01', revoked: '', remark: '', updatedAt: '2026-11-08 10:14', inService: 4 },
+      { id: 'D050', name: '人力资源中心', code: 'HR', parentId: 'D001', leader: '张帆', headcount: 35, sort: 50, status: '启用', established: '2017-06-01', revoked: '', remark: '', updatedAt: '2026-11-19 15:30', inService: 5 },
+      { id: 'D051', name: '人力资源部', code: 'HR_OPS', parentId: 'D050', leader: '张静', headcount: 28, sort: 10, status: '启用', established: '2017-06-01', revoked: '', remark: '', updatedAt: '2026-11-17 13:26', inService: 8 },
+      { id: 'D0511', name: '招聘小组', code: 'HR_RECRUIT', parentId: 'D051', leader: '张刚', headcount: 10, sort: 10, status: '启用', established: '2018-02-01', revoked: '', remark: '', updatedAt: '2026-11-14 10:02', inService: 4 },
+      { id: 'D0512', name: '员工关系小组', code: 'HR_ER', parentId: 'D051', leader: '李宁', headcount: 8, sort: 20, status: '启用', established: '2018-02-01', revoked: '', remark: '', updatedAt: '2026-11-10 16:18', inService: 3 },
+      { id: 'D0513', name: '企业文化小组', code: 'HR_CULTURE', parentId: 'D051', leader: '张宏', headcount: 4, sort: 30, status: '启用', established: '2024-05-06', revoked: '', remark: '新建小组', updatedAt: '2026-11-03 10:20', inService: 0 }
+    ];
+
+    var state = {
+      selectedId: 'D001',
+      expanded: {},
+      search: '',
+      snapshot: null,
+      treeError: false,
+      draggingId: null,
+      drop: null,
+      mockRetried: false,
+      form: null,
+      confirmHandler: null
+    };
+
+    function $(id) { return document.getElementById(id); }
+    function esc(value) { return String(value == null ? '' : value).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;'); }
+    function byId(id) { for (var i = 0; i < DATA.length; i++) { if (DATA[i].id === id) return DATA[i]; } return null; }
+    function siblingsOf(parentId) {
+      return DATA.filter(function (n) { return n.parentId === parentId; }).sort(function (a, b) {
+        if (a.sort !== b.sort) return a.sort - b.sort;
+        return a.id < b.id ? -1 : 1;
+      });
+    }
+    function childrenOf(id) { return siblingsOf(id); }
+    function depthOf(node) { var depth = 0; var cur = node; while (cur && cur.parentId) { cur = byId(cur.parentId); depth++; } return depth; }
+    function pathOf(node) {
+      var names = []; var cur = node;
+      while (cur) { names.unshift(cur.name); cur = cur.parentId ? byId(cur.parentId) : null; }
+      return names.join(' / ');
+    }
+    function today() { var d = new Date(); return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0'); }
+    function nowStr() { var d = new Date(); return today() + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'); }
+    function isDescendant(candidateId, ancestorId) {
+      var cur = byId(candidateId);
+      while (cur && cur.parentId) { if (cur.parentId === ancestorId) return true; cur = byId(cur.parentId); }
+      return false;
+    }
+    function subtreeMaxDepth(node) {
+      var max = depthOf(node);
+      DATA.forEach(function (n) { if (n.id === node.id || isDescendant(n.id, node.id)) { max = Math.max(max, depthOf(n)); } });
+      return max;
+    }
+    function hasEnabledChildren(id) {
+      return DATA.some(function (n) { return n.parentId === id && n.status === '启用'; });
+    }
+    function levelTag(node) { return '<span class="busy-tag busy-tag--info">' + LEVELS[depthOf(node)] + '</span>'; }
+    function statusTag(node) { return '<span class="busy-tag busy-tag--' + (node.status === '启用' ? 'primary' : 'info') + '">' + node.status + '</span>'; }
+
+    function toast(message, type) {
+      var host = $('toastHost');
+      var item = document.createElement('div');
+      item.className = 'dept-toast' + (type === 'error' ? ' dept-toast--error' : '');
+      item.textContent = message;
+      host.appendChild(item);
+      setTimeout(function () { item.remove(); }, 2400);
+    }
+
+    function searchActive() { return !!state.search.trim(); }
+    function canMutate() { return !searchActive(); }
+
+    function renderToolbar() {
+      var expandable = DATA.filter(function (n) { return childrenOf(n.id).length > 0; });
+      var allExpanded = expandable.length > 0 && expandable.every(function (n) { return !!state.expanded[n.id]; });
+      var btn = $('btnExpand');
+      btn.querySelector('span').textContent = allExpanded ? '收起全部' : '展开全部';
+      btn.disabled = searchActive();
+      btn.title = searchActive() ? '搜索状态下不可展开或收起全部' : '';
+      $('treeMeta').textContent = searchActive() ? '搜索状态只读，清除关键字后恢复维护' : '';
+    }
+
+    function renderTree() {
+      var tree = $('deptTree');
+      if (state.treeError) {
+        tree.hidden = true;
+        $('treeError').hidden = false;
+        return;
+      }
+      tree.hidden = false;
+      $('treeError').hidden = true;
+
+      var kw = state.search.trim().toLowerCase();
+      var matched = {}; var visible = {}; var matchCount = 0;
+      if (kw) {
+        DATA.forEach(function (n) {
+          if (n.name.toLowerCase().indexOf(kw) >= 0 || n.code.toLowerCase().indexOf(kw) >= 0) {
+            matched[n.id] = true; matchCount++;
+            var cur = n;
+            while (cur) { visible[cur.id] = true; cur = cur.parentId ? byId(cur.parentId) : null; }
+          }
+        });
+      }
+
+      function nodeHtml(node) {
+        if (kw && !visible[node.id]) return '';
+        var depth = depthOf(node);
+        var kids = childrenOf(node.id);
+        var expanded = kw ? kids.length > 0 : !!state.expanded[node.id];
+        var selected = state.selectedId === node.id;
+        var rowClass = 'dept-node__row' +
+          (selected ? ' is-selected' : '') +
+          (node.status === '停用' ? ' is-stopped' : '') +
+          (matched[node.id] ? ' is-match' : '');
+        var addReason = '';
+        if (kw) addReason = '搜索状态下不可维护';
+        else if (depth >= 4) addReason = '子小组不可新增下级';
+        else if (node.status === '停用') addReason = '停用部门不可新增下级';
+        var addBtn = '<button class="dept-node__add" type="button" data-add="' + node.id + '" title="' + esc(addReason || '新增下级') + '"' + (addReason ? ' disabled' : '') + '>+</button>';
+        var toggle = '<button class="dept-node__toggle' + (kids.length ? '' : ' is-empty') + (expanded ? ' is-expanded' : '') + '" type="button" data-toggle="' + node.id + '" aria-label="展开或收起"' + (kids.length && !kw ? '' : ' disabled') + '>&#9656;</button>';
+        var html = '<div class="dept-node" role="treeitem" aria-level="' + (depth + 1) + '" aria-selected="' + (selected ? 'true' : 'false') + '">' +
+          '<div class="' + rowClass + '" data-id="' + node.id + '" tabindex="0" draggable="' + (!kw && depth > 0 ? 'true' : 'false') + '">' +
+          toggle +
+          '<span class="dept-node__name" title="' + esc(node.name) + '">' + esc(node.name) + '</span>' +
+          statusTag(node) + addBtn +
+          '</div>';
+        if (kids.length && expanded) {
+          html += '<div class="dept-node__children" role="group">' + kids.map(nodeHtml).join('') + '</div>';
+        }
+        html += '</div>';
+        return html;
+      }
+
+      var root = byId('D001');
+      var html = nodeHtml(root);
+      if (kw && matchCount === 0) {
+        html = '<div class="tpl-native-state" data-requirement="tree-search-empty">未找到匹配的部门</div>';
+      } else if (!kw && childrenOf(root.id).length === 0) {
+        html += '<div class="dept-tree-empty">暂无下级部门<button class="busy-button busy-button--primary" type="button" data-add-center="1"><span>新增中心</span></button></div>';
+      }
+      tree.innerHTML = html;
+      $('treeMeta').textContent = kw ? '命中 ' + matchCount + ' 个部门，搜索状态只读' : '';
+    }
+
+    function addDisabledReason(node) {
+      if (searchActive()) return '搜索状态下不可维护';
+      if (depthOf(node) >= 4) return '子小组不可新增下级';
+      if (node.status === '停用') return '停用部门不可新增下级';
+      return '';
+    }
+
+    function renderDetail() {
+      var node = byId(state.selectedId) || byId('D001');
+      $('detailTitle').innerHTML = esc(node.name) + levelTag(node);
+      $('detailTags').innerHTML = statusTag(node);
+      $('detailPath').textContent = pathOf(node);
+
+      var parent = node.parentId ? byId(node.parentId) : null;
+      var fields = [
+        ['部门名称', node.name],
+        ['部门编码', node.code],
+        ['上级部门', parent ? parent.name : '—'],
+        ['部门路径', pathOf(node)],
+        ['负责人', node.leader || '—'],
+        ['编制人数', node.headcount == null || node.headcount === '' ? '—' : node.headcount],
+        ['在职人数', node.inService],
+        ['排序号', node.sort],
+        ['状态', node.status],
+        ['成立日期', node.established],
+        ['撤销日期', node.revoked || '—'],
+        ['备注', node.remark || '—'],
+        ['更新时间', node.updatedAt]
+      ];
+      var rows = '';
+      for (var i = 0; i < fields.length; i += 2) {
+        rows += '<tr><th>' + fields[i][0] + '</th><td>' + esc(fields[i][1]) + '</td>' +
+          (fields[i + 1] ? '<th>' + fields[i + 1][0] + '</th><td>' + esc(fields[i + 1][1]) + '</td>' : '<th></th><td></td>') + '</tr>';
+      }
+      $('detailHost').innerHTML = '<table class="busy-descriptions"><tbody>' + rows + '</tbody></table>';
+
+      var isRoot = node.parentId === null;
+      var addReason = addDisabledReason(node);
+      var btnAdd = $('btnAddChild');
+      btnAdd.disabled = !!addReason;
+      btnAdd.title = addReason;
+
+      var editReason = searchActive() ? '搜索状态下不可维护' : '';
+      $('btnEdit').disabled = !!editReason;
+      $('btnEdit').title = editReason;
+
+      var toggle = $('btnToggleStatus');
+      toggle.hidden = isRoot;
+      var toggleReason = '';
+      if (isRoot) {
+        toggleReason = '';
+      } else if (node.status === '启用') {
+        toggle.querySelector('span').textContent = '停用';
+        if (searchActive()) toggleReason = '搜索状态下不可维护';
+        else if (hasEnabledChildren(node.id)) toggleReason = '存在启用下级部门，需先停用或移出';
+      } else {
+        toggle.querySelector('span').textContent = '启用';
+        if (searchActive()) toggleReason = '搜索状态下不可维护';
+        else if (parent && parent.status === '停用') toggleReason = '上级部门停用中，需先启用上级';
+      }
+      toggle.disabled = !!toggleReason;
+      toggle.title = toggleReason;
+
+      var del = $('btnDelete');
+      del.hidden = isRoot;
+      var delReason = '';
+      if (isRoot) {
+        delReason = '';
+      } else if (searchActive()) delReason = '搜索状态下不可维护';
+      else if (childrenOf(node.id).length > 0) delReason = '存在 ' + childrenOf(node.id).length + ' 个下级部门';
+      else if (node.inService > 0) delReason = '存在 ' + node.inService + ' 名在职员工';
+      del.disabled = !!delReason;
+      del.title = delReason;
+    }
+
+    function render() {
+      renderToolbar();
+      renderTree();
+      renderDetail();
+    }
+
+    function selectNode(id) {
+      if (!byId(id)) return;
+      state.selectedId = id;
+      try { history.replaceState(null, '', '#dept/' + id); } catch (e) { /* file 协议下忽略 */ }
+      render();
+    }
+
+    /* ---------- 新增 / 编辑 ---------- */
+    function formHtml(node, mode) {
+      var parent = mode === 'create' ? byId(state.selectedId) : byId(node.parentId);
+      var parentPath = parent ? pathOf(parent) + ' · ' + LEVELS[depthOf(parent)] : '—';
+      var level = LEVELS[mode === 'create' ? depthOf(parent) + 1 : depthOf(node)];
+      var value = function (field) { return node ? (node[field] == null ? '' : node[field]) : ''; };
+      var codeAttr = mode === 'edit' ? ' readonly' : '';
+      var sortValue = mode === 'create' ? (childrenOf(parent.id).reduce(function (m, n) { return Math.max(m, n.sort || 0); }, 0) + 10) : node.sort;
+      var established = mode === 'create' ? today() : node.established;
+      var name = mode === 'edit' ? node.name : '';
+      var code = mode === 'edit' ? node.code : '';
+      var leader = mode === 'edit' ? (node.leader || '') : '';
+      var headcount = mode === 'edit' && node.headcount != null ? node.headcount : '';
+      var remark = mode === 'edit' ? (node.remark || '') : '';
+      return '<div class="dept-form-grid">' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">部门名称 <em>*</em></div><div class="busy-form-item__content"><div class="busy-input"><input id="fName" maxlength="30" value="' + esc(name) + '" placeholder="1–30 个字符"></div><div class="dept-field-error" id="errName"></div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">部门编码 <em>*</em></div><div class="busy-form-item__content"><div class="busy-input"><input id="fCode" maxlength="32" value="' + esc(code) + '" placeholder="大写字母开头，字母、数字或下划线"' + codeAttr + '></div><div class="dept-field-hint">全局唯一，创建后不可修改</div><div class="dept-field-error" id="errCode"></div></div></div>' +
+        '<div class="busy-form-item dept-form-grid__full"><div class="busy-form-item__label">上级部门</div><div class="busy-form-item__content"><div class="dept-readonly">' + esc(parentPath) + '</div><div class="dept-field-hint">目标层级类型：' + level + '</div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">负责人</div><div class="busy-form-item__content"><div class="busy-input"><input id="fLeader" maxlength="20" value="' + esc(leader) + '" placeholder="最长 20 个字符"></div><div class="dept-field-error" id="errLeader"></div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">编制人数</div><div class="busy-form-item__content"><div class="busy-input"><input id="fHeadcount" type="number" min="0" max="9999" step="1" value="' + esc(headcount) + '" placeholder="0–9999，可为空"></div><div class="dept-field-error" id="errHeadcount"></div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">排序号 <em>*</em></div><div class="busy-form-item__content"><div class="busy-input"><input id="fSort" type="number" min="0" max="9999" step="1" value="' + esc(sortValue) + '"></div><div class="dept-field-error" id="errSort"></div></div></div>' +
+        '<div class="busy-form-item"><div class="busy-form-item__label">成立日期 <em>*</em></div><div class="busy-form-item__content"><div class="busy-input"><input id="fEstablished" type="date" max="' + today() + '" value="' + esc(established) + '"></div><div class="dept-field-error" id="errEstablished"></div></div></div>' +
+        '<div class="busy-form-item dept-form-grid__full"><div class="busy-form-item__label">备注</div><div class="busy-form-item__content"><textarea class="dept-textarea" id="fRemark" maxlength="200" placeholder="最长 200 个字符">' + esc(remark) + '</textarea><div class="dept-field-error" id="errRemark"></div></div></div>' +
+        '</div>';
+    }
+
+    function openForm(mode, nodeId) {
+      var node = mode === 'edit' ? byId(nodeId) : byId(state.selectedId);
+      if (!node || !canMutate()) return;
+      if (mode === 'create') {
+        var reason = addDisabledReason(node);
+        if (reason) { toast(reason, 'error'); return; }
+      }
+      state.form = { mode: mode, nodeId: node.id, parentId: mode === 'create' ? node.id : node.parentId };
+      $('formTitle').textContent = mode === 'create' ? '新增部门' : '编辑部门';
+      var parent = mode === 'create' ? node : byId(node.parentId);
+      var level = LEVELS[mode === 'create' ? depthOf(parent) + 1 : depthOf(node)];
+      $('formSubtitle').textContent = (parent ? '上级：' + pathOf(parent) : '根公司') + ' · 目标层级：' + level;
+      $('formBody').innerHTML = formHtml(node, mode);
+      $('formModal').hidden = false;
+      setTimeout(function () { var input = $('fName'); if (input) input.focus(); }, 0);
+    }
+
+    function closeForm() {
+      $('formModal').hidden = true;
+      state.form = null;
+      $('formBody').innerHTML = '';
+    }
+
+    function setError(field, msg) {
+      var host = $('err' + field);
+      if (host) host.textContent = msg || '';
+    }
+
+    function validateForm() {
+      var mode = state.form.mode;
+      var nodeId = state.form.nodeId;
+      var parentId = state.form.parentId;
+      var name = $('fName').value.trim();
+      var code = $('fCode').value.trim();
+      var leader = $('fLeader').value.trim();
+      var headcount = $('fHeadcount').value.trim();
+      var sort = $('fSort').value.trim();
+      var established = $('fEstablished').value;
+      var remark = $('fRemark').value.trim();
+      var errors = [];
+      ['Name', 'Code', 'Leader', 'Headcount', 'Sort', 'Established', 'Remark'].forEach(function (f) { setError(f, ''); });
+
+      if (!name) errors.push(['Name', '请输入部门名称']);
+      else if (name.length > 30) errors.push(['Name', '部门名称不超过 30 个字符']);
+      else if (siblingsOf(parentId).some(function (n) { return n.id !== nodeId && n.name === name; })) errors.push(['Name', '同一上级下已存在同名部门']);
+
+      if (mode === 'create') {
+        if (!code) errors.push(['Code', '请输入部门编码']);
+        else if (!/^[A-Z][A-Z0-9_]{1,31}$/.test(code)) errors.push(['Code', '编码需为大写字母开头，仅含大写字母、数字或下划线，长度 2–32']);
+        else if (DATA.some(function (n) { return n.id !== nodeId && n.code === code; })) errors.push(['Code', '部门编码已存在']);
+      }
+      if (leader.length > 20) errors.push(['Leader', '负责人不超过 20 个字符']);
+      if (headcount && (!/^\d+$/.test(headcount) || Number(headcount) > 9999)) errors.push(['Headcount', '编制人数需为 0–9999 的整数']);
+      if (!sort || !/^\d+$/.test(sort) || Number(sort) > 9999) errors.push(['Sort', '排序号需为 0–9999 的整数']);
+      if (!established) errors.push(['Established', '请选择成立日期']);
+      else if (established > today()) errors.push(['Established', '成立日期不得晚于当天']);
+      if (remark.length > 200) errors.push(['Remark', '备注不超过 200 个字符']);
+
+      errors.forEach(function (item) { setError(item[0], item[1]); });
+      if (errors.length) {
+        var first = $('f' + errors[0][0]);
+        if (first) first.focus();
+        return null;
+      }
+      return {
+        name: name, code: code, leader: leader,
+        headcount: headcount === '' ? null : Number(headcount),
+        sort: Number(sort), established: established, remark: remark
+      };
+    }
+
+    function nextId() {
+      var max = 0;
+      DATA.forEach(function (n) {
+        var num = Number(String(n.id).replace(/^D/, ''));
+        if (!isNaN(num)) max = Math.max(max, num);
+      });
+      return 'D' + String(max + 1).padStart(3, '0');
+    }
+
+    function saveForm() {
+      if (!state.form) return;
+      var values = validateForm();
+      if (!values) return;
+      var button = $('btnFormSave');
+      button.disabled = true;
+      button.querySelector('span').textContent = '保存中…';
+      setTimeout(function () {
+        button.disabled = false;
+        button.querySelector('span').textContent = '保存';
+        if (state.form.mode === 'create') {
+          var id = nextId();
+          var node = {
+            id: id, name: values.name, code: values.code, parentId: state.form.parentId,
+            leader: values.leader, headcount: values.headcount, sort: values.sort,
+            status: '启用', established: values.established, revoked: '', remark: values.remark,
+            updatedAt: nowStr(), inService: 0
+          };
+          DATA.push(node);
+          state.expanded[state.form.parentId] = true;
+          state.selectedId = id;
+          closeForm();
+          render();
+          toast('部门新增成功');
+        } else {
+          var target = byId(state.form.nodeId);
+          if (!target) { closeForm(); render(); toast('部门已被删除，请刷新后重试', 'error'); return; }
+          target.name = values.name;
+          target.leader = values.leader;
+          target.headcount = values.headcount;
+          target.sort = values.sort;
+          target.established = values.established;
+          target.remark = values.remark;
+          target.updatedAt = nowStr();
+          closeForm();
+          render();
+          toast('部门信息已保存');
+        }
+      }, 260);
+    }
+
+    /* ---------- 删除 / 启停 ---------- */
+    function openConfirm(title, bodyHtml, confirmText, handler) {
+      $('confirmTitle').textContent = title;
+      $('confirmBody').innerHTML = bodyHtml;
+      $('btnConfirmOk').querySelector('span').textContent = confirmText;
+      $('btnConfirmOk').disabled = false;
+      $('confirmModal').hidden = false;
+      state.confirmHandler = handler;
+    }
+
+    function closeConfirm() {
+      $('confirmModal').hidden = true;
+      state.confirmHandler = null;
+      $('btnConfirmOk').querySelector('span').textContent = '确认';
+      $('btnConfirmOk').disabled = false;
+    }
+
+    function runConfirm() {
+      if (!state.confirmHandler) return;
+      var handler = state.confirmHandler;
+      var button = $('btnConfirmOk');
+      button.disabled = true;
+      button.querySelector('span').textContent = '处理中…';
+      setTimeout(function () {
+        closeConfirm();
+        handler();
+      }, 240);
+    }
+
+    function openDelete() {
+      var node = byId(state.selectedId);
+      if (!node || node.parentId === null) return;
+      if (searchActive()) { toast('搜索状态下不可维护', 'error'); return; }
+      if (childrenOf(node.id).length) { toast('存在下级部门，不可删除', 'error'); return; }
+      if (node.inService > 0) { toast('存在在职员工，不可删除', 'error'); return; }
+      var body = '<p class="dept-confirm-text">将删除部门 <strong>' + esc(node.name) + '</strong>，删除后不可恢复。</p>' +
+        '<p class="dept-confirm-meta">部门路径：' + esc(pathOf(node)) + '</p>';
+      openConfirm('删除部门', body, '删除', function () {
+        if (childrenOf(node.id).length) { toast('存在下级部门，不可删除', 'error'); return; }
+        if (node.inService > 0) { toast('存在在职员工，不可删除', 'error'); return; }
+        var parentId = node.parentId;
+        DATA = DATA.filter(function (n) { return n.id !== node.id; });
+        state.selectedId = parentId;
+        if (parentId) state.expanded[parentId] = true;
+        render();
+        toast('部门已删除');
+      });
+    }
+
+    function openToggle() {
+      var node = byId(state.selectedId);
+      if (!node || node.parentId === null) return;
+      if (searchActive()) { toast('搜索状态下不可维护', 'error'); return; }
+      var parent = byId(node.parentId);
+      if (node.status === '启用') {
+        if (hasEnabledChildren(node.id)) { toast('存在启用下级部门，不可停用', 'error'); return; }
+        var body = '<p class="dept-confirm-text">将停用部门 <strong>' + esc(node.name) + '</strong>。</p>' +
+          '<p class="dept-confirm-meta">部门路径：' + esc(pathOf(node)) + '<br>在职人数：' + node.inService + ' 人</p>' +
+          '<p class="dept-confirm-warn">停用后不可新增下级、不可承接新任职，历史任职记录保留；撤销日期将记录为当天。</p>';
+        openConfirm('停用部门', body, '停用', function () {
+          if (hasEnabledChildren(node.id)) { toast('存在启用下级部门，不可停用', 'error'); return; }
+          node.status = '停用';
+          node.revoked = today();
+          node.updatedAt = nowStr();
+          render();
+          toast('部门已停用');
+        });
+      } else {
+        if (parent && parent.status === '停用') { toast('上级部门停用中，需先启用上级', 'error'); return; }
+        var startBody = '<p class="dept-confirm-text">将启用部门 <strong>' + esc(node.name) + '</strong>。</p>' +
+          '<p class="dept-confirm-meta">部门路径：' + esc(pathOf(node)) + '</p>' +
+          '<p class="dept-confirm-warn">启用后撤销日期将清空；下级部门不随本次启用自动恢复，需逐级启用。</p>';
+        openConfirm('启用部门', startBody, '启用', function () {
+          if (parent && parent.status === '停用') { toast('上级部门停用中，需先启用上级', 'error'); return; }
+          node.status = '启用';
+          node.revoked = '';
+          node.updatedAt = nowStr();
+          render();
+          toast('部门已启用');
+        });
+      }
+    }
+
+    /* ---------- 拖拽 ---------- */
+    function clearDropMarks() {
+      document.querySelectorAll('.dept-node__row').forEach(function (row) {
+        row.classList.remove('is-drop-inside', 'is-drop-before', 'is-drop-after', 'is-dragging');
+      });
+      state.drop = null;
+    }
+
+    function dropZone(event, row) {
+      var rect = row.getBoundingClientRect();
+      var ratio = (event.clientY - rect.top) / rect.height;
+      if (ratio < 0.25) return 'before';
+      if (ratio > 0.75) return 'after';
+      return 'inside';
+    }
+
+    function validDrop(dragId, targetId, zone) {
+      if (searchActive() || !dragId || !targetId || dragId === targetId) return false;
+      var drag = byId(dragId); var target = byId(targetId);
+      if (!drag || !target || drag.parentId === null) return false;
+      if (zone === 'inside') {
+        if (target.status !== '启用' || drag.status !== '启用') return false;
+        if (isDescendant(targetId, dragId)) return false;
+        var targetDepth = depthOf(target);
+        if (targetDepth >= 4) return false;
+        return targetDepth + 1 + (subtreeMaxDepth(drag) - depthOf(drag)) <= 4;
+      }
+      return target.parentId === drag.parentId;
+    }
+
+    function executeDrop(dragId, targetId, zone) {
+      var drag = byId(dragId); var target = byId(targetId);
+      if (!drag || !target) return;
+      if (zone === 'inside') {
+        drag.parentId = targetId;
+        drag.sort = childrenOf(targetId).reduce(function (m, n) { return Math.max(m, n.sort || 0); }, 0) + 10;
+        state.expanded[targetId] = true;
+      } else {
+        var list = childrenOf(drag.parentId).filter(function (n) { return n.id !== dragId; });
+        var index = list.indexOf(target);
+        if (zone === 'after') index += 1;
+        list.splice(index < 0 ? list.length : index, 0, drag);
+        list.forEach(function (n, i) { n.sort = (i + 1) * 10; });
+      }
+      drag.updatedAt = nowStr();
+      state.selectedId = dragId;
+      render();
+      toast(zone === 'inside' ? '部门上级已调整' : '同级顺序已调整');
+    }
+
+    /* ---------- 事件 ---------- */
+    $('treeSearch').addEventListener('input', function () {
+      var value = this.value;
+      var had = searchActive();
+      state.search = value;
+      var now = searchActive();
+      if (now && !had) {
+        state.snapshot = { expanded: Object.assign({}, state.expanded), selectedId: state.selectedId };
+      }
+      if (!now && had) {
+        if (state.snapshot) {
+          state.expanded = state.snapshot.expanded;
+          state.selectedId = state.snapshot.selectedId;
+          state.snapshot = null;
+        }
+        state.treeError = false;
+      }
+      if (now && value.trim().toUpperCase() === 'FAIL' && !state.mockRetried) state.treeError = true;
+      else if (state.treeError) state.treeError = false;
+      render();
+    });
+    $('treeSearch').addEventListener('keydown', function (event) {
+      if (event.key === 'Escape') {
+        this.value = '';
+        this.dispatchEvent(new Event('input'));
+      }
+    });
+
+    $('btnExpand').addEventListener('click', function () {
+      if (searchActive()) return;
+      var expandable = DATA.filter(function (n) { return childrenOf(n.id).length > 0; });
+      var allExpanded = expandable.length > 0 && expandable.every(function (n) { return !!state.expanded[n.id]; });
+      state.expanded = {};
+      if (!allExpanded) expandable.forEach(function (n) { state.expanded[n.id] = true; });
+      render();
+    });
+
+    $('btnTreeRetry').addEventListener('click', function () {
+      state.mockRetried = true;
+      state.treeError = false;
+      state.search = '';
+      $('treeSearch').value = '';
+      if (state.snapshot) {
+        state.expanded = state.snapshot.expanded;
+        state.selectedId = state.snapshot.selectedId;
+        state.snapshot = null;
+      }
+      render();
+      toast('部门树已重新加载');
+    });
+
+    $('deptTree').addEventListener('click', function (event) {
+      var toggle = event.target.closest('[data-toggle]');
+      if (toggle) {
+        if (searchActive() || toggle.disabled) return;
+        var tid = toggle.getAttribute('data-toggle');
+        if (state.expanded[tid]) delete state.expanded[tid];
+        else state.expanded[tid] = true;
+        render();
+        return;
+      }
+      var add = event.target.closest('[data-add]');
+      if (add) {
+        if (add.disabled) return;
+        openForm('create', add.getAttribute('data-add'));
+        return;
+      }
+      if (event.target.closest('[data-add-center]')) { openForm('create', 'D001'); return; }
+      var row = event.target.closest('.dept-node__row');
+      if (row) selectNode(row.getAttribute('data-id'));
+    });
+
+    $('deptTree').addEventListener('keydown', function (event) {
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      var row = event.target.closest('.dept-node__row');
+      if (!row) return;
+      event.preventDefault();
+      selectNode(row.getAttribute('data-id'));
+    });
+
+    $('deptTree').addEventListener('dragstart', function (event) {
+      var row = event.target.closest('.dept-node__row');
+      if (!row) return;
+      var id = row.getAttribute('data-id');
+      if (searchActive() || id === 'D001') { event.preventDefault(); return; }
+      state.draggingId = id;
+      row.classList.add('is-dragging');
+      if (event.dataTransfer) {
+        event.dataTransfer.effectAllowed = 'move';
+        try { event.dataTransfer.setData('text/plain', id); } catch (e) { /* 忽略 */ }
+      }
+    });
+
+    $('deptTree').addEventListener('dragover', function (event) {
+      if (!state.draggingId) return;
+      var row = event.target.closest('.dept-node__row');
+      if (!row) return;
+      var targetId = row.getAttribute('data-id');
+      if (targetId === state.draggingId) { clearDropMarks(); return; }
+      var zone = dropZone(event, row);
+      if (!validDrop(state.draggingId, targetId, zone)) { clearDropMarks(); return; }
+      event.preventDefault();
+      if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+      clearDropMarks();
+      state.drop = { id: targetId, zone: zone };
+      row.classList.add(zone === 'inside' ? 'is-drop-inside' : (zone === 'before' ? 'is-drop-before' : 'is-drop-after'));
+    });
+
+    $('deptTree').addEventListener('drop', function (event) {
+      if (!state.draggingId || !state.drop) return;
+      event.preventDefault();
+      var dragId = state.draggingId; var drop = state.drop;
+      clearDropMarks();
+      state.draggingId = null;
+      if (!validDrop(dragId, drop.id, drop.zone)) return;
+      if (drop.zone === 'inside') {
+        var drag = byId(dragId); var target = byId(drop.id);
+        var oldLevel = LEVELS[depthOf(drag)];
+        var newLevel = LEVELS[depthOf(target) + 1];
+        if (oldLevel !== newLevel) {
+          var affected = DATA.filter(function (n) { return isDescendant(n.id, dragId); }).length;
+          var body = '<p class="dept-confirm-text">将部门 <strong>' + esc(drag.name) + '</strong> 移动到 <strong>' + esc(target.name) + '</strong> 之下。</p>' +
+            '<p class="dept-confirm-meta">层级类型将由「' + oldLevel + '」变为「' + newLevel + '」；受影响下级部门 ' + affected + ' 个。</p>' +
+            '<p class="dept-confirm-warn">移动后节点及下级的层级类型按新深度重新判定。</p>';
+          openConfirm('调整部门上级', body, '移动', function () { executeDrop(dragId, drop.id, drop.zone); });
+          return;
+        }
+      }
+      executeDrop(dragId, drop.id, drop.zone);
+    });
+
+    $('deptTree').addEventListener('dragend', function () {
+      clearDropMarks();
+      state.draggingId = null;
+    });
+
+    $('btnAddChild').addEventListener('click', function () { openForm('create'); });
+    $('btnEdit').addEventListener('click', function () { openForm('edit', state.selectedId); });
+    $('btnToggleStatus').addEventListener('click', openToggle);
+    $('btnDelete').addEventListener('click', openDelete);
+
+    $('btnFormCancel').addEventListener('click', closeForm);
+    $('btnFormSave').addEventListener('click', saveForm);
+    $('btnConfirmCancel').addEventListener('click', closeConfirm);
+    $('btnConfirmOk').addEventListener('click', runConfirm);
+
+    $('formModal').addEventListener('click', function (event) { if (event.target === this) closeForm(); });
+    $('confirmModal').addEventListener('click', function (event) { if (event.target === this) closeConfirm(); });
+
+    document.addEventListener('keydown', function (event) {
+      if (event.key !== 'Escape') return;
+      if (!$('confirmModal').hidden) closeConfirm();
+      else if (!$('formModal').hidden) closeForm();
+    });
+
+    window.addEventListener('hashchange', function () {
+      var match = location.hash.match(/^#dept\/([A-Za-z0-9]+)$/);
+      if (match && byId(match[1]) && match[1] !== state.selectedId) selectNode(match[1]);
+    });
+
+    /* ---------- 初始化 ---------- */
+    (function init() {
+      DATA.forEach(function (n) {
+        if (childrenOf(n.id).length > 0 && depthOf(n) <= 1) state.expanded[n.id] = true;
+      });
+      var match = location.hash.match(/^#dept\/([A-Za-z0-9]+)$/);
+      if (match && byId(match[1])) state.selectedId = match[1];
+      render();
+    })();
+  </script>
+</body>
+</html>

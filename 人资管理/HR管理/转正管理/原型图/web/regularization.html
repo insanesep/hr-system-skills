@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>转正管理 · 台账、评估与审批</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ HR管理 / 转正管理</span>
+    <span class="spacer">静态 Mock · 六页签台账</span>
+  </nav>
+
+  <main class="page" id="list">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">转</span>转正管理</h1>
+        <p class="page-sub">跟进试用期员工评估与转正审批，处理提前转正、延期与不通过，生效后回写员工状态与绩效名单</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" data-toast="已向 12 条待评估记录发送提醒">批量提醒评估</button>
+        <button class="btn" type="button" data-toast="已按当前筛选导出转正台账">导出</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="转正台账页签">
+      <button class="tab is-active" type="button" data-tab-group="regularization" data-tab-key="eval">待评估 <span class="num">12</span></button>
+      <button class="tab" type="button" data-tab-group="regularization" data-tab-key="approve">待审批 <span class="num">7</span></button>
+      <button class="tab" type="button" data-tab-group="regularization" data-tab-key="done">已转正 <span class="num">23</span></button>
+      <button class="tab" type="button" data-tab-group="regularization" data-tab-key="delay">已延期 <span class="num">3</span></button>
+      <button class="tab" type="button" data-tab-group="regularization" data-tab-key="fail">未通过 <span class="num">2</span></button>
+      <button class="tab" type="button" data-tab-group="regularization" data-tab-key="cancel">已撤销 <span class="num">1</span></button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">12</div><div class="label">待评估</div><div class="hint">含 2 条 7 天内到期</div></div>
+      <div class="stat"><div class="num">7</div><div class="label">待审批</div><div class="hint">评估已提交</div></div>
+      <div class="stat"><div class="num">15</div><div class="label">本月应转正</div><div class="hint">试用期结束本月</div></div>
+      <div class="stat"><div class="num">23</div><div class="label">本月已转正</div><div class="hint">已回写员工状态</div></div>
+      <div class="stat"><div class="num">3</div><div class="label">已延期</div><div class="hint">延期后等待评估</div></div>
+      <div class="stat"><div class="num">2</div><div class="label">未通过</div><div class="hint">待衔接离职</div></div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field">姓名 / 工号 <input type="search" placeholder="姓名或工号"></label>
+        <label class="field">组织 <select><option>全部</option><option>产品研发部</option><option>技术管理部</option><option>信息安全部</option></select></label>
+        <label class="field">试用期结束 <input type="date" value="2026-11-24"></label>
+        <label class="field">转正类型 <select><option>全部</option><option>按期转正</option><option>提前转正</option><option>延期转正</option><option>试用期不通过</option></select></label>
+        <span class="grow"></span>
+        <button class="btn btn-primary" type="button" data-toast="已按条件筛选转正记录">查询</button>
+        <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+      </div>
+    </div>
+
+    <section data-panel-group="regularization" data-panel-key="eval">
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待评估 <b>12</b> 条 · 点击「评估」填写四个维度并提交审批</div><div class="table-tools">按试用期结束日期升序</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>转正单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>入职日期</th><th>试用期结束</th><th>转正类型</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RG20261123001</td><td class="name-cell"><span class="avatar">张</span>张嘉</td><td class="mono">D10031</td><td>产品研发部 / 用户研发组</td><td>产品经理</td><td>P5</td><td>2026-09-10</td><td>2026-12-10</td><td>按期转正</td><td><span class="tag tag-warn">待评估</span></td><td><button class="btn-link" type="button" data-action="eval" data-id="RG20261123001" data-name="张嘉" data-org="产品研发部 / 用户研发组" data-pos="产品经理" data-level="P5" data-end="2026-12-10">评估</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261123001" data-name="张嘉" data-status="待评估" data-type="按期转正">查看</button></td></tr>
+              <tr><td class="mono">RG20261122002</td><td class="name-cell"><span class="avatar">张</span>张伟</td><td class="mono">D10033</td><td>基础平台部 / 人力研发组</td><td>后端开发工程师</td><td>P5</td><td>2026-09-05</td><td>2026-12-05</td><td>按期转正</td><td><span class="tag tag-warn">待评估</span></td><td><button class="btn-link" type="button" data-action="eval" data-id="RG20261122002" data-name="张伟" data-org="基础平台部 / 人力研发组" data-pos="后端开发工程师" data-level="P5" data-end="2026-12-05">评估</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261122002" data-name="张伟" data-status="待评估" data-type="按期转正">查看</button></td></tr>
+              <tr><td class="mono">RG20261121003</td><td class="name-cell"><span class="avatar">李</span>李芳</td><td class="mono">D10005</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P6</td><td>2026-09-02</td><td>2026-12-02</td><td>按期转正</td><td><span class="tag tag-warn">待评估</span></td><td><button class="btn-link" type="button" data-action="eval" data-id="RG20261121003" data-name="李芳" data-org="技术管理部 / 项目管理组" data-pos="PMO" data-level="P6" data-end="2026-12-02">评估</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261121003" data-name="李芳" data-status="待评估" data-type="按期转正">查看</button></td></tr>
+              <tr><td class="mono">RG20261120004</td><td class="name-cell"><span class="avatar">王</span>王平</td><td class="mono">D10007</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P5</td><td>2026-09-15</td><td>2026-12-15</td><td>按期转正</td><td><span class="tag tag-warn">待评估</span></td><td><button class="btn-link" type="button" data-action="eval" data-id="RG20261120004" data-name="王平" data-org="技术管理部 / 项目管理组" data-pos="PMO" data-level="P5" data-end="2026-12-15">评估</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261120004" data-name="王平" data-status="待评估" data-type="按期转正">查看</button></td></tr>
+              <tr><td class="mono">RG20261119005</td><td class="name-cell"><span class="avatar">李</span>李静</td><td class="mono">D10016</td><td>信息安全部 / 数据安全组</td><td>权限安全工程师</td><td>P3</td><td>2026-09-20</td><td>2026-12-20</td><td>按期转正</td><td><span class="tag tag-warn">待评估</span></td><td><button class="btn-link" type="button" data-action="eval" data-id="RG20261119005" data-name="李静" data-org="信息安全部 / 数据安全组" data-pos="权限安全工程师" data-level="P3" data-end="2026-12-20">评估</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261119005" data-name="李静" data-status="待评估" data-type="按期转正">查看</button></td></tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="regularization" data-panel-key="approve" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待审批 <b>7</b> 条 · 评估已提交，等待审批</div><div class="table-tools">含 1 条提前转正</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>转正单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>入职日期</th><th>试用期结束</th><th>转正类型</th><th>评估结论</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RG20261120001</td><td class="name-cell"><span class="avatar">张</span>张娜</td><td class="mono">D10041</td><td>产品研发部 / 用户研发组</td><td>UI设计师</td><td>P4</td><td>2026-10-20</td><td>2026-11-30</td><td><span class="tag tag-primary">提前转正</span></td><td><span class="tag tag-success">通过</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="rg-approve" data-name="张娜">审批</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261120001" data-name="张娜" data-status="待审批" data-type="提前转正">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="regularization" data-panel-key="done" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已转正 <b>23</b> 条 · 只读，员工状态与绩效名单已回写</div><div class="table-tools">按实际转正日期倒序</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>转正单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>入职日期</th><th>试用期结束</th><th>转正类型</th><th>实际转正日期</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RG20261118003</td><td class="name-cell"><span class="avatar">李</span>李涛</td><td class="mono">D10037</td><td>供应链测试部 / 软件测试组</td><td>测试工程师</td><td>P6</td><td>2026-08-20</td><td>2026-11-20</td><td>按期转正</td><td>2026-11-20</td><td><span class="tag tag-success">已转正</span></td><td><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261118003" data-name="李涛" data-status="已转正" data-type="按期转正">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="regularization" data-panel-key="delay" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已延期 <b>3</b> 条 · 延期以一次为限，等待重新评估</div><div class="table-tools">延期后试用期结束日期已更新</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>转正单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>延期后试用期结束</th><th>延期原因</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RG20261115002</td><td class="name-cell"><span class="avatar">张</span>张文</td><td class="mono">D10044</td><td>产品研发部 / 交易研发组</td><td>数据研发工程师</td><td>P4</td><td>2026-12-18</td><td>项目交付节奏延后，补充观察</td><td><span class="tag tag-warn">已延期</span></td><td><button class="btn-link" type="button" data-action="eval" data-id="RG20261115002" data-name="张文" data-org="产品研发部 / 交易研发组" data-pos="数据研发工程师" data-level="P4" data-end="2026-12-18">评估</button><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261115002" data-name="张文" data-status="已延期" data-type="延期转正">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="regularization" data-panel-key="fail" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">未通过 <b>2</b> 条 · 员工仍处于试用期，待衔接离职</div><div class="table-tools">不自动离职</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>转正单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>评估结论</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RG20261110001</td><td class="name-cell"><span class="avatar">李</span>李浩</td><td class="mono">D10046</td><td>产品研发部 / 产品运营组</td><td>产品运营</td><td>P3</td><td><span class="tag tag-danger">不通过</span></td><td><span class="tag tag-danger">未通过</span></td><td><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261110001" data-name="李浩" data-status="未通过" data-type="试用期不通过">查看</button><button class="btn-link" type="button" data-toast="已跳转离职管理并发起试用期不通过离职">发起离职</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="regularization" data-panel-key="cancel" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已撤销 <b>1</b> 条 · 保留原转正单与操作记录</div><div class="table-tools">只读</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>转正单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>原状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RG20261105004</td><td class="name-cell"><span class="avatar">张</span>张鑫</td><td class="mono">D10048</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P3</td><td>待评估</td><td><span class="tag tag-neutral">已撤销</span></td><td><button class="btn-link" type="button" data-action="rg-detail" data-id="RG20261105004" data-name="张鑫" data-status="已撤销" data-type="按期转正">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <span id="detail" hidden></span>
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var toast = HRUI.toast;
+
+      function evalBody(d) {
+        var dims = [
+          ['工作业绩', '40%', '4', '目标达成质量高，关键交付按期完成'],
+          ['专业能力', '30%', '4', '能独立承担模块工作，方案完整'],
+          ['协作与价值观', '20%', '3', '协作顺畅，主动同步进展'],
+          ['出勤与纪律', '10%', '5', '出勤正常，遵守制度']
+        ];
+        return '<div class="detail-box" style="margin-bottom:12px"><h4>' + d.name + ' · ' + d.pos + ' · ' + d.level + '</h4><div class="line"><span>组织</span><b>' + d.org + '</b></div><div class="line"><span>试用期结束</span><b>' + d.end + '</b></div></div>' +
+          '<table class="desc"><thead><tr><th>评估维度</th><th>权重</th><th>上级评分</th><th>评语</th></tr></thead><tbody>' + dims.map(function (row) {
+            return '<tr><th>' + row[0] + '</th><td>' + row[1] + '</td><td>' + row[2] + ' / 5</td><td>' + row[3] + '</td></tr>';
+          }).join('') + '</tbody></table>' +
+          '<div class="form-item" style="margin-top:12px"><label>评估结论</label><select><option>通过</option><option>延期</option><option>不通过</option></select></div>' +
+          '<div class="form-item"><label>评估总结</label><textarea>试用期表现符合岗位要求，建议按期转正。</textarea></div>';
+      }
+
+      function steps(status) {
+        var order = ['生成', '评估', '审批', '生效'];
+        var current = status === '待评估' ? 1 : status === '待审批' ? 2 : status === '已转正' ? 4 : 1;
+        return '<div class="steps">' + order.map(function (name, i) {
+          var cls = i < current ? ' is-done' : i === current && status !== '已转正' ? ' is-current' : '';
+          return '<div class="step' + cls + '"><span class="idx">0' + (i + 1) + '</span>' + name + '</div>';
+        }).join('') + '</div>';
+      }
+
+      document.addEventListener('click', function (event) {
+        var evalBtn = event.target.closest('[data-action="eval"]');
+        if (evalBtn) {
+          var d = evalBtn.dataset;
+          HRUI.openDrawer('转正评估 · ' + d.name, d.id + ' · ' + d.org + ' · 试用期结束 ' + d.end, evalBody(d), '<button class="btn" type="button" data-close="drawer">取消</button><button class="btn" type="button" data-toast="评估草稿已保存">保存草稿</button><button class="btn btn-primary" type="button" data-toast="评估已提交，进入待审批" data-close="drawer">提交评估</button>');
+        }
+
+        var detail = event.target.closest('[data-action="rg-detail"]');
+        if (detail) {
+          var r = detail.dataset;
+          var body = steps(r.status) + '<table class="desc"><tr><th>转正单号</th><td class="mono">' + r.id + '</td><th>员工</th><td>' + r.name + '</td></tr><tr><th>转正类型</th><td>' + r.type + '</td><th>单据状态</th><td>' + r.status + '</td></tr><tr><th>评估结论</th><td>' + (r.status === '待评估' ? '未提交' : r.status === '未通过' ? '不通过' : '通过') + '</td><th>评估总分</th><td>4.1 / 5</td></tr></table>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">流程记录</h4><div class="timeline"><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-09-10</div><div class="tl-title">转正单生成</div><div class="tl-text">由入职确认生成，试用期 3 个月。</div></div><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-20</div><div class="tl-title">直接上级评估</div><div class="tl-text">四个维度评分完成，结论通过。</div></div><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-22</div><div class="tl-title">部门负责人审批</div><div class="tl-text">' + (r.status === '待审批' ? '待审批' : '已通过') + '</div></div></div>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">生效回写</h4><div class="detail-box"><div class="line"><span>员工资料</span><b>保持在职，补充转正日期</b></div><div class="line"><span>绩效名单</span><b>试用 → 正式</b></div><div class="line"><span>员工成长记录</span><b>写入转正事件</b></div></div>';
+          HRUI.openDrawer(r.name + ' · ' + r.id, r.type + ' · ' + r.status, body, '<button class="btn" type="button" data-close="drawer">关闭</button>');
+        }
+
+        var approve = event.target.closest('[data-action="rg-approve"]');
+        if (approve) {
+          toast(approve.dataset.name + ' 的转正审批已通过，按转正类型生效');
+          HRUI.closeDrawer();
+        }
+      });
+
+      function openDetailFromHash() {
+        if (location.hash === '#detail') {
+          var first = document.querySelector('[data-action="rg-detail"]');
+          if (first) first.click();
+        }
+      }
+      openDetailFromHash();
+      window.addEventListener('hashchange', openDetailFromHash);
+    })();
+  </script>
+</body>
+</html>

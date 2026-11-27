@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>离职管理 · 台账、交接与确认离职</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ HR管理 / 离职管理</span>
+    <span class="spacer">静态 Mock · 五页签台账</span>
+  </nav>
+
+  <main class="page" id="list">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">离</span>离职管理</h1>
+        <p class="page-sub">从离职申请、审批到交接与确认离职，确认后回写员工档案、编制、招聘、绩效与成长记录</p>
+      </div>
+      <div class="actions">
+        <button class="btn" type="button" data-toast="已向 5 条待交接记录发送提醒">批量提醒交接</button>
+        <button class="btn" type="button" data-toast="已按当前筛选导出离职台账">导出</button>
+        <button class="btn btn-primary" type="button" data-action="create-offboarding">发起离职</button>
+      </div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="离职台账页签">
+      <button class="tab is-active" type="button" data-tab-group="offboarding" data-tab-key="pending">待审批 <span class="num">6</span></button>
+      <button class="tab" type="button" data-tab-group="offboarding" data-tab-key="leaving">待离职 <span class="num">9</span></button>
+      <button class="tab" type="button" data-tab-group="offboarding" data-tab-key="confirm">待确认 <span class="num">4</span></button>
+      <button class="tab" type="button" data-tab-group="offboarding" data-tab-key="done">已离职 <span class="num">18</span></button>
+      <button class="tab" type="button" data-tab-group="offboarding" data-tab-key="cancel">已撤销 <span class="num">1</span></button>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">6</div><div class="label">待审批</div><div class="hint">含 1 条协商解除</div></div>
+      <div class="stat"><div class="num">9</div><div class="label">待离职</div><div class="hint">最后工作日未到</div></div>
+      <div class="stat"><div class="num">4</div><div class="label">待确认</div><div class="hint">最后工作日已到</div></div>
+      <div class="stat"><div class="num">18</div><div class="label">本月已离职</div><div class="hint">确认后回写编制</div></div>
+      <div class="stat"><div class="num">5</div><div class="label">交接未完成</div><div class="hint">需 HR 跟进</div></div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field">姓名 / 工号 <input type="search" placeholder="姓名或工号"></label>
+        <label class="field">组织 <select><option>全部</option><option>产品研发部</option><option>技术管理部</option><option>信息安全部</option></select></label>
+        <label class="field">离职类型 <select><option>全部</option><option>主动离职</option><option>协商离职</option><option>试用期不通过</option><option>合同到期不续签</option></select></label>
+        <label class="field">最后工作日 <input type="date" value="2026-11-24"></label>
+        <label class="field">交接状态 <select><option>全部</option><option>进行中</option><option>已完成</option><option>有逾期</option></select></label>
+        <span class="grow"></span>
+        <button class="btn btn-primary" type="button" data-toast="已按条件筛选离职记录">查询</button>
+        <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+      </div>
+    </div>
+
+    <section data-panel-group="offboarding" data-panel-key="pending">
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待审批 <b>6</b> 条 · 点击「查看」打开离职详情</div><div class="table-tools">当前用户可处理 4 条</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>离职单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>离职类型</th><th>最后工作日</th><th>交接进度</th><th>审批状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">OB20261123001</td><td class="name-cell"><span class="avatar">王</span>王婷</td><td class="mono">D10002</td><td>产品研发部 / 用户研发组</td><td>产品经理</td><td>P6</td><td>主动离职</td><td>2026-12-05</td><td><div class="progress"><div class="bar"><i style="width:60%"></i></div><span>3/5</span></div></td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261123001" data-name="王婷" data-org="产品研发部 / 用户研发组" data-type="主动离职" data-last="2026-12-05" data-status="待审批" data-handover="3/5">查看</button><button class="btn-link" type="button" data-action="approve" data-name="王婷">审批</button></td></tr>
+              <tr><td class="mono">OB20261122003</td><td class="name-cell"><span class="avatar">张</span>张斌</td><td class="mono">D10009</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P3</td><td>协商离职</td><td>2026-12-10</td><td><div class="progress"><div class="bar"><i style="width:40%"></i></div><span>2/5</span></div></td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261122003" data-name="张斌" data-org="技术管理部 / 项目管理组" data-type="协商离职" data-last="2026-12-10" data-status="待审批" data-handover="2/5">查看</button><button class="btn-link" type="button" data-action="approve" data-name="张斌">审批</button></td></tr>
+              <tr><td class="mono">OB20261121002</td><td class="name-cell"><span class="avatar">李</span>李芳</td><td class="mono">D10005</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P6</td><td>主动离职</td><td>2026-12-03</td><td><div class="progress"><div class="bar"><i style="width:80%"></i></div><span>4/5</span></div></td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261121002" data-name="李芳" data-org="技术管理部 / 项目管理组" data-type="主动离职" data-last="2026-12-03" data-status="待审批" data-handover="4/5">查看</button><button class="btn-link" type="button" data-action="approve" data-name="李芳">审批</button></td></tr>
+              <tr><td class="mono">OB20261120004</td><td class="name-cell"><span class="avatar">王</span>王平</td><td class="mono">D10007</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P5</td><td>主动离职</td><td>2026-12-08</td><td><div class="progress"><div class="bar"><i style="width:20%"></i></div><span>1/5</span></div></td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261120004" data-name="王平" data-org="技术管理部 / 项目管理组" data-type="主动离职" data-last="2026-12-08" data-status="待审批" data-handover="1/5">查看</button><button class="btn-link" type="button" data-action="approve" data-name="王平">审批</button></td></tr>
+              <tr><td class="mono">OB20261119005</td><td class="name-cell"><span class="avatar">李</span>李鑫</td><td class="mono">D10118</td><td>信息安全部</td><td>数据安全负责人</td><td>M7</td><td>协商离职</td><td>2026-12-12</td><td><div class="progress"><div class="bar"><i style="width:40%"></i></div><span>2/5</span></div></td><td><span class="tag tag-warn">待审批</span></td><td><span class="tag tag-warn">待审批</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261119005" data-name="李鑫" data-org="信息安全部" data-type="协商离职" data-last="2026-12-12" data-status="待审批" data-handover="2/5">查看</button><button class="btn-link" type="button" data-action="approve" data-name="李鑫">审批</button></td></tr>
+
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="offboarding" data-panel-key="leaving" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待离职 <b>9</b> 条 · 审批通过且最后工作日未到</div><div class="table-tools">按最后工作日升序</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>离职单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>离职类型</th><th>最后工作日</th><th>交接进度</th><th>审批状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">OB20261118002</td><td class="name-cell"><span class="avatar">王</span>王静</td><td class="mono">D10027</td><td>门店业务部 / 招商产研组</td><td>测试工程师</td><td>P6</td><td>主动离职</td><td>2026-11-30</td><td><div class="progress"><div class="bar"><i style="width:100%"></i></div><span>5/5</span></div></td><td><span class="tag tag-success">已通过</span></td><td><span class="tag tag-primary">待离职</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261118002" data-name="王静" data-org="门店业务部 / 招商产研组" data-type="主动离职" data-last="2026-11-30" data-status="待离职" data-handover="5/5">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="offboarding" data-panel-key="confirm" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">待确认 <b>4</b> 条 · 最后工作日已到，待 HR 确认</div><div class="table-tools"><span class="tag tag-danger">1 条交接逾期</span></div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>离职单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>离职类型</th><th>最后工作日</th><th>交接进度</th><th>审批状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">OB20261115001</td><td class="name-cell"><span class="avatar">李</span>李欣</td><td class="mono">D10026</td><td>基础平台部 / 人力研发组</td><td>测试工程师</td><td>P6</td><td>合同到期不续签</td><td>2026-11-28</td><td><div class="progress"><div class="bar"><i style="width:80%"></i></div><span>4/5</span></div></td><td><span class="tag tag-success">已通过</span></td><td><span class="tag tag-warn">待确认</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261115001" data-name="李欣" data-org="基础平台部 / 人力研发组" data-type="合同到期不续签" data-last="2026-11-28" data-status="待确认" data-handover="4/5">查看</button><button class="btn-link" type="button" data-action="confirm-offboarding" data-name="李欣" data-id="OB20261115001">确认离职</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="offboarding" data-panel-key="done" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已离职 <b>18</b> 条 · 只读，回写已完成</div><div class="table-tools">按实际离职日期倒序</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>离职单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>离职类型</th><th>最后工作日</th><th>交接进度</th><th>审批状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">OB20261110004</td><td class="name-cell"><span class="avatar">李</span>李建</td><td class="mono">D10020</td><td>财务研发部 / 财务测试组</td><td>测试负责人</td><td>P9</td><td>主动离职</td><td>2026-11-21</td><td><div class="progress"><div class="bar"><i style="width:100%"></i></div><span>5/5</span></div></td><td><span class="tag tag-success">已通过</span></td><td><span class="tag tag-success">已离职</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261110004" data-name="李建" data-org="财务研发部 / 财务测试组" data-type="主动离职" data-last="2026-11-21" data-status="已离职" data-handover="5/5">查看</button></td></tr>
+              <tr><td class="mono">OB20261108002</td><td class="name-cell"><span class="avatar">王</span>王娜</td><td class="mono">D10025</td><td>财务研发部 / 财务测试组</td><td>测试工程师</td><td>P6</td><td>试用期不通过</td><td>2026-11-20</td><td><div class="progress"><div class="bar"><i style="width:100%"></i></div><span>5/5</span></div></td><td><span class="tag tag-success">已通过</span></td><td><span class="tag tag-success">已离职</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261108002" data-name="王娜" data-org="财务研发部 / 财务测试组" data-type="试用期不通过" data-last="2026-11-20" data-status="已离职" data-handover="5/5">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="offboarding" data-panel-key="cancel" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">已撤销 <b>1</b> 条 · 保留审批与操作记录</div><div class="table-tools">只读</div></div>
+        <div class="table-wrap">
+          <table>
+            <thead><tr><th>离职单号</th><th>姓名</th><th>工号</th><th>组织</th><th>职位</th><th>职级</th><th>离职类型</th><th>最后工作日</th><th>交接进度</th><th>审批状态</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">OB20261105003</td><td class="name-cell"><span class="avatar">王</span>王然</td><td class="mono">D10018</td><td>信息安全部 / 信息安全管理组</td><td>安全运营工程师</td><td>P4</td><td>主动离职</td><td>2026-11-15</td><td><div class="progress"><div class="bar"><i style="width:40%"></i></div><span>2/5</span></div></td><td><span class="tag tag-neutral">已撤回</span></td><td><span class="tag tag-neutral">已撤销</span></td><td><button class="btn-link" type="button" data-action="ob-detail" data-id="OB20261105003" data-name="王然" data-org="信息安全部 / 信息安全管理组" data-type="主动离职" data-last="2026-11-15" data-status="已撤销" data-handover="2/5">查看</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <span id="detail" hidden></span>
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var toast = HRUI.toast;
+
+      function steps(status) {
+        var order = ['申请', '审批', '交接', '确认'];
+        var current = status === '待审批' ? 1 : status === '待离职' ? 2 : status === '待确认' ? 3 : 4;
+        return '<div class="steps">' + order.map(function (name, i) {
+          var cls = i < current ? ' is-done' : i === current && status !== '已离职' && status !== '已撤销' ? ' is-current' : '';
+          return '<div class="step' + cls + '"><span class="idx">0' + (i + 1) + '</span>' + name + '</div>';
+        }).join('') + '</div>';
+      }
+
+      function handoverTable(text) {
+        var done = text === '5/5' ? 5 : text === '4/5' ? 4 : text === '3/5' ? 3 : 2;
+        var items = ['工作交接', '资产归还', '账号权限停用', '财务借款', '合同文件'];
+        return '<table class="desc"><thead><tr><th>交接事项</th><th>是否必备</th><th>状态</th><th>负责人</th></tr></thead><tbody>' + items.map(function (name, i) {
+          return '<tr><th>' + name + '</th><td>' + (i < 3 ? '是' : '否') + '</td><td>' + (i < done ? '<span class="tag tag-success">已完成</span>' : '<span class="tag tag-warn">未完成</span>') + '</td><td>' + (i === 2 ? 'IT' : i === 3 ? '财务' : 'HRBP') + '</td></tr>';
+        }).join('') + '</tbody></table>';
+      }
+
+      document.addEventListener('click', function (event) {
+        var detail = event.target.closest('[data-action="ob-detail"]');
+        if (detail) {
+          var d = detail.dataset;
+          var body = steps(d.status) +
+            '<table class="desc"><tr><th>离职单号</th><td class="mono">' + d.id + '</td><th>离职类型</th><td>' + d.type + '</td></tr><tr><th>员工</th><td>' + d.name + '</td><th>组织</th><td>' + d.org + '</td></tr><tr><th>最后工作日</th><td>' + d.last + '</td><th>交接进度</th><td>' + d.handover + '</td></tr><tr><th>审批状态</th><td>' + (d.status === '待审批' ? '待审批' : '已通过') + '</td><th>单据状态</th><td>' + d.status + '</td></tr></table>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">交接事项</h4>' + handoverTable(d.handover) +
+            '<h4 style="margin:14px 0 8px;font-size:13px">审批记录</h4><div class="timeline"><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-20 10:24</div><div class="tl-title">直接上级 · 已通过</div><div class="tl-text">同意离职，工作交接按计划推进。</div></div><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-20 14:08</div><div class="tl-title">部门负责人 · 已通过</div><div class="tl-text">已确认岗位替补安排。</div></div><div class="tl-item"><span class="tl-dot"></span><div class="tl-date">2026-11-21 09:15</div><div class="tl-title">HRBP · ' + (d.status === '待审批' ? '待审批' : '已通过') + '</div><div class="tl-text">核对最后工作日与交接清单。</div></div></div>' +
+            '<h4 style="margin:14px 0 8px;font-size:13px">确认离职后回写</h4><div class="detail-box"><div class="line"><span>员工资料</span><b>在职状态 → 离职，任职记录结束</b></div><div class="line"><span>编制管理</span><b>在编人数 −1</b></div><div class="line"><span>招聘管理</span><b>可发起离职替补需求</b></div><div class="line"><span>绩效管理</span><b>考核名单标记离职</b></div><div class="line"><span>员工成长记录</span><b>写入离职事件</b></div></div>';
+          var foot = d.status === '待审批' ? '<button class="btn" type="button" data-action="reject" data-name="' + d.name + '">驳回</button><button class="btn btn-primary" type="button" data-action="approve" data-name="' + d.name + '">审批通过</button>' : d.status === '待确认' ? '<button class="btn" type="button" data-action="confirm-offboarding" data-name="' + d.name + '" data-id="' + d.id + '">确认离职</button>' : '<button class="btn" type="button" data-close="drawer">关闭</button>';
+          HRUI.openDrawer(d.name + ' · ' + d.id, d.org + ' · ' + d.type + ' · 最后工作日 ' + d.last, body, foot);
+        }
+
+        var approve = event.target.closest('[data-action="approve"]');
+        if (approve) {
+          toast(approve.dataset.name + ' 的离职审批已通过，进入待离职');
+          HRUI.closeDrawer();
+        }
+
+        var reject = event.target.closest('[data-action="reject"]');
+        if (reject) {
+          toast(reject.dataset.name + ' 的离职单已驳回，回到草稿');
+          HRUI.closeDrawer();
+        }
+
+        var confirm = event.target.closest('[data-action="confirm-offboarding"]');
+        if (confirm) {
+          HRUI.closeDrawer();
+          HRUI.openModal('确认离职 · ' + confirm.dataset.name,
+            '<div class="detail-box" style="background:#fff7e6;border-color:#f2ddb4"><h4>确认前校验</h4><div class="line"><span>最后工作日</span><b>已到</b></div><div class="line"><span>审批状态</span><b>已通过</b></div><div class="line"><span>必备交接事项</span><b>已完成</b></div><div class="line"><span>进行中调岗晋升</span><b>无</b></div></div>' +
+            '<div class="detail-box" style="margin-top:12px"><h4>确认后回写</h4><div class="sub">员工资料状态改为离职；当前任职记录结束；编制在编 −1；绩效名单标记离职；生成合同解除待办；写入员工成长记录。确认离职为终态，不可撤销。</div></div>',
+            '<button class="btn" type="button" data-close="modal">取消</button><button class="btn btn-primary" type="button" data-toast="离职已确认，员工档案、编制与绩效回写完成" data-close="modal">确认离职</button>');
+        }
+
+        if (event.target.closest('[data-action="create-offboarding"]')) {
+          HRUI.openModal('发起离职',
+            '<div class="form-grid"><div class="form-item full"><label>员工</label><select><option>王婷 · D10002 · 产品研发部</option><option>张斌 · D10009 · 技术管理部</option><option>李欣 · D10026 · 基础平台部</option></select></div><div class="form-item"><label>离职类型</label><select><option>主动离职</option><option>协商离职</option><option>公司单方解除</option><option>合同到期不续签</option><option>试用期不通过</option></select></div><div class="form-item"><label>最后工作日</label><input type="date" value="2026-12-05"></div><div class="form-item"><label>离职原因</label><select><option>个人发展</option><option>薪酬待遇</option><option>家庭原因</option><option>组织调整</option><option>其他</option></select></div><div class="form-item"><label>交接负责人</label><select><option>直接上级</option><option>HRBP</option><option>部门负责人</option></select></div><div class="form-item full"><label>原因说明</label><textarea placeholder="补充离职背景与交接安排"></textarea></div><div class="form-item full"><label><input type="checkbox"> 确认离职后发起离职替补招聘需求</label></div></div>',
+            '<button class="btn" type="button" data-close="modal">取消</button><button class="btn" type="button" data-toast="离职草稿已保存">保存草稿</button><button class="btn btn-primary" type="button" data-toast="离职单已提交审批，交接清单已生成" data-close="modal">提交审批</button>');
+        }
+      });
+
+      function openDetailFromHash() {
+        if (location.hash === '#detail') {
+          var first = document.querySelector('[data-action="ob-detail"]');
+          if (first) first.click();
+        }
+      }
+      openDetailFromHash();
+      window.addEventListener('hashchange', openDetailFromHash);
+    })();
+  </script>
+</body>
+</html>

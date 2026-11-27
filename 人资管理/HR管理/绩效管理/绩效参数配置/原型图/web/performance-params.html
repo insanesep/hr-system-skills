@@ -1,0 +1,1292 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,BusyInput,PageableSelect,InputNumber,Tag,Table,Drawer,Form,Message,Confirm,Popover">
+  <title>绩效参数配置 · 参数配置页</title>
+  <style>
+    :root{
+      --primary:#2563eb; --primary-weak:#eff4ff; --primary-line:#bfd3ff;
+      --bg:#f4f6fa; --panel:#fff; --line:#e5e8ef; --line-strong:#d3d9e4;
+      --text:#1f2937; --muted:#6b7280; --subtle:#9aa3b2;
+      --success:#15803d; --success-weak:#eaf7ef; --warn:#b45309; --warn-weak:#fff7e6;
+      --danger:#b91c1c; --danger-weak:#fdecec;
+      --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.08);
+    }
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    body.no-scroll{overflow:hidden}
+    button,input,select,textarea{font:inherit;color:inherit}
+    .topnav{display:flex;align-items:center;gap:12px;height:52px;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+    .logo{font-weight:700;white-space:nowrap}
+    .crumb{color:var(--muted);font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .crumb b{color:var(--text);font-weight:600}
+    .spacer{flex:1}
+    .mock{font-size:12px;color:var(--subtle);border:1px solid var(--line);border-radius:999px;padding:2px 9px;white-space:nowrap}
+    .page{max-width:1480px;margin:0 auto;padding:22px 24px 104px}
+    .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:14px;flex-wrap:wrap}
+    .page-head h1{font-size:22px;margin:0}
+    .page-head p{margin:4px 0 0;color:var(--muted)}
+    .head-meta{display:flex;align-items:center;gap:10px;color:var(--muted);font-size:12.5px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;white-space:nowrap;border:1px solid transparent}
+    .tag-blue,.tag-primary{color:#1e40af;background:var(--primary-weak);border-color:var(--primary-line)}
+    .tag-neutral{color:#4b5563;background:#f3f4f6;border-color:#e5e7eb}
+    .tag-ok,.tag-success{color:var(--success);background:var(--success-weak);border-color:#c9ecd6}
+    .tag-warn{color:var(--warn);background:var(--warn-weak);border-color:#f3ddb3}
+    .tag-danger{color:var(--danger);background:var(--danger-weak);border-color:#f5c9c9}
+    .btn{appearance:none;display:inline-flex;align-items:center;justify-content:center;gap:6px;height:34px;padding:0 13px;border:1px solid var(--line-strong);border-radius:8px;background:#fff;cursor:pointer;font-weight:500;white-space:nowrap}
+    .btn:hover{border-color:var(--primary-line);color:var(--primary)}
+    .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn-primary:hover{background:#1d4ed8;color:#fff}
+    .btn-primary:disabled,.btn:disabled{opacity:.45;cursor:not-allowed;background:#fff;color:var(--muted);border-color:var(--line)}
+    .btn-primary:disabled{background:#93b4f8;color:#fff;border-color:#93b4f8}
+    .btn-ghost{background:transparent;border-color:transparent;color:var(--muted)}
+    .btn-ghost:hover{background:var(--danger-weak);color:var(--danger);border-color:transparent}
+    .icon-btn{appearance:none;border:0;background:transparent;font-size:22px;line-height:1;color:var(--muted);cursor:pointer;padding:2px 6px}
+    .status{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:14px 18px;margin-bottom:16px;flex-wrap:wrap}
+    .status-main{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+    .status-text{display:flex;flex-direction:column;line-height:1.35}
+    .status-text b{font-size:14px}
+    .status-text span{font-size:12px;color:var(--muted)}
+    .status-effect{display:flex;flex-direction:column;line-height:1.35;font-size:12px;color:var(--muted);padding-left:12px;border-left:1px solid var(--line)}
+    .status-effect b{color:var(--text);font-weight:500}
+    .status-actions{display:flex;gap:8px;flex-wrap:wrap}
+    .layout{display:grid;grid-template-columns:224px minmax(0,1fr);gap:16px;align-items:start}
+    .side,.content{min-width:0}
+    .side{padding:12px;position:sticky;top:68px}
+    .side-title{font-size:12px;color:var(--subtle);letter-spacing:.04em;padding:4px 10px 8px}
+    .side nav{display:flex;flex-direction:column;gap:2px}
+    .nav-btn{appearance:none;border:0;background:transparent;display:flex;align-items:center;gap:8px;padding:9px 10px;border-radius:8px;cursor:pointer;color:var(--muted);text-align:left;font-weight:500}
+    .nav-btn:hover{background:#f7f8fb;color:var(--text)}
+    .nav-btn.is-active{background:var(--primary-weak);color:#1e40af}
+    .nav-dot{width:7px;height:7px;border-radius:50%;background:var(--warn);margin-left:auto;display:none}
+    .nav-btn.has-change .nav-dot{display:block}
+    .side-note{margin-top:12px;padding:10px;border-top:1px dashed var(--line);font-size:12px;color:var(--muted);line-height:1.6}
+    .content{padding:20px 22px}
+    .section-head{display:flex;align-items:flex-start;justify-content:space-between;gap:18px;margin-bottom:16px;flex-wrap:wrap}
+    .section-head h2{font-size:17px;margin:0}
+    .section-head p{margin:4px 0 0;color:var(--muted);font-size:13px}
+    .impact{display:flex;align-items:center;gap:6px;flex-wrap:wrap;font-size:12px;color:var(--subtle)}
+    .form-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px 18px}
+    .form-item{display:flex;flex-direction:column;gap:6px;min-width:0}
+    .form-item>label{font-size:13px;font-weight:500;color:#374151}
+    .form-item .hint{font-size:12px;color:var(--subtle);line-height:1.5}
+    .req{color:var(--danger);margin-left:2px}
+    .form-item input[type=number],.form-item input[type=text],.form-item select,.form-item textarea{width:100%;border:1px solid var(--line-strong);border-radius:8px;background:#fff;padding:7px 10px;min-height:34px;outline:none}
+    .form-item input:focus,.form-item select:focus,.form-item textarea:focus{border-color:var(--primary);box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .form-item textarea{min-height:92px;resize:vertical}
+    .form-item input.is-invalid,.form-item select.is-invalid,.cfg-table input.is-invalid{border-color:var(--danger);box-shadow:0 0 0 3px rgba(185,28,28,.1)}
+    .switch{display:inline-flex;align-items:center;gap:9px;cursor:pointer;font-size:13px;color:var(--muted);font-weight:400}
+    .switch input{appearance:none;flex:0 0 auto;width:38px;height:22px;border-radius:999px;background:var(--line-strong);position:relative;transition:background .2s;cursor:pointer;margin:0}
+    .switch input::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .2s;box-shadow:0 1px 2px rgba(16,24,40,.2)}
+    .switch input:checked{background:var(--primary)}
+    .switch input:checked::after{transform:translateX(16px)}
+    .sub-block{margin-top:22px;padding-top:18px;border-top:1px dashed var(--line)}
+    .sub-head{display:flex;align-items:baseline;justify-content:space-between;gap:12px;margin-bottom:10px;flex-wrap:wrap}
+    .sub-head h3{font-size:14px;margin:0}
+    .tag-list{display:flex;flex-wrap:wrap;gap:8px;min-height:34px}
+    .tag-item{display:inline-flex;align-items:center;gap:2px;padding:4px 4px 4px 10px;border:1px solid var(--line-strong);border-radius:8px;background:#fbfcfe;font-size:12.5px}
+    .tag-item.editing{padding:4px}
+    .tag-item input{height:28px;border:1px solid var(--primary-line);border-radius:6px;padding:0 8px;min-width:150px}
+    .mini{appearance:none;border:0;background:transparent;color:var(--subtle);cursor:pointer;font-size:12px;padding:2px 5px;border-radius:5px}
+    .mini:hover{background:var(--primary-weak);color:var(--primary)}
+    .mini.danger:hover{background:var(--danger-weak);color:var(--danger)}
+    .mini:disabled{opacity:.3;cursor:not-allowed}
+    .add-row{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+    .add-row input{flex:1;min-width:180px;height:34px;border:1px solid var(--line-strong);border-radius:8px;padding:0 10px}
+    .table-wrap{overflow-x:auto}
+    .cfg-table{width:100%;border-collapse:collapse;font-size:13px;min-width:640px}
+    .cfg-table th,.cfg-table td{border-bottom:1px solid var(--line);padding:9px 10px;text-align:left;vertical-align:middle}
+    .cfg-table th{background:#fafbfd;color:var(--muted);font-weight:500;font-size:12px;white-space:nowrap}
+    .cfg-table tr:last-child td{border-bottom:0}
+    .cell-input{width:100%;min-width:76px;height:32px;border:1px solid var(--line-strong);border-radius:7px;padding:0 8px;background:#fff}
+    .cell-input.num{text-align:right}
+    .cell-input:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .cell-input:disabled{background:#f6f7fa;color:var(--subtle);cursor:not-allowed;border-color:var(--line)}
+    .tag-cell{display:flex;align-items:center;gap:8px}
+    .tag-cell select{flex:1;min-width:88px}
+    .dim-list{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px;background:#fafbfd;border:1px solid var(--line);border-radius:8px;font-size:12.5px;color:var(--muted)}
+    .band-table{width:100%;border-collapse:collapse;font-size:13px}
+    .band-table th,.band-table td{border-bottom:1px solid var(--line);padding:8px 10px;text-align:left}
+    .band-table th{background:#fafbfd;color:var(--muted);font-weight:500;font-size:12px}
+    .band-table input{width:92px;height:30px;border:1px solid var(--line-strong);border-radius:7px;padding:0 8px;text-align:right}
+    .check{display:inline-flex;align-items:center;gap:7px;font-size:13px;color:#374151;cursor:pointer}
+    .check input{width:16px;height:16px;accent-color:var(--primary)}
+    .check input:disabled{opacity:.6;cursor:not-allowed}
+    .error-box,.warn-box{border-radius:8px;padding:10px 12px;font-size:12.5px;line-height:1.7;margin-bottom:14px}
+    .error-box{background:var(--danger-weak);border:1px solid #f5c9c9;color:#7f1d1d}
+    .warn-box{background:var(--warn-weak);border:1px solid #f3ddb3;color:#7c4a03}
+    .error-box b,.warn-box b{display:block;margin-bottom:2px}
+    .error-box ul,.warn-box ul{margin:4px 0 8px;padding-left:18px}
+    .hint{font-size:12px;color:var(--subtle);line-height:1.6}
+    .warn-text{color:var(--warn)}
+    .actionbar{position:fixed;left:0;right:0;bottom:0;z-index:30;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 24px;background:rgba(255,255,255,.96);border-top:1px solid var(--line);backdrop-filter:blur(6px);flex-wrap:wrap}
+    .action-left,.action-right{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .mask{position:fixed;inset:0;background:rgba(15,23,42,.36);z-index:50}
+    .drawer{position:fixed;top:0;right:0;bottom:0;width:min(620px,94vw);background:#fff;z-index:60;display:flex;flex-direction:column;box-shadow:-18px 0 48px rgba(16,24,40,.18)}
+    .drawer-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+    .drawer-head h2{font-size:16px;margin:0}
+    .drawer-body{padding:18px 20px 40px;overflow:auto;flex:1}
+    .modal{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);width:min(680px,94vw);max-height:88vh;background:#fff;border-radius:12px;z-index:80;display:flex;flex-direction:column;box-shadow:0 24px 64px rgba(16,24,40,.24)}
+    .modal-head{display:flex;align-items:center;justify-content:space-between;padding:16px 20px;border-bottom:1px solid var(--line)}
+    .modal-head h2{font-size:16px;margin:0}
+    .modal-body{padding:18px 20px;overflow:auto}
+    .modal-foot{display:flex;justify-content:flex-end;gap:10px;padding:14px 20px;border-top:1px solid var(--line)}
+    .version-card{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:12px;background:#fff}
+    .version-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+    .version-head b{font-size:15px}
+    .version-head .muted{font-size:12px;color:var(--muted)}
+    .version-note{margin:8px 0;color:#374151;font-size:13px}
+    .version-meta{display:flex;align-items:center;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+    .link{appearance:none;border:0;background:transparent;color:var(--primary);cursor:pointer;padding:0;font-size:12px;text-decoration:underline}
+    .snapshot{margin-top:12px;padding:12px;background:#fafbfd;border:1px solid var(--line);border-radius:8px}
+    .snap-group{margin-bottom:12px}
+    .snap-group:last-child{margin-bottom:0}
+    .snap-group>b{display:block;font-size:12.5px;margin-bottom:6px}
+    .snap-group ul{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:4px 14px;font-size:12px}
+    .snap-group li{display:flex;justify-content:space-between;gap:10px;border-bottom:1px dashed #eceff4;padding:3px 0}
+    .snap-group li span:first-child{color:var(--muted)}
+    .snap-group li span:last-child{text-align:right;font-weight:500}
+    .diff-table{width:100%;border-collapse:collapse;font-size:12.5px;margin-bottom:14px}
+    .diff-table th,.diff-table td{border-bottom:1px solid var(--line);padding:8px 9px;text-align:left}
+    .diff-table th{background:#fafbfd;color:var(--muted);font-weight:500;white-space:nowrap}
+    .diff-table th:first-child,.diff-table td:first-child{white-space:nowrap;width:90px}
+    .diff-table .old{color:var(--subtle);text-decoration:line-through}
+    .diff-table .new{color:var(--primary);font-weight:600}
+    .filter-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+    .filter-row select,.filter-row input{height:34px;border:1px solid var(--line-strong);border-radius:8px;padding:0 9px;background:#fff;min-width:140px}
+    .filter-row input{flex:1;min-width:160px}
+    .log-table{width:100%;border-collapse:collapse;font-size:12.5px}
+    .log-table th,.log-table td{border-bottom:1px solid var(--line);padding:8px 9px;text-align:left;vertical-align:top}
+    .log-table th{background:#fafbfd;color:var(--muted);font-weight:500;white-space:nowrap}
+    .empty-state{padding:34px 12px;text-align:center;color:var(--subtle);font-size:13px}
+    .empty-inline{padding:12px;background:#fafbfd;border:1px dashed var(--line-strong);border-radius:8px;color:var(--muted);font-size:12.5px;margin-bottom:14px}
+    .toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:120;box-shadow:0 8px 24px rgba(16,24,40,.24);max-width:86vw}
+    .toast.err{background:#991b1b}
+    @media(max-width:1100px){
+      .form-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
+    }
+    @media(max-width:1024px){
+      .layout{grid-template-columns:1fr}
+      .side{position:static;padding:10px}
+      .side nav{flex-direction:row;overflow-x:auto;gap:6px;padding-bottom:2px}
+      .nav-btn{white-space:nowrap}
+      .nav-dot{margin-left:4px}
+      .side-note{display:none}
+    }
+    @media(max-width:768px){
+      .topnav{padding:0 14px}
+      .crumb{display:none}
+      .page{padding:16px 12px 128px}
+      .content{padding:16px 14px}
+      .status{padding:12px 14px}
+      .status-effect{padding-left:0;border-left:0}
+      .actionbar{padding:10px 12px}
+      .action-left .hint{display:none}
+      .form-grid{grid-template-columns:1fr}
+      .snap-group ul{grid-template-columns:1fr}
+    }
+  </style>
+</head>
+<body>
+  <header class="topnav">
+    <span class="logo">示例集团 · 人资管理</span>
+    <span class="crumb">人资管理 / HR管理 / <b>绩效管理 / 绩效参数配置</b></span>
+    <span class="spacer"></span>
+    <span class="mock">演示数据</span>
+  </header>
+
+  <main class="page">
+    <div class="page-head">
+      <div>
+        <h1>绩效参数配置</h1>
+        <p>集中维护绩效规则参数，发布后对后续周期生效</p>
+      </div>
+      <div class="head-meta">
+        <span class="tag tag-neutral">仅 Web</span>
+        <span>当前角色：系统管理员</span>
+      </div>
+    </div>
+
+    <section class="panel status" aria-label="版本状态">
+      <div class="status-main">
+        <span class="tag tag-ok" id="statusVersionTag">已发布 V3</span>
+        <div class="status-text">
+          <b id="statusVersion">当前生效版本 V3</b>
+          <span id="statusMeta">张宁 · 2026-11-20 14:30</span>
+        </div>
+        <div class="status-effect">
+          <span>适用周期</span>
+          <b id="statusEffect">2026Q4 及之后创建的周期</b>
+        </div>
+        <span class="tag tag-warn" id="statusDraft">有未发布修改</span>
+      </div>
+      <div class="status-actions">
+        <button class="btn" id="btnVersions" type="button">版本历史</button>
+        <button class="btn" id="btnLogs" type="button">变更记录</button>
+      </div>
+    </section>
+
+    <div class="layout">
+      <aside class="panel side" aria-label="参数分类">
+        <div class="side-title">参数分类</div>
+        <nav id="nav">
+          <button class="nav-btn is-active" type="button" data-section="roster">周期与名单<span class="nav-dot"></span></button>
+          <button class="nav-btn" type="button" data-section="target">目标规则<span class="nav-dot"></span></button>
+          <button class="nav-btn" type="button" data-section="review">评价规则<span class="nav-dot"></span></button>
+          <button class="nav-btn" type="button" data-section="grades">评级与系数<span class="nav-dot"></span></button>
+          <button class="nav-btn" type="button" data-section="baseline">分布基线<span class="nav-dot"></span></button>
+          <button class="nav-btn" type="button" data-section="calibration">通晒规则<span class="nav-dot"></span></button>
+        </nav>
+        <div class="side-note">发布仅影响之后创建的周期；进行中与已归档周期使用创建时的周期参数快照，不提供改绑入口。</div>
+      </aside>
+
+      <section class="panel content">
+        <div class="section" data-section="roster">
+          <div class="section-head">
+            <div>
+              <h2>周期与名单</h2>
+              <p>定义考核名单的纳入与排除口径，名单本身仍由 HRBP 维护。</p>
+            </div>
+            <div class="impact"><span>影响功能</span><span class="tag tag-blue">考核名单</span><span class="tag tag-blue">绩效评价</span><span class="tag tag-blue">绩效通晒</span></div>
+          </div>
+          <div class="error-box" id="err-roster" hidden></div>
+          <div class="form-grid">
+            <div class="form-item">
+              <label>试用期员工纳入</label>
+              <label class="switch"><input type="checkbox" id="rosterProbation" data-bind data-section="roster" data-field="probation"><span>试用期与正式员工同口径评价</span></label>
+            </div>
+            <div class="form-item">
+              <label for="rosterResigned">协商离职人员处理</label>
+              <select id="rosterResigned" data-bind data-section="roster" data-field="resigned">
+                <option value="recordD">纳入并按 D 记录</option>
+                <option value="includeNoGrade">纳入但不指定等级</option>
+                <option value="exclude">不纳入</option>
+              </select>
+              <div class="hint" id="resignedHint"></div>
+            </div>
+            <div class="form-item">
+              <label for="rosterCutoff">名单调整截止</label>
+              <select id="rosterCutoff" data-bind data-section="roster" data-field="cutoff">
+                <option value="target">目标截止</option>
+                <option value="self">自评截止</option>
+                <option value="manager">上级评价截止</option>
+                <option value="preCalibration">通晒前</option>
+                <option value="archive">周期归档前</option>
+              </select>
+              <div class="hint">截止后名单只读，已提交评价人员移出仍需 HRBP 确认并留痕。</div>
+            </div>
+            <div class="form-item">
+              <label>团队通晒日期必填</label>
+              <label class="switch"><input type="checkbox" id="rosterTeam" data-bind data-section="roster" data-field="teamMeetingRequired"><span>未安排时不展示团队阶段</span></label>
+            </div>
+            <div class="form-item">
+              <label>中心通晒日期必填</label>
+              <label class="switch"><input type="checkbox" id="rosterCenter" data-bind data-section="roster" data-field="centerMeetingRequired"><span>未安排时不允许确认结果</span></label>
+            </div>
+          </div>
+          <div class="sub-block">
+            <div class="sub-head"><h3>不纳入原因字典</h3><span class="hint">至少保留 1 项，单项不超过 20 字</span></div>
+            <div class="tag-list" id="reasonList"></div>
+            <div class="add-row"><input id="reasonNew" type="text" maxlength="20" placeholder="新增原因，如：长期借调"><button class="btn" id="reasonAdd" type="button">添加</button></div>
+          </div>
+        </div>
+
+        <div class="section" data-section="target" hidden>
+          <div class="section-head">
+            <div>
+              <h2>目标规则</h2>
+              <p>定义目标权重、进度与可见范围的取值边界；权重合计固定为 100%。</p>
+            </div>
+            <div class="impact"><span>影响功能</span><span class="tag tag-blue">绩效目标管理</span></div>
+          </div>
+          <div class="error-box" id="err-target" hidden></div>
+          <div class="form-grid">
+            <div class="form-item"><label for="targetWeightMin">单目标权重下限（%）</label><input id="targetWeightMin" type="number" min="1" max="100" step="1" data-bind data-section="target" data-field="weightMin" data-kind="number"><div class="hint">权重合计目标固定为 100%</div></div>
+            <div class="form-item"><label for="targetWeightMax">单目标权重上限（%）</label><input id="targetWeightMax" type="number" min="1" max="100" step="1" data-bind data-section="target" data-field="weightMax" data-kind="number"><div class="hint">需大于权重下限</div></div>
+            <div class="form-item"><label for="targetSuggestedMin">建议目标个数下限</label><input id="targetSuggestedMin" type="number" min="1" max="20" step="1" data-bind data-section="target" data-field="suggestedMin" data-kind="number"><div class="hint">仅作页面提示，不设硬性上限</div></div>
+            <div class="form-item"><label for="targetSuggestedMax">建议目标个数上限</label><input id="targetSuggestedMax" type="number" min="1" max="20" step="1" data-bind data-section="target" data-field="suggestedMax" data-kind="number"><div class="hint">需不小于下限</div></div>
+            <div class="form-item">
+              <label for="targetVisible">默认可见范围</label>
+              <select id="targetVisible" data-bind data-section="target" data-field="visibleDefault">
+                <option value="中心内可见">中心内可见</option>
+                <option value="上级可见">上级可见</option>
+                <option value="本人可见">本人可见</option>
+              </select>
+              <div class="hint">可见范围选项固定为三项，不支持增删。</div>
+            </div>
+            <div class="form-item"><label for="targetProgressMin">目标进度下限（%）</label><input id="targetProgressMin" type="number" min="0" max="100" step="1" data-bind data-section="target" data-field="progressMin" data-kind="number"></div>
+            <div class="form-item"><label for="targetProgressMax">目标进度上限（%）</label><input id="targetProgressMax" type="number" min="0" max="100" step="1" data-bind data-section="target" data-field="progressMax" data-kind="number"><div class="hint">需大于进度下限</div></div>
+            <div class="form-item">
+              <label>截止后变更窗口</label>
+              <label class="switch"><input type="checkbox" id="targetChangeWindow" data-bind data-section="target" data-field="changeWindow"><span>允许 HRBP 在目标截止后开启变更窗口并留痕</span></label>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" data-section="review" hidden>
+          <div class="section-head">
+            <div>
+              <h2>评价规则</h2>
+              <p>定义评分范围、必填性与总分精度；加权公式固定为「上级评分 × 权重」之和 ÷ 100。</p>
+            </div>
+            <div class="impact"><span>影响功能</span><span class="tag tag-blue">绩效评价</span><span class="tag tag-blue">绩效通晒</span><span class="tag tag-blue">员工档案</span></div>
+          </div>
+          <div class="error-box" id="err-review" hidden></div>
+          <div class="form-grid">
+            <div class="form-item"><label for="reviewScoreMin">评分下限</label><input id="reviewScoreMin" type="number" min="0" max="100" step="1" data-bind data-section="review" data-field="scoreMin" data-kind="number"></div>
+            <div class="form-item"><label for="reviewScoreMax">评分上限</label><input id="reviewScoreMax" type="number" min="0" max="100" step="1" data-bind data-section="review" data-field="scoreMax" data-kind="number"><div class="hint">需大于评分下限</div></div>
+            <div class="form-item">
+              <label for="reviewPrecision">评分精度</label>
+              <select id="reviewPrecision" data-bind data-section="review" data-field="precision">
+                <option value="integer">整数</option>
+                <option value="oneDecimal">一位小数</option>
+              </select>
+            </div>
+            <div class="form-item"><label>自评说明必填</label><label class="switch"><input type="checkbox" id="reviewSelfNote" data-bind data-section="review" data-field="selfNoteRequired"><span>员工自评时须填写说明</span></label></div>
+            <div class="form-item"><label>上级评语必填</label><label class="switch"><input type="checkbox" id="reviewManagerNote" data-bind data-section="review" data-field="managerNoteRequired"><span>关闭后上级可不填评语直接提交</span></label></div>
+            <div class="form-item"><label for="reviewDecimals">总分小数位</label><input id="reviewDecimals" type="number" min="0" max="2" step="1" data-bind data-section="review" data-field="totalDecimals" data-kind="number"><div class="hint">0–2 位</div></div>
+            <div class="form-item">
+              <label for="reviewRounding">总分舍入方式</label>
+              <select id="reviewRounding" data-bind data-section="review" data-field="rounding">
+                <option value="half-up">四舍五入</option>
+                <option value="up">向上取整</option>
+                <option value="down">向下取整</option>
+              </select>
+            </div>
+            <div class="form-item"><label>逾期允许补填</label><label class="switch"><input type="checkbox" id="reviewOverdue" data-bind data-section="review" data-field="overdueRefill"><span>逾期后仍可提交并保留逾期标识</span></label></div>
+            <div class="form-item"><label>自评总分展示</label><label class="switch"><input type="checkbox" id="reviewShowSelf" data-bind data-section="review" data-field="showSelfTotal"><span>考核表同时展示员工自评总分供对照</span></label></div>
+          </div>
+        </div>
+
+        <div class="section" data-section="grades" hidden>
+          <div class="section-head">
+            <div>
+              <h2>评级与系数</h2>
+              <p>等级数量与顺序固定，仅可调整名称、分数下限、绩效系数与标签样式。</p>
+            </div>
+            <div class="impact"><span>影响功能</span><span class="tag tag-blue">绩效评价</span><span class="tag tag-blue">绩效通晒</span><span class="tag tag-blue">员工档案</span><span class="tag tag-blue">员工成长记录</span></div>
+          </div>
+          <div class="error-box" id="err-grades" hidden></div>
+          <div class="table-wrap">
+            <table class="cfg-table">
+              <thead><tr><th>等级</th><th>名称</th><th>分数下限</th><th>绩效系数</th><th>标签样式</th></tr></thead>
+              <tbody id="gradeBody"></tbody>
+            </table>
+          </div>
+          <div class="hint" style="margin-top:8px">分数下限需从 S 到 D 严格递减，D 级固定为 0；绩效系数非负且从 S 到 D 不递增。</div>
+        </div>
+
+        <div class="section" data-section="baseline" hidden>
+          <div class="section-head">
+            <div>
+              <h2>分布基线</h2>
+              <p>定义各级比例基线、参考容差与统计分档；偏差只提示，不阻断业务操作。</p>
+            </div>
+            <div class="impact"><span>影响功能</span><span class="tag tag-blue">绩效通晒</span><span class="tag tag-blue">员工档案</span></div>
+          </div>
+          <div class="error-box" id="err-baseline" hidden></div>
+          <div class="table-wrap">
+            <table class="cfg-table">
+              <thead><tr><th>等级</th><th>基线类型</th><th>基线值（%）</th><th>参考容差（pp）</th></tr></thead>
+              <tbody id="baselineBody"></tbody>
+            </table>
+          </div>
+          <div class="sub-block">
+            <div class="sub-head"><h3>统计维度</h3><span class="hint">维度种类固定，不支持增删</span></div>
+            <div class="dim-list"><span>参与分布统计：</span><span class="tag tag-neutral">中心整体</span><span class="tag tag-neutral">部门</span><span class="tag tag-neutral">职级层级</span><span class="tag tag-neutral">序列</span><span class="tag tag-neutral">司龄段</span></div>
+          </div>
+          <div class="sub-block">
+            <div class="sub-head"><h3>职级层级分档</h3><span class="hint">边界为正整数且严格递增，末档向上开放</span></div>
+            <div class="table-wrap">
+              <table class="band-table"><thead><tr><th>档位</th><th>边界</th></tr></thead><tbody id="levelBandBody"></tbody></table>
+            </div>
+          </div>
+          <div class="sub-block">
+            <div class="sub-head"><h3>司龄段分档</h3><span class="hint">边界为正数且严格递增，首档从 0 开始，末档向上开放</span></div>
+            <div class="table-wrap">
+              <table class="band-table"><thead><tr><th>档位</th><th>边界</th></tr></thead><tbody id="tenureBandBody"></tbody></table>
+            </div>
+          </div>
+          <div class="sub-block">
+            <div class="form-grid">
+              <div class="form-item"><label for="baseDecimals">占比小数位</label><input id="baseDecimals" type="number" min="0" max="2" step="1" data-bind data-section="distribution" data-field="decimals" data-kind="number"><div class="hint">0–2 位</div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="section" data-section="calibration" hidden>
+          <div class="section-head">
+            <div>
+              <h2>通晒规则</h2>
+              <p>定义历史绩效回溯期数、后续计划短语与非 B 原因必填范围。</p>
+            </div>
+            <div class="impact"><span>影响功能</span><span class="tag tag-blue">绩效通晒</span></div>
+          </div>
+          <div class="error-box" id="err-calibration" hidden></div>
+          <div class="form-grid">
+            <div class="form-item"><label for="calHistory">历史绩效回溯期数</label><input id="calHistory" type="number" min="1" max="10" step="1" data-bind data-section="calibration" data-field="historyPeriods" data-kind="number"><div class="hint">取最近已归档周期，1–10 期</div></div>
+            <div class="form-item">
+              <label>非 B 原因必填等级</label>
+              <div id="nonBList" class="tag-list" style="padding-top:4px"></div>
+              <div class="hint">S、A、C、D 默认必填且不可取消；B 可选填。</div>
+            </div>
+          </div>
+          <div class="sub-block">
+            <div class="sub-head"><h3>后续计划短语库</h3><span class="hint">1–20 条，单条不超过 30 字，内容不重复</span></div>
+            <div class="tag-list" id="phraseList"></div>
+            <div class="add-row"><input id="phraseNew" type="text" maxlength="30" placeholder="新增短语，如：轮岗锻炼"><button class="btn" id="phraseAdd" type="button">添加</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <footer class="actionbar">
+    <div class="action-left">
+      <button class="btn btn-ghost" id="btnReset" type="button">恢复默认</button>
+      <span class="hint" id="saveState">所有修改已保存</span>
+    </div>
+    <div class="action-right">
+      <button class="btn" id="btnSaveDraft" type="button">保存草稿</button>
+      <button class="btn btn-primary" id="btnPublish" type="button">发布</button>
+    </div>
+  </footer>
+
+  <div class="mask" id="drawerMask" hidden></div>
+  <aside class="drawer" id="drawer" hidden aria-label="抽屉">
+    <header class="drawer-head"><h2 id="drawerTitle"></h2><button class="icon-btn" id="drawerClose" type="button" aria-label="关闭">×</button></header>
+    <div class="drawer-body" id="drawerBody"></div>
+  </aside>
+
+  <div class="mask" id="modalMask" hidden></div>
+  <div class="modal" id="modal" hidden role="dialog" aria-modal="true">
+    <header class="modal-head"><h2 id="modalTitle"></h2><button class="icon-btn" id="modalClose" type="button" aria-label="关闭">×</button></header>
+    <div class="modal-body" id="modalBody"></div>
+    <footer class="modal-foot" id="modalFoot"></footer>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const clone = (v) => JSON.parse(JSON.stringify(v));
+    const $ = (s, root = document) => root.querySelector(s);
+    const $$ = (s, root = document) => Array.from(root.querySelectorAll(s));
+    const esc = (v) => String(v == null ? '' : v).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
+    const SECTION_LABEL = { roster:'周期与名单', target:'目标规则', review:'评价规则', grades:'评级与系数', baseline:'分布基线', calibration:'通晒规则' };
+    const RESIGNED_LABEL = { recordD:'纳入并按 D 记录', includeNoGrade:'纳入但不指定等级', exclude:'不纳入' };
+    const CUTOFF_LABEL = { target:'目标截止', self:'自评截止', manager:'上级评价截止', preCalibration:'通晒前', archive:'周期归档前' };
+    const PRECISION_LABEL = { integer:'整数', oneDecimal:'一位小数' };
+    const ROUNDING_LABEL = { 'half-up':'四舍五入', up:'向上取整', down:'向下取整' };
+    const TAG_LABEL = { primary:'主色', success:'成功', neutral:'中性', warn:'警示', danger:'危险' };
+    const BASE_TYPE_LABEL = { upper:'上限', reference:'参考值', lower:'下限' };
+
+    const DEFAULTS = {
+      roster: {
+        probation: true,
+        resigned: 'recordD',
+        reasons: ['新入职', '离职', '长期不在岗'],
+        cutoff: 'archive',
+        teamMeetingRequired: false,
+        centerMeetingRequired: false
+      },
+      target: {
+        weightMin: 1, weightMax: 100,
+        suggestedMin: 3, suggestedMax: 6,
+        visibleDefault: '中心内可见',
+        progressMin: 0, progressMax: 100,
+        changeWindow: true
+      },
+      review: {
+        scoreMin: 0, scoreMax: 100,
+        precision: 'integer',
+        selfNoteRequired: false,
+        managerNoteRequired: true,
+        totalDecimals: 1,
+        rounding: 'half-up',
+        overdueRefill: true,
+        showSelfTotal: true
+      },
+      grades: [
+        { code:'S', name:'杰出', lower:98, coefficient:2.0, tag:'primary' },
+        { code:'A', name:'优秀', lower:95, coefficient:1.5, tag:'primary' },
+        { code:'B', name:'良好', lower:85, coefficient:1.0, tag:'neutral' },
+        { code:'C', name:'有待改进', lower:70, coefficient:0.5, tag:'warn' },
+        { code:'D', name:'不合格', lower:0, coefficient:0, tag:'danger' }
+      ],
+      baselines: [
+        { code:'S', type:'upper', value:15, tolerance:0 },
+        { code:'A', type:'upper', value:20, tolerance:0 },
+        { code:'B', type:'reference', value:50, tolerance:5 },
+        { code:'C', type:'reference', value:10, tolerance:5 },
+        { code:'D', type:'lower', value:5, tolerance:0 }
+      ],
+      levelBoundaries: [3, 6, 8],
+      tenureBoundaries: [0.5, 1, 2, 3],
+      distribution: { decimals: 1 },
+      calibration: {
+        historyPeriods: 3,
+        phrases: ['维持原岗位工作职责', '扩大工作职责', '提名晋升', '调薪或奖金倾斜'],
+        nonBRequired: ['S', 'A', 'C', 'D']
+      }
+    };
+
+    const makeV3 = () => { const d = clone(DEFAULTS); d.baselines[2].value = 52; d.baselines[3].value = 12; return d; };
+
+    let published = { version: 3, publisher: '张宁', publishedAt: '2026-11-20 14:30', effective: '2026Q4 及之后创建的周期', data: makeV3() };
+    let draft = makeV3();
+    draft.baselines[2].value = 50;
+    draft.baselines[3].value = 10;
+    draft.calibration.phrases.push('轮岗锻炼');
+    let savedDraft = clone(draft);
+
+    let versions = [
+      { version: 3, status: '已发布', publisher: '张宁', publishedAt: '2026-11-20 14:30', note: 'Q3 复盘后上调 B、C 参考值', cycles: 3, current: true, data: makeV3() },
+      { version: 2, status: '历史', publisher: '陈宇', publishedAt: '2026-08-15 10:00', note: '收紧 S、A 上限，统一中心口径', cycles: 2, current: false, data: clone(DEFAULTS) },
+      { version: 1, status: '历史', publisher: '张宁', publishedAt: '2026-05-10 09:20', note: '绩效参数首次发布', cycles: 1, current: false, data: (() => { const d = clone(DEFAULTS); d.baselines[0].value = 18; d.baselines[1].value = 22; return d; })() }
+    ];
+
+    let changeLog = [
+      { time:'2026-11-20 14:30', operator:'张宁', version:'V3', section:'分布基线', item:'B 基线值', from:'50%', to:'52%', note:'Q3 复盘后上调 B、C 参考值' },
+      { time:'2026-11-20 14:30', operator:'张宁', version:'V3', section:'分布基线', item:'C 基线值', from:'10%', to:'12%', note:'Q3 复盘后上调 B、C 参考值' },
+      { time:'2026-08-15 10:00', operator:'陈宇', version:'V2', section:'分布基线', item:'S 基线值', from:'18%', to:'15%', note:'收紧 S、A 上限，统一中心口径' },
+      { time:'2026-08-15 10:00', operator:'陈宇', version:'V2', section:'分布基线', item:'A 基线值', from:'22%', to:'20%', note:'收紧 S、A 上限，统一中心口径' },
+      { time:'2026-05-10 09:20', operator:'张宁', version:'V1', section:'全部参数', item:'初始版本', from:'系统默认', to:'V1', note:'绩效参数首次发布' }
+    ];
+
+    let ui = { section: 'roster', editing: null };
+
+    function formatNow() {
+      const d = new Date();
+      const p = (n) => String(n).padStart(2, '0');
+      return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())} ${p(d.getHours())}:${p(d.getMinutes())}`;
+    }
+
+    function baselineText(b) {
+      if (b.type === 'upper') return `≤ ${b.value}%`;
+      if (b.type === 'lower') return `≥ ${b.value}%`;
+      return `约 ${b.value}%（容差 ${b.tolerance}pp）`;
+    }
+
+    function levelBandNames(bounds) {
+      const [a, b, c] = bounds;
+      return [`P1-P${a}`, `P${a + 1}-P${b}`, `P${b + 1}-P${c}`, `P${c + 1} 及以上`];
+    }
+
+    function tenureBandNames(bounds) {
+      const [a, b, c, d] = bounds;
+      return [`不足 ${a} 年`, `${a}-${b} 年`, `${b}-${c} 年`, `${c}-${d} 年`, `${d} 年以上`];
+    }
+
+    function flatten(data) {
+      const rows = [];
+      const push = (section, label, value) => rows.push({ section, label, value: String(value) });
+      push('周期与名单', '试用期员工纳入', data.roster.probation ? '是' : '否');
+      push('周期与名单', '协商离职人员处理', RESIGNED_LABEL[data.roster.resigned]);
+      push('周期与名单', '不纳入原因', data.roster.reasons.join('、'));
+      push('周期与名单', '名单调整截止', CUTOFF_LABEL[data.roster.cutoff]);
+      push('周期与名单', '团队通晒日期必填', data.roster.teamMeetingRequired ? '是' : '否');
+      push('周期与名单', '中心通晒日期必填', data.roster.centerMeetingRequired ? '是' : '否');
+      push('目标规则', '单目标权重范围', `${data.target.weightMin}%–${data.target.weightMax}%`);
+      push('目标规则', '建议目标个数', `${data.target.suggestedMin}–${data.target.suggestedMax} 个`);
+      push('目标规则', '默认可见范围', data.target.visibleDefault);
+      push('目标规则', '目标进度范围', `${data.target.progressMin}%–${data.target.progressMax}%`);
+      push('目标规则', '截止后变更窗口', data.target.changeWindow ? '允许' : '不允许');
+      push('评价规则', '评分范围', `${data.review.scoreMin}–${data.review.scoreMax}`);
+      push('评价规则', '评分精度', PRECISION_LABEL[data.review.precision]);
+      push('评价规则', '自评说明必填', data.review.selfNoteRequired ? '是' : '否');
+      push('评价规则', '上级评语必填', data.review.managerNoteRequired ? '是' : '否');
+      push('评价规则', '总分小数位', `${data.review.totalDecimals} 位`);
+      push('评价规则', '总分舍入方式', ROUNDING_LABEL[data.review.rounding]);
+      push('评价规则', '逾期允许补填', data.review.overdueRefill ? '是' : '否');
+      push('评价规则', '自评总分展示', data.review.showSelfTotal ? '是' : '否');
+      data.grades.forEach((g) => {
+        push('评级与系数', `${g.code} 等级名称`, g.name);
+        push('评级与系数', `${g.code} 分数下限`, g.lower);
+        push('评级与系数', `${g.code} 绩效系数`, g.coefficient);
+        push('评级与系数', `${g.code} 标签样式`, TAG_LABEL[g.tag]);
+      });
+      data.baselines.forEach((b) => push('分布基线', `${b.code} 基线`, baselineText(b)));
+      push('分布基线', '职级层级分档', levelBandNames(data.levelBoundaries).join(' / '));
+      push('分布基线', '司龄段分档', tenureBandNames(data.tenureBoundaries).join(' / '));
+      push('分布基线', '占比小数位', `${data.distribution.decimals} 位`);
+      push('通晒规则', '历史绩效回溯期数', `${data.calibration.historyPeriods} 期`);
+      push('通晒规则', '后续计划短语库', data.calibration.phrases.join('、'));
+      push('通晒规则', '非 B 原因必填等级', data.calibration.nonBRequired.join('、'));
+      return rows;
+    }
+
+    function diffData(oldData, newData) {
+      const oldRows = flatten(oldData);
+      const newRows = flatten(newData);
+      const oldMap = new Map(oldRows.map((r) => [r.section + '|' + r.label, r.value]));
+      const diffs = [];
+      newRows.forEach((r) => {
+        const key = r.section + '|' + r.label;
+        const before = oldMap.has(key) ? oldMap.get(key) : '—';
+        if (before !== r.value) diffs.push({ section: r.section, label: r.label, from: before, to: r.value });
+      });
+      return diffs;
+    }
+
+    function hasUnsaved() { return JSON.stringify(draft) !== JSON.stringify(savedDraft); }
+
+    function validate(data) {
+      const errors = [];
+      const warnings = [];
+      const err = (section, msg, focus) => errors.push({ section, msg, focus });
+
+      if (!(data.roster.reasons.length >= 1)) err('roster', '不纳入原因至少保留 1 项');
+      if (new Set(data.roster.reasons).size !== data.roster.reasons.length) err('roster', '不纳入原因不能重复');
+      if (data.roster.reasons.some((x) => !x.trim() || x.length > 20)) err('roster', '不纳入原因需非空且不超过 20 字');
+
+      if (!(data.target.weightMin >= 1 && data.target.weightMin <= 100)) err('target', '单目标权重下限需在 1–100 之间', 'targetWeightMin');
+      if (!(data.target.weightMax >= 1 && data.target.weightMax <= 100)) err('target', '单目标权重上限需在 1–100 之间', 'targetWeightMax');
+      if (!(data.target.weightMin < data.target.weightMax)) err('target', '单目标权重下限需小于上限', 'targetWeightMin');
+      if (!(data.target.suggestedMin >= 1 && data.target.suggestedMin <= 20)) err('target', '建议目标个数下限需在 1–20 之间', 'targetSuggestedMin');
+      if (!(data.target.suggestedMax >= 1 && data.target.suggestedMax <= 20)) err('target', '建议目标个数上限需在 1–20 之间', 'targetSuggestedMax');
+      if (!(data.target.suggestedMin <= data.target.suggestedMax)) err('target', '建议目标个数下限需不大于上限', 'targetSuggestedMin');
+      if (!(data.target.progressMin >= 0 && data.target.progressMin <= 100)) err('target', '目标进度下限需在 0–100 之间', 'targetProgressMin');
+      if (!(data.target.progressMax >= 0 && data.target.progressMax <= 100)) err('target', '目标进度上限需在 0–100 之间', 'targetProgressMax');
+      if (!(data.target.progressMin < data.target.progressMax)) err('target', '目标进度下限需小于上限', 'targetProgressMin');
+
+      if (!(data.review.scoreMin >= 0 && data.review.scoreMin <= 100)) err('review', '评分下限需在 0–100 之间', 'reviewScoreMin');
+      if (!(data.review.scoreMax >= 0 && data.review.scoreMax <= 100)) err('review', '评分上限需在 0–100 之间', 'reviewScoreMax');
+      if (!(data.review.scoreMin < data.review.scoreMax)) err('review', '评分下限需小于上限', 'reviewScoreMin');
+      if (!(data.review.totalDecimals >= 0 && data.review.totalDecimals <= 2)) err('review', '总分小数位需为 0–2', 'reviewDecimals');
+
+      const grades = data.grades;
+      const names = new Set();
+      grades.forEach((g, i) => {
+        if (!g.name.trim()) err('grades', `${g.code} 等级名称不能为空`);
+        if (names.has(g.name)) err('grades', `等级名称「${g.name}」重复`);
+        names.add(g.name);
+        if (!(g.lower >= 0 && g.lower <= 100)) err('grades', `${g.code} 分数下限需在 0–100 之间`);
+        if (!(g.coefficient >= 0)) err('grades', `${g.code} 绩效系数不能为负`);
+        if (i === grades.length - 1 && g.lower !== 0) err('grades', 'D 级分数下限必须为 0');
+        if (i === 0 && !(g.lower > 0 && g.lower < 100)) err('grades', 'S 级分数下限需大于 0 且小于 100');
+        if (i > 0 && !(grades[i - 1].lower > g.lower)) err('grades', '分数下限需从 S 到 D 严格递减');
+        if (i > 0 && !(grades[i - 1].coefficient >= g.coefficient)) err('grades', '绩效系数需从 S 到 D 不递增');
+      });
+
+      data.baselines.forEach((b) => {
+        if (!(b.value >= 0 && b.value <= 100)) err('baseline', `${b.code} 基线值需在 0–100 之间`);
+        if (b.type === 'upper' && !(b.value < 100)) err('baseline', `${b.code} 上限型基线需小于 100`);
+        if (b.type === 'lower' && !(b.value > 0)) err('baseline', `${b.code} 下限型基线需大于 0`);
+        if (b.type === 'reference') {
+          if (!(b.tolerance >= 0 && b.tolerance <= 100)) err('baseline', `${b.code} 参考容差需在 0–100 之间`);
+          if (b.value - b.tolerance < 0 || b.value + b.tolerance > 100) err('baseline', `${b.code} 参考值加减容差后需在 0–100 之间`);
+        }
+      });
+      const lb = data.levelBoundaries;
+      if (!(lb.every((x) => Number.isInteger(x) && x >= 1) && lb[0] < lb[1] && lb[1] < lb[2])) err('baseline', '职级层级分档边界需为正整数且严格递增');
+      const tb = data.tenureBoundaries;
+      if (!(tb.every((x) => Number(x) > 0) && tb[0] < tb[1] && tb[1] < tb[2] && tb[2] < tb[3])) err('baseline', '司龄段分档边界需为正数且严格递增');
+      if (!(data.distribution.decimals >= 0 && data.distribution.decimals <= 2)) err('baseline', '占比小数位需为 0–2', 'baseDecimals');
+
+      if (!(data.calibration.historyPeriods >= 1 && data.calibration.historyPeriods <= 10)) err('calibration', '历史绩效回溯期数需为 1–10', 'calHistory');
+      const phrases = data.calibration.phrases.map((x) => x.trim()).filter(Boolean);
+      if (phrases.length < 1 || phrases.length > 20) err('calibration', '后续计划短语需保留 1–20 条');
+      if (new Set(phrases).size !== phrases.length) err('calibration', '后续计划短语不能重复');
+      if (phrases.some((x) => x.length > 30)) err('calibration', '后续计划短语单条不超过 30 字');
+      if (!['S', 'A', 'C', 'D'].every((x) => data.calibration.nonBRequired.includes(x))) err('calibration', '非 B 原因必填等级必须包含 S、A、C、D');
+
+      const baselineSum = data.baselines.reduce((s, b) => s + Number(b.value), 0);
+      if (Math.abs(baselineSum - 100) > 10) warnings.push(`五级基线值合计为 ${baselineSum}%，与 100% 偏离超过 10 个百分点`);
+      if (phrases.length > 15) warnings.push('后续计划短语超过 15 条，建议精简以降低选择成本');
+      if (data.calibration.historyPeriods > 6) warnings.push('历史绩效回溯超过 6 期，台账信息量较大');
+
+      return { errors, warnings };
+    }
+
+    function setValue(id, value) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (el.type === 'checkbox') el.checked = Boolean(value);
+      else el.value = value;
+    }
+
+    function renderStatic() {
+      setValue('rosterProbation', draft.roster.probation);
+      setValue('rosterResigned', draft.roster.resigned);
+      setValue('rosterCutoff', draft.roster.cutoff);
+      setValue('rosterTeam', draft.roster.teamMeetingRequired);
+      setValue('rosterCenter', draft.roster.centerMeetingRequired);
+      setValue('targetWeightMin', draft.target.weightMin);
+      setValue('targetWeightMax', draft.target.weightMax);
+      setValue('targetSuggestedMin', draft.target.suggestedMin);
+      setValue('targetSuggestedMax', draft.target.suggestedMax);
+      setValue('targetVisible', draft.target.visibleDefault);
+      setValue('targetProgressMin', draft.target.progressMin);
+      setValue('targetProgressMax', draft.target.progressMax);
+      setValue('targetChangeWindow', draft.target.changeWindow);
+      setValue('reviewScoreMin', draft.review.scoreMin);
+      setValue('reviewScoreMax', draft.review.scoreMax);
+      setValue('reviewPrecision', draft.review.precision);
+      setValue('reviewSelfNote', draft.review.selfNoteRequired);
+      setValue('reviewManagerNote', draft.review.managerNoteRequired);
+      setValue('reviewDecimals', draft.review.totalDecimals);
+      setValue('reviewRounding', draft.review.rounding);
+      setValue('reviewOverdue', draft.review.overdueRefill);
+      setValue('reviewShowSelf', draft.review.showSelfTotal);
+      setValue('baseDecimals', draft.distribution.decimals);
+      setValue('calHistory', draft.calibration.historyPeriods);
+      const hint = $('#resignedHint');
+      if (hint) hint.textContent = draft.roster.resigned === 'exclude' ? '该人群不计入任何分布统计。' : '';
+    }
+
+    function renderReasons() {
+      const list = draft.roster.reasons;
+      const box = $('#reasonList');
+      box.innerHTML = list.map((r, i) => {
+        if (ui.editing && ui.editing.type === 'reason' && ui.editing.index === i) {
+          return `<span class="tag-item editing"><input id="reasonEditInput" type="text" maxlength="20" value="${esc(r)}"><button class="mini" type="button" data-reason-save="${i}">保存</button><button class="mini" type="button" data-reason-cancel="1">取消</button></span>`;
+        }
+        return `<span class="tag-item">${esc(r)}<button class="mini" type="button" data-reason-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="mini" type="button" data-reason-down="${i}" ${i === list.length - 1 ? 'disabled' : ''}>↓</button><button class="mini" type="button" data-reason-edit="${i}">编辑</button><button class="mini danger" type="button" data-reason-del="${i}">删除</button></span>`;
+      }).join('');
+    }
+
+    function renderPhrases() {
+      const list = draft.calibration.phrases;
+      const box = $('#phraseList');
+      box.innerHTML = list.map((p, i) => {
+        if (ui.editing && ui.editing.type === 'phrase' && ui.editing.index === i) {
+          return `<span class="tag-item editing"><input id="phraseEditInput" type="text" maxlength="30" value="${esc(p)}"><button class="mini" type="button" data-phrase-save="${i}">保存</button><button class="mini" type="button" data-phrase-cancel="1">取消</button></span>`;
+        }
+        return `<span class="tag-item">${esc(p)}<button class="mini" type="button" data-phrase-up="${i}" ${i === 0 ? 'disabled' : ''}>↑</button><button class="mini" type="button" data-phrase-down="${i}" ${i === list.length - 1 ? 'disabled' : ''}>↓</button><button class="mini" type="button" data-phrase-edit="${i}">编辑</button><button class="mini danger" type="button" data-phrase-del="${i}">删除</button></span>`;
+      }).join('');
+    }
+
+    function tagOptions(selected) {
+      return Object.keys(TAG_LABEL).map((k) => `<option value="${k}" ${k === selected ? 'selected' : ''}>${TAG_LABEL[k]}</option>`).join('');
+    }
+
+    function renderGrades() {
+      $('#gradeBody').innerHTML = draft.grades.map((g, i) => `
+        <tr>
+          <td><span class="tag tag-${g.tag}">${g.code}</span></td>
+          <td><input class="cell-input" type="text" maxlength="10" value="${esc(g.name)}" data-grade="${i}" data-field="name" aria-label="${g.code} 等级名称"></td>
+          <td><input class="cell-input num" type="number" min="0" max="100" step="1" value="${g.lower}" data-grade="${i}" data-field="lower" aria-label="${g.code} 分数下限"></td>
+          <td><input class="cell-input num" type="number" min="0" max="10" step="0.1" value="${g.coefficient}" data-grade="${i}" data-field="coefficient" aria-label="${g.code} 绩效系数"></td>
+          <td><div class="tag-cell"><select class="cell-input" data-grade="${i}" data-field="tag" aria-label="${g.code} 标签样式">${tagOptions(g.tag)}</select><span class="tag tag-${g.tag}">${g.code}</span></div></td>
+        </tr>`).join('');
+    }
+
+    function renderBaselines() {
+      $('#baselineBody').innerHTML = draft.baselines.map((b, i) => `
+        <tr>
+          <td><span class="tag tag-${draft.grades[i].tag}">${b.code}</span></td>
+          <td><select class="cell-input" data-baseline="${i}" data-field="type" aria-label="${b.code} 基线类型">
+            ${Object.keys(BASE_TYPE_LABEL).map((k) => `<option value="${k}" ${k === b.type ? 'selected' : ''}>${BASE_TYPE_LABEL[k]}</option>`).join('')}
+          </select></td>
+          <td><input class="cell-input num" type="number" min="0" max="100" step="0.1" value="${b.value}" data-baseline="${i}" data-field="value" aria-label="${b.code} 基线值"></td>
+          <td><input class="cell-input num" type="number" min="0" max="100" step="0.1" value="${b.type === 'reference' ? b.tolerance : ''}" placeholder="${b.type === 'reference' ? '' : '不适用'}" data-baseline="${i}" data-field="tolerance" aria-label="${b.code} 参考容差" ${b.type === 'reference' ? '' : 'disabled'}></td>
+        </tr>`).join('');
+    }
+
+    function renderBands() {
+      const names = levelBandNames(draft.levelBoundaries);
+      $('#levelBandBody').innerHTML = names.map((name, i) => `
+        <tr><td>${name}</td><td>${i < 3 ? `上限 <input type="number" min="1" step="1" value="${draft.levelBoundaries[i]}" data-lb="${i}" aria-label="${name} 上限">` : '<span class="hint">向上开放</span>'}</td></tr>`).join('');
+      const tn = tenureBandNames(draft.tenureBoundaries);
+      $('#tenureBandBody').innerHTML = tn.map((name, i) => `
+        <tr><td>${name}</td><td>${i < 4 ? `上限 <input type="number" min="0.1" step="0.1" value="${draft.tenureBoundaries[i]}" data-tb="${i}" aria-label="${name} 上限">` : '<span class="hint">向上开放</span>'}</td></tr>`).join('');
+    }
+
+    function renderNonB() {
+      const box = $('#nonBList');
+      box.innerHTML = ['S', 'A', 'B', 'C', 'D'].map((code) => {
+        const fixed = ['S', 'A', 'C', 'D'].includes(code);
+        const checked = draft.calibration.nonBRequired.includes(code);
+        return `<label class="check"><input type="checkbox" data-nonb="${code}" ${checked ? 'checked' : ''} ${fixed ? 'disabled' : ''}> ${code}</label>`;
+      }).join('');
+    }
+
+    function renderStatus() {
+      const diffs = diffData(published.data, draft);
+      $('#statusVersionTag').textContent = `已发布 V${published.version}`;
+      $('#statusVersion').textContent = `当前生效版本 V${published.version}`;
+      $('#statusMeta').textContent = `${published.publisher} · ${published.publishedAt}`;
+      $('#statusEffect').textContent = published.effective;
+      const draftTag = $('#statusDraft');
+      draftTag.textContent = diffs.length ? `有未发布修改（${diffs.length} 项）` : '无未发布修改';
+      draftTag.className = 'tag ' + (diffs.length ? 'tag-warn' : 'tag-ok');
+      const state = $('#saveState');
+      state.textContent = hasUnsaved() ? '有未保存修改' : '所有修改已保存';
+      state.className = 'hint ' + (hasUnsaved() ? 'warn-text' : '');
+    }
+
+    function renderNavDots() {
+      const diffs = diffData(published.data, draft);
+      $$('.nav-btn').forEach((btn) => {
+        const label = SECTION_LABEL[btn.dataset.section];
+        btn.classList.toggle('has-change', diffs.some((d) => d.section === label));
+      });
+    }
+
+    function renderAll() {
+      renderStatic();
+      renderReasons();
+      renderPhrases();
+      renderGrades();
+      renderBaselines();
+      renderBands();
+      renderNonB();
+      renderStatus();
+      renderNavDots();
+    }
+
+    function onEdited() {
+      clearErrorUI();
+      renderStatus();
+      renderNavDots();
+    }
+
+    function showSection(key) {
+      ui.section = key;
+      $$('.section').forEach((s) => { s.hidden = s.dataset.section !== key; });
+      $$('.nav-btn').forEach((b) => b.classList.toggle('is-active', b.dataset.section === key));
+    }
+
+    function toast(msg, isErr) {
+      const t = $('#toast');
+      t.textContent = msg;
+      t.className = 'toast' + (isErr ? ' err' : '');
+      t.hidden = false;
+      clearTimeout(t._t);
+      t._t = setTimeout(() => { t.hidden = true; }, 2600);
+    }
+
+    function clearErrorUI() {
+      $$('.section .error-box').forEach((b) => { b.hidden = true; b.innerHTML = ''; });
+      $$('.is-invalid').forEach((el) => el.classList.remove('is-invalid'));
+    }
+
+    function renderErrors(errors) {
+      clearErrorUI();
+      const grouped = {};
+      errors.forEach((e) => { (grouped[e.section] = grouped[e.section] || []).push(e); });
+      Object.keys(grouped).forEach((section) => {
+        const box = document.getElementById('err-' + section);
+        if (!box) return;
+        box.hidden = false;
+        box.innerHTML = `<b>${grouped[section].length} 项需要修正</b><ul>${grouped[section].map((e) => `<li>${esc(e.msg)}</li>`).join('')}</ul>`;
+      });
+      errors.forEach((e) => {
+        if (!e.focus) return;
+        const el = document.getElementById(e.focus);
+        if (el) el.classList.add('is-invalid');
+      });
+    }
+
+    function syncScroll() {
+      const open = !$('#drawer').hidden || !$('#modal').hidden;
+      document.body.classList.toggle('no-scroll', open);
+    }
+
+    function openDrawer(title, html) {
+      $('#drawerTitle').textContent = title;
+      $('#drawerBody').innerHTML = html;
+      $('#drawer').hidden = false;
+      $('#drawerMask').hidden = false;
+      syncScroll();
+    }
+
+    function closeDrawer() {
+      $('#drawer').hidden = true;
+      $('#drawerMask').hidden = true;
+      syncScroll();
+    }
+
+    function openModal(title, body, foot) {
+      $('#modalTitle').textContent = title;
+      $('#modalBody').innerHTML = body;
+      $('#modalFoot').innerHTML = foot;
+      $('#modal').hidden = false;
+      $('#modalMask').hidden = false;
+      syncScroll();
+    }
+
+    function closeModal() {
+      $('#modal').hidden = true;
+      $('#modalMask').hidden = true;
+      syncScroll();
+    }
+
+    function snapshotHtml(data) {
+      const rows = flatten(data);
+      const groups = {};
+      rows.forEach((r) => { (groups[r.section] = groups[r.section] || []).push(r); });
+      return Object.keys(groups).map((section) => `
+        <div class="snap-group"><b>${section}</b><ul>${groups[section].map((r) => `<li><span>${esc(r.label)}</span><span>${esc(r.value)}</span></li>`).join('')}</ul></div>`).join('');
+    }
+
+    function openVersions() {
+      const cards = versions.map((v) => `
+        <article class="version-card">
+          <div class="version-head">
+            <b>V${v.version}</b>
+            <span class="tag ${v.current ? 'tag-ok' : 'tag-neutral'}">${v.current ? '当前生效' : '历史版本'}</span>
+            <span class="muted">${v.publishedAt} · ${v.publisher}</span>
+          </div>
+          <p class="version-note">${esc(v.note)}</p>
+          <div class="version-meta">
+            <span>适用周期 ${v.cycles} 个</span>
+            <button class="link" type="button" data-snap="${v.version}">查看快照</button>
+            <button class="link" type="button" data-rollback="${v.version}">以此版本创建草稿</button>
+          </div>
+          <div class="snapshot" id="snap-${v.version}" hidden></div>
+        </article>`).join('');
+      const defaultCard = `
+        <article class="version-card">
+          <div class="version-head"><b>系统默认</b><span class="tag tag-neutral">初始口径</span></div>
+          <p class="version-note">首次发布前使用的参数口径。</p>
+          <div class="version-meta"><button class="link" type="button" data-snap="default">查看快照</button></div>
+          <div class="snapshot" id="snap-default" hidden></div>
+        </article>`;
+      openDrawer('版本历史', cards + defaultCard);
+    }
+
+    function openLogs() {
+      const options = ['全部'].concat(Object.values(SECTION_LABEL)).map((x) => `<option value="${x === '全部' ? '' : x}">${x}</option>`).join('');
+      const html = `
+        <div class="filter-row">
+          <select id="logSection">${options}</select>
+          <input id="logKeyword" type="text" placeholder="参数项关键字，如：基线">
+          <button class="btn" id="logSearch" type="button">查询</button>
+          <button class="btn" id="logExport" type="button">导出</button>
+        </div>
+        <div id="logTable"></div>`;
+      openDrawer('变更记录', html);
+      renderLogTable();
+    }
+
+    function renderLogTable() {
+      const section = $('#logSection') ? $('#logSection').value : '';
+      const keyword = $('#logKeyword') ? $('#logKeyword').value.trim() : '';
+      const list = changeLog.filter((r) => (!section || r.section === section) && (!keyword || r.item.includes(keyword)));
+      const box = $('#logTable');
+      if (!list.length) {
+        box.innerHTML = '<div class="empty-state">暂无符合条件的参数变更记录</div>';
+        return;
+      }
+      box.innerHTML = `<div class="table-wrap"><table class="log-table"><thead><tr><th>操作时间</th><th>操作人</th><th>版本</th><th>分类</th><th>参数项</th><th>变更</th></tr></thead><tbody>${list.map((r) => `<tr><td>${r.time}</td><td>${r.operator}</td><td>${r.version}</td><td>${r.section}</td><td>${esc(r.item)}</td><td>${esc(r.from)} → <b>${esc(r.to)}</b><div class="hint">${esc(r.note)}</div></td></tr>`).join('')}</tbody></table></div>`;
+    }
+
+    function openPublish() {
+      const res = validate(draft);
+      const diffs = diffData(published.data, draft);
+      const errorHtml = res.errors.length
+        ? `<div class="error-box"><b>存在 ${res.errors.length} 项校验错误，修正后才能发布</b><ul>${res.errors.map((e) => `<li>${SECTION_LABEL[e.section]}：${esc(e.msg)}</li>`).join('')}</ul></div>`
+        : '';
+      const warningHtml = res.warnings.length
+        ? `<div class="warn-box"><b>发布提示</b><ul>${res.warnings.map((w) => `<li>${esc(w)}</li>`).join('')}</ul><label class="check"><input type="checkbox" id="warnAck"> 已知悉并继续发布</label></div>`
+        : '';
+      const diffHtml = diffs.length
+        ? `<div class="table-wrap"><table class="diff-table"><thead><tr><th>分类</th><th>参数项</th><th>原值</th><th>新值</th></tr></thead><tbody>${diffs.map((d) => `<tr><td>${d.section}</td><td>${esc(d.label)}</td><td class="old">${esc(d.from)}</td><td class="new">${esc(d.to)}</td></tr>`).join('')}</tbody></table></div>`
+        : '<div class="empty-inline">参数与当前生效版本一致，发布后将生成一个内容相同的新版本。</div>';
+      const body = `${errorHtml}${diffHtml}<div class="form-item"><label for="publishNote">发布说明<span class="req">*</span></label><textarea id="publishNote" maxlength="200" placeholder="说明本次调整原因与影响，例如：Q4 基线校准"></textarea></div>${warningHtml}<div class="hint">发布后仅对之后创建的考核周期生效，进行中与已归档周期保持原参数快照。</div>`;
+      const foot = '<button class="btn" type="button" data-close-modal>取消</button><button class="btn btn-primary" id="publishConfirm" type="button" disabled>确认发布</button>';
+      openModal('发布参数', body, foot);
+      if (res.errors.length) renderErrors(res.errors);
+
+      const refresh = () => {
+        const note = $('#publishNote').value.trim();
+        const needAck = res.warnings.length > 0;
+        const ack = !needAck || $('#warnAck').checked;
+        $('#publishConfirm').disabled = res.errors.length > 0 || diffs.length === 0 || !note || !ack;
+      };
+      $('#publishNote').addEventListener('input', refresh);
+      if ($('#warnAck')) $('#warnAck').addEventListener('change', refresh);
+
+      $('#publishConfirm').addEventListener('click', () => {
+        const note = $('#publishNote').value.trim();
+        const now = formatNow();
+        const nextVersion = published.version + 1;
+        versions.forEach((v) => {
+          v.current = false;
+          if (v.status === '已发布') v.status = '历史';
+        });
+        versions.unshift({ version: nextVersion, status: '已发布', publisher: '系统管理员', publishedAt: now, note, cycles: 0, current: true, data: clone(draft) });
+        diffs.forEach((d) => changeLog.unshift({ time: now, operator: '系统管理员', version: 'V' + nextVersion, section: d.section, item: d.label, from: d.from, to: d.to, note }));
+        published = { version: nextVersion, publisher: '系统管理员', publishedAt: now, effective: '发布后创建的周期', data: clone(draft) };
+        savedDraft = clone(draft);
+        closeModal();
+        clearErrorUI();
+        renderAll();
+        showSection(ui.section);
+        toast(`参数已发布，当前生效版本 V${nextVersion}`);
+      });
+    }
+
+    function openReset() {
+      if (JSON.stringify(draft) === JSON.stringify(DEFAULTS)) {
+        toast('当前草稿已是系统默认参数');
+        return;
+      }
+      openModal('恢复默认参数', '<p>将把当前草稿的全部参数恢复为系统默认值，已发布版本与周期快照不受影响。是否继续？</p>', '<button class="btn" type="button" data-close-modal>取消</button><button class="btn btn-primary" id="resetConfirm" type="button">确认恢复</button>');
+      $('#resetConfirm').addEventListener('click', () => {
+        draft = clone(DEFAULTS);
+        savedDraft = clone(DEFAULTS);
+        ui.editing = null;
+        closeModal();
+        clearErrorUI();
+        renderAll();
+        toast('已恢复默认，发布后生效');
+      });
+    }
+
+    function rollbackTo(version) {
+      const v = versions.find((x) => x.version === Number(version));
+      if (!v) return;
+      openModal('以此版本创建草稿', `<p>将使用 V${v.version} 的参数覆盖当前草稿，当前未保存的修改将丢失。发布后生成新的版本号，不改写历史版本。</p>`, '<button class="btn" type="button" data-close-modal>取消</button><button class="btn btn-primary" id="rollbackConfirm" type="button">确认创建</button>');
+      $('#rollbackConfirm').addEventListener('click', () => {
+        draft = clone(v.data);
+        savedDraft = clone(draft);
+        ui.editing = null;
+        closeModal();
+        closeDrawer();
+        clearErrorUI();
+        renderAll();
+        toast(`已基于 V${v.version} 创建草稿，发布后生成新版本`);
+      });
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      renderAll();
+
+      const initialSection = new URLSearchParams(location.search).get('section');
+      if (initialSection && SECTION_LABEL[initialSection]) showSection(initialSection);
+
+      const openParam = new URLSearchParams(location.search).get('open');
+      if (openParam === 'publish') setTimeout(openPublish, 0);
+      if (openParam === 'versions') setTimeout(openVersions, 0);
+      if (openParam === 'logs') setTimeout(openLogs, 0);
+
+      $$('.nav-btn').forEach((btn) => btn.addEventListener('click', () => showSection(btn.dataset.section)));
+
+      $$('[data-bind]').forEach((el) => {
+        el.addEventListener('change', () => {
+          const section = el.dataset.section;
+          const field = el.dataset.field;
+          let value = el.type === 'checkbox' ? el.checked : el.value;
+          if (el.dataset.kind === 'number') value = Number(value);
+          draft[section][field] = value;
+          if (section === 'roster' && field === 'resigned') {
+            const hint = $('#resignedHint');
+            hint.textContent = value === 'exclude' ? '该人群不计入任何分布统计。' : '';
+          }
+          onEdited();
+        });
+      });
+
+      $('#reasonAdd').addEventListener('click', () => {
+        const input = $('#reasonNew');
+        const value = input.value.trim();
+        if (!value) return toast('请输入不纳入原因', true);
+        if (value.length > 20) return toast('不纳入原因不超过 20 字', true);
+        if (draft.roster.reasons.includes(value)) return toast('该原因已存在', true);
+        draft.roster.reasons.push(value);
+        input.value = '';
+        ui.editing = null;
+        renderReasons();
+        onEdited();
+      });
+
+      $('#phraseAdd').addEventListener('click', () => {
+        const input = $('#phraseNew');
+        const value = input.value.trim();
+        if (!value) return toast('请输入后续计划短语', true);
+        if (value.length > 30) return toast('短语不超过 30 字', true);
+        if (draft.calibration.phrases.includes(value)) return toast('该短语已存在', true);
+        if (draft.calibration.phrases.length >= 20) return toast('短语库最多 20 条', true);
+        draft.calibration.phrases.push(value);
+        input.value = '';
+        ui.editing = null;
+        renderPhrases();
+        onEdited();
+      });
+
+      document.addEventListener('click', (event) => {
+        const t = event.target;
+        const reasonEdit = t.dataset.reasonEdit;
+        const reasonSave = t.dataset.reasonSave;
+        const reasonDel = t.dataset.reasonDel;
+        const reasonUp = t.dataset.reasonUp;
+        const reasonDown = t.dataset.reasonDown;
+        const phraseEdit = t.dataset.phraseEdit;
+        const phraseSave = t.dataset.phraseSave;
+        const phraseDel = t.dataset.phraseDel;
+        const phraseUp = t.dataset.phraseUp;
+        const phraseDown = t.dataset.phraseDown;
+
+        if (reasonEdit !== undefined) { ui.editing = { type:'reason', index:Number(reasonEdit) }; renderReasons(); const el = $('#reasonEditInput'); if (el) el.focus(); return; }
+        if (t.dataset.reasonCancel !== undefined) { ui.editing = null; renderReasons(); return; }
+        if (reasonSave !== undefined) {
+          const value = $('#reasonEditInput').value.trim();
+          if (!value) return toast('原因不能为空', true);
+          if (value.length > 20) return toast('不纳入原因不超过 20 字', true);
+          if (draft.roster.reasons.some((x, i) => x === value && i !== Number(reasonSave))) return toast('该原因已存在', true);
+          draft.roster.reasons[Number(reasonSave)] = value;
+          ui.editing = null;
+          renderReasons();
+          onEdited();
+          return;
+        }
+        if (reasonDel !== undefined) {
+          if (draft.roster.reasons.length <= 1) return toast('不纳入原因至少保留 1 项', true);
+          draft.roster.reasons.splice(Number(reasonDel), 1);
+          ui.editing = null;
+          renderReasons();
+          onEdited();
+          return;
+        }
+        if (reasonUp !== undefined) {
+          const i = Number(reasonUp);
+          if (i > 0) { const arr = draft.roster.reasons; [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]; renderReasons(); onEdited(); }
+          return;
+        }
+        if (reasonDown !== undefined) {
+          const i = Number(reasonDown);
+          const arr = draft.roster.reasons;
+          if (i < arr.length - 1) { [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]]; renderReasons(); onEdited(); }
+          return;
+        }
+
+        if (phraseEdit !== undefined) { ui.editing = { type:'phrase', index:Number(phraseEdit) }; renderPhrases(); const el = $('#phraseEditInput'); if (el) el.focus(); return; }
+        if (t.dataset.phraseCancel !== undefined) { ui.editing = null; renderPhrases(); return; }
+        if (phraseSave !== undefined) {
+          const value = $('#phraseEditInput').value.trim();
+          if (!value) return toast('短语不能为空', true);
+          if (value.length > 30) return toast('短语不超过 30 字', true);
+          if (draft.calibration.phrases.some((x, i) => x === value && i !== Number(phraseSave))) return toast('该短语已存在', true);
+          draft.calibration.phrases[Number(phraseSave)] = value;
+          ui.editing = null;
+          renderPhrases();
+          onEdited();
+          return;
+        }
+        if (phraseDel !== undefined) {
+          if (draft.calibration.phrases.length <= 1) return toast('短语库至少保留 1 条', true);
+          draft.calibration.phrases.splice(Number(phraseDel), 1);
+          ui.editing = null;
+          renderPhrases();
+          onEdited();
+          return;
+        }
+        if (phraseUp !== undefined) {
+          const i = Number(phraseUp);
+          if (i > 0) { const arr = draft.calibration.phrases; [arr[i - 1], arr[i]] = [arr[i], arr[i - 1]]; renderPhrases(); onEdited(); }
+          return;
+        }
+        if (phraseDown !== undefined) {
+          const i = Number(phraseDown);
+          const arr = draft.calibration.phrases;
+          if (i < arr.length - 1) { [arr[i + 1], arr[i]] = [arr[i], arr[i + 1]]; renderPhrases(); onEdited(); }
+          return;
+        }
+
+        const snap = t.dataset.snap;
+        if (snap !== undefined) {
+          const box = document.getElementById('snap-' + snap);
+          if (!box) return;
+          if (box.hidden) {
+            const data = snap === 'default' ? DEFAULTS : versions.find((v) => v.version === Number(snap)).data;
+            box.innerHTML = snapshotHtml(data);
+            box.hidden = false;
+          } else {
+            box.hidden = true;
+          }
+          return;
+        }
+        const rollback = t.dataset.rollback;
+        if (rollback !== undefined) { rollbackTo(rollback); return; }
+        if (t.dataset.nonb) return;
+      });
+
+      document.addEventListener('change', (event) => {
+        const t = event.target;
+        if (t.dataset.grade !== undefined) {
+          const i = Number(t.dataset.grade);
+          const field = t.dataset.field;
+          let value = t.value;
+          if (field === 'lower' || field === 'coefficient') value = Number(value);
+          draft.grades[i][field] = value;
+          if (field === 'tag') renderGrades();
+          onEdited();
+          return;
+        }
+        if (t.dataset.baseline !== undefined) {
+          const i = Number(t.dataset.baseline);
+          const field = t.dataset.field;
+          let value = t.value;
+          if (field === 'value' || field === 'tolerance') value = Number(value);
+          draft.baselines[i][field] = value;
+          if (field === 'type') renderBaselines();
+          onEdited();
+          return;
+        }
+        if (t.dataset.lb !== undefined) {
+          draft.levelBoundaries[Number(t.dataset.lb)] = Number(t.value);
+          renderBands();
+          onEdited();
+          return;
+        }
+        if (t.dataset.tb !== undefined) {
+          draft.tenureBoundaries[Number(t.dataset.tb)] = Number(t.value);
+          renderBands();
+          onEdited();
+          return;
+        }
+        if (t.dataset.nonb !== undefined) {
+          const code = t.dataset.nonb;
+          if (t.checked) {
+            if (!draft.calibration.nonBRequired.includes(code)) draft.calibration.nonBRequired.push(code);
+          } else {
+            draft.calibration.nonBRequired = draft.calibration.nonBRequired.filter((x) => x !== code);
+          }
+          renderNonB();
+          onEdited();
+        }
+      });
+
+      $('#btnVersions').addEventListener('click', openVersions);
+      $('#btnLogs').addEventListener('click', openLogs);
+      $('#btnSaveDraft').addEventListener('click', () => {
+        savedDraft = clone(draft);
+        renderStatus();
+        toast('草稿已保存');
+      });
+      $('#btnPublish').addEventListener('click', openPublish);
+      $('#btnReset').addEventListener('click', openReset);
+
+      $('#drawerClose').addEventListener('click', closeDrawer);
+      $('#drawerMask').addEventListener('click', closeDrawer);
+      $('#modalClose').addEventListener('click', closeModal);
+      $('#modalMask').addEventListener('click', closeModal);
+
+      document.addEventListener('click', (event) => {
+        if (event.target.dataset.closeModal !== undefined) closeModal();
+        if (event.target.id === 'logSearch') renderLogTable();
+        if (event.target.id === 'logExport') toast('已导出变更记录（演示）');
+      });
+
+      $('#logKeyword') && $('#logKeyword').addEventListener('input', () => {});
+      document.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          if (!$('#modal').hidden) closeModal();
+          else if (!$('#drawer').hidden) closeDrawer();
+        }
+      });
+
+      document.addEventListener('input', (event) => {
+        if (event.target.id === 'logKeyword') renderLogTable();
+      });
+    });
+  </script>
+</body>
+</html>

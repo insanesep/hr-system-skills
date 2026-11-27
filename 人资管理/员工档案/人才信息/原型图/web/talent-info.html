@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,Tabs,Table,Tag,Drawer,Modal,Message">
+  <title>人才信息 · 员工列表与人才档案</title>
+  <link rel="stylesheet" href="../../../../原型图/prototype/prototype.css">
+</head>
+<body>
+  <nav class="topbar" aria-label="原型导航">
+    <b>示例集团 · 人资管理</b>
+    <span class="crumb">/ 员工档案 / 人才信息</span>
+    <span class="spacer">静态 Mock · 仅 HRBP 与管理者可见</span>
+  </nav>
+
+  <main class="page" id="list">
+    <div class="page-head">
+      <div>
+        <h1><span class="title-icon" aria-hidden="true">才</span>人才信息</h1>
+        <p class="page-sub">维护关键信息、访谈&沟通、述职、会议观察与人才盘点，记录保存后自动写入员工成长记录</p>
+      </div>
+      <div class="actions"><span class="tag tag-warn">仅 HRBP 与管理者可见</span></div>
+    </div>
+
+    <div class="card section-card" style="padding:10px 14px;margin-bottom:14px">
+      <div class="muted" style="font-size:12px;line-height:1.7">可见范围：HRBP 本中心、部门负责人本部门、中心负责人本中心、HR 管理员全量；员工本人与直接上级（非部门负责人）不可见。记录内容属于敏感观察信息，不进入员工资料档案。</div>
+    </div>
+
+    <div class="card filter-card">
+      <div class="filter-row">
+        <label class="field">姓名 / 工号 <input type="search" placeholder="姓名或工号"></label>
+        <label class="field">组织 <select><option>全部</option><option>产品研发部</option><option>技术管理部</option><option>信息安全部</option></select></label>
+        <label class="field">最近盘点结果 <select><option>全部</option><option>不胜任</option><option>胜任</option><option>高潜</option><option>未盘点</option></select></label>
+        <label class="field">最近记录 <input type="date" value="2026-11-24"></label>
+        <span class="grow"></span>
+        <button class="btn btn-primary" type="button" data-toast="已按条件筛选人才信息">查询</button>
+        <button class="btn" type="button" data-toast="筛选已重置">重置</button>
+      </div>
+    </div>
+
+    <div class="card table-card">
+      <div class="table-top"><div class="batch">员工列表 <b>5</b> 人 · 按最近记录日期倒序</div><div class="table-tools">仅 HRBP 与管理者可见</div></div>
+      <div class="table-wrap">
+        <table style="min-width:1080px">
+          <thead><tr><th>工号</th><th>姓名</th><th>组织</th><th>当前职位</th><th>职级</th><th>状态</th><th>最近盘点结果</th><th>最近记录类型</th><th>最近记录日期</th><th>操作</th></tr></thead>
+          <tbody>
+            <tr data-action="open-talent" data-id="L20260301" data-name="王婷" data-org="产品研发部 / 用户研发组" data-pos="产品经理 · P6"><td class="mono">L20260301</td><td class="name-cell"><span class="avatar">王</span>王婷</td><td>产品研发部 / 用户研发组</td><td>产品经理</td><td>P6</td><td><span class="tag tag-success">在职</span></td><td><span class="tag tag-primary">高潜</span></td><td>关键信息</td><td>2026-11-18</td><td><button class="btn-link" type="button" data-action="open-talent" data-id="L20260301" data-name="王婷" data-org="产品研发部 / 用户研发组" data-pos="产品经理 · P6">查看人才档案</button></td></tr>
+            <tr data-action="open-talent" data-id="L20251118" data-name="王杰" data-org="技术管理部 / 项目管理组" data-pos="PMO · P3"><td class="mono">L20251118</td><td class="name-cell"><span class="avatar">王</span>王杰</td><td>技术管理部 / 项目管理组</td><td>PMO</td><td>P3</td><td><span class="tag tag-success">在职</span></td><td><span class="tag tag-neutral">未盘点</span></td><td>会议观察</td><td>2026-10-22</td><td><button class="btn-link" type="button" data-action="open-talent" data-id="L20251118" data-name="王杰" data-org="技术管理部 / 项目管理组" data-pos="PMO · P3">查看人才档案</button></td></tr>
+            <tr data-action="open-talent" data-id="L20240806" data-name="李明" data-org="信息安全部 / 信息安全管理组" data-pos="信息安全工程师 · P5"><td class="mono">L20240806</td><td class="name-cell"><span class="avatar">李</span>李明</td><td>信息安全部 / 信息安全管理组</td><td>信息安全工程师</td><td>P5</td><td><span class="tag tag-success">在职</span></td><td><span class="tag tag-success">胜任</span></td><td>述职</td><td>2026-09-18</td><td><button class="btn-link" type="button" data-action="open-talent" data-id="L20240806" data-name="李明" data-org="信息安全部 / 信息安全管理组" data-pos="信息安全工程师 · P5">查看人才档案</button></td></tr>
+            <tr data-action="open-talent" data-id="L20220510" data-name="王强" data-org="产品研发部 / 用户研发组" data-pos="测试专家 · P9"><td class="mono">L20220510</td><td class="name-cell"><span class="avatar">王</span>王强</td><td>产品研发部 / 用户研发组</td><td>测试专家</td><td>P9</td><td><span class="tag tag-success">在职</span></td><td><span class="tag tag-primary">高潜</span></td><td>访谈沟通</td><td>2026-09-05</td><td><button class="btn-link" type="button" data-action="open-talent" data-id="L20220510" data-name="王强" data-org="产品研发部 / 用户研发组" data-pos="测试专家 · P9">查看人才档案</button></td></tr>
+            <tr data-action="open-talent" data-id="L20260910" data-name="张嘉" data-org="产品研发部 / 用户研发组" data-pos="产品经理 · P5"><td class="mono">L20260910</td><td class="name-cell"><span class="avatar">张</span>张嘉</td><td>产品研发部 / 用户研发组</td><td>产品经理</td><td>P5</td><td><span class="tag tag-success">在职</span></td><td><span class="tag tag-neutral">未盘点</span></td><td class="muted">—</td><td class="muted">—</td><td><button class="btn-link" type="button" data-action="open-talent" data-id="L20260910" data-name="张嘉" data-org="产品研发部 / 用户研发组" data-pos="产品经理 · P5">查看人才档案</button></td></tr>
+          </tbody>
+        </table>
+      </div>
+      <div class="pager"><span>共 5 条 · 演示数据</span><div class="pages"><button class="is-active" type="button">1</button></div></div>
+    </div>
+  </main>
+
+  <main class="page" id="talent" hidden>
+    <div class="page-head">
+      <div>
+        <button class="btn-link" type="button" data-action="back-list">‹ 返回员工列表</button>
+        <h1 style="margin-top:6px"><span class="title-icon" aria-hidden="true">档</span><span id="talentName">人才档案 · 王婷</span></h1>
+        <p class="page-sub" id="talentMeta">L20260301 · 产品研发部 / 用户研发组 · 产品经理 · P6 · 在职</p>
+      </div>
+      <div class="actions"><span class="tag tag-warn">仅 HRBP 与管理者可见</span></div>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><div class="num">7</div><div class="label">有效记录</div><div class="hint">五类记录合计</div></div>
+      <div class="stat"><div class="num" style="font-size:20px">高潜</div><div class="label">最近盘点结果</div><div class="hint">2026H2 · 2026-11-05</div></div>
+      <div class="stat"><div class="num" style="font-size:20px">关键信息</div><div class="label">最近记录类型</div><div class="hint">2026-11-18 · 李静怡</div></div>
+      <div class="stat"><div class="num" style="font-size:20px">P6</div><div class="label">当前职级</div><div class="hint">产品经理 · 在职</div></div>
+    </div>
+
+    <div class="tabs" role="tablist" aria-label="人才档案页签">
+      <button class="tab is-active" type="button" data-tab-group="talent" data-tab-key="ki">关键信息 <span class="num">2</span></button>
+      <button class="tab" type="button" data-tab-group="talent" data-tab-key="iv">访谈&沟通 <span class="num">2</span></button>
+      <button class="tab" type="button" data-tab-group="talent" data-tab-key="rp">述职 <span class="num">1</span></button>
+      <button class="tab" type="button" data-tab-group="talent" data-tab-key="ob">会议观察 <span class="num">1</span></button>
+      <button class="tab" type="button" data-tab-group="talent" data-tab-key="tr">人才盘点 <span class="num">1</span></button>
+    </div>
+
+    <section data-panel-group="talent" data-panel-key="ki">
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">关键信息 <b>2</b> 条 · 记录保存后写入成长记录</div><div class="table-tools"><button class="btn btn-primary" type="button" data-action="record-add" data-type="关键信息">新增记录</button></div></div>
+        <div class="table-wrap">
+          <table style="min-width:900px">
+            <thead><tr><th>记录编号</th><th>记录时间</th><th>记录内容</th><th>记录人</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">KI-2026-0012</td><td>2026-11-18</td><td>确认 2027 年轮岗意向：希望在用户产品线继续深耕，重点关注交易与会员方向。</td><td>李静怡</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="关键信息" data-id="KI-2026-0012" data-date="2026-11-18" data-person="李静怡" data-summary="确认 2027 年轮岗意向：希望在用户产品线继续深耕，重点关注交易与会员方向。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="关键信息">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="KI-2026-0012" data-type="关键信息" data-date="2026-11-18">撤销</button></td></tr>
+              <tr><td class="mono">KI-2026-0005</td><td>2026-06-10</td><td>转正后独立负责会员积分模块，交付质量稳定。</td><td>李静怡</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="关键信息" data-id="KI-2026-0005" data-date="2026-06-10" data-person="李静怡" data-summary="转正后独立负责会员积分模块，交付质量稳定。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="关键信息">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="KI-2026-0005" data-type="关键信息" data-date="2026-06-10">撤销</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="talent" data-panel-key="iv" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">访谈&沟通 <b>2</b> 条 · 记录保存后写入成长记录</div><div class="table-tools"><button class="btn btn-primary" type="button" data-action="record-add" data-type="访谈沟通">新增记录</button></div></div>
+        <div class="table-wrap">
+          <table style="min-width:1000px">
+            <thead><tr><th>记录编号</th><th>沟通时间</th><th>沟通类型</th><th>沟通关键信息</th><th>记录人</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">IV-2026-0011</td><td>2026-10-12</td><td><span class="tag tag-neutral">反馈沟通</span></td><td>收集对研发协作节奏的反馈，已同步至研发负责人。</td><td>李静怡</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="访谈沟通" data-id="IV-2026-0011" data-date="2026-10-12" data-person="李静怡" data-summary="反馈沟通：收集对研发协作节奏的反馈，已同步至研发负责人。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="访谈沟通">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="IV-2026-0011" data-type="访谈沟通" data-date="2026-10-12">撤销</button></td></tr>
+              <tr><td class="mono">IV-2026-0009</td><td>2026-09-05</td><td><span class="tag tag-primary">绩效沟通</span></td><td>2026Q2 绩效沟通：肯定需求交付质量，明确下半年目标与产品方法论提升计划。</td><td>李静怡</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="访谈沟通" data-id="IV-2026-0009" data-date="2026-09-05" data-person="李静怡" data-summary="绩效沟通：2026Q2 绩效沟通，肯定需求交付质量，明确下半年目标与产品方法论提升计划。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="访谈沟通">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="IV-2026-0009" data-type="访谈沟通" data-date="2026-09-05">撤销</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="talent" data-panel-key="rp" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">述职 <b>1</b> 条 · 述职报告随记录版本保存</div><div class="table-tools"><button class="btn btn-primary" type="button" data-action="record-add" data-type="述职">新增记录</button></div></div>
+        <div class="table-wrap">
+          <table style="min-width:1080px">
+            <thead><tr><th>记录编号</th><th>述职时间</th><th>述职类型</th><th>述职关键信息</th><th>管理者反馈</th><th>附件</th><th>记录人</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">RP-2026-0003</td><td>2026-08-20</td><td><span class="tag tag-primary">晋升述职</span></td><td>晋升述职：负责会员积分与权益中心，完成 P5→P6 晋升评审。</td><td>目标感强，需求判断清晰。</td><td><button class="btn-link" type="button" data-action="attachment-preview" data-name="晋升述职报告.pdf">晋升述职报告.pdf</button></td><td>李静怡</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="述职" data-id="RP-2026-0003" data-date="2026-08-20" data-person="李静怡" data-summary="晋升述职：负责会员积分与权益中心，完成 P5→P6 晋升评审；管理者反馈：目标感强，需求判断清晰。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="述职">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="RP-2026-0003" data-type="述职" data-date="2026-08-20">撤销</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="talent" data-panel-key="ob" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">会议观察 <b>1</b> 条 · 记录保存后写入成长记录</div><div class="table-tools"><button class="btn btn-primary" type="button" data-action="record-add" data-type="会议观察">新增记录</button></div></div>
+        <div class="table-wrap">
+          <table style="min-width:960px">
+            <thead><tr><th>记录编号</th><th>观察时间</th><th>会议场景</th><th>观察记录</th><th>记录人</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">OB-2026-0007</td><td>2026-08-28</td><td><span class="tag tag-neutral">项目评审会</span></td><td>评审会上能主动收敛需求范围，风险识别充分。</td><td>李静怡</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="会议观察" data-id="OB-2026-0007" data-date="2026-08-28" data-person="李静怡" data-summary="项目评审会：评审会上能主动收敛需求范围，风险识别充分。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="会议观察">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="OB-2026-0007" data-type="会议观察" data-date="2026-08-28">撤销</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
+    <section data-panel-group="talent" data-panel-key="tr" hidden>
+      <div class="card table-card">
+        <div class="table-top"><div class="batch">人才盘点 <b>1</b> 条 · 同一员工同一周期仅一条有效记录</div><div class="table-tools"><button class="btn btn-primary" type="button" data-action="record-add" data-type="人才盘点">新增盘点</button></div></div>
+        <div class="table-wrap">
+          <table style="min-width:980px">
+            <thead><tr><th>记录编号</th><th>盘点周期</th><th>盘点结果</th><th>应用建议</th><th>盘点人</th><th>确认时间</th><th>状态</th><th>操作</th></tr></thead>
+            <tbody>
+              <tr><td class="mono">TR-2026-0004</td><td>2026H2</td><td><span class="tag tag-primary">高潜</span></td><td>连续两个周期绩效 A/B，具备跨产品线承接能力；建议纳入关键岗位继任计划。</td><td>李静怡</td><td>2026-11-05</td><td><span class="tag tag-success">有效</span></td><td class="row-actions"><button class="btn-link" type="button" data-action="record-view" data-type="人才盘点" data-id="TR-2026-0004" data-date="2026-11-05" data-person="李静怡" data-summary="2026H2 盘点：高潜；应用建议：连续两个周期绩效 A/B，具备跨产品线承接能力；建议纳入关键岗位继任计划。">查看</button><button class="btn-link" type="button" data-action="record-edit" data-type="人才盘点">编辑</button><button class="btn-link danger" type="button" data-action="record-revoke" data-id="TR-2026-0004" data-type="人才盘点" data-date="2026-11-05">撤销</button></td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="drawer-mask" id="drawerMask"></div>
+  <aside class="drawer" id="drawer" aria-hidden="true">
+    <div class="drawer-head"><div><h3 id="drawerTitle"></h3><p id="drawerSub"></p></div><button class="btn btn-link" type="button" data-close="drawer">关闭</button></div>
+    <div class="drawer-body" id="drawerBody"></div>
+    <div class="drawer-foot" id="drawerFoot"></div>
+  </aside>
+  <div class="modal-mask" id="modalMask"><div class="modal"><div class="modal-head"><h3 id="modalTitle"></h3><button class="btn btn-link" type="button" data-close="modal">关闭</button></div><div class="modal-body" id="modalBody"></div><div class="modal-foot" id="modalFoot"></div></div></div>
+  <div class="toast-host" id="toastHost"></div>
+
+  <script src="../../../../原型图/prototype/prototype.js"></script>
+  <script>
+    (function () {
+      var toast = HRUI.toast;
+
+      function showTalent(name, meta) {
+        document.getElementById('list').hidden = true;
+        document.getElementById('talent').hidden = false;
+        document.getElementById('talentName').textContent = '人才档案 · ' + name;
+        document.getElementById('talentMeta').textContent = meta;
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      }
+
+      function formBody(type, edit) {
+        var dateLabel = type === '关键信息' ? '记录时间' : type === '访谈沟通' ? '沟通时间' : type === '述职' ? '述职时间' : type === '会议观察' ? '观察时间' : '确认时间';
+        var body = '<div class="detail-box" style="margin-bottom:12px"><h4>王婷 · 产品经理 · P6</h4><div class="line"><span>组织</span><b>产品研发部 / 用户研发组</b></div><div class="line"><span>记录人</span><b>HRBP 李静怡</b></div></div>';
+        body += '<div class="form-grid">';
+        body += '<div class="form-item"><label>' + dateLabel + '</label><input type="date" value="2026-11-24"></div>';
+        if (type === '关键信息') {
+          body += '<div class="form-item full"><label>记录内容</label><textarea placeholder="记录关键事实、判断与后续动作，不超过 1000 字"></textarea></div>';
+        } else if (type === '访谈沟通') {
+          body += '<div class="form-item"><label>沟通类型</label><select><option>绩效沟通</option><option>反馈沟通</option><option>转正沟通</option><option>离职沟通</option><option>日常访谈</option><option>其他</option></select></div>';
+          body += '<div class="form-item full"><label>沟通关键信息</label><textarea placeholder="记录沟通背景、关键事实、结论与后续动作"></textarea></div>';
+        } else if (type === '述职') {
+          body += '<div class="form-item"><label>述职类型</label><select><option>转正述职</option><option>晋升述职</option><option>年度述职</option><option>其他</option></select></div>';
+          body += '<div class="form-item full"><label>述职关键信息</label><textarea placeholder="记录述职内容与核心结论"></textarea></div>';
+          body += '<div class="form-item full"><label>管理者反馈</label><textarea placeholder="记录管理者的评价与反馈"></textarea></div>';
+          body += '<div class="form-item full"><label>BP 观察</label><textarea placeholder="记录 HRBP 的观察与判断"></textarea></div>';
+          body += '<div class="form-item full"><label>述职报告附件</label><input type="file"><div class="muted" style="font-size:12px">支持多份，随记录版本保存；仅在线预览</div></div>';
+        } else if (type === '会议观察') {
+          body += '<div class="form-item"><label>会议场景</label><select><option>经营分析会</option><option>项目评审会</option><option>部门例会</option><option>其他</option></select></div>';
+          body += '<div class="form-item full"><label>观察记录</label><textarea placeholder="记录会议中的表现、协作方式与关键行为"></textarea></div>';
+        } else if (type === '人才盘点') {
+          body += '<div class="form-item"><label>盘点周期</label><input id="invPeriod" type="text" value="2027H1" placeholder="如 2026H2"></div>';
+          body += '<div class="form-item"><label>盘点结果</label><select><option>不胜任</option><option>胜任</option><option selected>高潜</option></select></div>';
+          body += '<div class="form-item full"><label>应用建议</label><textarea placeholder="记录使用、培养与继任建议，不超过 500 字"></textarea></div>';
+        }
+        if (edit) {
+          body += '<div class="form-item full"><label>更正原因</label><textarea placeholder="本次更正将生成新版本，并同步写入员工成长记录"></textarea></div>';
+        }
+        body += '</div>';
+        return body;
+      }
+
+      function openRecordForm(type, edit) {
+        var title = (edit ? '编辑记录 · ' : '新增记录 · ') + type;
+        var sub = edit ? '当前版本 v1 · 保存后生成新版本' : '保存即生效，并同步写入员工成长记录';
+        var foot = '<button class="btn" type="button" data-close="drawer">取消</button><button class="btn btn-primary" type="button" data-action="save-record" data-type="' + type + '">保存</button>';
+        HRUI.openDrawer(title, sub, formBody(type, edit), foot);
+      }
+
+      document.addEventListener('click', function (event) {
+        var open = event.target.closest('[data-action="open-talent"]');
+        if (open) {
+          showTalent(open.dataset.name, open.dataset.id + ' · ' + open.dataset.org + ' · ' + open.dataset.pos + ' · 在职');
+          toast('已切换至 ' + open.dataset.name + ' 的人才档案');
+          return;
+        }
+
+        if (event.target.closest('[data-action="back-list"]')) {
+          document.getElementById('talent').hidden = true;
+          document.getElementById('list').hidden = false;
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+        }
+
+        var add = event.target.closest('[data-action="record-add"]');
+        if (add) { openRecordForm(add.dataset.type, false); return; }
+
+        var edit = event.target.closest('[data-action="record-edit"]');
+        if (edit) { openRecordForm(edit.dataset.type, true); return; }
+
+        var save = event.target.closest('[data-action="save-record"]');
+        if (save) {
+          var period = document.getElementById('invPeriod');
+          if (save.dataset.type === '人才盘点' && period && period.value.trim() === '2026H2') {
+            toast('该员工本盘点周期已有有效记录', 'err');
+            return;
+          }
+          HRUI.closeDrawer();
+          toast('已保存，并同步写入员工成长记录');
+          return;
+        }
+
+        var view = event.target.closest('[data-action="record-view"]');
+        if (view) {
+          var d = view.dataset;
+          var body = '<table class="desc"><tr><th>记录编号</th><td class="mono">' + d.id + '</td><th>记录类型</th><td>' + d.type + '</td></tr><tr><th>记录时间</th><td>' + d.date + '</td><th>记录人</th><td>' + d.person + '</td></tr><tr><th>记录摘要</th><td colspan="3">' + d.summary + '</td></tr><tr><th>记录状态</th><td><span class="tag tag-success">有效</span></td><th>当前版本</th><td>v1</td></tr></table>' +
+            '<div class="detail-box" style="margin-top:12px"><h4>版本与操作记录</h4><div class="line"><span>v1 · 新增</span><b>' + d.person + ' · ' + d.date + '</b></div><div class="line"><span>可见范围</span><b>仅 HRBP 与管理者可见</b></div></div>';
+          HRUI.openDrawer('记录详情 · ' + d.type, d.id + ' · ' + d.date, body, '<button class="btn" type="button" data-close="drawer">关闭</button>');
+          return;
+        }
+
+        var revoke = event.target.closest('[data-action="record-revoke"]');
+        if (revoke) {
+          var r = revoke.dataset;
+          var mbody = '<div class="detail-box"><h4>' + r.type + ' · ' + r.id + '</h4><div class="line"><span>员工</span><b>王婷</b></div><div class="line"><span>记录时间</span><b>' + r.date + '</b></div></div>' +
+            '<div class="form-item" style="margin-top:12px"><label>撤销原因</label><textarea placeholder="填写撤销原因，撤销后记录与成长记录事件均标记为已撤销"></textarea></div>' +
+            '<div class="muted" style="font-size:12px;margin-top:8px">撤销后历史保留且不可恢复；同一盘点周期撤销后可重新新增。</div>';
+          HRUI.openModal('撤销记录', mbody, '<button class="btn" type="button" data-close="modal">取消</button><button class="btn btn-danger" type="button" data-action="confirm-revoke">确认撤销</button>');
+          return;
+        }
+
+        if (event.target.closest('[data-action="confirm-revoke"]')) {
+          HRUI.closeModal();
+          toast('已撤销，成长记录事件已标记为已撤销');
+          return;
+        }
+
+        var file = event.target.closest('[data-action="attachment-preview"]');
+        if (file) {
+          HRUI.openDrawer('附件预览', file.dataset.name, '<div class="detail-box"><h4>' + file.dataset.name + '</h4><div class="line"><span>附件类型</span><b>述职报告</b></div><div class="line"><span>上传人</span><b>李静怡</b></div><div class="line"><span>上传日期</span><b>2026-08-20</b></div></div><div class="card section-card" style="margin-top:12px;text-align:center;color:#9aa3b2">静态原型：此处为附件在线预览区</div>', '<button class="btn" type="button" data-close="drawer">关闭</button>');
+          return;
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

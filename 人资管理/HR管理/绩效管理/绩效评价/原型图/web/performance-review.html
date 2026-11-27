@@ -1,0 +1,680 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="prototype-components" content="Button,BusyInput,PageableSelect,InputNumber,Table,Tag,Form,BusyTabs,Message,Confirm">
+  <title>绩效评价 · 列表与考核表</title>
+  <style>
+    :root{
+      --primary:#2563eb; --primary-weak:#eff4ff; --primary-line:#bfd3ff;
+      --bg:#f4f6fa; --panel:#fff; --line:#e5e8ef; --line-strong:#d3d9e4;
+      --text:#1f2937; --muted:#6b7280; --subtle:#9aa3b2;
+      --success:#15803d; --success-weak:#eaf7ef; --warn:#b45309; --warn-weak:#fff7e6;
+      --danger:#b91c1c; --danger-weak:#fdecec;
+      --radius:10px; --shadow:0 1px 2px rgba(16,24,40,.05),0 1px 3px rgba(16,24,40,.08);
+    }
+    *{box-sizing:border-box}
+    [hidden]{display:none!important}
+    body{margin:0;background:var(--bg);color:var(--text);font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+    button,input,select,textarea{font:inherit;color:inherit}
+    .topnav{display:flex;align-items:center;gap:12px;height:52px;padding:0 24px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:20}
+    .logo{font-weight:700}
+    .crumb{color:var(--muted)}
+    .crumb b{color:var(--text)}
+    .spacer{flex:1}
+    .mock{font-size:12px;color:var(--subtle)}
+    .page{max-width:1360px;margin:0 auto;padding:24px 24px 72px}
+    .page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+    .page-head h1{font-size:22px;margin:0}
+    .page-head p{margin:4px 0 0;color:var(--muted)}
+    .back{display:inline-flex;align-items:center;gap:4px;color:var(--primary);text-decoration:none;font-size:13px;margin-bottom:6px}
+    .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+    .views{display:flex;gap:4px;border-bottom:1px solid var(--line);margin-bottom:16px;flex-wrap:wrap}
+    .view-btn{appearance:none;border:0;background:transparent;padding:9px 16px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+    .view-btn.is-active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+    .filter{display:flex;gap:14px;align-items:flex-end;padding:16px 20px;margin-bottom:16px;flex-wrap:wrap}
+    .filter .f{display:flex;flex-direction:column;gap:6px;min-width:180px}
+    .filter label{font-size:12.5px;color:var(--muted)}
+    .filter input,.filter select{height:34px;border:1px solid var(--line-strong);border-radius:8px;padding:0 10px;background:#fff}
+    .filter .acts{display:flex;gap:8px;margin-left:auto}
+    .btn{height:34px;padding:0 14px;border:1px solid var(--line-strong);background:#fff;border-radius:8px;cursor:pointer;white-space:nowrap}
+    .btn:hover{border-color:#b8c0ce;background:#fafbfc}
+    .btn-primary{background:var(--primary);border-color:var(--primary);color:#fff}
+    .btn-primary:hover{background:#1d4ed8;border-color:#1d4ed8}
+    .btn-danger{color:var(--danger);border-color:#f0c6c6}
+    .btn-sm{height:30px;padding:0 10px;font-size:13px}
+    .btn[disabled]{opacity:.5;cursor:not-allowed}
+    .toolbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:16px 20px 10px;flex-wrap:wrap}
+    .toolbar-title{font-weight:600}
+    .muted{color:var(--muted);font-size:12.5px}
+    .table-wrap{overflow:auto;padding:0 20px 6px}
+    table{border-collapse:collapse;width:100%}
+    .list-table{min-width:1080px}
+    .list-table th,.list-table td{border-bottom:1px solid var(--line);padding:12px 10px;text-align:left;font-size:13px;white-space:nowrap}
+    .list-table th{background:#f8fafc;color:var(--muted);font-weight:500;position:sticky;top:0}
+    .list-table tr:hover td{background:#fbfcfe}
+    .tag{display:inline-flex;align-items:center;height:22px;padding:0 8px;border-radius:6px;font-size:12px;font-weight:500;white-space:nowrap}
+    .tag-neutral{background:#f2f4f8;color:#4b5563}
+    .tag-blue{background:var(--primary-weak);color:#1e40af}
+    .tag-warn{background:var(--warn-weak);color:var(--warn)}
+    .tag-ok{background:var(--success-weak);color:var(--success)}
+    .tag-danger{background:var(--danger-weak);color:var(--danger)}
+    .empty{padding:56px 0;text-align:center;color:var(--subtle)}
+    .pager{display:flex;justify-content:flex-end;gap:6px;padding:12px 20px 18px;color:var(--muted);font-size:12.5px}
+    /* detail */
+    .detail-head{display:flex;align-items:flex-start;gap:16px;padding:18px 20px;margin-bottom:16px;flex-wrap:wrap}
+    .avatar{width:44px;height:44px;border-radius:50%;background:var(--primary-weak);color:#1e40af;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:17px}
+    .dh-main{flex:1;min-width:240px}
+    .dh-name{display:flex;align-items:center;gap:10px;font-size:18px;font-weight:600}
+    .dh-meta{display:flex;gap:18px;flex-wrap:wrap;color:var(--muted);font-size:13px;margin-top:6px}
+    .dh-meta b{color:var(--text);font-weight:500}
+    .role-switch{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+    .role-switch select{height:32px;border:1px solid var(--line-strong);border-radius:8px;padding:0 8px;background:#fff}
+    .tabs{display:flex;gap:4px;border-bottom:1px solid var(--line);padding:0 20px}
+    .tab{appearance:none;border:0;background:transparent;padding:12px 14px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;font-weight:500}
+    .tab.is-active{color:var(--primary);border-bottom-color:var(--primary);font-weight:600}
+    .tab-body{padding:18px 20px 22px}
+    .rules{background:#f3f7ff;border:1px solid #dbe7ff;border-radius:10px;padding:12px 16px;margin-bottom:16px}
+    .rules-head{display:flex;align-items:center;justify-content:space-between;gap:12px}
+    .rules-head strong{font-size:13px;color:#1e3a8a}
+    .rules-toggle{border:0;background:transparent;color:var(--primary);cursor:pointer;font-size:13px}
+    .rules ul{margin:8px 0 0;padding-left:18px;columns:2;font-size:13px;color:#374151}
+    .rules li{margin:2px 0}
+    .okr-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin:0 0 12px;flex-wrap:wrap}
+    .okr-title h3{margin:0;font-size:16px}
+    .eval-table{min-width:1120px}
+    .eval-table th,.eval-table td{border:1px solid var(--line);padding:10px 12px;text-align:left;font-size:13px;vertical-align:top}
+    .eval-table th{background:#f8fafc;color:var(--muted);font-weight:500}
+    .eval-table td.name{width:150px;font-weight:600}
+    .eval-table td.weight{width:64px;text-align:center}
+    .eval-table td.desc{width:210px;color:#374151}
+    .eval-table td.std{width:230px;color:#374151}
+    .eval-table td.self,.eval-table td.boss{width:250px}
+    .eval-table ol{margin:0;padding-left:18px}
+    .eval-table li{margin:3px 0}
+    .score-box{display:flex;align-items:center;gap:8px}
+    .score-input{width:76px;height:32px;border:1px solid var(--line-strong);border-radius:8px;padding:0 8px;text-align:center}
+    .score-input:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .score{font-weight:600;font-size:15px;color:#1f2937}
+    .score small{font-size:11px;color:var(--subtle);font-weight:400;margin-left:2px}
+    .comment{width:100%;min-height:66px;border:1px solid var(--line-strong);border-radius:8px;padding:6px 8px;margin-top:6px;font-size:12.5px;resize:vertical}
+    .comment:focus{border-color:var(--primary);outline:none;box-shadow:0 0 0 3px rgba(37,99,235,.12)}
+    .readonly{color:#374151;font-size:12.5px}
+    .placeholder{color:var(--subtle);font-size:12.5px}
+    .summary{display:flex;gap:28px;align-items:center;margin-top:16px;padding:14px 16px;border:1px solid var(--line);border-radius:10px;background:#fbfcfe;flex-wrap:wrap}
+    .sum-item{display:flex;flex-direction:column;gap:2px}
+    .sum-item span{font-size:12px;color:var(--muted)}
+    .sum-item b{font-size:18px}
+    .sum-item b.grade{color:var(--primary)}
+    .sum-hint{margin-left:auto;font-size:12px;color:var(--muted)}
+    .detail-actions{display:flex;justify-content:flex-end;gap:8px;padding:14px 20px;border-top:1px solid var(--line);background:#fff;border-radius:0 0 var(--radius) var(--radius);flex-wrap:wrap}
+    .timeline{list-style:none;margin:0;padding:0}
+    .timeline li{position:relative;padding:0 0 18px 26px;border-left:2px solid var(--line);margin-left:8px}
+    .timeline li:last-child{border-left-color:transparent;padding-bottom:0}
+    .timeline li::before{content:"";position:absolute;left:-7px;top:4px;width:12px;height:12px;border-radius:50%;background:#fff;border:2px solid var(--line-strong)}
+    .timeline li.done::before{background:var(--primary);border-color:var(--primary)}
+    .timeline li.doing::before{border-color:var(--primary)}
+    .tl-title{font-weight:600;font-size:13.5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+    .tl-meta{font-size:12.5px;color:var(--muted);margin-top:2px}
+    .modal-mask{position:fixed;inset:0;background:rgba(17,24,39,.36);z-index:30;display:flex;align-items:center;justify-content:center;padding:20px}
+    .modal{background:#fff;border-radius:12px;width:min(460px,100%);padding:20px;box-shadow:0 18px 48px rgba(16,24,40,.2)}
+    .modal h3{margin:0 0 8px;font-size:16px}
+    .modal p{margin:0 0 12px;color:var(--muted);font-size:13px}
+    .modal textarea{width:100%;min-height:96px;border:1px solid var(--line-strong);border-radius:8px;padding:8px 10px}
+    .modal-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:16px}
+    .toast{position:fixed;left:50%;top:72px;transform:translateX(-50%);background:#111827;color:#fff;padding:9px 16px;border-radius:8px;font-size:13px;z-index:60}
+    .toast.err{background:var(--danger)}
+    @media(max-width:720px){
+      .page{padding:16px 12px 60px}
+      .topnav{padding:0 12px}
+      .crumb,.mock{display:none}
+      .filter{padding:14px}
+      .filter .acts{margin-left:0}
+      .rules ul{columns:1}
+    }
+  </style>
+</head>
+<body>
+  <nav class="topnav" aria-label="原型导航">
+    <span class="logo">示例集团 · 人资管理</span>
+    <span class="crumb">HR管理 / 绩效管理 / <b>绩效评价</b></span>
+    <span class="spacer"></span>
+    <span class="mock">静态 Mock</span>
+  </nav>
+
+  <main class="page">
+    <!-- 列表 -->
+    <section id="viewList">
+      <header class="page-head">
+        <div>
+          <h1>绩效评价</h1>
+          <p>完成员工自评与直接上级评价，提交后进入通晒待校准</p>
+        </div>
+      </header>
+
+      <div class="views" role="tablist" aria-label="评价视图">
+        <button class="view-btn is-active" data-view="manager" role="tab" aria-selected="true">待我评价</button>
+        <button class="view-btn" data-view="mine" role="tab" aria-selected="false">我的考核表</button>
+        <button class="view-btn" data-view="center" role="tab" aria-selected="false">中心考核表</button>
+      </div>
+
+      <section class="panel filter" aria-label="筛选">
+        <div class="f"><label for="q">关键字</label><input id="q" placeholder="姓名或工号"></div>
+        <div class="f"><label for="fStatus">考核状态</label>
+          <select id="fStatus">
+            <option value="">全部</option>
+            <option>自评中</option><option>待上级评价</option><option>待通晒</option><option>已生效</option>
+          </select>
+        </div>
+        <div class="acts">
+          <button class="btn" id="btnReset" type="button">重置</button>
+          <button class="btn btn-primary" id="btnQuery" type="button">查询</button>
+        </div>
+      </section>
+
+      <section class="panel" aria-label="评价列表">
+        <div class="toolbar">
+          <div><span class="toolbar-title">评价进度</span><span class="muted" id="listMeta"></span></div>
+          <div class="muted" id="overdue"></div>
+        </div>
+        <div class="table-wrap">
+          <table class="list-table">
+            <thead>
+              <tr>
+                <th>工号</th><th>姓名</th><th>所属部门</th><th>职级</th><th>直线经理</th>
+                <th>自评分</th><th>上级总分</th><th>建议等级</th><th>考核状态</th><th>更新时间</th><th>操作</th>
+              </tr>
+            </thead>
+            <tbody id="rows"></tbody>
+          </table>
+        </div>
+        <div class="empty" id="empty" hidden>暂无符合条件的考核表</div>
+        <div class="pager">共 <span id="total">0</span> 条 · 每页 20 条 · 第 1 页</div>
+      </section>
+    </section>
+
+    <!-- 详情 -->
+    <section id="viewDetail" hidden>
+      <a class="back" href="#list">‹ 返回列表</a>
+      <header class="detail-head panel">
+        <div class="avatar" id="dAvatar">张</div>
+        <div class="dh-main">
+          <div class="dh-name"><span id="dName">王丹</span><span class="tag tag-warn" id="dStatus">待上级评价</span></div>
+          <div class="dh-meta">
+            <span>工号 <b id="dId">L16520</b></span>
+            <span>部门 <b id="dDept">供应链研发部 / 供应链计划组</b></span>
+            <span>职级 <b id="dLevel">P6</b></span>
+            <span>直线经理 <b id="dBoss">王晨</b></span>
+          </div>
+        </div>
+        <div class="role-switch">
+          <label for="roleSelect">当前视角</label>
+          <select id="roleSelect">
+            <option value="manager">直接上级</option>
+            <option value="employee">员工本人</option>
+          </select>
+        </div>
+      </header>
+
+      <section class="panel">
+        <div class="tabs" role="tablist">
+          <button class="tab" data-tab="flow" role="tab">流程信息</button>
+          <button class="tab is-active" data-tab="form" role="tab" aria-selected="true">考核表详情</button>
+        </div>
+
+        <div class="tab-body" id="tabFlow" hidden>
+          <ul class="timeline" id="timeline"></ul>
+        </div>
+
+        <div class="tab-body" id="tabForm">
+          <div class="rules" id="rules">
+            <div class="rules-head">
+              <strong>评级规则（按上级加权总分映射）</strong>
+              <span class="muted" id="paramSource">参数来源：绩效参数配置（演示）</span>
+              <button class="rules-toggle" type="button" id="rulesToggle">收起</button>
+            </div>
+            <ul id="rulesList"></ul>
+          </div>
+
+          <div class="okr-title">
+            <h3>OKR 关键目标</h3>
+            <span class="muted">指标权重之和：<b id="weightSum">100%</b></span>
+          </div>
+
+          <div class="table-wrap" style="padding:0">
+            <table class="eval-table">
+              <thead>
+                <tr><th>名称</th><th>权重</th><th>指标描述</th><th>衡量标准</th><th>员工本人</th><th>直接上级</th></tr>
+              </thead>
+              <tbody id="evalRows"></tbody>
+            </table>
+          </div>
+
+          <div class="summary">
+            <div class="sum-item"><span>员工自评总分</span><b id="selfTotal">—</b></div>
+            <div class="sum-item"><span>上级加权总分</span><b id="bossTotal">—</b></div>
+            <div class="sum-item"><span>建议等级</span><b class="grade" id="grade">—</b></div>
+            <div class="sum-item"><span>绩效系数</span><b id="factor">—</b></div>
+            <div class="sum-hint">总分 = Σ（评分 × 权重）÷ 100，保留一位小数</div>
+          </div>
+        </div>
+
+        <div class="detail-actions">
+          <button class="btn" type="button" data-back>返回列表</button>
+          <button class="btn" type="button" id="btnDraft">保存草稿</button>
+          <button class="btn btn-danger" type="button" id="btnReturn" hidden>退回自评</button>
+          <button class="btn" type="button" id="btnWithdraw" hidden>撤回自评</button>
+          <button class="btn btn-primary" type="button" id="btnSubmit">提交评价</button>
+        </div>
+      </section>
+    </section>
+  </main>
+
+  <div class="modal-mask" id="modalMask" hidden>
+    <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <h3 id="modalTitle">退回自评</h3>
+      <p>退回后员工可补充自评，原因会展示给员工。</p>
+      <textarea id="returnReason" placeholder="请填写退回原因（必填）"></textarea>
+      <div class="modal-foot">
+        <button class="btn" type="button" id="btnCancelReturn">取消</button>
+        <button class="btn btn-primary" type="button" id="btnConfirmReturn">确认退回</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast" hidden></div>
+
+  <script>
+    const people = [
+      {
+        id: 'L16520', name: '王丹', dept: '供应链研发部 / 供应链计划组', level: 'P6', boss: '王晨',
+        status: '待上级评价', updated: '2026-11-23 16:08',
+        selfSubmitted: true, bossSubmitted: false, roleView: 'manager',
+        items: [
+          { name: '仓出库预测模型体系构建与持续优化', weight: 80,
+            desc: ['基线模型持续扩充模型丰富度，本季度个人新增基线模型至 10 个', '仓出库融合模型效果本季度准确率提升 2pp，达到 71.5% 以上', '针对节假日训练专有模型，中秋国庆平均准确率达 68%'],
+            std: ['基线模型丰富度：扩充模型至 10 个以上', '融合模型准确率：仓出库预测 Q3 平均准确率达 71.5% 以上', '节假日专有模型准确率：中秋国庆节假日准确率达 68%', '其他场景持续探索：对新的相关场景进行模型储备'],
+            self: 88, selfNote: '',
+            boss: 95, bossNote: '本季度初线上模型共 5 个，季度末更新优化差异化 TFT 模型 5 个；目前由于节假日暂未融合，回测可提升整体准确率 1pp 以上。本季度前期参与节假日模型分析及模型训练，完成部分节假日趋势数据分析探索，及节假日模型训练。后期精力放在长周期预测，接手长周期预测任务，完成计划、缺货还原、月中预测、模型重构及融合在内的多项开发工作。' },
+          { name: '门店补货策略优化与缺货率下降', weight: 20,
+            desc: ['优化门店补货参数与安全库存策略，降低缺货率', '建立缺货归因分析口径，形成周度复盘机制'],
+            std: ['试点区域缺货率下降 1pp 以上', '输出缺货归因分析报告并完成周度复盘'],
+            self: 90, selfNote: '完成试点区域策略上线，缺货率下降 1.2pp。',
+            boss: 96, bossNote: '补货策略上线后试点区域缺货率下降明显，归因口径清晰，复盘机制已固化，可作为后续推广样板。' }
+        ],
+        flow: [
+          { t: '考核名单确认', at: '2026-09-01 10:00', by: 'HRBP 雨仙', state: 'done' },
+          { t: '目标确认生效', at: '2026-09-05 18:20', by: '王晨', state: 'done' },
+          { t: '自评提交', at: '2026-09-16 14:32', by: '王丹', state: 'done' },
+          { t: '上级评价提交', at: '', by: '王晨', state: 'doing' },
+          { t: '团队通晒', at: '2026-09-20', by: '—', state: 'todo' },
+          { t: '中心通晒', at: '2026-09-24', by: '—', state: 'todo' }
+        ]
+      },
+      {
+        id: 'L15120', name: '李平', dept: '供应链研发部 / TMS研发组', level: 'P6', boss: '张超',
+        status: '待通晒', updated: '2026-09-18 11:20',
+        selfSubmitted: true, bossSubmitted: true,
+        items: [
+          { name: '冷链温控数据接入与看板交付', weight: 60, desc: ['完成试点仓温控点位接入'], std: ['接入全部点位', '看板延迟不超过 1 分钟'], self: 90, boss: 93, bossNote: '按期交付，试点期无数据丢失。' },
+          { name: 'TMS 域慢 SQL 与慢接口治理', weight: 40, desc: ['治理慢 SQL 与慢接口'], std: ['慢 SQL 数量环比下降 50%'], self: 85, boss: 90, bossNote: '治理成效明显，仍需持续跟踪核心接口。' }
+        ],
+        flow: []
+      },
+      {
+        id: 'L13638', name: '刘明', dept: '供应链研发部 / TMS研发组', level: 'P5', boss: '张超',
+        status: '待上级评价', updated: '2026-09-18 09:05',
+        selfSubmitted: false, bossSubmitted: false,
+        items: [
+          { name: '巡仓系统迁移与全量工厂切换', weight: 100, desc: ['完成巡仓系统迁移'], std: ['全量工厂切换无中断'], self: null, boss: null, bossNote: '' }
+        ],
+        flow: []
+      },
+      {
+        id: 'L14777', name: '李辉', dept: '供应链研发部 / 订单研发组', level: 'P5', boss: '李亮',
+        status: '自评中', updated: '2026-09-17 17:40',
+        selfSubmitted: false, bossSubmitted: false,
+        items: [
+          { name: '采购链路补单能力补齐', weight: 100, desc: ['补齐补单与自动关单能力'], std: ['采购链路 P1 故障为 0'], self: null, boss: null, bossNote: '' }
+        ],
+        flow: []
+      },
+      {
+        id: 'L12931', name: '张超', dept: '供应链研发部 / TMS研发组', level: 'P7', boss: '王琳',
+        status: '自评中', updated: '2026-09-17 10:12',
+        selfSubmitted: false, bossSubmitted: false,
+        items: [
+          { name: '完成 SD-WAN 项目全量上线', weight: 30, desc: ['完成 SD-WAN 全量上线'], std: ['连通率 ≥99%'], self: null, boss: null, bossNote: '' },
+          { name: '仓储网络双活改造', weight: 40, desc: ['完成核心仓双活改造'], std: ['切换演练中断 ≤5 分钟'], self: null, boss: null, bossNote: '' },
+          { name: '网络运维自动化平台落地', weight: 30, desc: ['巡检自动化覆盖'], std: ['覆盖 80% 巡检项'], self: null, boss: null, bossNote: '' }
+        ],
+        flow: []
+      }
+    ];
+
+    const PERF_PARAMS = {
+      source: '绩效参数配置（演示）',
+      scoreMin: 0,
+      scoreMax: 100,
+      scoreStep: 1,
+      managerNoteRequired: true,
+      grades: [
+        { code: 'S', name: '杰出', lower: 98, coefficient: '2.0' },
+        { code: 'A', name: '优秀', lower: 95, coefficient: '1.5' },
+        { code: 'B', name: '良好', lower: 85, coefficient: '1.0' },
+        { code: 'C', name: '有待改进', lower: 70, coefficient: '0.5' },
+        { code: 'D', name: '不合格', lower: 0, coefficient: '0' }
+      ]
+    };
+    const state = { view: 'manager', detailId: null, role: 'manager', tab: 'form', filter: { q: '', status: '' } };
+    const el = (id) => document.getElementById(id);
+
+    function toast(msg, err) {
+      const t = el('toast');
+      t.textContent = msg;
+      t.className = 'toast' + (err ? ' err' : '');
+      t.hidden = false;
+      clearTimeout(t._t);
+      t._t = setTimeout(() => { t.hidden = true; }, 2400);
+    }
+
+    const statusClass = (s) => ({
+      '未开始': 'tag-neutral', '自评中': 'tag-blue', '待上级评价': 'tag-warn',
+      '待通晒': 'tag-blue', '已校准': 'tag-ok', '已生效': 'tag-ok'
+    }[s] || 'tag-neutral');
+
+    function viewsFor(view) {
+      if (view === 'manager') return people.filter(p => p.status === '待上级评价' || p.status === '自评中');
+      if (view === 'mine') return people.filter(p => p.id === 'L12931');
+      return people;
+    }
+
+    function totalOf(p, kind) {
+      const done = p.items.every(i => i[kind] !== null && i[kind] !== undefined && i[kind] !== '');
+      if (!done) return null;
+      return p.items.reduce((s, i) => s + Number(i[kind]) * i.weight / 100, 0);
+    }
+
+    function gradeOf(score) {
+      if (score === null) return ['—', '—'];
+      const hit = PERF_PARAMS.grades.find((g) => score >= g.lower);
+      return hit ? [hit.code, hit.coefficient] : ['D', '0'];
+    }
+
+    function renderRules() {
+      document.getElementById('paramSource').textContent = `参数来源：${PERF_PARAMS.source}`;
+      document.getElementById('rulesList').innerHTML = PERF_PARAMS.grades.map((g, i) => {
+        const next = PERF_PARAMS.grades[i - 1];
+        const range = i === 0
+          ? `分数 ≥ ${g.lower}`
+          : i === PERF_PARAMS.grades.length - 1
+            ? `分数 < ${next.lower}`
+            : `${g.lower} ≤ 分数 < ${next.lower}`;
+        return `<li>${g.name} ${g.code}：${range}，绩效系数 ${g.coefficient}</li>`;
+      }).join('');
+    }
+
+    function renderList() {
+      const q = state.filter.q.trim();
+      const st = state.filter.status;
+      let list = viewsFor(state.view);
+      if (q) list = list.filter(p => p.name.includes(q) || p.id.toLowerCase().includes(q.toLowerCase()));
+      if (st) list = list.filter(p => p.status === st);
+      el('rows').innerHTML = list.map(p => {
+        const self = totalOf(p, 'self');
+        const boss = totalOf(p, 'boss');
+        const [g] = gradeOf(boss);
+        const canAct = state.view === 'manager' && p.status === '待上级评价';
+        const btn = canAct ? '去评价' : '查看';
+        return `<tr>
+          <td class="u-mono">${p.id}</td><td>${p.name}</td><td>${p.dept}</td><td>${p.level}</td><td>${p.boss}</td>
+          <td>${self === null ? '<span class="placeholder">未提交</span>' : self.toFixed(1)}</td>
+          <td>${boss === null ? '<span class="placeholder">待评价</span>' : boss.toFixed(1)}</td>
+          <td>${g === '—' ? '<span class="placeholder">—</span>' : g}</td>
+          <td><span class="tag ${statusClass(p.status)}">${p.status}</span></td>
+          <td>${p.updated}</td>
+          <td><button class="btn btn-sm" data-open="${p.id}">${btn}</button></td>
+        </tr>`;
+      }).join('');
+      el('empty').hidden = list.length > 0;
+      el('total').textContent = list.length;
+      el('listMeta').textContent = `· 共 ${list.length} 条`;
+      const overdueCount = list.filter(p => !p.selfSubmitted && p.status !== '自评中').length;
+      el('overdue').textContent = overdueCount ? `逾期未自评 ${overdueCount} 人` : '';
+    }
+
+    function renderDetail() {
+      const p = people.find(x => x.id === state.detailId);
+      if (!p) { location.hash = '#list'; return; }
+      el('dName').textContent = p.name;
+      el('dAvatar').textContent = p.name.slice(0, 1);
+      el('dStatus').textContent = p.status;
+      el('dStatus').className = 'tag ' + statusClass(p.status);
+      el('dId').textContent = p.id;
+      el('dDept').textContent = p.dept;
+      el('dLevel').textContent = p.level;
+      el('dBoss').textContent = p.boss;
+
+      el('roleSelect').value = state.role;
+      const selfEditable = state.role === 'employee' && ['未开始', '自评中'].includes(p.status);
+      const bossEditable = state.role === 'manager' && p.status === '待上级评价';
+      const selfReadonly = state.role === 'manager' || !selfEditable;
+      const bossReadonly = state.role === 'employee' || !bossEditable;
+
+      el('weightSum').textContent = p.items.reduce((s, i) => s + i.weight, 0) + '%';
+      el('evalRows').innerHTML = p.items.map((i, idx) => `
+        <tr>
+          <td class="name">${i.name}</td>
+          <td class="weight">${i.weight}%</td>
+          <td class="desc"><ol>${i.desc.map(d => `<li>${d}</li>`).join('')}</ol></td>
+          <td class="std"><ol>${i.std.map(d => `<li>${d}</li>`).join('')}</ol></td>
+          <td class="self">
+            ${selfReadonly
+              ? (i.self === null ? '<span class="placeholder">未提交</span>' : `<div class="score">${i.self}<small>分</small></div>${i.selfNote ? `<div class="readonly">${i.selfNote}</div>` : ''}`)
+              : `<div class="score-box"><input class="score-input" type="number" min="${PERF_PARAMS.scoreMin}" max="${PERF_PARAMS.scoreMax}" step="${PERF_PARAMS.scoreStep}" data-kind="self" data-idx="${idx}" value="${i.self ?? ''}"><span class="muted">分</span></div><textarea class="comment" data-note="self" data-idx="${idx}" placeholder="补充自评说明（选填）">${i.selfNote || ''}</textarea>`}
+          </td>
+          <td class="boss">
+            ${bossReadonly
+              ? (i.boss === null ? '<span class="placeholder">待评价</span>' : `<div class="score">${i.boss}<small>分</small></div>${i.bossNote ? `<div class="readonly">${i.bossNote}</div>` : ''}`)
+              : `<div class="score-box"><input class="score-input" type="number" min="${PERF_PARAMS.scoreMin}" max="${PERF_PARAMS.scoreMax}" step="${PERF_PARAMS.scoreStep}" data-kind="boss" data-idx="${idx}" value="${i.boss ?? ''}"><span class="muted">分</span></div><textarea class="comment" data-note="boss" data-idx="${idx}" placeholder="评分依据与评语（评分后必填）">${i.bossNote || ''}</textarea>`}
+          </td>
+        </tr>
+      `).join('');
+
+      renderSummary();
+      renderTimeline(p);
+      renderActions(p);
+    }
+
+    function renderSummary() {
+      const p = people.find(x => x.id === state.detailId);
+      const self = totalOf(p, 'self');
+      const boss = totalOf(p, 'boss');
+      el('selfTotal').textContent = self === null ? '—' : self.toFixed(1);
+      el('bossTotal').textContent = boss === null ? '—' : boss.toFixed(1);
+      const [g, f] = gradeOf(boss);
+      el('grade').textContent = g;
+      el('factor').textContent = f;
+    }
+
+    function renderTimeline(p) {
+      const flow = p.flow && p.flow.length ? p.flow : [
+        { t: '考核名单确认', at: '2026-09-01 10:00', by: 'HRBP 雨仙', state: 'done' },
+        { t: '目标确认生效', at: '2026-09-05 18:20', by: p.boss, state: 'done' },
+        { t: '自评提交', at: p.selfSubmitted ? '2026-09-16 14:32' : '', by: p.name, state: p.selfSubmitted ? 'done' : 'doing' },
+        { t: '上级评价提交', at: '', by: p.boss, state: p.bossSubmitted ? 'done' : 'todo' },
+        { t: '团队通晒', at: '2026-09-20', by: '—', state: 'todo' },
+        { t: '中心通晒', at: '2026-09-24', by: '—', state: 'todo' }
+      ];
+      el('timeline').innerHTML = flow.map(f => `
+        <li class="${f.state}">
+          <div class="tl-title">${f.t}
+            <span class="tag ${f.state === 'done' ? 'tag-ok' : f.state === 'doing' ? 'tag-blue' : 'tag-neutral'}">
+              ${f.state === 'done' ? '已完成' : f.state === 'doing' ? '进行中' : '未开始'}
+            </span>
+          </div>
+          <div class="tl-meta">${f.at || '—'} · ${f.by}</div>
+        </li>
+      `).join('');
+    }
+
+    function renderActions(p) {
+      const isManager = state.role === 'manager';
+      const selfEditable = !isManager && ['未开始', '自评中'].includes(p.status);
+      const bossEditable = isManager && p.status === '待上级评价';
+      el('btnDraft').hidden = !(selfEditable || bossEditable);
+      el('btnSubmit').hidden = !(selfEditable || bossEditable);
+      el('btnSubmit').textContent = isManager ? '提交评价' : '提交自评';
+      el('btnReturn').hidden = !(bossEditable && p.selfSubmitted);
+      el('btnWithdraw').hidden = !(state.role === 'employee' && p.status === '待上级评价' && p.selfSubmitted);
+    }
+
+    function collect() {
+      const p = people.find(x => x.id === state.detailId);
+      document.querySelectorAll('.score-input').forEach(inp => {
+        const idx = Number(inp.dataset.idx);
+        const kind = inp.dataset.kind;
+        p.items[idx][kind] = inp.value === '' ? null : Number(inp.value);
+      });
+      document.querySelectorAll('[data-note]').forEach(ta => {
+        const idx = Number(ta.dataset.idx);
+        p.items[idx][ta.dataset.note + 'Note'] = ta.value.trim();
+      });
+    }
+
+    function validateScores(kind) {
+      const p = people.find(x => x.id === state.detailId);
+      const missingScore = p.items.some(i => !Number.isInteger(i[kind]) || i[kind] < 0 || i[kind] > 100);
+      if (missingScore) { toast(`请为每个目标填写 ${PERF_PARAMS.scoreMin}–${PERF_PARAMS.scoreMax} 的评分`, true); return false; }
+      if (kind === 'boss') {
+        const missingNote = PERF_PARAMS.managerNoteRequired && p.items.some(i => !i.bossNote);
+        if (missingNote) { toast('评分后需填写对应的上级评语', true); return false; }
+      }
+      return true;
+    }
+
+    function saveDraft() {
+      collect();
+      toast('已保存');
+      renderDetail();
+    }
+
+    function submit() {
+      collect();
+      const p = people.find(x => x.id === state.detailId);
+      const isManager = state.role === 'manager';
+      if (!validateScores(isManager ? 'boss' : 'self')) return;
+      if (isManager) {
+        p.status = '待通晒'; p.bossSubmitted = true; p.updated = '2026-11-23 16:20';
+        if (p.flow && p.flow.length) p.flow[3] = { ...p.flow[3], at: '2026-11-23 16:20', state: 'done' };
+        toast('评价已提交，进入待通晒');
+        setTimeout(() => { location.hash = '#list'; }, 600);
+      } else {
+        p.selfSubmitted = true; p.status = '待上级评价'; p.updated = '2026-11-23 16:20';
+        toast('自评已提交，等待上级评价');
+        renderDetail();
+      }
+    }
+
+    function withdraw() {
+      const p = people.find(x => x.id === state.detailId);
+      p.status = '自评中'; p.selfSubmitted = false;
+      toast('已撤回到草稿，可重新编辑自评');
+      renderDetail();
+    }
+
+    function openReturn() {
+      el('returnReason').value = '';
+      el('modalMask').hidden = false;
+    }
+
+    function doReturn() {
+      const reason = el('returnReason').value.trim();
+      if (!reason) { toast('请填写退回原因', true); return; }
+      const p = people.find(x => x.id === state.detailId);
+      p.status = '自评中'; p.selfSubmitted = false;
+      el('modalMask').hidden = true;
+      toast('已退回自评，员工可补充后重新提交');
+      renderDetail();
+    }
+
+    function route() {
+      const hash = location.hash || '#list';
+      if (hash.startsWith('#detail/')) {
+        state.detailId = decodeURIComponent(hash.slice(8));
+        const p = people.find(x => x.id === state.detailId || x.name === state.detailId);
+        if (p) state.detailId = p.id;
+        state.role = 'manager';
+        el('viewList').hidden = true;
+        el('viewDetail').hidden = false;
+        renderDetail();
+      } else {
+        el('viewDetail').hidden = true;
+        el('viewList').hidden = false;
+        renderList();
+      }
+    }
+
+    document.addEventListener('click', (e) => {
+      const viewBtn = e.target.closest('.view-btn');
+      if (viewBtn) {
+        state.view = viewBtn.dataset.view;
+        document.querySelectorAll('.view-btn').forEach(b => {
+          const on = b === viewBtn;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        renderList();
+        return;
+      }
+      const open = e.target.closest('[data-open]');
+      if (open) { location.hash = '#detail/' + encodeURIComponent(open.dataset.open); return; }
+      const tab = e.target.closest('.tab');
+      if (tab) {
+        state.tab = tab.dataset.tab;
+        document.querySelectorAll('.tab').forEach(b => {
+          const on = b === tab;
+          b.classList.toggle('is-active', on);
+          b.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        el('tabFlow').hidden = state.tab !== 'flow';
+        el('tabForm').hidden = state.tab !== 'form';
+        return;
+      }
+      if (e.target.closest('[data-back]')) { location.hash = '#list'; return; }
+    });
+
+    el('roleSelect').addEventListener('change', (e) => { state.role = e.target.value; renderDetail(); });
+    el('evalRows').addEventListener('input', (e) => {
+      if (!e.target.classList.contains('score-input')) return;
+      collect();
+      renderSummary();
+    });
+    el('rulesToggle').addEventListener('click', () => {
+      const list = el('rulesList');
+      list.hidden = !list.hidden;
+      el('rulesToggle').textContent = list.hidden ? '展开' : '收起';
+    });
+    el('btnQuery').addEventListener('click', () => {
+      state.filter.q = el('q').value;
+      state.filter.status = el('fStatus').value;
+      renderList();
+    });
+    el('btnReset').addEventListener('click', () => {
+      el('q').value = ''; el('fStatus').value = '';
+      state.filter = { q: '', status: '' };
+      renderList();
+    });
+    el('btnDraft').addEventListener('click', saveDraft);
+    el('btnSubmit').addEventListener('click', submit);
+    el('btnWithdraw').addEventListener('click', withdraw);
+    el('btnReturn').addEventListener('click', openReturn);
+    el('btnCancelReturn').addEventListener('click', () => { el('modalMask').hidden = true; });
+    el('btnConfirmReturn').addEventListener('click', doReturn);
+    window.addEventListener('hashchange', route);
+    renderRules();
+    route();
+  </script>
+</body>
+</html>
