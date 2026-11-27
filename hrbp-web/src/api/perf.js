@@ -1,0 +1,15 @@
+import request from './request'
+
+export const getPeriods = () => request.get('/perf/periods')
+export const advanceStage = (id, stage) => request.post(`/perf/periods/${id}/stage/${stage}`)
+export const getTargets = params => request.get('/perf/targets', { params })
+export const saveTargets = data => request.post('/perf/targets/save', data)
+export const submitTargets = (periodId, empId) => request.post('/perf/targets/submit', { periodId, empId })
+export const confirmTargets = data => request.post('/perf/targets/confirm', data)
+export const getReviews = params => request.get('/perf/reviews', { params })
+export const getReviewItems = id => request.get(`/perf/reviews/${id}/items`)
+export const submitSelf = (id, items) => request.post(`/perf/reviews/${id}/self`, items)
+export const submitManager = (id, items) => request.post(`/perf/reviews/${id}/manager`, items)
+export const calibrate = (id, data) => request.post(`/perf/reviews/${id}/calibrate`, data)
+export const getGradeConfigs = () => request.get('/perf/grade-configs')
+export const saveGradeConfig = data => request.post('/perf/grade-configs', data)

@@ -21,6 +21,11 @@ const routes = [
       { path: 'hr/offboarding/list', component: () => import('../views/flow/OffboardingPage.vue'), meta: { title: '离职管理' } },
       { path: 'hr/contract/list', component: () => import('../views/flow/ContractPage.vue'), meta: { title: '合同管理' } },
       { path: 'hr/growth/list', component: () => import('../views/flow/GrowthPage.vue'), meta: { title: '员工成长记录' } },
+      { path: 'hr/attendance/list', component: () => import('../views/att/AttendancePage.vue'), meta: { title: '考勤管理' } },
+      { path: 'hr/performance/target', component: () => import('../views/perf/TargetPage.vue'), meta: { title: '绩效目标管理' } },
+      { path: 'hr/performance/review', component: () => import('../views/perf/ReviewPage.vue'), meta: { title: '绩效评价' } },
+      { path: 'hr/performance/calibration', component: () => import('../views/perf/CalibrationPage.vue'), meta: { title: '绩效通晒' } },
+      { path: 'hr/performance/config', component: () => import('../views/perf/ConfigPage.vue'), meta: { title: '绩效参数配置' } },
       { path: 'hr/employee/list', component: () => import('../views/employee/EmployeeListPage.vue'), meta: { title: '员工资料' } },
       // 后续业务模块页面按任务逐个挂载
       { path: ':pathMatch(.*)*', component: () => import('../layout/NotFound.vue') }
