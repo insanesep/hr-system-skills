@@ -1,1 +1,19 @@
+.workbuddy/
+
+# java
+target/
+*.class
+*.jar
+!.mvn/wrapper/*.jar
+
+# node
+node_modules/
+dist/
+.playwright-cli/
+
+# os
 .DS_Store
+
+# logs
+*.log
+nohup.out
