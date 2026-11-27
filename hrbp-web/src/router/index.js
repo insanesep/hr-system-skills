@@ -26,6 +26,8 @@ const routes = [
       { path: 'hr/performance/review', component: () => import('../views/perf/ReviewPage.vue'), meta: { title: '绩效评价' } },
       { path: 'hr/performance/calibration', component: () => import('../views/perf/CalibrationPage.vue'), meta: { title: '绩效通晒' } },
       { path: 'hr/performance/config', component: () => import('../views/perf/ConfigPage.vue'), meta: { title: '绩效参数配置' } },
+      { path: 'hr/talent/list', component: () => import('../views/talent/TalentInfoPage.vue'), meta: { title: '人才信息' } },
+      { path: 'hr/talent-review/list', component: () => import('../views/talent/NineBoxPage.vue'), meta: { title: '人才盘点九宫格' } },
       { path: 'hr/employee/list', component: () => import('../views/employee/EmployeeListPage.vue'), meta: { title: '员工资料' } },
       // 后续业务模块页面按任务逐个挂载
       { path: ':pathMatch(.*)*', component: () => import('../layout/NotFound.vue') }
