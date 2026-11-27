@@ -62,9 +62,10 @@ const collapsed = ref(false)
 const menuTree = computed(() => {
   const map = new Map()
   const roots = []
-  for (const m of auth.menus) map.set(m.id, { ...m, children: [] })
+  for (const m of auth.menus) map.set(String(m.id), { ...m, children: [] })
   for (const m of map.values()) {
-    if (m.parentId && map.has(m.parentId)) map.get(m.parentId).children.push(m)
+    const pid = String(m.parentId ?? '0')
+    if (pid !== '0' && map.has(pid)) map.get(pid).children.push(m)
     else roots.push(m)
   }
   return roots
