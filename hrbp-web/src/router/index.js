@@ -9,6 +9,9 @@ const routes = [
     redirect: '/hr/workbench',
     children: [
       { path: 'hr/workbench', component: () => import('../views/workbench/WorkbenchPage.vue'), meta: { title: '工作台' } },
+      { path: 'hr/department/tree', component: () => import('../views/org/DepartmentPage.vue'), meta: { title: '部门管理' } },
+      { path: 'hr/position/list', component: () => import('../views/org/PositionPage.vue'), meta: { title: '岗位管理' } },
+      { path: 'hr/employee/list', component: () => import('../views/employee/EmployeeListPage.vue'), meta: { title: '员工资料' } },
       // 后续业务模块页面按任务逐个挂载
       { path: ':pathMatch(.*)*', component: () => import('../layout/NotFound.vue') }
     ]
