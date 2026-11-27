@@ -15,6 +15,12 @@ const routes = [
       { path: 'hr/recruit/demand/list', component: () => import('../views/recruit/DemandListPage.vue'), meta: { title: '招聘需求管理' } },
       { path: 'hr/recruit/workbench', component: () => import('../views/recruit/ProcessPage.vue'), meta: { title: '招聘过程管理' } },
       { path: 'hr/recruit/dashboard', component: () => import('../views/recruit/DashboardPage.vue'), meta: { title: '招聘数据看板' } },
+      { path: 'hr/onboarding/list', component: () => import('../views/flow/OnboardingPage.vue'), meta: { title: '入职管理' } },
+      { path: 'hr/regularization/list', component: () => import('../views/flow/RegularizationPage.vue'), meta: { title: '转正管理' } },
+      { path: 'hr/movement/list', component: () => import('../views/flow/MovementPage.vue'), meta: { title: '调岗晋升' } },
+      { path: 'hr/offboarding/list', component: () => import('../views/flow/OffboardingPage.vue'), meta: { title: '离职管理' } },
+      { path: 'hr/contract/list', component: () => import('../views/flow/ContractPage.vue'), meta: { title: '合同管理' } },
+      { path: 'hr/growth/list', component: () => import('../views/flow/GrowthPage.vue'), meta: { title: '员工成长记录' } },
       { path: 'hr/employee/list', component: () => import('../views/employee/EmployeeListPage.vue'), meta: { title: '员工资料' } },
       // 后续业务模块页面按任务逐个挂载
       { path: ':pathMatch(.*)*', component: () => import('../layout/NotFound.vue') }
