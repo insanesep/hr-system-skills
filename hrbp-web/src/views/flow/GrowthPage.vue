@@ -12,7 +12,7 @@
 
     <el-row :gutter="16">
       <el-col :span="empId ? 10 : 24">
-        <el-table :data="list" border v-loading="loading" highlight-current-row @row-click="row => empId = Number(row.empId) || empId; onEmpChange(row.empId)">
+        <el-table :data="list" border v-loading="loading" highlight-current-row @row-click="row => onEmpChange(row.empId)">
           <el-table-column prop="eventDate" label="日期" width="100" />
           <el-table-column prop="empName" label="姓名" width="80" />
           <el-table-column prop="eventType" label="类型" width="90">
