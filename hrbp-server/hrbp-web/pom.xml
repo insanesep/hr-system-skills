@@ -10,21 +10,10 @@
     </parent>
     <artifactId>hrbp-web</artifactId>
     <name>hrbp-web</name>
-    <description>Controller 层与启动应用</description>
+    <description>Controller 层（拦截器/异常处理/接口）</description>
     <dependencies>
         <dependency><groupId>com.hrbp</groupId><artifactId>hrbp-api</artifactId></dependency>
         <dependency><groupId>com.hrbp</groupId><artifactId>hrbp-service</artifactId></dependency>
         <dependency><groupId>org.springframework.boot</groupId><artifactId>spring-boot-starter-web</artifactId></dependency>
     </dependencies>
-    <build>
-        <plugins>
-            <plugin>
-                <groupId>org.springframework.boot</groupId>
-                <artifactId>spring-boot-maven-plugin</artifactId>
-                <configuration>
-                    <mainClass>com.hrbp.HrbpApplication</mainClass>
-                </configuration>
-            </plugin>
-        </plugins>
-    </build>
 </project>

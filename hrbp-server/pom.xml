@@ -23,6 +23,7 @@
         <module>hrbp-domain</module>
         <module>hrbp-service</module>
         <module>hrbp-web</module>
+        <module>hrbp-starter</module>
     </modules>
 
     <properties>
@@ -88,6 +89,11 @@
             <dependency>
                 <groupId>com.hrbp</groupId>
                 <artifactId>hrbp-web</artifactId>
+                <version>1.0.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hrbp</groupId>
+                <artifactId>hrbp-starter</artifactId>
                 <version>1.0.0</version>
             </dependency>
         </dependencies>
