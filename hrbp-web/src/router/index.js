@@ -14,6 +14,7 @@ const routes = [
       { path: 'hr/establishment/list', component: () => import('../views/org/EstablishmentPage.vue'), meta: { title: '编制管理' } },
       { path: 'hr/recruit/demand/list', component: () => import('../views/recruit/DemandListPage.vue'), meta: { title: '招聘需求管理' } },
       { path: 'hr/recruit/workbench', component: () => import('../views/recruit/ProcessPage.vue'), meta: { title: '招聘过程管理' } },
+      { path: 'hr/recruit/dashboard', component: () => import('../views/recruit/DashboardPage.vue'), meta: { title: '招聘数据看板' } },
       { path: 'hr/employee/list', component: () => import('../views/employee/EmployeeListPage.vue'), meta: { title: '员工资料' } },
       // 后续业务模块页面按任务逐个挂载
       { path: ':pathMatch(.*)*', component: () => import('../layout/NotFound.vue') }

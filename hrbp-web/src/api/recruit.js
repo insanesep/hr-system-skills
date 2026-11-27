@@ -29,3 +29,6 @@ export const submitConclusion = (id, data) => request.post(`/recruit/process/int
 export const getOffers = params => request.get('/recruit/process/offers', { params })
 export const createOffer = data => request.post('/recruit/process/offers', data)
 export const offerAction = (id, action) => request.post(`/recruit/process/offers/${id}/${action}`)
+
+// 招聘看板
+export const getDashboard = () => request.get('/recruit/dashboard')
