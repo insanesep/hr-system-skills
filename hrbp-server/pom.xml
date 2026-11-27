@@ -19,15 +19,10 @@
     <description>HRBP 人资管理系统后端</description>
 
     <modules>
-        <module>hrbp-common</module>
-        <module>hrbp-system</module>
-        <module>hrbp-org</module>
-        <module>hrbp-employee</module>
-        <module>hrbp-talent-flow</module>
-        <module>hrbp-attendance</module>
-        <module>hrbp-performance</module>
-        <module>hrbp-workbench</module>
-        <module>hrbp-admin</module>
+        <module>hrbp-api</module>
+        <module>hrbp-domain</module>
+        <module>hrbp-service</module>
+        <module>hrbp-web</module>
     </modules>
 
     <properties>
@@ -43,6 +38,11 @@
             <dependency>
                 <groupId>com.baomidou</groupId>
                 <artifactId>mybatis-plus-spring-boot3-starter</artifactId>
+                <version>${mybatis-plus.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.baomidou</groupId>
+                <artifactId>mybatis-plus</artifactId>
                 <version>${mybatis-plus.version}</version>
             </dependency>
             <dependency>
@@ -72,42 +72,22 @@
             </dependency>
             <dependency>
                 <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-common</artifactId>
+                <artifactId>hrbp-api</artifactId>
                 <version>1.0.0</version>
             </dependency>
             <dependency>
                 <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-system</artifactId>
+                <artifactId>hrbp-domain</artifactId>
                 <version>1.0.0</version>
             </dependency>
             <dependency>
                 <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-org</artifactId>
+                <artifactId>hrbp-service</artifactId>
                 <version>1.0.0</version>
             </dependency>
             <dependency>
                 <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-employee</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-talent-flow</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-attendance</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-performance</artifactId>
-                <version>1.0.0</version>
-            </dependency>
-            <dependency>
-                <groupId>com.hrbp</groupId>
-                <artifactId>hrbp-workbench</artifactId>
+                <artifactId>hrbp-web</artifactId>
                 <version>1.0.0</version>
             </dependency>
         </dependencies>
